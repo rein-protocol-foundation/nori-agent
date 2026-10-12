@@ -58,13 +58,17 @@ Agent 从不依据资料邮箱解析身份。此前的合成演练确实经由**
 [v0.1 治理验收记录（2026-09-28）](docs/governance-acceptance-2026-09-28.md)：案例 2–10 按合成开发证据通过，
 案例 1 由负责人决定跳过、**未通过**。
 
+Discord 入群引导已纳入工作区模板，覆盖可选介绍与同伴互动、课程检索、公开线下活动和资源贡献。
+公开目录初始未配置；当前交付是对话内容，Discord 连接与业务集成仍待接入。详见
+[流程与验收说明](docs/discord-onboarding-zh.md)。
+
 ## 仓库结构
 
 | 路径 | 用途 |
 | --- | --- |
 | `vendor/openclaw` | 官方 OpenClaw 源码（git submodule，固定在单个 commit）。属于上游，可直接使用，不要修改。 |
 | `plugins/rein-operations` | Rein 功能的唯一实现位置；含确定性业务模块、三个默认只读工具、四个提案工具，以及 12 个需显式配置的后端 Slack 工具（4 读、1 个只读字段采集、4 写、3 个结果反馈）。 |
-| `workspace/` | 与 OpenClaw 兼容的 Agent 工作区模板：身份、策略与头像。 |
+| `workspace/` | 与 OpenClaw 兼容的 Agent 工作区模板：身份、策略、头像，以及 Discord 对话引导与初始未配置的公开目录。 |
 | `config/operations.example.json` | 拟定的业务配置。它不是 OpenClaw 原生配置，也没有任何执行器加载它。 |
 | `scripts/` | 本地初始化、CLI 包装与上游更新脚本。 |
 | `tests/` | 使用 Node test runner 的插件边界与更新脚本检查。 |
@@ -135,6 +139,7 @@ Contributor 提案 → 信息确认与评估 → 零预算授权快速通道 / B
 - [文档来源与上下文](docs/provenance.md)
 - [架构与集成边界](docs/architecture.md)
 - [部署准备](docs/setup.md)
+- [Discord 入群引导、公开目录与对话演练](docs/discord-onboarding-zh.md)
 - [更新 OpenClaw](docs/upstream.md)
 - [P0 实施与验收清单](docs/roadmap.md)
 - [v0.1 治理验收记录（2026-09-28）](docs/governance-acceptance-2026-09-28.md)

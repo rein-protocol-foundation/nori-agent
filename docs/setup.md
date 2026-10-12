@@ -132,6 +132,13 @@ npm run toolchain:pnpm -- test         # plugin boundary and upstream update scr
 `check` proves the repository scaffold is intact. Business module tests exercise local rules; they
 do not prove a live chat or website integration.
 
+Discord onboarding content is already part of `workspace/`: its `AGENTS.md` routes Discord turns to
+`DISCORD_ONBOARDING.md`, and `community-directory.json` starts unconfigured. For a separately copied
+workspace, sync these files and the routing instruction together. Follow the [onboarding guide](discord-onboarding-zh.md)
+to prepare verified public entries and run conversation rehearsals. The example directory is synthetic;
+do not activate or recommend it as real content. No Discord plugin or external operation is enabled
+by this content update.
+
 ## 5. Inspect the plugin
 
 ```sh

@@ -128,6 +128,15 @@ framework is planned.
 
 ## Proposed service boundaries
 
+Discord conversation guidance now lives in `workspace/DISCORD_ONBOARDING.md`, reached from the
+workspace's `AGENTS.md`. The Agent reads `workspace/community-directory.json` for server-scoped
+public navigation and learning, discussion, event and contribution entries. This is prompt content
+and a read-only reference document, not plugin configuration or an enforcement layer. Its default
+directory is unconfigured; the synthetic example under `templates/` is for explicit rehearsals only.
+No Discord transport, search provider, registration, submission, reminder or persistent progress
+service is enabled by these files. Runtime connectivity and governance remain separate scopes.
+See the [onboarding guide](discord-onboarding-zh.md) for the directory format and conversation checks.
+
 The v0.1 slice needs only the Identity, Proposals and Governance rows below, in the narrow form described
 above, plus a read-only view of Finance. Activities, Outcomes and Oversight are deferred.
 

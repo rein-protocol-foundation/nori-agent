@@ -71,13 +71,18 @@ oversight remain deferred. See the [implementation and deployment record](docs/i
 and the [v0.1 governance acceptance record](docs/governance-acceptance-2026-09-28.md): cases 2-10 are accepted on
 synthetic development evidence, and case 1 was skipped by the owner and is not passed.
 
+Discord onboarding guidance now ships in the workspace: optional introductions and peer interaction,
+course discovery, public in-person events and resource contributions. Its public directory starts
+unconfigured. This is conversation content only; Discord connectivity and its business integrations
+remain pending. See the [flow and acceptance guide](docs/discord-onboarding.md).
+
 ## Repository layout
 
 | Path | Purpose |
 | --- | --- |
 | `vendor/openclaw` | Official OpenClaw source as a git submodule, pinned to one reviewed commit. Upstream-owned; use it, do not edit it. |
 | `plugins/rein-operations` | Rein-owned business modules; three default status/simulation tools, four proposal tools, and twelve backend-backed Slack tools (four reads, one read-only field collector, four writes, three result-feedback) that register only with explicit platform, workspace, channel and backend configuration. |
-| `workspace/` | OpenClaw-compatible agent workspace template: identity, policy and avatar. |
+| `workspace/` | OpenClaw-compatible agent workspace template: identity, policy, avatar and Discord conversation guidance with an initially unconfigured public directory. |
 | `config/operations.example.json` | Proposed business configuration. Not native OpenClaw config, and nothing loads it. |
 | `scripts/` | Local bootstrap, CLI wrapper and upstream update helpers. |
 | `tests/` | Node test runner checks for the plugin boundary and the update script. |
@@ -173,6 +178,7 @@ social-media image and text publishing, and DAO integration belong to later phas
 - [Source provenance and context](docs/provenance.md)
 - [Architecture and integration boundaries](docs/architecture.md)
 - [Setup and local runtime](docs/setup.md)
+- [Discord onboarding requirements](docs/discord-onboarding.md) · [中文流程、目录与演练](docs/discord-onboarding-zh.md)
 - [Development, verification, deployment and ten Agent rehearsals](docs/implementation-and-deployment-zh.md)
 - [v0.1 governance acceptance record (2026-09-28)](docs/governance-acceptance-2026-09-28.md)
 - [P0 requirement evidence matrix](docs/p0-acceptance-matrix.md)

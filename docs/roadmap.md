@@ -10,6 +10,13 @@ See the [v0.1 governance acceptance record](governance-acceptance-2026-09-28.md)
 
 For a requirement-by-requirement status, see the [P0 acceptance matrix](p0-acceptance-matrix.md).
 
+Discord onboarding conversation content now ships in the workspace, separately from the v0.1
+governance slice: optional introductions, peer discussion, free learning resources, public in-person
+events and resource contributions. A server-scoped public directory starts unconfigured, with a
+synthetic example and pending conversation checks in the [onboarding guide](discord-onboarding.md).
+Discord connectivity, real resource entries, search/registration/submission/reminder integrations,
+persistent progress and live member acceptance remain open; these templates do not pass those gates.
+
 The strict P0 v0.1 slice is the shorter slice in [PRD §2.3](PRD-agent-community-operations.md): Slack
 identity, a simple Contributor proposal, a simple Board vote and result, and a read-only funds
 snapshot. M0 is decided for the v0.1 slice (Slack, the organization's own database, simple one-person-one-vote).

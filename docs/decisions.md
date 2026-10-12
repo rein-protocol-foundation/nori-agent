@@ -61,6 +61,13 @@ identity path are exercised by local synthetic tests only.
 
 ## P0 v0.1 scope
 
+**Discord onboarding follow-up (2026-10-10).** The user requested better guidance for introductions,
+peer interaction, community courses, in-person events and resource contributions. The workspace now
+contains a conversation playbook and a server-scoped public directory format, documented in the
+[onboarding guide](discord-onboarding-zh.md). Earlier statements that Discord is unimplemented refer
+to connectivity and business integrations; the conversation template is now present. This request
+does not enable Discord, authorize external messages, expand v0.1 or change D12's governance split.
+
 The v0.1 slice is one vertical slice on real data, not the full lifecycle described in the PRD:
 
 **Supersession note (2026-09-27).** Two statements in the copied PRD draft are narrower than the
