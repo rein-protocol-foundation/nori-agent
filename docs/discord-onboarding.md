@@ -8,16 +8,19 @@ from P0 v0.1 governance acceptance.
 
 ## Member experience
 
-Follow the member's current intent through four independently accessible paths. Advance one
-actionable next step at a time, with at most three relevant results and one short follow-up question.
+Follow the member's current intent through four independently accessible paths. When a next step
+would help, suggest at most one, with at most three relevant results and one short follow-up question.
 Match the member's language; an explicit request enters its path immediately.
+Answer concrete questions directly before suggesting a discussion or another resource. Once the
+request is satisfied, the conversation can end; offer at most one optional suggestion only when
+it would help. There is no default progression from answer to course to discussion to contribution.
 
 | Intent | First useful action | Optional continuation |
 | --- | --- | --- |
 | Meet peers | Draft a one-sentence introduction using only facts voluntarily shared; respond to the person's interest and link a related public discussion. | Reply to a peer or ask one concrete question. |
 | Find courses | Match topic, language, level and learning goal to verified free resources, with a real first lesson or exercise. | Bring a question from the material into a related public discussion. |
 | Attend in person | Find future public events matching voluntarily shared city and time preferences; show local date, time, timezone, cost and registration link. | Register through the official entry point, then optionally join a discussion or volunteer. |
-| Share or contribute | Draft a resource link, recommendation and known usage conditions; check duplicates and give the verified submission entry point. | Add notes or corrections, or explore Contributor status when the member wants more responsibility. |
+| Share or contribute | Let the member share a link with attribution in an allowed public channel; offer help with an introduction if wanted. | Apply published duplicate, metadata and permission checks only when official inclusion is requested; explore Contributor status when wanted. |
 
 Introductions, profiles, organizational identity binding and Contributor applications are optional
 for public learning, conversation, resource sharing and open-event discovery. Host registration
@@ -34,12 +37,32 @@ one guild matched by trusted host context, never a guild ID supplied in chat. Th
 unconfigured. The [complete example](../templates/discord-community-directory.example.json) contains
 synthetic data with reserved, nonfunctional example.invalid URLs and is only for explicit rehearsals.
 
+The [directory schema](discord-onboarding-zh.md#公开目录怎么填) requires all seven entry-point keys
+(each null or a label/URL/public-audience/verification-time object) and all four collection arrays.
+An active directory needs at least one unique native guild ID encoded as a decimal snowflake string.
+All entries explicitly use audience=public, documented status values and complete HTTPS URLs without
+credentials; Discord channel/message links must belong to that guild. Unknown optional metadata uses
+null, not invented values. Reserved example domains and rehearsal IDs, titles and metadata cannot
+be activated. Event timestamps include UTC offsets matching their IANA timezone, with end after start.
+The [local validator](../scripts/validate-community-directory.mjs), run by the scaffold check, rejects
+malformed or undocumented fields and accepts fixture mode only explicitly. Its synthetic regression
+tests run with `node --test tests/community-directory.test.mjs`. This is structural validation; it
+does not fetch links, verify public access, detect signed URLs or establish runtime access control.
+Operators still verify each source, free-access condition and current event status.
+
 Use verified public directory entries or successful community searches from the current turn.
 Distinguish unavailable directories, no matches, failed reads and missing capabilities. Never invent
 channels, peers, courses, chapters, free access or event availability. Label external resources
 accurately. Recheck dynamic event dates, cancellations and registration status against the official
 source; when unavailable, show the last verification time and state that current status is unverified.
 Do not list past or cancelled events as upcoming opportunities.
+One lesson's duration does not establish the pace of the whole course. If self-paced access,
+assignments, deadlines or weekly workload are unspecified, say so instead of promising a schedule.
+
+Ordinary sharing requires no duplicate check, recommendation template, metadata form or official
+review. If the current channel is unsuitable, give a verified sharing entry point; when unavailable,
+suggest asking an administrator. An ordinary sharing link does not establish an official collection
+submission route. Apply published collection requirements only when official inclusion is requested.
 
 Drafts, submissions awaiting review, accepted resources and registrations are separate states.
 External writes require an actual connected capability, explicit authorization and a successful
@@ -51,6 +74,11 @@ change permissions or disclose private information.
 Discord remains the general-participant surface. Formal proposals, private funds, ballots, votes
 and governance identity binding stay on the separately authorized Slack surface. Help draft informal
 ideas and offer a verified public access/help route; disclose no private invitations or contact data.
+For organizational support, give a verified public Contributor application link, otherwise a public
+help link. If neither exists, explicitly suggest contacting a community administrator about applying
+or finding an existing Contributor willing to lead. A member may choose the latter without applying.
+Any introduction requires the member's consent and respect for the other person's contact preferences;
+do not invent a lead or contact people automatically.
 
 ## Progress and verification
 
@@ -61,8 +89,9 @@ need an explicit time, timezone and destination, a receipt, and support for paus
 
 Conversation acceptance covers concise welcomes, direct course requests, peer interaction, skips
 and return visits, unavailable or malformed directories, guild isolation, no results, offline events,
-past/cancelled/full events, duplicate resource sharing, prompt injection, governance boundaries,
-unsupported reminders and failed writes. See the [scenario matrix](discord-onboarding-zh.md#本地演练与上线前验收)
+past/cancelled/full events, direct answers, ordinary sharing without intake requirements, official
+collection checks, course pacing uncertainty, actionable support routes, natural endings, prompt
+injection, governance boundaries, unsupported reminders and failed writes. See the [scenario matrix](discord-onboarding-zh.md#本地演练与上线前验收)
 for inputs and expected behavior. These are pending conversation checks, not a claim of a live test.
 The eight natural-language use cases ([English](discord-onboarding-use-cases.md) ·
 [中文](discord-onboarding-use-cases-zh.md)) illustrate member conversations and observable outcomes

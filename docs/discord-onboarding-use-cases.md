@@ -70,8 +70,8 @@ she returns with a question in the same visible conversation.
 > A useful starting point: besides checking the answer, agent evaluation looks at whether it
 > can complete the whole task — choosing the right tools, handling tool failures and avoiding
 > actions it wasn't allowed to take.
-> One question you could bring to the group is: “If an agent gets the answer right but uses
-> a tool it wasn't allowed to use, did it complete the task?”
+> For example, a correct answer may still fail the evaluation if the agent used a tool
+> it wasn't allowed to use.
 
 **Ahe:**
 > That example helps. I'd like to see how other people judge that.
@@ -91,7 +91,8 @@ make-up introduction or promise to remember her preference across sessions.
 
 Xiao Lin has used a little Python at school and joins through a community invitation. He knows
 what he wants to learn but not where to start. The rehearsal directory contains a public, free,
-Chinese-language beginner course whose first lesson has been verified.
+Chinese-language beginner course. Its first lesson and approximate 20-minute duration have been
+verified, but the overall course pace, assignments and deadlines are unspecified.
 
 **Xiao Lin:**
 > Just joined! I'm looking for a beginner course on agents. I've only written a little Python,
@@ -109,23 +110,27 @@ first-lesson content must come from a source verified in the current turn.*
 > I only have about half an hour in the evenings on weekdays. Is that enough to keep up?
 
 **Nori:**
-> You can go at your own pace; you don't have to finish a lesson every day. For today, start
-> with one question: “When does an agent need to use a tool instead of answering directly?”
-> Anything you get stuck on can become a discussion question, too.
+> The first lesson is listed as about 20 minutes, so you could try it one evening to see
+> how the material feels. The overall pace and assignment deadlines aren't specified,
+> so I can't promise that half an hour a night is enough to keep up with the whole course.
 
 **Xiao Lin, later:**
 > I finished the first lesson. I'm still not sure how a fixed workflow that calls tools differs
 > from an agent deciding which tools to call.
 
 **Nori:**
-> That's a good question to bring to the group. You could ask: “I finished the first lesson,
-> but I'm still unsure where a fixed workflow ends and an agent choosing tools begins.
-> Does anyone have an example from a real project?”
+> In a fixed workflow, people usually define the steps and branches in advance. An agent
+> can choose its next step and tool based on its goal and the current result, within the
+> limits it's been given. Both can call tools; the main difference is who decides how to proceed.
+> For a paper-reading task, a fixed workflow might say “extract the text, then summarize.”
+> An agent might notice that the text is missing and decide to find the original paper first.
+> If you'd like to discuss real projects, that example could be a useful starting point.
 
-**Participation outcome:** Xiao Lin reports starting the material and develops a question he can
-bring to the community. Providing a course link is not learning completion, and no check-in is
-required. On his return, answer the question or help him discuss it instead of recommending lesson
-one again.
+**Participation outcome:** Xiao Lin reports starting the material and receives an explanation of
+the distinction. Providing a course link is not learning completion, and no check-in is
+required. Answer the concrete question first; a group discussion is optional and does not replace
+the answer. One lesson's duration does not establish a self-paced course or its schedule.
+Do not recommend lesson one again on his return.
 
 ## UC04 · I'd like to meet people building similar things, but cold DMs feel awkward
 
@@ -193,9 +198,7 @@ listen” and “no project required” must be explicit organizer conditions.*
 > Registered! Got the confirmation email.
 
 **Nori:**
-> Then follow the details in your confirmation email. The thing you were wondering about
-> could be a good question to take along: “For someone just starting with agents, what's
-> one small exercise you'd recommend trying first?”
+> Great, then follow the details in your confirmation email.
 
 **Participation outcome:** Xiao Chen registers himself and reports receiving confirmation.
 That is member-reported progress, not a receipt for a registration Nori performed. Do not announce
@@ -206,36 +209,37 @@ state that it needs confirmation.
 
 Aning has put together Chinese-language learning notes but hasn't attended community events yet.
 He isn't sure whether newcomers can share resources and thinks someone may have posted the original
-tutorial already. Only the public resource-sharing entry point is verified in this rehearsal;
-automatic submission is unavailable.
+tutorial already. The current public channel is confirmed to allow resource sharing in this
+rehearsal; automatic submission is unavailable.
 
 **Aning:**
 > I just joined. I made some notes in Chinese while learning about agents, including a few
 > things I got stuck on. Can I share them here, or do I need to apply for a role first?
 
 **Nori:**
-> You can share them without applying to be a Contributor. Let's start with the original
-> link and why you'd recommend the notes — I can help turn that into a short introduction.
+> Of course — post them here with the notes link and any sources you reference. You don't
+> need to apply to be a Contributor. If you'd like, I can help polish a sentence to introduce them.
 
 **Aning:**
 > I think someone already shared the tutorial. Mine is mostly about troubleshooting failed
 > tool calls, rather than rewriting the tutorial.
 
 **Nori:**
-> Those troubleshooting experiences are a useful addition. You could introduce them like this:
+> Even if the tutorial has been shared before, your troubleshooting experience can add
+> something useful. If you'd like an introduction, you could write:
 > “Adding my learning notes, mostly about problems I ran into with failed tool calls and how
 > I investigated them. You may have seen the original tutorial already; I hope this helps
 > anyone stuck on similar issues. Corrections are welcome!”
-> Include your notes link and the original tutorial source, then post through the resource-sharing
-> entry point here.
 
-*Rehearsal note: include the verified sharing entry point. “I think someone shared it” does not
-establish a duplicate in the directory; that requires an actual search. Free access, reproduction
-rights and acceptance of the notes have not been established in this scenario.*
+*Rehearsal note: this is ordinary sharing, with no duplicate check, form or official review required.
+Give a verified sharing entry point only if the current channel does not allow sharing.
+“I think someone shared it” does not establish a directory duplicate. Free access, reproduction
+rights and acceptance of the notes have not been established. Apply published collection rules
+only when the member asks for official inclusion.*
 
-**Participation outcome:** Aning shares his notes with attribution himself, or keeps the draft
-to edit later. Nori does not describe a draft as submitted, officially accepted or awarded
-contribution credit, and does not require an organizational role before sharing.
+**Participation outcome:** Aning can share his notes with attribution directly and choose whether
+to use an introductory sentence. Nori does not require polishing, duplicate checks or metadata
+collection before sharing, or describe a shared resource as officially accepted or awarded credit.
 
 ## UC07 · I'd like to help, but I'm not technical and don't have much time
 
@@ -308,13 +312,23 @@ one during rehearsal; do not describe an inability to search as a completed sear
 **Nori:**
 > We can first outline what you'd like to do and what support you'd need. For organizational
 > funding or a formal event, an eligible Contributor needs to submit it through the organization's
-> Slack proposal process for review. This is still an informal idea; it hasn't received event
-> approval or a funding commitment.
+> Slack proposal process for review. I don't currently have a confirmed public application or
+> help link. Contact a community administrator to ask how to apply to be a Contributor;
+> if you'd rather not apply yet, you can also ask them to help find an existing Contributor
+> willing to lead. If you'd like, I can help draft that message — I won't contact anyone for you.
+> This is still an informal idea; it hasn't received event approval or a funding commitment.
+
+*Rehearsal note: the reply above assumes neither entry point is configured. When a verified public
+application entry point exists, include its link; otherwise use a verified public help entry point
+if available. Introductions require the member's consent and respect for the other person's contact
+preferences; do not invent a willing lead. Rehearse all three entry-point conditions separately.
+Explaining eligibility alone does not complete the support guidance.*
 
 **Participation outcome:** Alex gets an informal invitation he can post himself and understands
 how a self-organized learning group could later seek organizational support. Nori does not invent
-Hong Kong events, create an event, invite friends or request funding, and does not stop helping
-just because the directory is unavailable.
+Hong Kong events, create an event, invite friends or request funding. With or without an application
+link, there is a clear human next step: apply, ask through public help or contact an administrator
+about finding a lead. A missing directory does not end the help.
 
 ## How to use these cases
 
@@ -324,7 +338,8 @@ background conditions through the controlled test environment; do not give the m
 example replies in advance. Follow-up turns in cases 2, 3 and 5 require the earlier conversation
 to remain visible; they do not test cross-session memory that does not yet exist.
 
-Observe whether the Agent answers the actual need, advances one next step, grounds recommendations
-in sources, respects skips, and helps the member begin learning, discussing, registering or sharing.
+Observe whether the Agent answers the actual need, ends naturally when it is satisfied, offers at
+most one optional suggestion, grounds recommendations in sources, respects skips, and helps the
+member begin learning, discussing, registering or sharing.
 Judge behavior and evidence rather than exact wording. These are conversation examples awaiting
 execution, not evidence that real Discord acceptance has passed.

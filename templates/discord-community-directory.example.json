@@ -5,12 +5,12 @@
     {
       "guildId": "FIXTURE_GUILD",
       "entrypoints": {
-        "introductions": { "label": "演练：自我介绍", "url": "https://example.invalid/introductions", "verifiedAt": "2030-05-01T00:00:00Z" },
-        "discussion": { "label": "演练：社区讨论", "url": "https://example.invalid/discussion", "verifiedAt": "2030-05-01T00:00:00Z" },
-        "courses": { "label": "演练：课程目录", "url": "https://example.invalid/courses", "verifiedAt": "2030-05-01T00:00:00Z" },
-        "events": { "label": "演练：公开活动", "url": "https://example.invalid/events", "verifiedAt": "2030-05-01T00:00:00Z" },
-        "contributions": { "label": "演练：资源分享", "url": "https://example.invalid/contributions", "verifiedAt": "2030-05-01T00:00:00Z" },
-        "help": { "label": "演练：公开帮助", "url": "https://example.invalid/help", "verifiedAt": "2030-05-01T00:00:00Z" },
+        "introductions": { "label": "演练：自我介绍", "url": "https://example.invalid/introductions", "audience": "public", "verifiedAt": "2030-05-01T00:00:00Z" },
+        "discussion": { "label": "演练：社区讨论", "url": "https://example.invalid/discussion", "audience": "public", "verifiedAt": "2030-05-01T00:00:00Z" },
+        "courses": { "label": "演练：课程目录", "url": "https://example.invalid/courses", "audience": "public", "verifiedAt": "2030-05-01T00:00:00Z" },
+        "events": { "label": "演练：公开活动", "url": "https://example.invalid/events", "audience": "public", "verifiedAt": "2030-05-01T00:00:00Z" },
+        "contributions": { "label": "演练：资源分享", "url": "https://example.invalid/contributions", "audience": "public", "verifiedAt": "2030-05-01T00:00:00Z" },
+        "help": { "label": "演练：公开帮助", "url": "https://example.invalid/help", "audience": "public", "verifiedAt": "2030-05-01T00:00:00Z" },
         "contributorApplication": null
       },
       "discussions": [
