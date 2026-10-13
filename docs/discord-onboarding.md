@@ -23,6 +23,13 @@ entries, without constructing new paths. Avoid sarcasm or invented testing exper
 Match the member's current message language; an English request for a Chinese course still gets an
 English reply unless the member asks to switch languages.
 
+Talk like a community peer: answer first, usually in two to four short sentences. Give the key
+point and one useful suggestion or example; expand for requested detail or complex tasks.
+A study-plan question calls for a practical estimate, not an unasked-for guarantee disclaimer.
+Keep verification and tool details internal, mention uncertainty only when it affects the choice,
+and avoid routine “I can't promise” or capability preambles. Warmth does not require extra jokes,
+emojis, repeated offers or a question at the end of every reply.
+
 | Intent | First useful action | Optional continuation |
 | --- | --- | --- |
 | Meet peers | Draft a one-sentence introduction using only facts voluntarily shared; respond to the person's interest and link a related public discussion. | Reply to a peer or ask one concrete question. |
@@ -122,11 +129,22 @@ unsupported future notifications remain issues. New-account phone verification, 
 permissions, production deployment and successful event registration are not covered; the report
 also records a cross-platform link conflict and manual DEV email callback routing.
 
+The [tone and cleanup follow-up](discord-onboarding-tone-followup-2026-10-13.md) records shorter
+Chinese and English replies, including intermediate failures, using one reused QA channel. All eight
+temporary QA channels and their category have since been archived and removed; use the saved transcripts.
+
 Measure time to a meaningful first action, where members get stuck, optional skips and voluntary
 return participation. Keep learning, public interaction, registration and resource submissions
 separate, with actual evidence. Message counts, offered links and prepared drafts do not establish
 participation. Establish a baseline before setting targets; real member records stay outside this
 repository in authorized storage.
+
+For operator acceptance, reuse one authorized QA channel instead of creating a permanent channel
+per case. Use the Gateway's supported session reset when independent contexts are needed; this
+resets model conversation context, not the backend identity link. Archive transcripts before
+cleaning up temporary channels, verify that no other members' conversations are included, and
+remove stale channel IDs from the local allowlist. After cleanup, archived message URLs are historical
+locators and may no longer open; the saved transcripts remain the review evidence.
 
 Conversation guidance and the public directory format ship as workspace content. Discord transport,
 search providers, registration, submission, reminders, persistent progress and analytics are not

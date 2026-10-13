@@ -96,7 +96,7 @@ make-up introduction or promise to remember her preference across sessions.
 Xiao Lin has used a little Python at school and joins through a community invitation. He knows
 what he wants to learn but not where to start. The rehearsal directory contains a public, free,
 Chinese-language beginner course. Its first lesson and approximate 20-minute duration have been
-verified, but the overall course pace, assignments and deadlines are unspecified.
+verified. The rehearsal sources also confirm a recommended 3–4 hours per week and self-paced study.
 
 **Xiao Lin:**
 > Just joined! I'm looking for a beginner course on agents. I've only written a little Python,
@@ -114,26 +114,24 @@ first-lesson content must come from a source verified in the current turn.*
 > I only have about half an hour in the evenings on weekdays. Is that enough to keep up?
 
 **Nori:**
-> The first lesson is listed as about 20 minutes, so you could try it one evening to see
-> how the material feels. The overall pace and assignment deadlines aren't specified,
-> so I can't promise that half an hour a night is enough to keep up with the whole course.
+> That would be a little below the suggested 3–4 hours a week. You could add some time on
+> weekends or take it more slowly. It's a self-study course, so you can fit it around your evenings.
 
 **Xiao Lin, later:**
 > I finished the first lesson. I'm still not sure how a fixed workflow that calls tools differs
 > from an agent deciding which tools to call.
 
 **Nori:**
-> In a fixed workflow, people usually define the steps and branches in advance. An agent
-> can choose its next step and tool based on its goal and the current result, within the
-> limits it's been given. Both can call tools; the main difference is who decides how to proceed.
-> For a paper-reading task, a fixed workflow might say “extract the text, then summarize.”
-> An agent might notice that the text is missing and decide to find the original paper first.
-> If you'd like to discuss real projects, that example could be a useful starting point.
+> The difference is who chooses the next step: a workflow follows predefined steps and branches;
+> an agent lets the model choose based on the current result. For a paper-reading task, a workflow
+> might extract text and summarize it, while an agent might notice missing text and look for the
+> original first. Both can use tools and handle failures.
 
 **Participation outcome:** Xiao Lin reports starting the material and receives an explanation of
 the distinction. Providing a course link is not learning completion, and no check-in is
 required. Answer the concrete question first; a group discussion is optional and does not replace
-the answer. One lesson's duration does not establish a self-paced course or its schedule.
+the answer. Self-paced access and the recommended workload each come from verified sources,
+not an inference from one lesson's duration.
 Do not recommend lesson one again on his return.
 
 ## UC04 · I'd like to meet people building similar things, but cold DMs feel awkward

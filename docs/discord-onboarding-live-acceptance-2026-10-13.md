@@ -1,5 +1,9 @@
 # Nori Discord onboarding 实际验收 — 2026-10-13
 
+清理说明：测试频道及 ONBOARDING QA 分类已在归档后删除，以下 Discord 原消息链接仅作
+历史定位，已无法打开；完整原文保留在本报告中。后续的语气调整、失败复测和最终复测见
+[语气与清理记录](discord-onboarding-tone-followup-2026-10-13.md)。
+
 本次使用用户授权的现有 Discord 管理员账号，在真实 Rein Discord 服务器的八个 QA 频道中发送消息；Nori 通过实际 Discord Gateway 接收并回复。用户消息从 Chrome 页面发送，记录通过 Bot 的只读消息 API 获取，没有使用 HTTP 注入成员会话，也没有向模型提供预期回复。四个中文、四个英文用例，共 21 条成员消息、21 条 Nori 回复。
 
 **结果：6 个通过、1 个部分通过、1 个未通过。不能据此宣称 onboarding 全面验收通过或可以上线。**
@@ -8,7 +12,7 @@
 
 - 时间：2026-10-13 02:42–02:57，America/Los_Angeles（PDT）。用例对话集中在 02:54–02:57。
 - 模型：bailian-token-plan/qwen3.8-flash；配置 reasoning: true、thinkingDefault: medium，实际运行启用 thinking。
-- 被测工作区与本次提交内容一致：AGENTS.md SHA-256 为 `eae42e849ca14769ddd7b2709a63702660b75c475fd7b876b54328cdb81e75b2`；DISCORD_ONBOARDING.md 为 `8d543413f02bcf106d4a6a50b83c8dc48d858ff62037af0a96284b9d8ba41f83`。均已与运行时副本比对。
+- 首次验收使用 `a689009` 所记录的工作区版本：AGENTS.md SHA-256 为 `eae42e849ca14769ddd7b2709a63702660b75c475fd7b876b54328cdb81e75b2`；DISCORD_ONBOARDING.md 为 `8d543413f02bcf106d4a6a50b83c8dc48d858ff62037af0a96284b9d8ba41f83`。当时已与运行时副本比对；后续语气调整是另一次修订和复测。
 - 独立本地 Gateway 与本地 Foundation 后端，使用 DEV 身份记录。QA 频道允许不 @ Nori；治理写入不在模型工具许可范围，后端专用调用方也只有 ingress / identity scopes。
 - 实际发言账号为用户授权的 rein_protocol_admin。八例共用同一账号，每例使用独立频道会话。其实际 DEV 关联身份为既有 Lead 测试身份，后端判定 Active Contributor、非 Director。这不是八个独立新用户，也没有证明普通成员权限隔离或跨账号隔离。
 - 网站真实公开入口及 HF 中文课程已核实；Discord scheduled-events 读取成功为空列表，目录中没有已核实讨论帖子、活动或正式贡献任务。使用的是经来源核实的运行时目录，不是文档合成 fixture；提交的 workspace 目录仍默认 unconfigured。
@@ -150,6 +154,12 @@
 ## UC03 · 中文入门课与固定流程答疑
 
 **部分通过。** 真实免费中文外部课程及链接正确，披露每周 3–4 小时和过期认证日期；第三轮直接解释了固定流程与模型现场选工具，没有转交群聊。但首轮“写过一点 Python 就够用”漏掉目录已注明的基本 LLM 认知；第二轮一面说自定进度未注明，一面又断言自学式、无固定上课时间，且把周投入估计转换为“两周一个单元”，没有课程单元时长依据。第三轮末尾又指向未在当前目录核实的 ReAct / Tool Use 章节位置。因此不能判整例通过。
+
+补充复核：用户反馈后重新读取 [HF 官方第 0 单元](https://huggingface.co/learn/agents-course/zh-CN/unit0/introduction)，
+确认它支持自主研修／旁听和个性化学习计划，且推荐每章约一周、每周 3–4 小时。
+因此，先前把“可以自学／放慢进度”本身作为依据不足的评测过于保守；应收窄到实际回复
+前后矛盾、先修条件遗漏和章节位置未核实。日常时间安排问题不需要“我不能承诺”的免责话术。
+下方保留原始回复，后续语气复测另行记录，不把期望示例替换成实际结果。
 
 ### 成员 · 第 1 轮
 
