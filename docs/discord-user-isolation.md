@@ -71,6 +71,12 @@ can access its storage; the model and other members cannot select another scope.
    production config and contains no credentials. Never store the token in the workspace.
    Allow the selected model-provider plugin if OpenClaw requires it; configure the Foundation backend
    separately for identity tools using its existing approved channel/caller setup.
+   Before connecting, open this application in the Discord Developer Portal → Bot → Privileged
+   Gateway Intents and enable **Message Content Intent**. The adapter always requests it, including
+   with `requireMention: true`; leaving it disabled can prevent Gateway connection. If the portal
+   requires approval for the application, obtain it before starting this profile. See
+   [Discord’s privileged-intent setup and approval guidance](https://support-dev.discord.com/hc/en-us/articles/6205754771351-How-do-I-get-Privileged-Intents-for-my-bot).
+   This adapter does not request the privileged Server Members or Presence intents.
 4. Disable the bundled `discord` plugin explicitly; enable `rein-discord`, which owns the native
    `discord` channel ID. `channels.discord` contains only `enabled` in this adapter. Move guild/channel
    and optional user allowlists into the Rein plugin config; do not run both transports.
