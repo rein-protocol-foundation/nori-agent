@@ -15,6 +15,10 @@ export function inspectDiscordPrivacy(config) {
   const dmScope = config.session?.dmScope ?? 'main';
   const groupScope = config.session?.groupScope ?? 'per-group';
   const configuredRecall = config.memory?.search?.rememberAcrossConversations;
+  // This pin deliberately treats ANY binding override as a multi-user signal,
+  // including unrelated platforms. Preserve the actual native default below;
+  // report reliance on that heuristic separately from explicit disabling.
+  // vendor/openclaw/packages/memory-host-sdk/src/host/config-utils.ts
   const bindingDmOverride = (config.bindings ?? []).some(b => b.session?.dmScope !== undefined);
   const recall = configuredRecall ?? (dmScope === 'main' && !bindingDmOverride);
   const findings = [];
@@ -28,6 +32,8 @@ export function inspectDiscordPrivacy(config) {
     detail: 'Session tools, if available, are not restricted to self. Self still means the shared room when room routing is shared.' });
   if (enabled && recall) findings.push({ code: 'private_recall_default', severity: 'warning',
     detail: 'Private transcript recall defaults on in main-DM mode. This is a configured potential, not evidence it ran; default group sessions have separate recall guards.' });
+  if (enabled && configuredRecall === undefined && !recall && effectiveDmScopes.includes('main')) findings.push({ code: 'private_recall_implicit_policy', severity: 'warning',
+    detail: 'Private recall is currently off through the pinned host heuristic, but an effective Discord DM route is shared and recall is not explicitly disabled. Set memory.search.rememberAcrossConversations=false instead of relying on unrelated bindings.' });
   if (enabled && (config.agents?.list ?? []).some(a => a.memory?.search?.rememberAcrossConversations === true)) {
     findings.push({ code: 'agent_recall_override', severity: 'warning', detail: 'An agent explicitly enables private cross-conversation recall.' });
   }
@@ -35,6 +41,7 @@ export function inspectDiscordPrivacy(config) {
     groupSessionIncludesSender: false, perUserPersistentMemoryImplemented: false,
     safeguards: { filesystemWorkspaceOnly: config.tools?.fs?.workspaceOnly === true,
       sessionToolsSelfOnly: config.tools?.sessions?.visibility === 'self',
+      privateRecallExplicitlyDisabled: configuredRecall === false,
       privateRecallEnabledByConfig: recall }, findings };
 }
 

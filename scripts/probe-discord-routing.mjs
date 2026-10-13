@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { resolveAgentRoute } from '../vendor/openclaw/dist/plugin-sdk/routing.js';
 import { effectiveDiscordDmScopes, discordAccountPolicies } from './discord-dm-scopes.mjs';
+import { resolveRememberAcrossConversations } from '../vendor/openclaw/dist/plugin-sdk/memory-core-host-runtime-core.js';
+import { inspectDiscordPrivacy } from './discord-privacy.mjs';
 
 // Controlled native-router probe, not real Discord/member acceptance. Mirrors
 // buildDiscordRoutePeer: a guild peer is the channel, a DM peer is the sender.
@@ -33,6 +35,7 @@ const bindingCases = [[],[bind()],[bind({},'per-account-channel-peer')],
   [bind({accountId:'second'})],
 ];
 let bindingScopeComparisons=0;
+let nativeRecallComparisons=0;
 for (const dmScope of ['main','per-account-channel-peer']) for (const bindings of bindingCases) {
   const cfg={channels:{discord:{enabled:true,accounts:{second:{}}}},session:{dmScope},bindings};
   const native=new Set();
@@ -41,5 +44,11 @@ for (const dmScope of ['main','per-account-channel-peer']) for (const bindings o
   }
   assert.deepEqual(effectiveDiscordDmScopes(cfg).sort(),[...native].sort());
   bindingScopeComparisons++;
+  for (const rememberAcrossConversations of [undefined,false,true]) {
+    const recallCfg={...cfg,memory:{search:{rememberAcrossConversations}}};
+    assert.equal(inspectDiscordPrivacy(recallCfg).safeguards.privateRecallEnabledByConfig,
+      resolveRememberAcrossConversations(recallCfg,'main'));
+    nativeRecallComparisons++;
+  }
 }
-console.log(JSON.stringify({ probe: 'pinned upstream routing; synthetic identifiers only', results, bindingScopeComparisons }, null, 2));
+console.log(JSON.stringify({ probe: 'pinned upstream routing; synthetic identifiers only', results, bindingScopeComparisons, nativeRecallComparisons }, null, 2));

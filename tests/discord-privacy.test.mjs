@@ -71,3 +71,18 @@ test('named-account DM policies and bindings are evaluated without printing acco
   c.channels.discord.dmPolicy='disabled';c.channels.discord.accounts.second={dmPolicy:'allowlist'};
   assert.ok(codes(c).includes('dm_session_shared'));
 });
+test('unrelated bindings do not conceal the lack of an explicit recall opt-out',()=>{
+  for(const b of [binding({channel:'slack'}),{...binding(),type:'acp'},binding({guildId:'guild'}),binding({peer:{kind:'channel',id:'room'}})]) {
+    const c=isolatedDms();c.session.dmScope='main';c.bindings=[b];
+    const audit=inspectDiscordPrivacy(c);
+    assert.deepEqual(audit.effectiveDmScopes,['main']);
+    // The pinned host's any-binding heuristic really defaults recall off.
+    assert.equal(audit.safeguards.privateRecallEnabledByConfig,false);
+    assert.equal(audit.safeguards.privateRecallExplicitlyDisabled,false);
+    assert.ok(audit.findings.some(f=>f.code==='private_recall_implicit_policy'));
+    c.memory={search:{rememberAcrossConversations:false}};
+    assert.ok(!codes(c).includes('private_recall_implicit_policy'));
+    c.memory.search.rememberAcrossConversations=true;
+    assert.ok(codes(c).includes('private_recall_default'));
+  }
+});

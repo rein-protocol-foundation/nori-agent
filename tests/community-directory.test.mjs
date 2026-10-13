@@ -171,6 +171,9 @@ for (const url of [
   `https://canary.discord.com/%65vents/${GUILD}/not-an-event`,
   'https://discordapp.com/%zz',
   'https://service.local/course', 'https://service.internal/course', 'https://service/course',
+  'https://foo..bar/course', 'https://.example.dev/course', 'https://-host.validation-only.org/course',
+  'https://host-.validation-only.org/course', 'https://host_name.validation-only.org/course',
+  `https://${'a'.repeat(64)}.validation-only.org/course`, `https://${Array(128).fill('ab').join('.')}/course`,
   `https://discord.com/events/${OTHER_GUILD}/444444444444444444`,
   `https://discord.com/events/${GUILD}/not-an-event`,
   `https://discord.com/events/${GUILD}/444444444444444444/extra`,
@@ -204,6 +207,12 @@ test('public IP literals remain valid without a DNS lookup', () => {
     const directory = activeDirectory();
     directory.guilds[0].entrypoints.help.url = `https://${host}/help`;
     assert.doesNotThrow(() => validateCommunityDirectory(directory));
+  }
+});
+test('valid DNS labels, IDN punycode and a single trailing root dot remain valid',()=>{
+  for(const host of ['a.validation-only.org','course-1.validation-only.org','bücher.validation-only.org','xn--bcher-kva.validation-only.org','catalog.validation-only.org.']) {
+    const directory=activeDirectory();directory.guilds[0].entrypoints.help.url=`https://${host}/help`;
+    assert.doesNotThrow(()=>validateCommunityDirectory(directory));
   }
 });
 

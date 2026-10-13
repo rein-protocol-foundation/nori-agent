@@ -70,7 +70,9 @@ function httpsUrl(value, path, guildId, fixture) {
   const family = isIP(address);
   const type = family === 4 ? 'ipv4' : 'ipv6';
   const mapped = family === 6 && address.startsWith('::ffff:');
-  assert.ok(!mapped && (family ? GLOBAL_EXCEPTIONS.check(address,type) || !PRIVATE_NETWORKS.check(address,type) : host.includes('.')), `${path} must use a public-network hostname`);
+  const validDns = host.length <= 253 && host.includes('.') && host.split('.').every(label =>
+    /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label));
+  assert.ok(!mapped && (family ? GLOBAL_EXCEPTIONS.check(address,type) || !PRIVATE_NETWORKS.check(address,type) : validDns), `${path} must use a public-network hostname`);
   // Fail closed on any encoded Discord path component: one decode is not
   // enough for nested escapes or encoded separators and invite aliases.
   const discordHost = DISCORD_HOSTS.has(host) || host === 'discord.gg' || /(?:^|\.)discord(?:app)?\.com$/.test(host);
