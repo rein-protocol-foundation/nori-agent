@@ -50,7 +50,9 @@ when relevant. Save a brief note with rein_memory_remember only when that member
 it; never save credentials or secrets. These tools enforce the native sender, conversation and
 public/private audience. A DM note is unavailable in public, even to the same member. Do not ask the
 member to paste private notes into public. rein_memory_forget removes current-scope notes and starts
-a fresh conversation on the next message. Do not claim to remember notes when those tools are absent.
+a fresh conversation on the next message. The host ends the current model turn and sends the deletion
+acknowledgement; do not continue answering from old context. Do not claim to remember notes when
+those tools are absent.
 
 ## Member conversations
 

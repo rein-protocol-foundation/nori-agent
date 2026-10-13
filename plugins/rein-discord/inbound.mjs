@@ -1,6 +1,7 @@
 import { resolveOwner, sessionKey, PUBLIC_TOOLS, PRIVATE_TOOLS, createOwnerQueue } from './isolation.mjs';
+import { createTurnControl } from './turn-control.mjs';
 
-export function createIsolatedReceiver({ config, cfg, runtime, memory, send, signal, trace = () => {} }) {
+export function createIsolatedReceiver({ config, cfg, runtime, memory, send, signal, turns = createTurnControl(), trace = () => {} }) {
   const queue = createOwnerQueue();
   const seen = new Set();
   return async event => {
@@ -53,16 +54,19 @@ export function createIsolatedReceiver({ config, cfg, runtime, memory, send, sig
         access: { commands: { authorized: false }, mentions: { canDetectMention: true, wasMentioned: event.mentioned === true } },
       });
       trace({ phase: 'dispatch', owner: owner.key, sessionKey: key, audience: owner.audience });
-      return await runtime.inbound.dispatch({
+      const turn = turns.open(key,signal);
+      let result;
+      try { result = await runtime.inbound.dispatch({
         cfg, channel: 'discord', accountId: 'default', route: { agentId: owner.agentId, sessionKey: key, dmScope: 'per-account-channel-peer' },
         ctxPayload, messageId: event.id,
         toolsAllow: owner.audience === 'public' ? PUBLIC_TOOLS : PRIVATE_TOOLS,
         record: { onRecordError: () => { throw new Error('Isolated session recording failed'); } },
-        replyOptions: { abortSignal: signal },
+        replyOptions: { abortSignal: turn.signal },
         delivery: {
           // Deliver only finalized text to this immutable native target. Model
           // tool routes/media URLs cannot redirect or add recipients.
           deliver: async (payload, info) => {
+            if (turn.forgetOutcome) return { visibleReplySent: false };
             if (signal.aborted) throw new Error('Receiver stopped');
             if (info.kind !== 'final' || !payload.text) return { visibleReplySent: false };
             await send(owner.channelId, payload.text, event.id);
@@ -70,7 +74,15 @@ export function createIsolatedReceiver({ config, cfg, runtime, memory, send, sig
           },
           onError: () => { throw new Error('Isolated Discord delivery failed'); },
         },
-      });
+      }); } catch (error) {
+        if (!turn.forgetOutcome) throw error;
+      } finally { turn.close(); }
+      if (turn.forgetOutcome) {
+        if (!signal.aborted) await send(owner.channelId,turn.forgotten
+          ? '已删除指定记忆，并开始新对话。' : '这次未能删除记忆，请稍后重试。',event.id);
+        return { dispatched: false, handled: true, forgotten: turn.forgotten };
+      }
+      return result;
     });
   };
 }

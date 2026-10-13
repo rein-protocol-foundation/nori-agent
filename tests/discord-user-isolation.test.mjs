@@ -9,6 +9,7 @@ import { createMemoryToolFactory } from '../plugins/rein-discord/memory-tools.mj
 import { createIsolatedReceiver } from '../plugins/rein-discord/inbound.mjs';
 import { inspectDiscordPrivacy } from '../scripts/discord-privacy.mjs';
 import { DatabaseSync } from 'node:sqlite';
+import { createTurnControl } from '../plugins/rein-discord/turn-control.mjs';
 
 const ids = { guild:'100000000000000001', room:'100000000000000002', alice:'100000000000000003', bob:'100000000000000004', dm:'100000000000000005', otherRoom:'100000000000000006', otherGuild:'100000000000000007' };
 const config = path => ({ agentId:'main', botUserId:'100000000000000008', tokenEnv:'REIN_TEST_DISCORD_TOKEN', memoryPath:path, requireMention:false,
@@ -19,7 +20,7 @@ function fixture(t) {
   const c=config(join(dir,'private/member.sqlite'));
   const memory=createMemberMemory(c.memoryPath);
   t.after(()=>{memory.close();rmSync(dir,{recursive:true,force:true});});
-  return {dir,c,memory,a:resolveOwner(c,event()),b:resolveOwner(c,event(ids.bob)),privateA:resolveOwner(c,event(ids.alice,{guildId:null,channelId:ids.dm,kind:'direct'}))};
+  return {dir,c,memory,turns:createTurnControl(),a:resolveOwner(c,event()),b:resolveOwner(c,event(ids.bob)),privateA:resolveOwner(c,event(ids.alice,{guildId:null,channelId:ids.dm,kind:'direct'}))};
 }
 function context(owner,memory) {
   return {messageChannel:'discord',agentId:'main',agentAccountId:'default',nativeChannelId:owner.channelId,requesterSenderId:owner.senderId,
@@ -93,12 +94,14 @@ test('revoked invocation guards apply to reads and writes at execution time',asy
   assert.deepEqual(memory.read(a),[]);
 });
 test('forget deletes only current owner and starts clean context; reset persists',async t=>{
-  const {c,a,b,memory}=fixture(t);
+  const {c,a,b,memory,turns}=fixture(t);
   memory.remember(a,'note','a',()=>{});memory.remember(b,'note','b',()=>{});
-  const tools=createMemoryToolFactory(c,()=>memory)(context(a,memory));
+  const ctx=context(a,memory);const turn=turns.open(ctx.sessionKey,new AbortController().signal);t.after(()=>turn.close());
+  const tools=createMemoryToolFactory(c,()=>memory,turns)(ctx);
   await tools[2].execute('t',{});
   assert.deepEqual(memory.read(a),[]);assert.equal(memory.read(b)[0].value,'b');
   assert.equal(memory.generation(a),1);assert.equal(memory.generation(b),0);
+  assert.equal(turn.signal.aborted,true);
   await assert.rejects(()=>tools[0].execute('t',{}),/reset/);
   const reopened=createMemberMemory(c.memoryPath);try{assert.equal(reopened.generation(a),1);}finally{reopened.close();}
 });
@@ -127,13 +130,15 @@ test('failed generation update rolls back deletion in an existing session',t=>{
   } finally { control.close(); }
 });
 test('forget tool fails without a success result when generation advancement cannot commit',async t=>{
-  const {c,a,memory}=fixture(t);memory.remember(a,'note','CANARY',()=>{});
+  const {c,a,memory,turns}=fixture(t);memory.remember(a,'note','CANARY',()=>{});
+  const ctx=context(a,memory);const turn=turns.open(ctx.sessionKey,new AbortController().signal);t.after(()=>turn.close());
   const control=new DatabaseSync(c.memoryPath);
   try {
     control.exec("CREATE TRIGGER fail_generation BEFORE INSERT ON scopes BEGIN SELECT RAISE(ABORT,'simulated reset write failure'); END");
-    const tool=createMemoryToolFactory(c,()=>memory)(context(a,memory))[2];
+    const tool=createMemoryToolFactory(c,()=>memory,turns)(ctx)[2];
     await assert.rejects(()=>tool.execute('t',{}),/simulated reset write failure/);
     assert.equal(memory.read(a)[0].value,'CANARY');assert.equal(memory.generation(a),0);
+    assert.equal(turn.signal.aborted,true);assert.equal(turn.forgotten,false);assert.equal(turn.forgetOutcome,'failed');
   } finally { control.close(); }
 });
 test('storage refuses SQL-like names, oversized notes, excessive entries and stale writes',t=>{
@@ -198,7 +203,7 @@ function receiverFixture(t) {
   const f=fixture(t);const inputs=[];const sent=[];const controller=new AbortController();
   const runtime={inbound:{ingress:{async resolveStable(){return {ingress:{admission:'dispatch'}};}},buildContext:p=>p,
     async dispatch(p){inputs.push(p);await p.delivery.deliver({text:'safe reply'},{kind:'final'});return {dispatched:true};}}};
-  const receive=createIsolatedReceiver({config:f.c,cfg:{},runtime,memory:f.memory,signal:controller.signal,send:async(...a)=>sent.push(a)});
+  const receive=createIsolatedReceiver({config:f.c,cfg:{},runtime,memory:f.memory,turns:f.turns,signal:controller.signal,send:async(...a)=>sent.push(a)});
   return {...f,receive,inputs,sent,controller};
 }
 test('same-room two-user receive path hands distinct keys to dispatch before history/model work',async t=>{
@@ -249,4 +254,59 @@ test('delivery remains on originating channel and sends only final text',async t
     await p.delivery.deliver({text:'final',to:'attacker',mediaUrl:'file:///private'},{kind:'final'});return {dispatched:true};}}};
   const receive=createIsolatedReceiver({config:c,cfg:{},runtime,memory,signal:new AbortController().signal,send:async(...args)=>sent.push(args)});
   await receive(event());assert.deepEqual(sent,[[ids.room,'final','100000000000000010']]);
+});
+test('forgetting requires an active host turn, not only a plausible session key',async t=>{
+  const {c,a,memory,turns}=fixture(t);memory.remember(a,'note','CANARY',()=>{});
+  const tool=createMemoryToolFactory(c,()=>memory,turns)(context(a,memory))[2];
+  await assert.rejects(()=>tool.execute('t',{}),/Host-owned active turn/);
+  assert.equal(memory.read(a)[0].value,'CANARY');assert.equal(memory.generation(a),0);
+});
+test('forgetting aborts only its owner turn and retained turn capabilities become stale',async t=>{
+  const {c,a,b,memory,turns}=fixture(t);const ca=context(a,memory);const cb=context(b,memory);
+  const ta=turns.open(ca.sessionKey,new AbortController().signal);const tb=turns.open(cb.sessionKey,new AbortController().signal);
+  t.after(()=>{ta.close();tb.close();});
+  await createMemoryToolFactory(c,()=>memory,turns)(ca)[2].execute('t',{});
+  assert.equal(ta.signal.aborted,true);assert.equal(tb.signal.aborted,false);tb.assertCurrent();
+  ta.close();assert.throws(()=>ta.assertCurrent(),/no longer current/);
+  assert.equal(turns.current(cb.sessionKey),tb);
+});
+test('model-driven forget suppresses stale output and sends only host-owned acknowledgement',async t=>{
+  const {c,a,memory,turns}=fixture(t);const sent=[];let aborted;
+  memory.remember(a,'note','OLD-CANARY',()=>{});
+  const runtime={inbound:{ingress:{async resolveStable(){return {ingress:{admission:'dispatch'}};}},buildContext:p=>p,async dispatch(p){
+    const tool=createMemoryToolFactory(c,()=>memory,turns)(context(a,memory))[2];
+    await tool.execute('t',{});aborted=p.replyOptions.abortSignal.aborted;
+    assert.deepEqual(await p.delivery.deliver({text:'OLD-CANARY'},{kind:'final'}),{visibleReplySent:false});
+    return {dispatched:true};
+  }}};
+  const receive=createIsolatedReceiver({config:c,cfg:{},runtime,memory,turns,signal:new AbortController().signal,send:async(...args)=>sent.push(args)});
+  assert.equal((await receive(event())).forgotten,true);assert.equal(aborted,true);
+  assert.deepEqual(sent,[[ids.room,'已删除指定记忆，并开始新对话。','100000000000000010']]);
+  assert.deepEqual(memory.read(a),[]);assert.equal(turns.current(sessionKey(a,0)),undefined);
+});
+test('abort raised after a committed forget still produces the host acknowledgement',async t=>{
+  const {c,a,memory,turns}=fixture(t);const sent=[];
+  const runtime={inbound:{ingress:{async resolveStable(){return {ingress:{admission:'dispatch'}};}},buildContext:p=>p,async dispatch(){
+    await createMemoryToolFactory(c,()=>memory,turns)(context(a,memory))[2].execute('t',{});
+    throw new Error('agent loop aborted');
+  }}};
+  const receive=createIsolatedReceiver({config:c,cfg:{},runtime,memory,turns,signal:new AbortController().signal,send:async(...args)=>sent.push(args)});
+  assert.equal((await receive(event())).forgotten,true);assert.equal(sent.length,1);
+});
+test('failed model-driven forget suppresses old context and sends a failure acknowledgement',async t=>{
+  const {c,a,memory,turns}=fixture(t);const sent=[];memory.remember(a,'note','OLD-CANARY',()=>{});
+  const control=new DatabaseSync(c.memoryPath);
+  control.exec("CREATE TRIGGER fail_generation BEFORE INSERT ON scopes BEGIN SELECT RAISE(ABORT,'simulated reset write failure'); END");
+  const runtime={inbound:{ingress:{async resolveStable(){return {ingress:{admission:'dispatch'}};}},buildContext:p=>p,async dispatch(p){
+    await assert.rejects(()=>createMemoryToolFactory(c,()=>memory,turns)(context(a,memory))[2].execute('t',{}));
+    assert.equal(p.replyOptions.abortSignal.aborted,true);
+    assert.deepEqual(await p.delivery.deliver({text:'OLD-CANARY'},{kind:'final'}),{visibleReplySent:false});
+    return {dispatched:true};
+  }}};
+  try {
+    const receive=createIsolatedReceiver({config:c,cfg:{},runtime,memory,turns,signal:new AbortController().signal,send:async(...args)=>sent.push(args)});
+    assert.equal((await receive(event())).forgotten,false);
+    assert.deepEqual(sent,[[ids.room,'这次未能删除记忆，请稍后重试。','100000000000000010']]);
+    assert.equal(memory.read(a)[0].value,'OLD-CANARY');assert.equal(memory.generation(a),0);
+  } finally { control.close(); }
 });

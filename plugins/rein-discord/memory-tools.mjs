@@ -2,7 +2,7 @@ import { Type } from 'typebox';
 import { ownerFromToolContext, MEMORY_TOOLS } from './isolation.mjs';
 
 const result = details => ({ content: [{ type: /** @type {'text'} */ ('text'), text: JSON.stringify(details) }], details });
-export function createMemoryToolFactory(config, getMemory) {
+export function createMemoryToolFactory(config, getMemory, turns) {
   return ctx => {
     // Reject unrelated tool invocations before opening private storage.
     if (ctx.messageChannel !== 'discord' || ctx.agentId !== config.agentId ||
@@ -24,9 +24,18 @@ export function createMemoryToolFactory(config, getMemory) {
       { name: MEMORY_TOOLS[1], label: 'Remember member note', description: `Save one brief learning preference or note only when the member asks you to remember it. ${boundary} Do not store passwords, credentials or other secrets.`,
         parameters: Type.Object({ name: Type.String({ minLength: 1, maxLength: 80 }), value: Type.String({ minLength: 1, maxLength: 2000 }) }, { additionalProperties: false }),
         async execute(_id, args) { assertCurrent(); memory.remember(owner, args.name, args.value, assertCurrent); return result({ saved: true, audience: owner.audience }); } },
-      { name: MEMORY_TOOLS[2], label: 'Forget member notes', description: `Forget a named note, or all current notes when name is omitted. Starts a fresh conversation so old context cannot reintroduce forgotten notes. ${boundary}`,
+      { name: MEMORY_TOOLS[2], label: 'Forget member notes', description: `Forget a named note, or all current notes when name is omitted. Ends the current model turn immediately; the host sends a fixed acknowledgement and starts fresh context. ${boundary}`,
         parameters: Type.Object({ name: Type.Optional(Type.String({ minLength: 1, maxLength: 80 })) }, { additionalProperties: false }),
-        async execute(_id, args) { assertCurrent(); memory.forget(owner, args.name, assertCurrent); return result({ forgotten: true, freshConversationOnNextMessage: true }); } },
+        async execute(_id, args) {
+          assertCurrent();
+          const turn = turns?.current(ctx.sessionKey);
+          if (!turn) throw new Error('Host-owned active turn is required to forget memory safely');
+          turn.assertCurrent();
+          try { memory.forget(owner, args.name, () => { assertCurrent(); turn.assertCurrent(); }); }
+          catch (error) { turn.afterForgetFailure(); throw error; }
+          turn.afterForget();
+          return result({ forgotten: true, currentModelTurnEnded: true });
+        } },
     ];
   };
 }

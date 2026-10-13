@@ -1,21 +1,28 @@
 import { definePluginEntry } from 'openclaw/plugin-sdk/plugin-entry';
+import type { OpenClawPluginApi } from 'openclaw/plugin-sdk/plugin-entry';
 import { buildJsonChannelConfigSchema } from 'openclaw/plugin-sdk/channel-config-schema';
 import { validateIsolationConfig, assertIsolationRuntime, MEMORY_TOOLS } from './isolation.mjs';
 import { createMemberMemory } from './memory.mjs';
 import { createMemoryToolFactory } from './memory-tools.mjs';
+import { getHostTurnControl } from './turn-control.mjs';
 
-export default definePluginEntry({
-  id: 'rein-discord',
-  name: 'Rein Isolated Discord',
-  description: 'Dedicated onboarding ingress with per-sender, per-audience sessions and memory.',
-  register(api) {
+type DiscordTransport = typeof import('./gateway.mjs').startIsolatedDiscord;
+const defaultTransport: DiscordTransport = async params => {
+  const { startIsolatedDiscord } = await import('./gateway.mjs');
+  return await startIsolatedDiscord(params);
+};
+
+// The optional transport is code-only dependency injection for the native
+// pipeline probe, never a runtime config option or model-accessible endpoint.
+export function registerReinDiscord(api: OpenClawPluginApi, transport: DiscordTransport = defaultTransport) {
     const config = validateIsolationConfig(api.pluginConfig);
     const workspaceDir = api.config.agents?.defaults?.workspace;
     if (!workspaceDir) throw new Error('Dedicated public Discord workspace is required');
     assertIsolationRuntime(api.config, config, workspaceDir);
     let memory;
+    const turns = getHostTurnControl(config.memoryPath);
     const getMemory = () => memory ??= createMemberMemory(config.memoryPath);
-    api.registerTool({ contextVersion: 2, create: createMemoryToolFactory(config, getMemory) }, { names: MEMORY_TOOLS });
+    api.registerTool({ contextVersion: 2, create: createMemoryToolFactory(config, getMemory, turns) }, { names: MEMORY_TOOLS });
     api.registerChannel({
       id: 'discord',
       meta: { id: 'discord', label: 'Rein Isolated Discord', selectionLabel: 'Rein Isolated Discord',
@@ -31,11 +38,16 @@ export default definePluginEntry({
       gateway: {
         async startAccount(ctx) {
           if (!ctx.channelRuntime) throw new Error('Host-owned channel runtime required');
-          const { startIsolatedDiscord } = await import('./gateway.mjs');
-          return await startIsolatedDiscord({ config, cfg: ctx.cfg, runtime: ctx.channelRuntime,
-            memory: getMemory(), signal: ctx.abortSignal, status: ctx.setStatus, log: ctx.log });
+          return await transport({ config, cfg: ctx.cfg, runtime: ctx.channelRuntime,
+            memory: getMemory(), turns, signal: ctx.abortSignal, status: ctx.setStatus, log: ctx.log });
         },
       },
     });
-  },
+}
+
+export default definePluginEntry({
+  id: 'rein-discord',
+  name: 'Rein Isolated Discord',
+  description: 'Dedicated onboarding ingress with per-sender, per-audience sessions and memory.',
+  register: registerReinDiscord,
 });

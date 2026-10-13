@@ -14,12 +14,12 @@ const requests = [];
 const server = createServer(async (req,res) => {
   let body='';for await(const chunk of req) body+=chunk;
   const request=JSON.parse(body);requests.push(request);
-  const userIndex=request.messages.findLastIndex(m=>m.role==='user' && /CASE_[A-Z0-9]+/.test(JSON.stringify(m.content)));
-  const marker=JSON.stringify(request.messages[userIndex]?.content).match(/CASE_[A-Z0-9]+/)?.[0];
+  const userIndex=request.messages.findLastIndex(m=>m.role==='user' && /CASE_[A-Z0-9_]+/.test(JSON.stringify(m.content)));
+  const marker=JSON.stringify(request.messages[userIndex]?.content).match(/CASE_[A-Z0-9_]+/)?.[0];
   const toolResult=request.messages.slice(userIndex+1).some(m=>m.role==='tool');
-  const tool=marker==='CASE_A1'||marker==='CASE_DM'?'rein_memory_remember':'rein_memory_read';
+  const tool=marker==='CASE_A1'||marker==='CASE_DM'?'rein_memory_remember':marker==='CASE_TOOL_FORGET'?'rein_memory_forget':'rein_memory_read';
   const args=tool==='rein_memory_remember'?{name:'canary',value:marker==='CASE_A1'?'ALICE_PUBLIC_MEMORY_6382':'ALICE_PRIVATE_MEMORY_9921'}:{};
-  const delta=toolResult ? {role:'assistant',content:'OK'} : {role:'assistant',tool_calls:[{index:0,id:`call_${marker}`,type:'function',function:{name:'tool_call',arguments:JSON.stringify({id:tool,args})}}]};
+  const delta=toolResult ? {role:'assistant',content:marker==='CASE_TOOL_FORGET'?'STALE_FORGOTTEN_OUTPUT_CANARY':'OK'} : {role:'assistant',tool_calls:[{index:0,id:`call_${marker}`,type:'function',function:{name:'tool_call',arguments:JSON.stringify({id:tool,args})}}]};
   res.writeHead(200, {'content-type':'text/event-stream'});
   const completion={id:'privacy-probe',object:'chat.completion.chunk',created:1,model:'canary',choices:[{index:0,delta,finish_reason:null}]};
   res.write(`data: ${JSON.stringify(completion)}\n\n`);
@@ -62,29 +62,32 @@ try {
   const evidence=JSON.parse(readFileSync(evidencePath));
   assert.ok(!evidence.error,evidence.error);
   assert.equal(evidence.privateMemorySaved,true,'DM tool must really persist a private note before testing its exclusion from public requests');
-  assert.equal(requests.length,14,`Expected fourteen real provider requests, including memory tool round trips; gateway output:\n${output.slice(-10000)}`);
+  assert.equal(requests.length,17,`Expected seventeen real provider requests; forget must not continue the old model loop:\n${output.slice(-10000)}`);
   const requestsFor=marker=>requests.filter(r=>{
-    const user=r.messages.findLast(m=>m.role==='user' && /CASE_[A-Z0-9]+/.test(JSON.stringify(m.content)));
-    return JSON.stringify(user?.content).includes(marker);
+    const user=r.messages.findLast(m=>m.role==='user' && /CASE_[A-Z0-9_]+/.test(JSON.stringify(m.content)));
+    return JSON.stringify(user?.content).match(/CASE_[A-Z0-9_]+/)?.[0]===marker;
   });
   const inputFor=marker=>{
     const request=requestsFor(marker)[0];
     assert.ok(request,`Missing provider request for ${marker}`);return JSON.stringify(request.messages);
   };
   assert.ok(inputFor('CASE_A2').includes('ALICE_PUBLIC_CANARY_7406'),'same-user public context must persist');
-  for(const marker of ['CASE_B1','CASE_B2','CASE_A3','CASE_A4'])assert.ok(!inputFor(marker).includes('ALICE_PUBLIC_CANARY_7406'),`${marker} received Alice context`);
-  for(const marker of ['CASE_A1','CASE_A2','CASE_B1','CASE_B2','CASE_A3','CASE_A4']) {
+  for(const marker of ['CASE_B1','CASE_B2','CASE_A3','CASE_AFTER_TOOL_FORGET','CASE_A4'])assert.ok(!inputFor(marker).includes('ALICE_PUBLIC_CANARY_7406'),`${marker} received Alice context`);
+  for(const marker of ['CASE_A1','CASE_A2','CASE_B1','CASE_B2','CASE_A3','CASE_TOOL_FORGET','CASE_AFTER_TOOL_FORGET','CASE_A4']) {
     assert.ok(!JSON.stringify(requestsFor(marker)).includes('ALICE_PRIVATE_CANARY_3281'),`${marker} received DM context`);
     assert.ok(!JSON.stringify(requestsFor(marker)).includes('ALICE_PRIVATE_MEMORY_9921'),`${marker} received private memory`);
   }
-  for(const marker of ['CASE_B1','CASE_B2','CASE_A4'])assert.ok(!JSON.stringify(requestsFor(marker)).includes('ALICE_PUBLIC_MEMORY_6382'),`${marker} received another scope's or forgotten memory`);
+  for(const marker of ['CASE_B1','CASE_B2','CASE_AFTER_TOOL_FORGET','CASE_A4'])assert.ok(!JSON.stringify(requestsFor(marker)).includes('ALICE_PUBLIC_MEMORY_6382'),`${marker} received another scope's or forgotten memory`);
+  assert.equal(requestsFor('CASE_TOOL_FORGET').length,1,'forget must abort before a post-tool model request');
+  assert.deepEqual(evidence.sent.filter(entry=>entry[2]==='100000000000000017').map(entry=>entry[1]),['已删除指定记忆，并开始新对话。']);
+  assert.ok(!JSON.stringify(evidence.sent).includes('STALE_FORGOTTEN_OUTPUT_CANARY'));
   assert.ok(JSON.stringify(requestsFor('CASE_A2').at(-1).messages).includes('ALICE_PUBLIC_MEMORY_6382'),'own public memory must be usable');
   assert.ok(JSON.stringify(requestsFor('CASE_A3').at(-1).messages).includes('ALICE_PUBLIC_MEMORY_6382'),'own memory must survive session reset');
   assert.ok(!inputFor('CASE_DM').includes('ALICE_PUBLIC_CANARY_7406'),'DM must also be separate from public context');
   assert.notEqual(evidence.trace[0].sessionKey,evidence.trace[1].sessionKey);
   assert.equal(evidence.trace[0].sessionKey,evidence.trace[3].sessionKey);
   assert.notEqual(evidence.trace[0].sessionKey,evidence.trace[5].sessionKey);
-  console.log('Native Gateway/provider probe passed: two synthetic users, one room, separate DM, fourteen model requests with real memory tool execution, same-user continuity, reset and forget. No real Discord accounts or backend calls.');
+  console.log('Native Gateway/provider probe passed: two synthetic users, separate DM, seventeen model requests with real memory tools; forget aborts before model continuation and sends only a host acknowledgement. No real Discord accounts or backend calls.');
 } catch(error) {
   if(process.env.REIN_ISOLATION_KEEP_EVIDENCE==='1') {
     writeFileSync(join(temp,'gateway.log'),output);writeFileSync(join(temp,'requests.json'),JSON.stringify(requests,null,2));console.error(`Synthetic probe evidence retained at ${temp}`);

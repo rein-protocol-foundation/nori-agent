@@ -44,7 +44,11 @@ can access its storage; the model and other members cannot select another scope.
 - `/forget`: deletes this scope's notes and starts a fresh session. Other users and this member's other
   conversations are unaffected. The forget tool can also remove one named note. Deletion and session
   generation advancement commit in one SQLite transaction; a failed write rolls both back and neither
-  the command nor the tool reports success.
+  the command nor the tool reports success. For model-driven deletion, the host immediately aborts
+  the current model turn and suppresses any old-context output. It sends only a fixed success
+  acknowledgement, or a failure acknowledgement if the transaction rolls back. The next successful
+  post-deletion turn uses the new session generation. Host cancellation state is shared across
+  plugin registration graphs so Tool Search and ingress control the same active turn.
 - Historical host transcripts and messages already sent to Discord are not erased by these commands.
   They are never imported into the new session; shared transcript recall is disabled.
 - Each scope permits at most 50 notes of 2,000 characters. The directory must be private (0700), the
@@ -101,7 +105,7 @@ a test-only transport wrapper, executes the host-owned ingress and session/model
 requests to a deterministic localhost OpenAI-compatible test provider. Real memory tool calls run
 through OpenClaw's Tool Search dispatcher. It checks actual provider inputs, not a model's verbal
 claim that it forgot something. Two synthetic senders, one room, a separate DM, reset and forget are
-covered. No real Discord connection or Foundation backend call is made by this probe.
+covered, including a model-driven forget with no subsequent model request or stale reply. No real Discord connection or Foundation backend call is made by this probe.
 
 The config auditor recognizes a guarded Rein profile but retains `adapter_runtime_unverified`:
 configuration inspection cannot establish that a transport loaded or two real accounts passed.
