@@ -15,10 +15,11 @@ export function createIsolatedReceiver({ config, cfg, runtime, memory, send, sig
       if (signal.aborted) return { dispatched: false };
       const command = event.text.trim();
       if (['/new', '/reset', '/forget'].includes(command)) {
-        if (command === '/forget') memory.forget(owner, undefined, () => {
-          if (signal.aborted) throw new Error('Receiver stopped');
-        });
-        memory.reset(owner);
+        if (command === '/forget') {
+          memory.forget(owner, undefined, () => {
+            if (signal.aborted) throw new Error('Receiver stopped');
+          });
+        } else memory.reset(owner);
         await send(owner.channelId, command === '/forget' ? '已删除你在这段对话中的记忆，并开始新对话。' : '已为你开始新对话。保存的记忆仍保留。', event.id);
         return { dispatched: false, handled: true };
       }

@@ -25,6 +25,7 @@ export function createMemberMemory(path) {
     return name;
   };
   const generation = owner => db.prepare('SELECT generation FROM scopes WHERE owner=?').get(ownerKey(owner))?.generation ?? 0;
+  const advanceGeneration = key => db.prepare('INSERT INTO scopes(owner,generation) VALUES(?,1) ON CONFLICT(owner) DO UPDATE SET generation=generation+1').run(key);
   return {
     generation,
     read(owner) { return db.prepare('SELECT name,value FROM memories WHERE owner=? ORDER BY name').all(ownerKey(owner)); },
@@ -42,12 +43,26 @@ export function createMemberMemory(path) {
     forget(owner, name, assertCurrent) {
       if (typeof assertCurrent !== 'function') throw new Error('Current invocation required');
       if (name !== undefined) validName(name);
-      assertCurrent();
-      if (name === undefined) db.prepare('DELETE FROM memories WHERE owner=?').run(ownerKey(owner));
-      else db.prepare('DELETE FROM memories WHERE owner=? AND name=?').run(ownerKey(owner), name);
+      const key = ownerKey(owner);
+      // A delete must never commit without its clean-session generation.
+      // IMMEDIATE also prevents another writer changing the scope after the
+      // live invocation/generation guard and before these synchronous effects.
+      db.exec('BEGIN IMMEDIATE');
+      try {
+        assertCurrent();
+        if (name === undefined) db.prepare('DELETE FROM memories WHERE owner=?').run(key);
+        else db.prepare('DELETE FROM memories WHERE owner=? AND name=?').run(key, name);
+        advanceGeneration(key);
+        db.exec('COMMIT');
+      } catch (error) {
+        // SQLite may already have rolled back on an I/O error. Preserve the
+        // original failure in that case; neither caller may report success.
+        try { db.exec('ROLLBACK'); } catch { /* Transaction already ended. */ }
+        throw error;
+      }
     },
     reset(owner) {
-      db.prepare('INSERT INTO scopes(owner,generation) VALUES(?,1) ON CONFLICT(owner) DO UPDATE SET generation=generation+1').run(ownerKey(owner));
+      advanceGeneration(ownerKey(owner));
       return generation(owner);
     },
     close() { db.close(); },

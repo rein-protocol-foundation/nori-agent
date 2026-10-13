@@ -8,6 +8,7 @@ import { createMemberMemory } from '../plugins/rein-discord/memory.mjs';
 import { createMemoryToolFactory } from '../plugins/rein-discord/memory-tools.mjs';
 import { createIsolatedReceiver } from '../plugins/rein-discord/inbound.mjs';
 import { inspectDiscordPrivacy } from '../scripts/discord-privacy.mjs';
+import { DatabaseSync } from 'node:sqlite';
 
 const ids = { guild:'100000000000000001', room:'100000000000000002', alice:'100000000000000003', bob:'100000000000000004', dm:'100000000000000005', otherRoom:'100000000000000006', otherGuild:'100000000000000007' };
 const config = path => ({ agentId:'main', botUserId:'100000000000000008', tokenEnv:'REIN_TEST_DISCORD_TOKEN', memoryPath:path, requireMention:false,
@@ -101,6 +102,40 @@ test('forget deletes only current owner and starts clean context; reset persists
   await assert.rejects(()=>tools[0].execute('t',{}),/reset/);
   const reopened=createMemberMemory(c.memoryPath);try{assert.equal(reopened.generation(a),1);}finally{reopened.close();}
 });
+for(const name of [undefined,'note']) test(`failed generation insert rolls back ${name ? 'named' : 'all'} note deletion`,t=>{
+  const {c,a,b,memory}=fixture(t);
+  memory.remember(a,'note','ALICE-CANARY',()=>{});memory.remember(b,'note','BOB-CANARY',()=>{});
+  const control=new DatabaseSync(c.memoryPath);
+  try {
+    control.exec("CREATE TRIGGER fail_generation BEFORE INSERT ON scopes BEGIN SELECT RAISE(ABORT,'simulated reset write failure'); END");
+    assert.throws(()=>memory.forget(a,name,()=>{}),/simulated reset write failure/);
+    assert.equal(memory.read(a)[0].value,'ALICE-CANARY');assert.equal(memory.generation(a),0);
+    assert.equal(memory.read(b)[0].value,'BOB-CANARY');
+    const reopened=createMemberMemory(c.memoryPath);
+    try { assert.equal(reopened.read(a)[0].value,'ALICE-CANARY');assert.equal(reopened.generation(a),0); } finally { reopened.close(); }
+    control.exec('DROP TRIGGER fail_generation');
+    memory.forget(a,name,()=>{});assert.deepEqual(memory.read(a),[]);assert.equal(memory.generation(a),1);
+  } finally { control.close(); }
+});
+test('failed generation update rolls back deletion in an existing session',t=>{
+  const {c,a,memory}=fixture(t);memory.remember(a,'note','CANARY',()=>{});memory.reset(a);
+  const control=new DatabaseSync(c.memoryPath);
+  try {
+    control.exec("CREATE TRIGGER fail_generation BEFORE UPDATE ON scopes BEGIN SELECT RAISE(ABORT,'simulated reset write failure'); END");
+    assert.throws(()=>memory.forget(a,undefined,()=>{}),/simulated reset write failure/);
+    assert.equal(memory.read(a)[0].value,'CANARY');assert.equal(memory.generation(a),1);
+  } finally { control.close(); }
+});
+test('forget tool fails without a success result when generation advancement cannot commit',async t=>{
+  const {c,a,memory}=fixture(t);memory.remember(a,'note','CANARY',()=>{});
+  const control=new DatabaseSync(c.memoryPath);
+  try {
+    control.exec("CREATE TRIGGER fail_generation BEFORE INSERT ON scopes BEGIN SELECT RAISE(ABORT,'simulated reset write failure'); END");
+    const tool=createMemoryToolFactory(c,()=>memory)(context(a,memory))[2];
+    await assert.rejects(()=>tool.execute('t',{}),/simulated reset write failure/);
+    assert.equal(memory.read(a)[0].value,'CANARY');assert.equal(memory.generation(a),0);
+  } finally { control.close(); }
+});
 test('storage refuses SQL-like names, oversized notes, excessive entries and stale writes',t=>{
   const {a,memory}=fixture(t);
   assert.throws(()=>memory.remember(a,"x' OR 1=1",'x',()=>{}));
@@ -187,6 +222,19 @@ test('deduplication, per-user reset and forget cannot reset another sender',asyn
   await receive(event(ids.alice,{id:'100000000000000013'}));assert.equal(inputs[1].route.sessionKey,sessionKey(a,1));
   memory.remember(a,'n','a',()=>{});memory.remember(b,'n','b',()=>{});
   await receive(event(ids.alice,{id:'100000000000000014',text:'/forget'}));assert.deepEqual(memory.read(a),[]);assert.equal(memory.read(b)[0].value,'b');
+  assert.equal(memory.generation(a),2);
+});
+test('/forget command does not confirm deletion when the transaction rolls back',async t=>{
+  const {c,a,memory,receive,sent}=receiverFixture(t);memory.remember(a,'note','CANARY',()=>{});
+  const control=new DatabaseSync(c.memoryPath);
+  try {
+    control.exec("CREATE TRIGGER fail_generation BEFORE INSERT ON scopes BEGIN SELECT RAISE(ABORT,'simulated reset write failure'); END");
+    await assert.rejects(()=>receive(event(ids.alice,{text:'/forget'})),/simulated reset write failure/);
+    assert.deepEqual(sent,[]);assert.equal(memory.read(a)[0].value,'CANARY');assert.equal(memory.generation(a),0);
+    control.exec('DROP TRIGGER fail_generation');
+    await receive(event(ids.alice,{id:'100000000000000019',text:'/forget'}));
+    assert.equal(sent.length,1);assert.deepEqual(memory.read(a),[]);assert.equal(memory.generation(a),1);
+  } finally { control.close(); }
 });
 test('aborted, unauthorized and unmentioned inputs never reach model dispatch',async t=>{
   const {receive,inputs,controller,c,memory}=receiverFixture(t);

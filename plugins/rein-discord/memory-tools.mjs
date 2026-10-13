@@ -26,7 +26,7 @@ export function createMemoryToolFactory(config, getMemory) {
         async execute(_id, args) { assertCurrent(); memory.remember(owner, args.name, args.value, assertCurrent); return result({ saved: true, audience: owner.audience }); } },
       { name: MEMORY_TOOLS[2], label: 'Forget member notes', description: `Forget a named note, or all current notes when name is omitted. Starts a fresh conversation so old context cannot reintroduce forgotten notes. ${boundary}`,
         parameters: Type.Object({ name: Type.Optional(Type.String({ minLength: 1, maxLength: 80 })) }, { additionalProperties: false }),
-        async execute(_id, args) { assertCurrent(); memory.forget(owner, args.name, assertCurrent); memory.reset(owner); return result({ forgotten: true, freshConversationOnNextMessage: true }); } },
+        async execute(_id, args) { assertCurrent(); memory.forget(owner, args.name, assertCurrent); return result({ forgotten: true, freshConversationOnNextMessage: true }); } },
     ];
   };
 }

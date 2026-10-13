@@ -42,7 +42,9 @@ can access its storage; the model and other members cannot select another scope.
 
 - `/reset` or `/new`: starts a clean session for this sender in this conversation; saved notes remain.
 - `/forget`: deletes this scope's notes and starts a fresh session. Other users and this member's other
-  conversations are unaffected. The forget tool can also remove one named note.
+  conversations are unaffected. The forget tool can also remove one named note. Deletion and session
+  generation advancement commit in one SQLite transaction; a failed write rolls both back and neither
+  the command nor the tool reports success.
 - Historical host transcripts and messages already sent to Discord are not erased by these commands.
   They are never imported into the new session; shared transcript recall is disabled.
 - Each scope permits at most 50 notes of 2,000 characters. The directory must be private (0700), the
