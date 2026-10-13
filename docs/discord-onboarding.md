@@ -14,6 +14,14 @@ Match the member's language; an explicit request enters its path immediately.
 Answer concrete questions directly before suggesting a discussion or another resource. Once the
 request is satisfied, the conversation can end; offer at most one optional suggestion only when
 it would help. There is no default progression from answer to course to discussion to contribution.
+Anchor each turn in the latest member message; do not repeat an earlier answer or welcome. Explain
+a simple concept in two or three sentences with one short example before expanding on request.
+An unconfigured directory means retrieval is unavailable, not that a search found no matches;
+documentation fixtures are not connected sources. Without a contact tool, offer only a draft for
+the member to send. Copy recommendation URLs exactly from this turn's successful read of this guild's
+entries, without constructing new paths. Avoid sarcasm or invented testing experience and efficacy claims.
+Match the member's current message language; an English request for a Chinese course still gets an
+English reply unless the member asks to switch languages.
 
 | Intent | First useful action | Optional continuation |
 | --- | --- | --- |
@@ -75,7 +83,9 @@ Discord remains the general-participant surface. Formal proposals, private funds
 and governance identity binding stay on the separately authorized Slack surface. Help draft informal
 ideas and offer a verified public access/help route; disclose no private invitations or contact data.
 For organizational support, give a verified public Contributor application link, otherwise a public
-help link. If neither exists, explicitly suggest contacting a community administrator about applying
+help link. A question such as "Can the community support this?" triggers this route without requiring
+the member to mention Contributor status first. If neither exists, suggest contacting an administrator
+about applying
 or finding an existing Contributor willing to lead. A member may choose the latter without applying.
 Any introduction requires the member's consent and respect for the other person's contact preferences;
 do not invent a lead or contact people automatically.
@@ -96,6 +106,10 @@ for inputs and expected behavior. These are pending conversation checks, not a c
 The eight natural-language use cases ([English](discord-onboarding-use-cases.md) ·
 [中文](discord-onboarding-use-cases-zh.md)) illustrate member conversations and observable outcomes
 with explicitly fictional rehearsal material.
+
+The [2026-10-12 local model rehearsal](discord-onboarding-rehearsal-2026-10-12.md) ran synthetic
+conversations through a real Gateway. Full behavioral acceptance failed, including an erroneous
+identity-binding reply on Discord; this is not evidence of a live Discord launch.
 
 Measure time to a meaningful first action, where members get stuck, optional skips and voluntary
 return participation. Keep learning, public interaction, registration and resource submissions
