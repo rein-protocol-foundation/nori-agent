@@ -75,7 +75,7 @@ Discord onboarding guidance now ships in the workspace: optional introductions a
 course discovery, public in-person events and resource contributions. Its public directory starts
 unconfigured. A separate operator-configured local run tested real Discord conversations and a DEV
 community identity link with thinking enabled: eight cases, all accepted after owner review, with wording improvements and coverage limits retained.
-The [actual transcripts and limitations](docs/discord-onboarding-live-acceptance-2026-10-13.md)
+The [redacted acceptance summary and limitations](docs/discord-onboarding-live-acceptance-2026-10-13.md)
 do not establish production readiness. These workspace files do not enable integrations by themselves.
 See the [flow and acceptance guide](docs/discord-onboarding.md).
 

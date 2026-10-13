@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { discordAccountPolicies, effectiveDiscordDmScopes } from './discord-dm-scopes.mjs';
 
 // Audit the pinned runtime's configuration; this is not a security certification.
 // In this pin groupScope supports only per-group/main. dmScope never adds a
@@ -8,8 +9,9 @@ import { fileURLToPath } from 'node:url';
 export function inspectDiscordPrivacy(config) {
   const discord = config.channels?.discord;
   const enabled = Boolean(discord) && discord.enabled !== false;
-  const dmEnabled = enabled && discord.dmPolicy !== 'disabled' && discord.dm?.enabled !== false;
-  const roomsEnabled = enabled && discord.groupPolicy !== 'disabled';
+  const effectiveDmScopes = enabled ? effectiveDiscordDmScopes(config) : [];
+  const dmEnabled = enabled && effectiveDmScopes.length > 0;
+  const roomsEnabled = enabled && discordAccountPolicies(discord).some(([,policy]) => policy.groupPolicy !== 'disabled');
   const dmScope = config.session?.dmScope ?? 'main';
   const groupScope = config.session?.groupScope ?? 'per-group';
   const configuredRecall = config.memory?.search?.rememberAcrossConversations;
@@ -18,8 +20,8 @@ export function inspectDiscordPrivacy(config) {
   const findings = [];
   if (roomsEnabled) findings.push({ code: 'guild_session_shared', severity: 'critical',
     detail: 'Guild conversations use a channel/group key without sender ID. Per-user public-channel sessions are not implemented by dmScope.' });
-  if (dmEnabled && dmScope === 'main') findings.push({ code: 'dm_session_shared', severity: 'critical',
-    detail: 'Enabled DMs use the common agent main session.' });
+  if (dmEnabled && effectiveDmScopes.includes('main')) findings.push({ code: 'dm_session_shared', severity: 'critical',
+    detail: 'An enabled Discord DM route uses a shared main session after applying matching binding overrides and precedence.' });
   if (enabled && config.tools?.fs?.workspaceOnly !== true) findings.push({ code: 'filesystem_unconfined', severity: 'warning',
     detail: 'Filesystem confinement is not explicitly enabled; an available read tool can reach files outside the shared workspace.' });
   if (enabled && config.tools?.sessions?.visibility !== 'self') findings.push({ code: 'session_tool_scope', severity: 'warning',
@@ -29,7 +31,7 @@ export function inspectDiscordPrivacy(config) {
   if (enabled && (config.agents?.list ?? []).some(a => a.memory?.search?.rememberAcrossConversations === true)) {
     findings.push({ code: 'agent_recall_override', severity: 'warning', detail: 'An agent explicitly enables private cross-conversation recall.' });
   }
-  return { enabled, dmEnabled, roomsEnabled, dmScope, groupScope,
+  return { enabled, dmEnabled, roomsEnabled, dmScope, effectiveDmScopes, groupScope,
     groupSessionIncludesSender: false, perUserPersistentMemoryImplemented: false,
     safeguards: { filesystemWorkspaceOnly: config.tools?.fs?.workspaceOnly === true,
       sessionToolsSelfOnly: config.tools?.sessions?.visibility === 'self',

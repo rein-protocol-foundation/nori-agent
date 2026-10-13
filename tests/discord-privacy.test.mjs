@@ -36,3 +36,38 @@ test('audit output contains no secrets, message text or configured member identi
   const c={channels:{discord:{token:secret,guilds:{[secret]:{users:[secret]}}}},gateway:{auth:{token:secret}}};
   assert.ok(!JSON.stringify(inspectDiscordPrivacy(c)).includes(secret));
 });
+
+const isolatedDms = () => ({channels:{discord:{enabled:true,groupPolicy:'disabled'}},session:{dmScope:'per-account-channel-peer'}});
+const binding = (match={},dmScope='main') => ({agentId:'main',match:{channel:'discord',...match},session:{dmScope}});
+test('binding override to main is critical even when the global DM scope is isolated',()=>{
+  const c={...isolatedDms(),bindings:[binding()]};
+  assert.ok(codes(c).includes('dm_session_shared'));
+  assert.deepEqual(inspectDiscordPrivacy(c).effectiveDmScopes,['main']);
+});
+test('specific and wildcard direct-peer overrides are included',()=>{
+  for(const id of ['audit-sender','*'])assert.ok(codes({...isolatedDms(),bindings:[binding({peer:{kind:'direct',id}})]}).includes('dm_session_shared'));
+});
+test('non-Discord, group-only, guild, team, role and ACP bindings cannot override Discord DMs',()=>{
+  for(const b of [binding({channel:'slack'}),binding({peer:{kind:'channel',id:'room'}}),binding({guildId:'guild'}),binding({teamId:'team'}),binding({roles:['role']}),{...binding(),type:'acp'}])
+    assert.ok(!codes({...isolatedDms(),bindings:[b]}).includes('dm_session_shared'));
+});
+test('binding specificity and source order exclude shadowed main overrides',()=>{
+  const peer={kind:'direct',id:'*'};
+  for(const bindings of [
+    [binding(),binding({peer},'per-account-channel-peer')],
+    [binding({peer},'per-account-channel-peer'),binding({peer})],
+  ])assert.ok(!codes({...isolatedDms(),bindings}).includes('dm_session_shared'));
+  assert.ok(codes({...isolatedDms(),bindings:[binding({peer}),binding({peer},'per-account-channel-peer')]}).includes('dm_session_shared'));
+});
+test('channel-wide isolated binding overrides a shared global DM scope',()=>{
+  const c=isolatedDms();c.session.dmScope='main';c.bindings=[binding({accountId:'*'},'per-account-channel-peer')];
+  assert.ok(!codes(c).includes('dm_session_shared'));
+});
+test('named-account DM policies and bindings are evaluated without printing account IDs',()=>{
+  const c=isolatedDms();c.channels.discord.accounts={second:{}};c.bindings=[binding({accountId:'second'})];
+  assert.ok(codes(c).includes('dm_session_shared'));
+  assert.ok(!JSON.stringify(inspectDiscordPrivacy(c)).includes('second'));
+  c.channels.discord.accounts.second.enabled=false;assert.ok(!codes(c).includes('dm_session_shared'));
+  c.channels.discord.dmPolicy='disabled';c.channels.discord.accounts.second={dmPolicy:'allowlist'};
+  assert.ok(codes(c).includes('dm_session_shared'));
+});

@@ -1,13 +1,20 @@
 import assert from 'node:assert/strict';
 import { BlockList, isIP } from 'node:net';
 
+// IANA special-purpose registries (2025-10-09 snapshots): non-global,
+// deprecated and documentation prefixes are unsuitable public web destinations.
+// https://www.iana.org/assignments/iana-ipv4-special-registry/
+// https://www.iana.org/assignments/iana-ipv6-special-registry/
 const PRIVATE_NETWORKS = new BlockList();
-for (const [address, prefix] of [['0.0.0.0', 8], ['10.0.0.0', 8], ['100.64.0.0', 10], ['127.0.0.0', 8], ['169.254.0.0', 16], ['172.16.0.0', 12], ['192.168.0.0', 16], ['224.0.0.0', 4], ['240.0.0.0', 4]]) {
+for (const [address, prefix] of [['0.0.0.0', 8], ['10.0.0.0', 8], ['100.64.0.0', 10], ['127.0.0.0', 8], ['169.254.0.0', 16], ['172.16.0.0', 12], ['192.0.0.0', 24], ['192.0.2.0', 24], ['192.88.99.0', 24], ['192.168.0.0', 16], ['198.18.0.0', 15], ['198.51.100.0', 24], ['203.0.113.0', 24], ['224.0.0.0', 4], ['240.0.0.0', 4]]) {
   PRIVATE_NETWORKS.addSubnet(address, prefix, 'ipv4');
 }
-for (const [address, prefix] of [['::', 128], ['::1', 128], ['fc00::', 7], ['fe80::', 10], ['ff00::', 8]]) {
+for (const [address, prefix] of [['::', 96], ['64:ff9b:1::', 48], ['100::', 64], ['100:0:0:1::', 64], ['2001::', 23], ['2001:db8::', 32], ['2002::', 16], ['3fff::', 20], ['5f00::', 16], ['fc00::', 7], ['fe80::', 10], ['fec0::', 10], ['ff00::', 8]]) {
   PRIVATE_NETWORKS.addSubnet(address, prefix, 'ipv6');
 }
+const GLOBAL_EXCEPTIONS = new BlockList();
+for (const address of ['192.0.0.9', '192.0.0.10']) GLOBAL_EXCEPTIONS.addAddress(address, 'ipv4');
+for (const [address,prefix] of [['2001:1::1',128],['2001:1::2',128],['2001:1::3',128],['2001:3::',32],['2001:4:112::',48],['2001:20::',28],['2001:30::',28]]) GLOBAL_EXCEPTIONS.addSubnet(address,prefix,'ipv6');
 
 const ENTRYPOINTS = ['introductions', 'discussion', 'courses', 'events', 'contributions', 'help', 'contributorApplication'];
 const COMMON = ['title', 'url', 'sourceUrl', 'topics', 'audience', 'status', 'verifiedAt'];
@@ -61,7 +68,13 @@ function httpsUrl(value, path, guildId, fixture) {
   assert.ok(!reserved.some(domain => host === domain || host.endsWith(`.${domain}`)), `${path} must not use an example or local hostname`);
   const address = host.replace(/^\[|\]$/g, '');
   const family = isIP(address);
-  assert.ok(family ? !PRIVATE_NETWORKS.check(address, family === 4 ? 'ipv4' : 'ipv6') : host.includes('.'), `${path} must use a public-network hostname`);
+  const type = family === 4 ? 'ipv4' : 'ipv6';
+  const mapped = family === 6 && address.startsWith('::ffff:');
+  assert.ok(!mapped && (family ? GLOBAL_EXCEPTIONS.check(address,type) || !PRIVATE_NETWORKS.check(address,type) : host.includes('.')), `${path} must use a public-network hostname`);
+  // Fail closed on any encoded Discord path component: one decode is not
+  // enough for nested escapes or encoded separators and invite aliases.
+  const discordHost = DISCORD_HOSTS.has(host) || host === 'discord.gg' || /(?:^|\.)discord(?:app)?\.com$/.test(host);
+  if (discordHost) assert.ok(!url.pathname.includes('%'), `${path} must not use encoded Discord path components`);
   if (DISCORD_HOSTS.has(host) && /^\/channels(?:\/|$)/.test(url.pathname)) {
     const [, , server, channel, message, ...rest] = url.pathname.replace(/\/$/, '').split('/');
     assert.equal(server, guildId, `${path} Discord channel must belong to the same guild`);

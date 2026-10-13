@@ -123,15 +123,14 @@ evidence of repeated binding for an already linked account; retest with the actu
 
 The [2026-10-13 real Discord acceptance](discord-onboarding-live-acceptance-2026-10-13.md)
 used one owner-authorized existing Discord account with a real DEV community link, thinking enabled,
-and eight separate QA channels: four Chinese and four English cases, with all 42 original messages
-and per-case evaluations. All eight cases are accepted after owner review. Course wording and
+and eight separate QA channels: four Chinese and four English cases, with a redacted summary of all 42 messages and per-case evaluations. All eight cases are accepted after owner review. Course wording and
 notification phrasing remain improvement notes. New-account phone verification, ordinary-member
 permissions, production deployment and successful event registration are not covered; the report
 also records a cross-platform link conflict and manual DEV email callback routing.
 
-The [tone and cleanup follow-up](discord-onboarding-tone-followup-2026-10-13.md) records shorter
-Chinese and English replies, including intermediate failures, using one reused QA channel. All eight
-temporary QA channels and their category have since been archived and removed; use the saved transcripts.
+The [tone and cleanup summary](discord-onboarding-tone-followup-2026-10-13.md) reports aggregate
+observations on shorter replies and intermediate failures, using one reused QA channel. All eight
+temporary QA channels and their category have since been archived and removed; raw evidence is held only in restricted local storage.
 
 The [resource and privacy audit](discord-session-privacy-audit-2026-10-13.md) confirms that the course
 was supplied by the operator's public directory, not discovered from the resource database or proven
@@ -147,10 +146,12 @@ repository in authorized storage.
 
 For operator acceptance, reuse one authorized QA channel instead of creating a permanent channel
 per case. Use the Gateway's supported session reset when independent contexts are needed; this
-resets model conversation context, not the backend identity link. Archive transcripts before
+resets model conversation context, not the backend identity link. Archive raw transcripts in restricted,
+gitignored local storage before
 cleaning up temporary channels, verify that no other members' conversations are included, and
 remove stale channel IDs from the local allowlist. After cleanup, archived message URLs are historical
-locators and may no longer open; the saved transcripts remain the review evidence.
+locators and may no longer open. Commit redacted aggregate summaries or clearly synthetic examples;
+keep account/role state, native IDs, message links, exact message times and raw turns outside Git.
 
 Conversation guidance and the public directory format ship as workspace content. Discord transport,
 search providers, registration, submission, reminders, persistent progress and analytics are not

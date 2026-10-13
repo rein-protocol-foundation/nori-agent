@@ -61,7 +61,7 @@ Agent 从不依据资料邮箱解析身份。此前的合成演练确实经由**
 Discord 入群引导已纳入工作区模板，覆盖可选介绍与同伴互动、课程检索、公开线下活动和资源贡献。
 公开目录初始未配置；另有操作者配置的本地运行，通过真实 Discord 与 DEV 社区身份 link，
 启用 thinking 后执行八个用例，负责人复核后八例整体通过（措辞改进项和未覆盖范围保留）。
-[完整原始对话与限制](docs/discord-onboarding-live-acceptance-2026-10-13.md)不代表生产可用，
+[脱敏验收汇总与限制](docs/discord-onboarding-live-acceptance-2026-10-13.md)不代表生产可用，
 工作区文件本身也不会启用集成。详见
 [流程与验收说明](docs/discord-onboarding-zh.md)。
 

@@ -156,6 +156,20 @@ for (const url of [
   'https://172.16.0.1/course', 'https://192.168.1.1/course', 'https://169.254.1.1/course',
   'https://100.64.0.1/course', 'https://0.0.0.0/course', 'https://[fc00::1]/course',
   'https://[fe80::1]/course', 'https://[::ffff:127.0.0.1]/course',
+  'https://192.0.0.8/course', 'https://192.0.2.1/course', 'https://192.88.99.2/course',
+  'https://198.18.0.1/course', 'https://198.19.255.254/course', 'https://198.51.100.1/course', 'https://203.0.113.1/course',
+  'https://[2001:db8::1]/course', 'https://[2001:2::1]/course', 'https://[100::1]/course',
+  'https://[100:0:0:1::1]/course', 'https://[64:ff9b:1::1]/course', 'https://[3fff::1]/course',
+  'https://[5f00::1]/course', 'https://[fec0::1]/course', 'https://[::ffff:192.0.2.1]/course',
+  'https://[::ffff:8.8.8.8]/course', 'https://[::ffff:192.0.0.9]/course',
+  `https://discord.com/%63hannels/${OTHER_GUILD}/${CHANNEL}`,
+  `https://discord.com/%65vents/${OTHER_GUILD}/444444444444444444`,
+  `https://discord.com/channels%2F${OTHER_GUILD}%2F${CHANNEL}`,
+  `https://discord.com/%2563hannels/${OTHER_GUILD}/${CHANNEL}`,
+  `https://discord.com/channels/${GUILD}/%33`,
+  `https://discord.com/%69nvite/code`, 'https://discord.com/%2finvite/code',
+  `https://canary.discord.com/%65vents/${GUILD}/not-an-event`,
+  'https://discordapp.com/%zz',
   'https://service.local/course', 'https://service.internal/course', 'https://service/course',
   `https://discord.com/events/${OTHER_GUILD}/444444444444444444`,
   `https://discord.com/events/${GUILD}/not-an-event`,
@@ -186,7 +200,7 @@ test('same-guild Discord channel and message URLs are valid', () => {
 });
 
 test('public IP literals remain valid without a DNS lookup', () => {
-  for (const host of ['8.8.8.8', '[2606:4700:4700::1111]']) {
+  for (const host of ['8.8.8.8', '[2606:4700:4700::1111]', '192.0.0.9', '192.0.0.10', '[2001:3::1]', '[2001:4:112::1]']) {
     const directory = activeDirectory();
     directory.guilds[0].entrypoints.help.url = `https://${host}/help`;
     assert.doesNotThrow(() => validateCommunityDirectory(directory));
