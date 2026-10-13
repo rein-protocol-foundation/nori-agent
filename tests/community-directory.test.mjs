@@ -170,6 +170,9 @@ for (const url of [
   `https://discord.com/%69nvite/code`, 'https://discord.com/%2finvite/code',
   `https://canary.discord.com/%65vents/${GUILD}/not-an-event`,
   'https://discordapp.com/%zz',
+  ...['discord.com', 'www.discord.com', 'canary.discord.com', 'ptb.discord.com', 'discordapp.com', 'www.discordapp.com', 'discord.com.'].map(host =>
+    `https://${host}/api/webhooks/${CHANNEL}/synthetic-not-a-credential`),
+  `https://discord.com/api/v10/webhooks/${CHANNEL}/synthetic-not-a-credential`,
   'https://service.local/course', 'https://service.internal/course', 'https://service/course',
   'https://foo..bar/course', 'https://.example.dev/course', 'https://-host.validation-only.org/course',
   'https://host-.validation-only.org/course', 'https://host_name.validation-only.org/course',

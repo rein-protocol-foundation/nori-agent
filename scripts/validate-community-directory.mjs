@@ -76,7 +76,11 @@ function httpsUrl(value, path, guildId, fixture) {
   // Fail closed on any encoded Discord path component: one decode is not
   // enough for nested escapes or encoded separators and invite aliases.
   const discordHost = DISCORD_HOSTS.has(host) || host === 'discord.gg' || /(?:^|\.)discord(?:app)?\.com$/.test(host);
-  if (discordHost) assert.ok(!url.pathname.includes('%'), `${path} must not use encoded Discord path components`);
+  if (discordHost) {
+    assert.ok(!url.pathname.includes('%'), `${path} must not use encoded Discord path components`);
+    // Webhook execution URLs embed a posting credential, not a member-facing resource.
+    assert.ok(!/^\/api(?:\/v\d+)?\/webhooks(?:\/|$)/i.test(url.pathname), `${path} must not expose Discord webhook credentials`);
+  }
   if (DISCORD_HOSTS.has(host) && /^\/channels(?:\/|$)/.test(url.pathname)) {
     const [, , server, channel, message, ...rest] = url.pathname.replace(/\/$/, '').split('/');
     assert.equal(server, guildId, `${path} Discord channel must belong to the same guild`);
