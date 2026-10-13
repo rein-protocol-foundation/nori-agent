@@ -1,0 +1,31 @@
+{
+  "id": "rein-discord",
+  "name": "Rein Isolated Discord",
+  "categories": ["channels"],
+  "description": "Rein-owned dedicated Discord onboarding transport; disables the bundled Discord transport and isolates native users and audiences before session access.",
+  "channels": ["discord"],
+  "channelConfigs": { "discord": { "label": "Rein Isolated Discord", "description": "Dedicated per-member onboarding; native Discord transport must be disabled.", "schema": { "type": "object", "properties": { "enabled": { "type": "boolean" } }, "additionalProperties": false } } },
+  "activation": { "onStartup": true },
+  "contracts": { "tools": ["rein_memory_read", "rein_memory_remember", "rein_memory_forget"] },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["agentId", "botUserId", "tokenEnv", "memoryPath", "guilds", "dmAllowFrom"],
+    "properties": {
+      "agentId": { "const": "main" },
+      "botUserId": { "type": "string", "pattern": "^[0-9]{17,20}$" },
+      "tokenEnv": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]+$" },
+      "memoryPath": { "type": "string", "minLength": 1 },
+      "requireMention": { "type": "boolean", "default": true },
+      "dmAllowFrom": { "type": "array", "items": { "type": "string", "pattern": "^[0-9]{17,20}$" } },
+      "guilds": { "type": "array", "minItems": 1, "items": {
+        "type": "object", "additionalProperties": false, "required": ["id", "channelIds"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[0-9]{17,20}$" },
+          "channelIds": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^[0-9]{17,20}$" } },
+          "userIds": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^[0-9]{17,20}$" } }
+        }
+      } }
+    }
+  }
+}

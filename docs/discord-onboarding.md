@@ -138,6 +138,10 @@ autonomous web search. Native guild sessions remain channel-shared; per-user roo
 member memory are not implemented. The local test instance is temporarily restricted to its original
 acceptance account. Product-case acceptance is not multi-user privacy acceptance.
 
+An opt-in [isolated Rein adapter](discord-user-isolation.md) now implements per-sender/per-audience
+sessions and persistent notes in a dedicated profile. It has synthetic native-pipeline verification;
+real two-account acceptance and migration of the original instance are still pending.
+
 Measure time to a meaningful first action, where members get stuck, optional skips and voluntary
 return participation. Keep learning, public interaction, registration and resource submissions
 separate, with actual evidence. Message counts, offered links and prepared drafts do not establish

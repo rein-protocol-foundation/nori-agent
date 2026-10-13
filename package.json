@@ -12,6 +12,7 @@
     "test": "node --test tests/*.test.mjs",
     "audit:discord-privacy": "node scripts/discord-privacy.mjs",
     "probe:discord-routing": "node scripts/probe-discord-routing.mjs",
+    "verify:discord-isolation": "node scripts/verify-discord-isolation.mjs",
     "toolchain:pnpm": "npx --prefix .toolchain --no-install pnpm",
     "openclaw": "node scripts/openclaw.mjs",
     "setup:local": "node scripts/init-local.mjs",

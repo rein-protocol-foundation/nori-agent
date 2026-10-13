@@ -10,7 +10,9 @@ of this file register only when an operator explicitly enables them.
 Before using a local profile for multiple community members, read the
 [session and memory audit](discord-session-privacy-audit-2026-10-13.md). The pinned runtime shares
 guild conversation context by channel; DM isolation does not change that. Per-member room routing
-and owner-scoped persistent memory are still implementation gaps.
+and owner-scoped persistent memory are absent from that native profile. The opt-in
+[Rein isolated adapter](discord-user-isolation.md) implements both in a dedicated profile; its native
+pipeline probe uses synthetic senders, and real two-account acceptance remains pending.
 
 The [privacy config fragment](../config/discord-privacy.example.json) confines filesystem/session
 tools and disables shared memory recall/flush. Merge reviewed fields into a local config; it is not

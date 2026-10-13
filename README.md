@@ -81,8 +81,10 @@ See the [flow and acceptance guide](docs/discord-onboarding.md).
 
 Product-case acceptance does not establish multi-user privacy. The
 [session/memory audit](docs/discord-session-privacy-audit-2026-10-13.md) confirms native guild sessions
-are channel-shared and per-member persistent memory is unimplemented. The local test instance is
-temporarily limited to its original acceptance account; public course data was operator-supplied.
+are channel-shared in the original profile. An opt-in [Rein Discord adapter](docs/discord-user-isolation.md)
+now implements per-sender/per-audience sessions and scoped persistent notes, with a native pipeline
+probe using synthetic senders. Real two-account acceptance is pending; the original local instance
+remains restricted to its acceptance account. Public course data was operator-supplied.
 
 ## Repository layout
 
