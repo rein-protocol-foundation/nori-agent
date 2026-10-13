@@ -30,8 +30,10 @@ English reply unless the member asks to switch languages.
 | Attend in person | Find future public events matching voluntarily shared city and time preferences; show local date, time, timezone, cost and registration link. | Register through the official entry point, then optionally join a discussion or volunteer. |
 | Share or contribute | Let the member share a link with attribution in an allowed public channel; offer help with an introduction if wanted. | Apply published duplicate, metadata and permission checks only when official inclusion is requested; explore Contributor status when wanted. |
 
-Introductions, profiles, organizational identity binding and Contributor applications are optional
-for public learning, conversation, resource sharing and open-event discovery. Host registration
+Discord conversations require the sender's account to be linked to their community identity first.
+Use the connected backend's status and binding tools for the trusted sender; an already linked
+account continues directly without repeating the link. Public website resources remain accessible
+without linking. Introductions, profiles and Contributor applications are optional. Host registration
 conditions still apply. Do not turn the four paths into a mandatory checklist. Accept observation,
 skips and changes of intent; returning members continue from their current need. Default to no
 unsolicited direct messages, member tagging or scheduled follow-ups.
@@ -108,8 +110,17 @@ The eight natural-language use cases ([English](discord-onboarding-use-cases.md)
 with explicitly fictional rehearsal material.
 
 The [2026-10-12 local model rehearsal](discord-onboarding-rehearsal-2026-10-12.md) ran synthetic
-conversations through a real Gateway. Full behavioral acceptance failed, including an erroneous
-identity-binding reply on Discord; this is not evidence of a live Discord launch.
+conversations through a real Gateway, without real Discord accounts or authoritative link state.
+It does not establish Discord acceptance. Its detached registration-email reply is insufficient
+evidence of repeated binding for an already linked account; retest with the actual identity context.
+
+The [2026-10-13 real Discord acceptance](discord-onboarding-live-acceptance-2026-10-13.md)
+used one owner-authorized existing Discord account with a real DEV community link, thinking enabled,
+and eight separate QA channels: four Chinese and four English cases, with all 42 original messages
+and per-case evaluations. Six cases passed, one partially passed and one failed. Course claims and
+unsupported future notifications remain issues. New-account phone verification, ordinary-member
+permissions, production deployment and successful event registration are not covered; the report
+also records a cross-platform link conflict and manual DEV email callback routing.
 
 Measure time to a meaningful first action, where members get stuck, optional skips and voluntary
 return participation. Keep learning, public interaction, registration and resource submissions

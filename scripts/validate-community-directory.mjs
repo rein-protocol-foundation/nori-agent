@@ -1,4 +1,13 @@
 import assert from 'node:assert/strict';
+import { BlockList, isIP } from 'node:net';
+
+const PRIVATE_NETWORKS = new BlockList();
+for (const [address, prefix] of [['0.0.0.0', 8], ['10.0.0.0', 8], ['100.64.0.0', 10], ['127.0.0.0', 8], ['169.254.0.0', 16], ['172.16.0.0', 12], ['192.168.0.0', 16], ['224.0.0.0', 4], ['240.0.0.0', 4]]) {
+  PRIVATE_NETWORKS.addSubnet(address, prefix, 'ipv4');
+}
+for (const [address, prefix] of [['::', 128], ['::1', 128], ['fc00::', 7], ['fe80::', 10], ['ff00::', 8]]) {
+  PRIVATE_NETWORKS.addSubnet(address, prefix, 'ipv6');
+}
 
 const ENTRYPOINTS = ['introductions', 'discussion', 'courses', 'events', 'contributions', 'help', 'contributorApplication'];
 const COMMON = ['title', 'url', 'sourceUrl', 'topics', 'audience', 'status', 'verifiedAt'];
@@ -48,14 +57,23 @@ function httpsUrl(value, path, guildId, fixture) {
     return;
   }
   const host = url.hostname.toLowerCase().replace(/\.$/, '');
-  const reserved = ['example.com', 'example.net', 'example.org', 'invalid', 'test', 'example', 'localhost'];
+  const reserved = ['example.com', 'example.net', 'example.org', 'invalid', 'test', 'example', 'localhost', 'local', 'internal', 'lan', 'home', 'home.arpa'];
   assert.ok(!reserved.some(domain => host === domain || host.endsWith(`.${domain}`)), `${path} must not use an example or local hostname`);
+  const address = host.replace(/^\[|\]$/g, '');
+  const family = isIP(address);
+  assert.ok(family ? !PRIVATE_NETWORKS.check(address, family === 4 ? 'ipv4' : 'ipv6') : host.includes('.'), `${path} must use a public-network hostname`);
   if (DISCORD_HOSTS.has(host) && /^\/channels(?:\/|$)/.test(url.pathname)) {
     const [, , server, channel, message, ...rest] = url.pathname.replace(/\/$/, '').split('/');
     assert.equal(server, guildId, `${path} Discord channel must belong to the same guild`);
     snowflake(channel, `${path} channel ID`);
     if (message !== undefined) snowflake(message, `${path} message ID`);
     assert.equal(rest.length, 0, `${path} has a malformed Discord channel path`);
+  }
+  if (DISCORD_HOSTS.has(host) && /^\/events(?:\/|$)/.test(url.pathname)) {
+    const [, , server, event, ...rest] = url.pathname.replace(/\/$/, '').split('/');
+    assert.equal(server, guildId, `${path} Discord event must belong to the same guild`);
+    snowflake(event, `${path} event ID`);
+    assert.equal(rest.length, 0, `${path} has a malformed Discord event path`);
   }
   assert.ok(host !== 'discord.gg' && !(/(?:^|\.)discord(?:app)?\.com$/.test(host) && /^\/invite(?:\/|$)/.test(url.pathname)), `${path} must use a public entry point rather than an invitation`);
 }

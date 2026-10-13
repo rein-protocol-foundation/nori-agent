@@ -152,6 +152,15 @@ for (const url of [
   'not-a-url', 'http://catalog.validation-only.org/course', 'https://user:password@catalog.validation-only.org/course',
   'https://example.invalid/course', 'https://example.com/course', 'https://catalog.test/course',
   'https://localhost/course', 'https://discord.gg/invite-code',
+  'https://127.0.0.1/course', 'https://[::1]/course', 'https://10.0.0.1/course',
+  'https://172.16.0.1/course', 'https://192.168.1.1/course', 'https://169.254.1.1/course',
+  'https://100.64.0.1/course', 'https://0.0.0.0/course', 'https://[fc00::1]/course',
+  'https://[fe80::1]/course', 'https://[::ffff:127.0.0.1]/course',
+  'https://service.local/course', 'https://service.internal/course', 'https://service/course',
+  `https://discord.com/events/${OTHER_GUILD}/444444444444444444`,
+  `https://discord.com/events/${GUILD}/not-an-event`,
+  `https://discord.com/events/${GUILD}/444444444444444444/extra`,
+  `https://discord.com/events/${GUILD}`,
   `https://discord.com/channels/${OTHER_GUILD}/${CHANNEL}`,
   `https://discord.com/channels/${GUILD}/not-a-channel`,
   'https://discord.com/channels/@me/333333333333333333',
@@ -171,7 +180,17 @@ test('same-guild Discord channel and message URLs are valid', () => {
   const guild = directory.guilds[0];
   guild.entrypoints.help.url = `https://discord.com/channels/${GUILD}/${CHANNEL}`;
   guild.discussions[0].url = `https://discord.com/channels/${GUILD}/${CHANNEL}/444444444444444444`;
+  guild.events[0].url = `https://discord.com/events/${GUILD}/444444444444444444`;
+  guild.events[0].registrationUrl = `https://discord.com/events/${GUILD}/444444444444444444`;
   assert.doesNotThrow(() => validateCommunityDirectory(directory));
+});
+
+test('public IP literals remain valid without a DNS lookup', () => {
+  for (const host of ['8.8.8.8', '[2606:4700:4700::1111]']) {
+    const directory = activeDirectory();
+    directory.guilds[0].entrypoints.help.url = `https://${host}/help`;
+    assert.doesNotThrow(() => validateCommunityDirectory(directory));
+  }
 });
 
 test('UTC and daylight-saving event offsets validate at their actual dates', () => {

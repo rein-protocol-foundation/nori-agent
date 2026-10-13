@@ -14,6 +14,10 @@ include real links, never these notes, fictional titles or placeholders. The cur
 directory is unconfigured, so those recommendation conditions are not yet met. Use the honest
 fallback in case 8 when information is unavailable.
 
+The eight participation cases assume the test account has completed its Discord-to-community
+identity link. Test the first-time website and email binding flow separately. Acceptance requires
+the actual backend link state, not a prompt claiming that the account is linked.
+
 ## UC01 · A friend invited me, but I'm not sure where to start
 
 Xiao Zhou joins Discord through a friend's invitation. He has browsed a few channels but isn't

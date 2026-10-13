@@ -63,8 +63,8 @@ the `dev_*` and `prod_*` objects in one transaction, so the applied schema cover
 rehearsal evidence shows synthetic rows read and written in the `dev_*` prefix; the `prod_*` prefix
 stayed at zero rows. Nothing here claims production use or deployment.
 
-No real member registry, Discord, Foundation website or production data set is connected. Rehearsals
-run against a test Slack workspace and the linked `dev_*` schema only; the live evidence predates the
+No production member registry or production data set is connected. Governance rehearsals
+run against a test Slack workspace and the linked `dev_*` schema only; the live governance evidence predates the
 rename, and the current PR head has **no live Slack retest after the rename**. A passed vote is a decision record: payments, reservations and publishing are not enabled,
 and weighted voting, quorum, recusal, competing-budget allocation, activities, reminders, articles and
 oversight remain deferred. See the [implementation and deployment record](docs/implementation-and-deployment-zh.md)
@@ -73,8 +73,11 @@ synthetic development evidence, and case 1 was skipped by the owner and is not p
 
 Discord onboarding guidance now ships in the workspace: optional introductions and peer interaction,
 course discovery, public in-person events and resource contributions. Its public directory starts
-unconfigured. This is conversation content only; Discord connectivity and its business integrations
-remain pending. See the [flow and acceptance guide](docs/discord-onboarding.md).
+unconfigured. A separate operator-configured local run tested real Discord conversations and a DEV
+community identity link with thinking enabled: eight cases, six passed, one partial and one failed.
+The [actual transcripts and limitations](docs/discord-onboarding-live-acceptance-2026-10-13.md)
+do not establish production readiness. These workspace files do not enable integrations by themselves.
+See the [flow and acceptance guide](docs/discord-onboarding.md).
 
 ## Repository layout
 
