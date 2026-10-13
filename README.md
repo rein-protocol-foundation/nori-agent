@@ -74,10 +74,15 @@ synthetic development evidence, and case 1 was skipped by the owner and is not p
 Discord onboarding guidance now ships in the workspace: optional introductions and peer interaction,
 course discovery, public in-person events and resource contributions. Its public directory starts
 unconfigured. A separate operator-configured local run tested real Discord conversations and a DEV
-community identity link with thinking enabled: eight cases, six passed, one partial and one failed.
+community identity link with thinking enabled: eight cases, all accepted after owner review, with wording improvements and coverage limits retained.
 The [actual transcripts and limitations](docs/discord-onboarding-live-acceptance-2026-10-13.md)
 do not establish production readiness. These workspace files do not enable integrations by themselves.
 See the [flow and acceptance guide](docs/discord-onboarding.md).
+
+Product-case acceptance does not establish multi-user privacy. The
+[session/memory audit](docs/discord-session-privacy-audit-2026-10-13.md) confirms native guild sessions
+are channel-shared and per-member persistent memory is unimplemented. The local test instance is
+temporarily limited to its original acceptance account; public course data was operator-supplied.
 
 ## Repository layout
 

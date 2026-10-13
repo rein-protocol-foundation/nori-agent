@@ -5,6 +5,25 @@ configures no chat platform or model provider and activates no governance policy
 vote tools default to synthetic simulation; the database-backed v0.1 Slack tools described at the end
 of this file register only when an operator explicitly enables them.
 
+## Discord multi-member privacy
+
+Before using a local profile for multiple community members, read the
+[session and memory audit](discord-session-privacy-audit-2026-10-13.md). The pinned runtime shares
+guild conversation context by channel; DM isolation does not change that. Per-member room routing
+and owner-scoped persistent memory are still implementation gaps.
+
+The [privacy config fragment](../config/discord-privacy.example.json) confines filesystem/session
+tools and disables shared memory recall/flush. Merge reviewed fields into a local config; it is not
+a standalone config or a complete per-user isolation solution. It does not enable DMs. Public
+workspaces must use the [shared USER template](../templates/community-user.example.md), never an
+operator's private USER.md, memory directory or runtime state. Stage only approved public policies
+inside the confined workspace instead of permitting arbitrary parent-directory reads.
+
+`npm run toolchain:pnpm -- run audit:discord-privacy -- <config-path>` prints selected policy facts
+without credentials. It intentionally exits nonzero for channel-shared guild routing, including after
+the fragment is applied. `npm run toolchain:pnpm -- run probe:discord-routing` reproduces the native
+routing behavior with synthetic identifiers after upstream is built; it is not real-user acceptance.
+
 ## Prerequisites
 
 - Node.js `>=24.16.0 <25` or `>=26.1.0` (Node 26 recommended). This mirrors upstream `engines`; the

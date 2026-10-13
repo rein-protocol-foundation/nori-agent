@@ -124,14 +124,20 @@ evidence of repeated binding for an already linked account; retest with the actu
 The [2026-10-13 real Discord acceptance](discord-onboarding-live-acceptance-2026-10-13.md)
 used one owner-authorized existing Discord account with a real DEV community link, thinking enabled,
 and eight separate QA channels: four Chinese and four English cases, with all 42 original messages
-and per-case evaluations. Six cases passed, one partially passed and one failed. Course claims and
-unsupported future notifications remain issues. New-account phone verification, ordinary-member
+and per-case evaluations. All eight cases are accepted after owner review. Course wording and
+notification phrasing remain improvement notes. New-account phone verification, ordinary-member
 permissions, production deployment and successful event registration are not covered; the report
 also records a cross-platform link conflict and manual DEV email callback routing.
 
 The [tone and cleanup follow-up](discord-onboarding-tone-followup-2026-10-13.md) records shorter
 Chinese and English replies, including intermediate failures, using one reused QA channel. All eight
 temporary QA channels and their category have since been archived and removed; use the saved transcripts.
+
+The [resource and privacy audit](discord-session-privacy-audit-2026-10-13.md) confirms that the course
+was supplied by the operator's public directory, not discovered from the resource database or proven
+autonomous web search. Native guild sessions remain channel-shared; per-user room sessions and durable
+member memory are not implemented. The local test instance is temporarily restricted to its original
+acceptance account. Product-case acceptance is not multi-user privacy acceptance.
 
 Measure time to a meaningful first action, where members get stuck, optional skips and voluntary
 return participation. Keep learning, public interaction, registration and resource submissions

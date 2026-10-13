@@ -1,0 +1,7 @@
+{
+  "session": { "dmScope": "per-account-channel-peer", "groupScope": "per-group" },
+  "tools": { "fs": { "workspaceOnly": true }, "sessions": { "visibility": "self" }, "agentToAgent": { "enabled": false } },
+  "memory": { "search": { "enabled": false, "rememberAcrossConversations": false } },
+  "agents": { "defaults": { "compaction": { "memoryFlush": { "enabled": false } } } },
+  "channels": { "discord": { "dmPolicy": "disabled", "historyLimit": 0 } }
+}

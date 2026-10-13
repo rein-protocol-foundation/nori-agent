@@ -40,9 +40,11 @@ flowchart LR
   Data[Foundation backend API: governance reads and writes, identity resolution and binding] -. one authenticated service; no database credential in the Agent .-> Domain
 ```
 
-Discord is not drawn: no Discord surface is connected, and its general-participant scope (onboarding,
-free-resource navigation and participation paths only) stays deferred behind D12 while Slack remains
-the single P0 platform.
+The diagram shows the P0 Slack governance slice. A separate operator-configured local Discord
+onboarding test now exists, using public navigation and DEV identity binding rather than governance.
+Its native public-channel sessions are shared by channel; per-user routing and member memory remain
+unimplemented. See the [privacy audit](discord-session-privacy-audit-2026-10-13.md); the local instance
+has been temporarily restricted to its original acceptance account, and is not a multi-user deployment.
 
 `plugins/rein-operations` registers `rein_status`, `rein_simulate_proposal` and
 `rein_simulate_vote` through the public `openclaw/plugin-sdk/plugin-entry` entry point. Four v2 proposal tools are registered only with explicit single-platform, channel and storage configuration. They use host-supplied sender identity and local durable proposal records; the default three tools have no external effects. The deterministic
