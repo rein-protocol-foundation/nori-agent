@@ -70,6 +70,9 @@ test('named-account DM policies and bindings are evaluated without printing acco
   c.channels.discord.accounts.second.enabled=false;assert.ok(!codes(c).includes('dm_session_shared'));
   c.channels.discord.dmPolicy='disabled';c.channels.discord.accounts.second={dmPolicy:'allowlist'};
   assert.ok(codes(c).includes('dm_session_shared'));
+  const suffix=isolatedDms();suffix.channels.discord.accounts={'bot-':{},bot:{dmPolicy:'disabled'}};
+  suffix.bindings=[binding({accountId:'bot-'})];
+  assert.ok(codes(suffix).includes('dm_session_shared'));
 });
 test('unrelated bindings do not conceal the lack of an explicit recall opt-out',()=>{
   for(const b of [binding({channel:'slack'}),{...binding(),type:'acp'},binding({guildId:'guild'}),binding({peer:{kind:'channel',id:'room'}})]) {

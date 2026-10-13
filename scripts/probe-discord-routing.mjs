@@ -32,12 +32,12 @@ const bindingCases = [[],[bind()],[bind({},'per-account-channel-peer')],
   [bind({peer:direct},'per-account-channel-peer'),bind({peer:direct})],
   [bind({channel:'slack'})],[bind({guildId:'probe-guild'})],[bind({roles:['probe-role']})],
   [bind({peer:{kind:'channel',id:'probe-room'}})],[bind({accountId:'*'},'per-account-channel-peer')],
-  [bind({accountId:'second'})],
+  [bind({accountId:'second-'})],
 ];
 let bindingScopeComparisons=0;
 let nativeRecallComparisons=0;
 for (const dmScope of ['main','per-account-channel-peer']) for (const bindings of bindingCases) {
-  const cfg={channels:{discord:{enabled:true,accounts:{second:{}}}},session:{dmScope},bindings};
+  const cfg={channels:{discord:{enabled:true,accounts:{second:{},'second-':{}}}},session:{dmScope},bindings};
   const native=new Set();
   for(const [accountId] of discordAccountPolicies(cfg.channels.discord)) for(const id of ['probe-peer','probe-other-peer']) {
     native.add(resolveAgentRoute({cfg,channel:'discord',defaultAgentId:'main',accountId,peer:{kind:'direct',id}}).dmScope);

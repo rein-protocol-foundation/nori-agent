@@ -2,7 +2,10 @@
 // No SDK build, credential resolution or member identifiers in the result.
 const trim = value => typeof value === 'string' ? value.trim() : '';
 const accountId = value => {
-  const id = trim(value).toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64);
+  const raw = trim(value).toLowerCase();
+  // Valid native IDs retain trailing hyphens/underscores; sanitizing those
+  // would merge distinct accounts such as "bot" and "bot-".
+  const id = /^[a-z0-9][a-z0-9_-]{0,63}$/.test(raw) ? raw : raw.replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64);
   return !id || ['__proto__', 'prototype', 'constructor'].includes(id) ? 'default' : id;
 };
 
