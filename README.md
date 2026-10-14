@@ -63,13 +63,26 @@ the `dev_*` and `prod_*` objects in one transaction, so the applied schema cover
 rehearsal evidence shows synthetic rows read and written in the `dev_*` prefix; the `prod_*` prefix
 stayed at zero rows. Nothing here claims production use or deployment.
 
-No real member registry, Discord, Foundation website or production data set is connected. Rehearsals
-run against a test Slack workspace and the linked `dev_*` schema only; the live evidence predates the
+No production member registry or production data set is connected. Governance rehearsals
+run against a test Slack workspace and the linked `dev_*` schema only; the live governance evidence predates the
 rename, and the current PR head has **no live Slack retest after the rename**. A passed vote is a decision record: payments, reservations and publishing are not enabled,
 and weighted voting, quorum, recusal, competing-budget allocation, activities, reminders, articles and
 oversight remain deferred. See the [implementation and deployment record](docs/implementation-and-deployment-zh.md)
 and the [v0.1 governance acceptance record](docs/governance-acceptance-2026-09-28.md): cases 2-10 are accepted on
 synthetic development evidence, and case 1 was skipped by the owner and is not passed.
+
+Discord onboarding guidance now ships in the workspace: optional introductions and peer interaction,
+course discovery, public in-person events and resource contributions. Its public directory starts
+unconfigured. A separate operator-configured local run tested real Discord conversations and a DEV
+community identity link with thinking enabled: eight cases, all accepted after owner review, with wording improvements and coverage limits retained.
+The [redacted acceptance summary and limitations](docs/discord-onboarding-live-acceptance-2026-10-13.md)
+do not establish production readiness. These workspace files do not enable integrations by themselves.
+See the [flow and acceptance guide](docs/discord-onboarding.md).
+
+Product-case acceptance does not establish multi-user privacy. The
+[session/memory audit](docs/discord-session-privacy-audit-2026-10-13.md) confirms native guild sessions
+are channel-shared and per-member persistent memory is unimplemented. The local test instance is
+temporarily limited to its original acceptance account; public course data was operator-supplied.
 
 ## Repository layout
 
@@ -77,7 +90,7 @@ synthetic development evidence, and case 1 was skipped by the owner and is not p
 | --- | --- |
 | `vendor/openclaw` | Official OpenClaw source as a git submodule, pinned to one reviewed commit. Upstream-owned; use it, do not edit it. |
 | `plugins/rein-operations` | Rein-owned business modules; three default status/simulation tools, four proposal tools, and twelve backend-backed Slack tools (four reads, one read-only field collector, four writes, three result-feedback) that register only with explicit platform, workspace, channel and backend configuration. |
-| `workspace/` | OpenClaw-compatible agent workspace template: identity, policy and avatar. |
+| `workspace/` | OpenClaw-compatible agent workspace template: identity, policy, avatar and Discord conversation guidance with an initially unconfigured public directory. |
 | `config/operations.example.json` | Proposed business configuration. Not native OpenClaw config, and nothing loads it. |
 | `scripts/` | Local bootstrap, CLI wrapper and upstream update helpers. |
 | `tests/` | Node test runner checks for the plugin boundary and the update script. |
@@ -173,6 +186,7 @@ social-media image and text publishing, and DAO integration belong to later phas
 - [Source provenance and context](docs/provenance.md)
 - [Architecture and integration boundaries](docs/architecture.md)
 - [Setup and local runtime](docs/setup.md)
+- [Discord onboarding requirements](docs/discord-onboarding.md) · [中文流程、目录与演练](docs/discord-onboarding-zh.md)
 - [Development, verification, deployment and ten Agent rehearsals](docs/implementation-and-deployment-zh.md)
 - [v0.1 governance acceptance record (2026-09-28)](docs/governance-acceptance-2026-09-28.md)
 - [P0 requirement evidence matrix](docs/p0-acceptance-matrix.md)

@@ -9,7 +9,7 @@ Rein Protocol Foundation 的组织运营 Agent：管理员、秘书与线上主�
 帮助成员把活动想法变成真实行动：受理提案、整理材料、主持 Board 经费评选、推进筹备、收集成果、
 协助发布，并让组织负责人集中处理真正需要决策的事项。
 
-**状态：本地业务核心已实现；仅有合成开发演练，无生产接入。** 官方 OpenClaw 源码以 git submodule
+**状态：本地业务核心已实现；有开发演练与有限真实 Discord 验收，无生产接入。** 官方 OpenClaw 源码以 git submodule
 形式固定在经过评审的 commit 上。Rein 插件默认提供状态、合成提案及合成投票三个只读工具；
 只有在明确配置唯一平台、批准的原生频道及本地存储后才会注册四个提案工具。另有提案、治理、
 活动和本地账本模块。
@@ -50,7 +50,7 @@ Agent 从不依据资料邮箱解析身份。此前的合成演练确实经由**
 覆盖两个前缀。演练证据显示 `dev_*` 前缀确有合成数据读写，`prod_*` 前缀始终为 0 行。
 此处不主张任何生产使用或部署。
 
-尚未接入真实成员名册、Discord、官网或生产数据集；演练只在测试 Slack 工作区与已链接的 `dev_*` 表集上运行。
+尚未接入生产成员名册或生产数据集；治理演练只在测试 Slack 工作区与已链接的 `dev_*` 表集上运行。
 实机证据取自**改名前的构建**，当前 PR head **改名后尚未在真实 Slack 重跑**。通过投票只是决策记录：
 付款、预留与发布均未启用；加权投票、法定人数、回避、预算竞争、活动空间、提醒、文章与监督仍属延后项。
 参见[开发与部署记录](docs/implementation-and-deployment-zh.md)。
@@ -58,13 +58,24 @@ Agent 从不依据资料邮箱解析身份。此前的合成演练确实经由**
 [v0.1 治理验收记录（2026-09-28）](docs/governance-acceptance-2026-09-28.md)：案例 2–10 按合成开发证据通过，
 案例 1 由负责人决定跳过、**未通过**。
 
+Discord 入群引导已纳入工作区模板，覆盖可选介绍与同伴互动、课程检索、公开线下活动和资源贡献。
+公开目录初始未配置；另有操作者配置的本地运行，通过真实 Discord 与 DEV 社区身份 link，
+启用 thinking 后执行八个用例，负责人复核后八例整体通过（措辞改进项和未覆盖范围保留）。
+[脱敏验收汇总与限制](docs/discord-onboarding-live-acceptance-2026-10-13.md)不代表生产可用，
+工作区文件本身也不会启用集成。详见
+[流程与验收说明](docs/discord-onboarding-zh.md)。
+
+产品用例通过不代表多用户隐私验收通过。[Session 与记忆审计](docs/discord-session-privacy-audit-2026-10-13.md)
+确认当前公共频道会话按频道共享，逐成员持久记忆尚未实现。本地测试实例已临时限制为原验收账号；
+测试课程来自操作者预置的公开目录。
+
 ## 仓库结构
 
 | 路径 | 用途 |
 | --- | --- |
 | `vendor/openclaw` | 官方 OpenClaw 源码（git submodule，固定在单个 commit）。属于上游，可直接使用，不要修改。 |
 | `plugins/rein-operations` | Rein 功能的唯一实现位置；含确定性业务模块、三个默认只读工具、四个提案工具，以及 12 个需显式配置的后端 Slack 工具（4 读、1 个只读字段采集、4 写、3 个结果反馈）。 |
-| `workspace/` | 与 OpenClaw 兼容的 Agent 工作区模板：身份、策略与头像。 |
+| `workspace/` | 与 OpenClaw 兼容的 Agent 工作区模板：身份、策略、头像，以及 Discord 对话引导与初始未配置的公开目录。 |
 | `config/operations.example.json` | 拟定的业务配置。它不是 OpenClaw 原生配置，也没有任何执行器加载它。 |
 | `scripts/` | 本地初始化、CLI 包装与上游更新脚本。 |
 | `tests/` | 使用 Node test runner 的插件边界与更新脚本检查。 |
@@ -135,6 +146,7 @@ Contributor 提案 → 信息确认与评估 → 零预算授权快速通道 / B
 - [文档来源与上下文](docs/provenance.md)
 - [架构与集成边界](docs/architecture.md)
 - [部署准备](docs/setup.md)
+- [Discord 入群引导、公开目录与对话演练](docs/discord-onboarding-zh.md)
 - [更新 OpenClaw](docs/upstream.md)
 - [P0 实施与验收清单](docs/roadmap.md)
 - [v0.1 治理验收记录（2026-09-28）](docs/governance-acceptance-2026-09-28.md)

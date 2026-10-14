@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "status": "fixture",
+  "guilds": [
+    {
+      "guildId": "FIXTURE_GUILD",
+      "entrypoints": {
+        "introductions": { "label": "演练：自我介绍", "url": "https://example.invalid/introductions", "audience": "public", "verifiedAt": "2030-05-01T00:00:00Z" },
+        "discussion": { "label": "演练：社区讨论", "url": "https://example.invalid/discussion", "audience": "public", "verifiedAt": "2030-05-01T00:00:00Z" },
+        "courses": { "label": "演练：课程目录", "url": "https://example.invalid/courses", "audience": "public", "verifiedAt": "2030-05-01T00:00:00Z" },
+        "events": { "label": "演练：公开活动", "url": "https://example.invalid/events", "audience": "public", "verifiedAt": "2030-05-01T00:00:00Z" },
+        "contributions": { "label": "演练：资源分享", "url": "https://example.invalid/contributions", "audience": "public", "verifiedAt": "2030-05-01T00:00:00Z" },
+        "help": { "label": "演练：公开帮助", "url": "https://example.invalid/help", "audience": "public", "verifiedAt": "2030-05-01T00:00:00Z" },
+        "contributorApplication": null
+      },
+      "discussions": [
+        {
+          "title": "演练：第一个 Agent 的失败场景",
+          "url": "https://example.invalid/discussion/agent-failures",
+          "sourceUrl": "https://example.invalid/discussion",
+          "topics": ["AI Agent", "评测"],
+          "language": "zh",
+          "audience": "public",
+          "status": "open",
+          "verifiedAt": "2030-05-01T00:00:00Z"
+        }
+      ],
+      "resources": [
+        {
+          "title": "演练：Agent 入门课程",
+          "kind": "course",
+          "url": "https://example.invalid/courses/agent-basics",
+          "sourceUrl": "https://example.invalid/courses",
+          "topics": ["AI Agent", "入门"],
+          "language": "zh",
+          "level": "beginner",
+          "duration": "第一节约 20 分钟（合成数据）",
+          "summary": "合成课程：了解 Agent 的任务、工具与反馈循环。",
+          "firstStep": "阅读课程大纲后开始第一节概念导读（合成章节）。",
+          "isFree": true,
+          "audience": "public",
+          "status": "published",
+          "verifiedAt": "2030-05-01T00:00:00Z"
+        }
+      ],
+      "events": [
+        {
+          "title": "演练：线下 Agent 学习交流",
+          "url": "https://example.invalid/events/agent-meetup",
+          "sourceUrl": "https://example.invalid/events",
+          "registrationUrl": "https://example.invalid/events/agent-meetup/register",
+          "topics": ["AI Agent", "入门"],
+          "city": "合成城市",
+          "venue": "合成公共学习空间",
+          "startsAt": "2030-05-18T14:00:00-07:00",
+          "endsAt": "2030-05-18T16:00:00-07:00",
+          "timezone": "America/Los_Angeles",
+          "mode": "offline",
+          "cost": "free",
+          "audience": "public",
+          "status": "scheduled",
+          "registrationStatus": "open",
+          "verifiedAt": "2030-05-01T00:00:00Z"
+        }
+      ],
+      "contributionOpportunities": [
+        {
+          "title": "演练：给课程补一条学习笔记",
+          "url": "https://example.invalid/contributions/course-notes",
+          "sourceUrl": "https://example.invalid/contributions",
+          "topics": ["AI Agent", "笔记"],
+          "kind": "notes",
+          "timeEstimate": "约 15 分钟（合成数据）",
+          "firstStep": "写下一个概念和一个仍想讨论的问题。",
+          "audience": "public",
+          "status": "open",
+          "verifiedAt": "2030-05-01T00:00:00Z"
+        }
+      ]
+    }
+  ]
+}

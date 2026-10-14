@@ -3,11 +3,18 @@ import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import assert from 'node:assert/strict';
+import { validateCommunityDirectory } from './validate-community-directory.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const read = p => readFileSync(resolve(root, p), 'utf8');
-for (const p of ['README.md', 'README-zh.md', 'AGENTS.md', 'workspace/AGENTS.md', 'workspace/SOUL.md', 'workspace/IDENTITY.md', 'docs/architecture.md', 'docs/roadmap.md', 'docs/setup.md', 'docs/decisions.md', 'assets/brand/README.md', 'templates/proposal.md', 'templates/board-brief.md', 'templates/outcome.md', 'templates/weekly-summary.md']) {
+for (const p of ['README.md', 'README-zh.md', 'AGENTS.md', 'workspace/AGENTS.md', 'workspace/SOUL.md', 'workspace/IDENTITY.md', 'workspace/DISCORD_ONBOARDING.md', 'workspace/community-directory.json', 'docs/discord-onboarding.md', 'docs/discord-onboarding-zh.md', 'docs/discord-onboarding-use-cases.md', 'docs/discord-onboarding-use-cases-zh.md', 'docs/architecture.md', 'docs/roadmap.md', 'docs/setup.md', 'docs/decisions.md', 'assets/brand/README.md', 'templates/proposal.md', 'templates/board-brief.md', 'templates/outcome.md', 'templates/weekly-summary.md', 'templates/discord-community-directory.example.json']) {
   assert.ok(existsSync(resolve(root, p)) && read(p).trim(), `Missing/empty: ${p}`);
 }
+// These are readable public references, not plugin configuration or a live integration check.
+const communityDirectory = JSON.parse(read('workspace/community-directory.json'));
+validateCommunityDirectory(communityDirectory);
+const communityFixture = JSON.parse(read('templates/discord-community-directory.example.json'));
+assert.equal(communityFixture.status, 'fixture');
+validateCommunityDirectory(communityFixture, { allowFixture: true });
 const config = JSON.parse(read('config/operations.example.json'));
 assert.equal(config.status, 'draft-unapproved');
 assert.equal(config.automationEnabled, false);

@@ -40,9 +40,11 @@ flowchart LR
   Data[Foundation backend API: governance reads and writes, identity resolution and binding] -. one authenticated service; no database credential in the Agent .-> Domain
 ```
 
-Discord is not drawn: no Discord surface is connected, and its general-participant scope (onboarding,
-free-resource navigation and participation paths only) stays deferred behind D12 while Slack remains
-the single P0 platform.
+The diagram shows the P0 Slack governance slice. A separate operator-configured local Discord
+onboarding test now exists, using public navigation and DEV identity binding rather than governance.
+Its native public-channel sessions are shared by channel; per-user routing and member memory remain
+unimplemented. See the [privacy audit](discord-session-privacy-audit-2026-10-13.md); the local instance
+has been temporarily restricted to its original acceptance account, and is not a multi-user deployment.
 
 `plugins/rein-operations` registers `rein_status`, `rein_simulate_proposal` and
 `rein_simulate_vote` through the public `openclaw/plugin-sdk/plugin-entry` entry point. Four v2 proposal tools are registered only with explicit single-platform, channel and storage configuration. They use host-supplied sender identity and local durable proposal records; the default three tools have no external effects. The deterministic
@@ -127,6 +129,15 @@ consent. Each platform's surface stays its own scope, and no generic cross-chann
 framework is planned.
 
 ## Proposed service boundaries
+
+Discord conversation guidance now lives in `workspace/DISCORD_ONBOARDING.md`, reached from the
+workspace's `AGENTS.md`. The Agent reads `workspace/community-directory.json` for server-scoped
+public navigation and learning, discussion, event and contribution entries. This is prompt content
+and a read-only reference document, not plugin configuration or an enforcement layer. Its default
+directory is unconfigured; the synthetic example under `templates/` is for explicit rehearsals only.
+No Discord transport, search provider, registration, submission, reminder or persistent progress
+service is enabled by these files. Runtime connectivity and governance remain separate scopes.
+See the [onboarding guide](discord-onboarding-zh.md) for the directory format and conversation checks.
 
 The v0.1 slice needs only the Identity, Proposals and Governance rows below, in the narrow form described
 above, plus a read-only view of Finance. Activities, Outcomes and Oversight are deferred.
