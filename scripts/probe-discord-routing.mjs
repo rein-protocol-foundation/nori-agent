@@ -51,4 +51,14 @@ for (const dmScope of ['main','per-account-channel-peer']) for (const bindings o
     nativeRecallComparisons++;
   }
 }
+for (const form of ['entries','list']) for (const dmScope of ['main','per-account-channel-peer'])
+  for (const globalRecall of [undefined,false,true]) for (const first of [undefined,false,true]) for (const second of [undefined,false,true]) {
+    const agents=[{id:'main',memory:{search:{rememberAcrossConversations:first}}},{id:'other',memory:{search:{rememberAcrossConversations:second}}}];
+    const cfg={channels:{discord:{enabled:true}},session:{dmScope},memory:{search:{rememberAcrossConversations:globalRecall}},
+      agents: form==='entries' ? {entries:Object.fromEntries(agents.map(({id,...agent})=>[id,agent]))} : {list:agents}};
+    const audit=inspectDiscordPrivacy(cfg);
+    assert.equal(audit.safeguards.privateRecallEnabledByConfig,agents.some(({id})=>resolveRememberAcrossConversations(cfg,id)));
+    assert.equal(audit.safeguards.privateRecallExplicitlyDisabled,[first,second].every(value=>(value??globalRecall)===false));
+    nativeRecallComparisons++;
+  }
 console.log(JSON.stringify({ probe: 'pinned upstream routing; synthetic identifiers only', results, bindingScopeComparisons, nativeRecallComparisons }, null, 2));

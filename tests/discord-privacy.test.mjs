@@ -89,3 +89,44 @@ test('unrelated bindings do not conceal the lack of an explicit recall opt-out',
     assert.ok(codes(c).includes('private_recall_default'));
   }
 });
+
+
+test('canonical per-agent enable overrides a globally disabled recall policy',()=>{
+  const c=isolatedDms();c.memory={search:{rememberAcrossConversations:false}};
+  c.agents={entries:{'synthetic-private-agent':{memory:{search:{rememberAcrossConversations:true}}}}};
+  const audit=inspectDiscordPrivacy(c);
+  assert.ok(codes(c).includes('agent_recall_override'));
+  assert.equal(audit.safeguards.privateRecallEnabledByConfig,true);
+  assert.equal(audit.safeguards.privateRecallExplicitlyDisabled,false);
+  assert.ok(!JSON.stringify(audit).includes('synthetic-private-agent'));
+});
+test('all canonical agents can explicitly disable globally enabled recall',()=>{
+  const c=isolatedDms();c.memory={search:{rememberAcrossConversations:true}};
+  c.agents={entries:{main:{memory:{search:{rememberAcrossConversations:false}}}}};
+  const audit=inspectDiscordPrivacy(c);
+  assert.equal(audit.safeguards.privateRecallEnabledByConfig,false);
+  assert.equal(audit.safeguards.privateRecallExplicitlyDisabled,true);
+  assert.ok(!codes(c).includes('private_recall_default'));
+});
+test('canonical roster takes precedence over legacy list including an empty roster',()=>{
+  for(const entries of [{main:{}},{}]) {
+    const c=isolatedDms();c.memory={search:{rememberAcrossConversations:false}};
+    c.agents={entries,list:[{id:'legacy',memory:{search:{rememberAcrossConversations:true}}}]};
+    assert.equal(inspectDiscordPrivacy(c).safeguards.privateRecallEnabledByConfig,false);
+    assert.ok(!codes(c).includes('agent_recall_override'));
+  }
+});
+test('mixed agent overrides retain inherited recall and cannot claim universal explicit disabling',()=>{
+  const c=isolatedDms();c.memory={search:{rememberAcrossConversations:true}};
+  c.agents={entries:{main:{memory:{search:{rememberAcrossConversations:false}}},other:{}}};
+  const audit=inspectDiscordPrivacy(c);
+  assert.equal(audit.safeguards.privateRecallEnabledByConfig,true);
+  assert.equal(audit.safeguards.privateRecallExplicitlyDisabled,false);
+});
+test('explicit per-agent disabling is distinguished from implicit native defaults',()=>{
+  const c=isolatedDms();c.session.dmScope='main';c.bindings=[binding({channel:'slack'})];
+  c.agents={entries:{main:{memory:{search:{rememberAcrossConversations:false}}}}};
+  assert.ok(!codes(c).includes('private_recall_implicit_policy'));
+  c.agents.entries.other={};
+  assert.ok(codes(c).includes('private_recall_implicit_policy'));
+});
