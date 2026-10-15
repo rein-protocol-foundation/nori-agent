@@ -1,5 +1,6 @@
 import { Client, GatewayIntentBits, Partials, Events, Options, ChannelType } from 'discord.js';
 import { createIsolatedReceiver } from './inbound.mjs';
+import { splitDiscordReply } from './reply-chunks.mjs';
 
 export async function startIsolatedDiscord({ config, cfg, runtime, memory, turns, sessionStore, signal, status, log }) {
   const token = process.env[config.tokenEnv];
@@ -11,10 +12,10 @@ export async function startIsolatedDiscord({ config, cfg, runtime, memory, turns
     allowedMentions: { parse: [], repliedUser: false },
   });
   const send = async (channelId, text, messageId) => {
-    for (let offset = 0; offset < text.length; offset += 1900) {
+    for (const chunk of splitDiscordReply(text)) {
       if (signal.aborted) throw new Error('Receiver stopped');
       await client.rest.post(`/channels/${channelId}/messages`, { body: {
-        content: text.slice(offset, offset + 1900), allowed_mentions: { parse: [], replied_user: false },
+        content: chunk, allowed_mentions: { parse: [], replied_user: false },
         message_reference: { message_id: messageId, fail_if_not_exists: false },
       } });
     }

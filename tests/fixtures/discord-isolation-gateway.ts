@@ -35,7 +35,7 @@ export default {
       ];
       try {
         for (const [index,event] of cases.entries()) await receive({ ...event, id:String(100000000000000010n+BigInt(index)) });
-        const privateMemorySaved = memory.read(resolveOwner(config,cases[2])).some(note => note.value === 'ALICE_PRIVATE_MEMORY_9921');
+        const privateMemorySaved = memory.read(resolveOwner(config,cases[2])).notes.some(note => note.value === 'ALICE_PRIVATE_MEMORY_9921');
         writeFileSync(process.env.REIN_ISOLATION_EVIDENCE_PATH, JSON.stringify({trace,sent,privateMemorySaved}));
       } catch (error) {
         writeFileSync(process.env.REIN_ISOLATION_EVIDENCE_PATH, JSON.stringify({error:String(error),trace,sent}));

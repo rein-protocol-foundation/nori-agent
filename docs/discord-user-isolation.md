@@ -51,8 +51,14 @@ can access its storage; the model and other members cannot select another scope.
   plugin registration graphs so Tool Search and ingress control the same active turn.
 - Historical host transcripts and messages already sent to Discord are not erased by these commands.
   They are never imported into the new session; shared transcript recall is disabled.
+- `rein_memory_read` accepts an optional `name` for a targeted lookup or `after` for pagination
+  (never both). It returns at most five notes with a 16 KiB JSON result bound, plus `nextCursor`
+  when more notes remain; pass that cursor as `after` only when another page is relevant. Paging
+  never changes the verified owner/audience scope.
 - Each scope permits at most 50 notes of 2,000 characters. The directory must be private (0700), the
-  SQLite file is 0600, and symlink databases are rejected. The store is not encrypted at rest.
+  SQLite file is 0600; symlink and hard-linked databases are rejected before opening. Approved
+  workspace files must also be single-link regular files, preventing a second pathname from exposing
+  private storage. The store is not encrypted at rest.
 
 ## Configure a dedicated profile
 
@@ -81,7 +87,9 @@ can access its storage; the model and other members cannot select another scope.
    `discord` channel ID. `channels.discord` contains only `enabled` in this adapter. Move guild/channel
    and optional user allowlists into the Rein plugin config; do not run both transports.
 5. Keep the example's explicit tool allowlist, filesystem confinement, native memory/flush disabling,
-   `skipBootstrap: true` and absence of alternate agent/account/binding overrides. This first adapter
+   `skipBootstrap: true` and absence of alternate agent/account/binding overrides, including fields
+   inside `agents.entries` and explicit agent ownership. The host-generated `{ main: {} }` roster is
+   allowed; additional agents or any entry fields are rejected. This first adapter
    supports one default bot account and the main embedded OpenClaw agent in a dedicated profile.
    Unsupported configurations fail startup rather than falling back to shared native routing.
 6. List exact guild/channel IDs. `userIds` restricts testing to named native users; when omitted, all

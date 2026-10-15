@@ -2,14 +2,20 @@ import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync, chmodSync, lstatSync, existsSync, openSync, closeSync, constants } from 'node:fs';
 import { dirname } from 'node:path';
 
+export const MEMORY_READ_PAGE_SIZE = 5;
+// Reserve room for the tool's audience envelope below a 16 KiB JSON result.
+export const MEMORY_READ_MAX_BYTES = 16000;
+
 export function createMemberMemory(path) {
   mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
-  // Reject symlink databases. The operator must supply a private, non-symlink
-  // state directory outside every model-readable workspace.
+  // Reject symlink and hard-linked databases before chmod or opening SQLite.
+  // The operator supplies a private, non-symlink state directory outside every
+  // model-readable workspace.
   if (lstatSync(dirname(path)).isSymbolicLink()) throw new Error('Memory directory cannot be a symlink');
   if ((lstatSync(dirname(path)).mode & 0o077) !== 0) throw new Error('Memory directory must be private (0700)');
   if (!existsSync(path)) closeSync(openSync(path, constants.O_CREAT | constants.O_EXCL | constants.O_WRONLY, 0o600));
-  if (!lstatSync(path).isFile() || lstatSync(path).isSymbolicLink()) throw new Error('Unsafe memory database');
+  const stat = lstatSync(path);
+  if (!stat.isFile() || stat.nlink !== 1) throw new Error('Unsafe memory database: require a single-link regular file');
   chmodSync(path, 0o600);
   const db = new DatabaseSync(path);
   db.exec(`PRAGMA journal_mode=DELETE; PRAGMA busy_timeout=5000;
@@ -28,7 +34,26 @@ export function createMemberMemory(path) {
   const advanceGeneration = key => db.prepare('INSERT INTO scopes(owner,generation) VALUES(?,1) ON CONFLICT(owner) DO UPDATE SET generation=generation+1').run(key);
   return {
     generation,
-    read(owner) { return db.prepare('SELECT name,value FROM memories WHERE owner=? ORDER BY name').all(ownerKey(owner)); },
+    read(owner, { name, after } = {}) {
+      if (name !== undefined) validName(name);
+      if (after !== undefined) validName(after);
+      if (name !== undefined && after !== undefined) throw new Error('Use a note name or a page cursor, not both');
+      const key = ownerKey(owner);
+      const rows = name !== undefined
+        ? db.prepare('SELECT name,value FROM memories WHERE owner=? AND name=? LIMIT 1').all(key, name)
+        : db.prepare('SELECT name,value FROM memories WHERE owner=? AND name>? ORDER BY name LIMIT ?')
+          .all(key, after ?? '', MEMORY_READ_PAGE_SIZE + 1);
+      const notes = [];
+      for (const note of rows.slice(0, MEMORY_READ_PAGE_SIZE)) {
+        const candidate = { notes: [...notes, note], nextCursor: notes.length + 1 < rows.length ? note.name : null };
+        if (Buffer.byteLength(JSON.stringify(candidate), 'utf8') > MEMORY_READ_MAX_BYTES) {
+          if (!notes.length) throw new Error('Stored note exceeds the memory read budget');
+          break;
+        }
+        notes.push(note);
+      }
+      return { notes, nextCursor: notes.length < rows.length ? notes.at(-1).name : null };
+    },
     remember(owner, name, value, assertCurrent) {
       validName(name);
       if (typeof value !== 'string' || value.length < 1 || value.length > 2000) throw new Error('Memory value must contain 1–2000 characters');

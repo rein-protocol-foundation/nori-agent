@@ -698,7 +698,8 @@ changes were needed.
 The [live Bailian acceptance record](bailian-subscription-acceptance-2026-10-15.md) verifies exactly
 two requests to the dedicated China Token Plan host, `qwen3.8-flash` as both requested and served
 model, thinking off, one native echo tool continuation and clean managed shutdown. Jev and
-fallback stayed disabled. The latest full Node run passed 1,022 tests with two optional native
+fallback stayed disabled. After integrating the latest Discord isolation base, the full Node run
+passed 1,035 tests with two optional native
 tests skipped; the managed Bailian synthetic probe and native configuration UI test both passed
 separately.
 The operator chose code delivery first; remaining live account acceptance is deferred. The local

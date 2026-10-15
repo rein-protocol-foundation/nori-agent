@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, rmSync, symlinkSync, statSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, symlinkSync, statSync, linkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { resolveOwner, sessionKey, ownerFromToolContext, validateIsolationConfig, assertIsolationRuntime, PUBLIC_TOOLS, createOwnerQueue } from '../plugins/rein-discord/isolation.mjs';
-import { createMemberMemory } from '../plugins/rein-discord/memory.mjs';
+import { createMemberMemory, MEMORY_READ_PAGE_SIZE, MEMORY_READ_MAX_BYTES } from '../plugins/rein-discord/memory.mjs';
 import { createMemoryToolFactory } from '../plugins/rein-discord/memory-tools.mjs';
 import { createIsolatedReceiver } from '../plugins/rein-discord/inbound.mjs';
 import { inspectDiscordPrivacy } from '../scripts/discord-privacy.mjs';
@@ -38,14 +38,14 @@ test('same sender in DM and public room has disjoint sessions and memory partiti
   const {a,privateA,memory}=fixture(t);
   assert.notEqual(a.key,privateA.key);assert.notEqual(sessionKey(a),sessionKey(privateA));
   memory.remember(privateA,'private-note','DM-ONLY-CANARY',()=>{});
-  assert.deepEqual(memory.read(a),[]);
-  assert.equal(memory.read(privateA)[0].value,'DM-ONLY-CANARY');
+  assert.deepEqual(memory.read(a).notes,[]);
+  assert.equal(memory.read(privateA).notes[0].value,'DM-ONLY-CANARY');
 });
 test('public notes are not visible to another user; saved notes survive reopening storage',t=>{
   const {a,b,memory,c}=fixture(t);
   memory.remember(a,'learning','ALICE-ONLY-CANARY',()=>{});
   const reopened=createMemberMemory(c.memoryPath);
-  try { assert.equal(reopened.read(a)[0].value,'ALICE-ONLY-CANARY');assert.deepEqual(reopened.read(b),[]); }
+  try { assert.equal(reopened.read(a).notes[0].value,'ALICE-ONLY-CANARY');assert.deepEqual(reopened.read(b).notes,[]); }
   finally { reopened.close(); }
   assert.equal(statSync(c.memoryPath).mode & 0o777,0o600);
 });
@@ -83,7 +83,7 @@ test('memory tool cannot select another owner or read private memory from public
   await remember.execute('t',{name:'note',value:'ALICE-ONLY-CANARY',ownerId:b.senderId,audience:'private'});
   const output=JSON.stringify(await read.execute('t',{ownerId:b.senderId}));
   assert.ok(output.includes('ALICE-ONLY-CANARY'));assert.ok(!output.includes('PRIVATE-ONLY-CANARY'));assert.ok(!output.includes('BOB-ONLY-CANARY'));
-  assert.equal(memory.read(b)[0].value,'BOB-ONLY-CANARY');
+  assert.equal(memory.read(b).notes[0].value,'BOB-ONLY-CANARY');
 });
 test('revoked invocation guards apply to reads and writes at execution time',async t=>{
   const {c,a,memory}=fixture(t);let active=true;
@@ -91,7 +91,7 @@ test('revoked invocation guards apply to reads and writes at execution time',asy
   const tools=createMemoryToolFactory(c,()=>memory)(ctx);active=false;
   await assert.rejects(()=>tools[0].execute('t',{}),/revoked/);
   await assert.rejects(()=>tools[1].execute('t',{name:'n',value:'v'}),/revoked/);
-  assert.deepEqual(memory.read(a),[]);
+  assert.deepEqual(memory.read(a).notes,[]);
 });
 test('forget deletes only current owner and starts clean context; reset persists',async t=>{
   const {c,a,b,memory,turns}=fixture(t);
@@ -99,7 +99,7 @@ test('forget deletes only current owner and starts clean context; reset persists
   const ctx=context(a,memory);const turn=turns.open(ctx.sessionKey,new AbortController().signal);t.after(()=>turn.close());
   const tools=createMemoryToolFactory(c,()=>memory,turns)(ctx);
   await tools[2].execute('t',{});
-  assert.deepEqual(memory.read(a),[]);assert.equal(memory.read(b)[0].value,'b');
+  assert.deepEqual(memory.read(a).notes,[]);assert.equal(memory.read(b).notes[0].value,'b');
   assert.equal(memory.generation(a),1);assert.equal(memory.generation(b),0);
   assert.equal(turn.signal.aborted,true);
   await assert.rejects(()=>tools[0].execute('t',{}),/reset/);
@@ -112,12 +112,12 @@ for(const name of [undefined,'note']) test(`failed generation insert rolls back 
   try {
     control.exec("CREATE TRIGGER fail_generation BEFORE INSERT ON scopes BEGIN SELECT RAISE(ABORT,'simulated reset write failure'); END");
     assert.throws(()=>memory.forget(a,name,()=>{}),/simulated reset write failure/);
-    assert.equal(memory.read(a)[0].value,'ALICE-CANARY');assert.equal(memory.generation(a),0);
-    assert.equal(memory.read(b)[0].value,'BOB-CANARY');
+    assert.equal(memory.read(a).notes[0].value,'ALICE-CANARY');assert.equal(memory.generation(a),0);
+    assert.equal(memory.read(b).notes[0].value,'BOB-CANARY');
     const reopened=createMemberMemory(c.memoryPath);
-    try { assert.equal(reopened.read(a)[0].value,'ALICE-CANARY');assert.equal(reopened.generation(a),0); } finally { reopened.close(); }
+    try { assert.equal(reopened.read(a).notes[0].value,'ALICE-CANARY');assert.equal(reopened.generation(a),0); } finally { reopened.close(); }
     control.exec('DROP TRIGGER fail_generation');
-    memory.forget(a,name,()=>{});assert.deepEqual(memory.read(a),[]);assert.equal(memory.generation(a),1);
+    memory.forget(a,name,()=>{});assert.deepEqual(memory.read(a).notes,[]);assert.equal(memory.generation(a),1);
   } finally { control.close(); }
 });
 test('failed generation update rolls back deletion in an existing session',t=>{
@@ -126,7 +126,7 @@ test('failed generation update rolls back deletion in an existing session',t=>{
   try {
     control.exec("CREATE TRIGGER fail_generation BEFORE UPDATE ON scopes BEGIN SELECT RAISE(ABORT,'simulated reset write failure'); END");
     assert.throws(()=>memory.forget(a,undefined,()=>{}),/simulated reset write failure/);
-    assert.equal(memory.read(a)[0].value,'CANARY');assert.equal(memory.generation(a),1);
+    assert.equal(memory.read(a).notes[0].value,'CANARY');assert.equal(memory.generation(a),1);
   } finally { control.close(); }
 });
 test('forget tool fails without a success result when generation advancement cannot commit',async t=>{
@@ -137,7 +137,7 @@ test('forget tool fails without a success result when generation advancement can
     control.exec("CREATE TRIGGER fail_generation BEFORE INSERT ON scopes BEGIN SELECT RAISE(ABORT,'simulated reset write failure'); END");
     const tool=createMemoryToolFactory(c,()=>memory,turns)(ctx)[2];
     await assert.rejects(()=>tool.execute('t',{}),/simulated reset write failure/);
-    assert.equal(memory.read(a)[0].value,'CANARY');assert.equal(memory.generation(a),0);
+    assert.equal(memory.read(a).notes[0].value,'CANARY');assert.equal(memory.generation(a),0);
     assert.equal(turn.signal.aborted,true);assert.equal(turn.forgotten,false);assert.equal(turn.forgetOutcome,'failed');
   } finally { control.close(); }
 });
@@ -226,7 +226,7 @@ test('deduplication, per-user reset and forget cannot reset another sender',asyn
   assert.equal(memory.generation(a),1);assert.equal(memory.generation(b),0);
   await receive(event(ids.alice,{id:'100000000000000013'}));assert.equal(inputs[1].route.sessionKey,sessionKey(a,1));
   memory.remember(a,'n','a',()=>{});memory.remember(b,'n','b',()=>{});
-  await receive(event(ids.alice,{id:'100000000000000014',text:'/forget'}));assert.deepEqual(memory.read(a),[]);assert.equal(memory.read(b)[0].value,'b');
+  await receive(event(ids.alice,{id:'100000000000000014',text:'/forget'}));assert.deepEqual(memory.read(a).notes,[]);assert.equal(memory.read(b).notes[0].value,'b');
   assert.equal(memory.generation(a),2);
 });
 test('/forget command does not confirm deletion when the transaction rolls back',async t=>{
@@ -235,10 +235,10 @@ test('/forget command does not confirm deletion when the transaction rolls back'
   try {
     control.exec("CREATE TRIGGER fail_generation BEFORE INSERT ON scopes BEGIN SELECT RAISE(ABORT,'simulated reset write failure'); END");
     await assert.rejects(()=>receive(event(ids.alice,{text:'/forget'})),/simulated reset write failure/);
-    assert.deepEqual(sent,[]);assert.equal(memory.read(a)[0].value,'CANARY');assert.equal(memory.generation(a),0);
+    assert.deepEqual(sent,[]);assert.equal(memory.read(a).notes[0].value,'CANARY');assert.equal(memory.generation(a),0);
     control.exec('DROP TRIGGER fail_generation');
     await receive(event(ids.alice,{id:'100000000000000019',text:'/forget'}));
-    assert.equal(sent.length,1);assert.deepEqual(memory.read(a),[]);assert.equal(memory.generation(a),1);
+    assert.equal(sent.length,1);assert.deepEqual(memory.read(a).notes,[]);assert.equal(memory.generation(a),1);
   } finally { control.close(); }
 });
 test('aborted, unauthorized and unmentioned inputs never reach model dispatch',async t=>{
@@ -259,7 +259,7 @@ test('forgetting requires an active host turn, not only a plausible session key'
   const {c,a,memory,turns}=fixture(t);memory.remember(a,'note','CANARY',()=>{});
   const tool=createMemoryToolFactory(c,()=>memory,turns)(context(a,memory))[2];
   await assert.rejects(()=>tool.execute('t',{}),/Host-owned active turn/);
-  assert.equal(memory.read(a)[0].value,'CANARY');assert.equal(memory.generation(a),0);
+  assert.equal(memory.read(a).notes[0].value,'CANARY');assert.equal(memory.generation(a),0);
 });
 test('forgetting aborts only its owner turn and retained turn capabilities become stale',async t=>{
   const {c,a,b,memory,turns}=fixture(t);const ca=context(a,memory);const cb=context(b,memory);
@@ -282,7 +282,7 @@ test('model-driven forget suppresses stale output and sends only host-owned ackn
   const receive=createIsolatedReceiver({config:c,cfg:{},runtime,memory,turns,signal:new AbortController().signal,send:async(...args)=>sent.push(args)});
   assert.equal((await receive(event())).forgotten,true);assert.equal(aborted,true);
   assert.deepEqual(sent,[[ids.room,'已删除指定记忆，并开始新对话。','100000000000000010']]);
-  assert.deepEqual(memory.read(a),[]);assert.equal(turns.current(sessionKey(a,0)),undefined);
+  assert.deepEqual(memory.read(a).notes,[]);assert.equal(turns.current(sessionKey(a,0)),undefined);
 });
 test('abort raised after a committed forget still produces the host acknowledgement',async t=>{
   const {c,a,memory,turns}=fixture(t);const sent=[];
@@ -307,6 +307,92 @@ test('failed model-driven forget suppresses old context and sends a failure ackn
     const receive=createIsolatedReceiver({config:c,cfg:{},runtime,memory,turns,signal:new AbortController().signal,send:async(...args)=>sent.push(args)});
     assert.equal((await receive(event())).forgotten,false);
     assert.deepEqual(sent,[[ids.room,'这次未能删除记忆，请稍后重试。','100000000000000010']]);
-    assert.equal(memory.read(a)[0].value,'OLD-CANARY');assert.equal(memory.generation(a),0);
+    assert.equal(memory.read(a).notes[0].value,'OLD-CANARY');assert.equal(memory.generation(a),0);
   } finally { control.close(); }
+});
+
+test('startup and auditor reject canonical per-agent overrides before any model dispatch',t=>{
+  const {c,dir}=fixture(t);const workspace=join(dir,'public');mkdirSync(workspace);
+  const cfg=baseRuntime(c);cfg.agents.defaults.workspace=workspace;cfg.channels={discord:{enabled:true}};
+  cfg.plugins.entries['rein-discord']={enabled:true,config:c};
+  for(const entries of [{},{other:{}},{main:{},other:{}},{main:{default:true}},{main:{runtime:{type:'synthetic-alternate'}}},{main:{memory:{search:{rememberAcrossConversations:true}}}},
+    {main:{workspace:'/synthetic/private'}},{main:{tools:{allow:['exec']}}},
+    {main:{model:{agentRuntime:'synthetic-alternate'}}}]) {
+    const modified={...cfg,agents:{...cfg.agents,entries}};
+    assert.throws(()=>assertIsolationRuntime(modified,c,workspace),/Agent\/account\/binding overrides/);
+    assert.equal(inspectDiscordPrivacy(modified).isolatedAdapterConfigured,false);
+    assert.ok(inspectDiscordPrivacy(modified).findings.some(f=>f.code==='isolation_profile_invalid'));
+  }
+});
+test('memory database rejects hard links without changing the linked public file',t=>{
+  const {c,dir}=fixture(t);const workspace=join(dir,'public');mkdirSync(workspace);
+  const publicFile=join(workspace,'AGENTS.md');writeFileSync(publicFile,'PUBLIC-CANARY',{mode:0o644});
+  const linkedPath=join(dir,'private/linked.sqlite');linkSync(publicFile,linkedPath);
+  const before=statSync(publicFile);
+  assert.throws(()=>createMemberMemory(linkedPath),/single-link/);
+  const after=statSync(publicFile);
+  assert.equal(after.mode,before.mode);assert.equal(after.size,before.size);
+  assert.equal(after.nlink,2);assert.equal(statSync(c.memoryPath).nlink,1);
+});
+test('public workspace rejects approved filenames hard-linked to a private memory database',t=>{
+  const {c,dir,a,memory}=fixture(t);const workspace=join(dir,'public');mkdirSync(workspace);
+  memory.remember(a,'private-canary','MEMORY-CANARY',()=>{});
+  linkSync(c.memoryPath,join(workspace,'USER.md'));
+  assert.throws(()=>assertIsolationRuntime(baseRuntime(c),c,workspace),/public reference/);
+  assert.throws(()=>createMemberMemory(c.memoryPath),/single-link/);
+});
+test('all fifty maximum-size notes remain reachable through bounded owner-scoped pages',t=>{
+  const {a,b,privateA,memory}=fixture(t);const names=[];
+  for(let i=0;i<50;i++) {
+    const name=`note${String(i).padStart(2,'0')}`;names.push(name);
+    // JSON escapes inflate control characters; Chinese content has high UTF-8 size.
+    memory.remember(a,name,(i%2 ? '\u0000' : '课').repeat(2000),()=>{});
+  }
+  memory.remember(b,'bob','BOB-ONLY-CANARY',()=>{});
+  memory.remember(privateA,'private','PRIVATE-ONLY-CANARY',()=>{});
+  const collected=[];let after;
+  do {
+    const page=memory.read(a,{after});
+    assert.ok(Buffer.byteLength(JSON.stringify(page),'utf8')<=MEMORY_READ_MAX_BYTES);
+    assert.ok(page.notes.length>0 && page.notes.length<=MEMORY_READ_PAGE_SIZE);
+    collected.push(...page.notes.map(note=>note.name));
+    assert.ok(!JSON.stringify(page).includes('ONLY-CANARY'));
+    after=page.nextCursor;
+  } while(after);
+  assert.deepEqual(collected,names);assert.equal(new Set(collected).size,50);
+  assert.deepEqual(memory.read(a,{after:'note49'}),{notes:[],nextCursor:null});
+});
+test('targeted memory reads and cursors stay in the current owner and audience',async t=>{
+  const {c,a,b,privateA,memory}=fixture(t);
+  memory.remember(a,'course','PUBLIC-CANARY',()=>{});
+  memory.remember(b,'other','BOB-ONLY-CANARY',()=>{});
+  memory.remember(privateA,'course','PRIVATE-ONLY-CANARY',()=>{});
+  const read=createMemoryToolFactory(c,()=>memory)(context(a,memory))[0];
+  const result=await read.execute('t',{name:'course'});
+  assert.deepEqual(JSON.parse(result.content[0].text),{audience:'public',notes:[{name:'course',value:'PUBLIC-CANARY'}],nextCursor:null});
+  assert.deepEqual((await read.execute('t',{name:'other'})).details.notes,[]);
+  assert.deepEqual((await read.execute('t',{after:'course'})).details.notes,[]);
+  for(const args of [{name:"x' OR 1=1"},{after:"x' OR 1=1"},{name:'course',after:'course'}])
+    await assert.rejects(()=>read.execute('t',args));
+});
+test('memory tool results have a byte bound and expose the next page only when requested',async t=>{
+  const {c,a,memory}=fixture(t);
+  for(let i=0;i<10;i++)memory.remember(a,`note${i}`,'\u0000'.repeat(2000),()=>{});
+  const read=createMemoryToolFactory(c,()=>memory)(context(a,memory))[0];
+  const first=await read.execute('t',{});
+  assert.ok(Buffer.byteLength(first.content[0].text,'utf8')<16384);
+  assert.ok(first.details.nextCursor);assert.equal(first.details.notes.length,1);
+  const second=await read.execute('t',{after:first.details.nextCursor});
+  assert.ok(Buffer.byteLength(second.content[0].text,'utf8')<16384);
+  assert.notEqual(first.details.notes[0].name,second.details.notes[0].name);
+});
+
+
+test('startup accepts the host-generated single empty main agent entry',t=>{
+  const {c,dir}=fixture(t);const workspace=join(dir,'public');mkdirSync(workspace);
+  const cfg=baseRuntime(c);cfg.agents.entries={main:{}};
+  assert.doesNotThrow(()=>assertIsolationRuntime(cfg,c,workspace));
+  // Explicit ownership changes workspace inheritance even for an empty main entry.
+  cfg.agents.ownership='explicit';
+  assert.throws(()=>assertIsolationRuntime(cfg,c,workspace),/Agent\/account\/binding overrides/);
 });
