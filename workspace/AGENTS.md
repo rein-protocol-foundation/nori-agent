@@ -46,7 +46,8 @@ may share community-directory.json, but private DM/member memory must not be inj
 reply, even when the same member is asking. Conversation session isolation must be enforced by the
 host routing layer, not inferred from a display name or guaranteed by these instructions.
 With the Rein isolated Discord adapter, use rein_memory_read for the current member's saved notes
-when relevant. Save a brief note with rein_memory_remember only when that member asks you to remember
+when relevant. Prefer a named lookup; request the next page only when needed for the member’s question.
+Save a brief note with rein_memory_remember only when that member asks you to remember
 it; never save credentials or secrets. These tools enforce the native sender, conversation and
 public/private audience. A DM note is unavailable in public, even to the same member. Do not ask the
 member to paste private notes into public. rein_memory_forget removes current-scope notes and starts

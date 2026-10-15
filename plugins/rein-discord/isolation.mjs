@@ -55,7 +55,14 @@ export function assertIsolationRuntime(cfg, config, workspaceDir) {
       Object.values(cfg.agents?.defaults?.models ?? {}).some(model => model.agentRuntime)) throw new Error('Alternate provider/model agent runtimes are unsupported');
   // This adapter is deliberately one dedicated agent/account. Agent overrides,
   // channel bindings and shared alternate harnesses would invalidate the audited boundary.
-  if (config.agentId !== 'main' || cfg.bindings?.length || cfg.agents?.list?.length || cfg.channels?.discord?.accounts ||
+  // The host migrates an omitted roster to { main: {} } before registration.
+  // Permit only that empty entry; every per-agent field and extra agent is unsupported.
+  const entries = cfg.agents?.entries;
+  const record = value => value && typeof value === 'object' && !Array.isArray(value);
+  const emptyMain = record(entries) && Object.keys(entries).length === 1 &&
+    Object.hasOwn(entries, 'main') && record(entries.main) && Object.keys(entries.main).length === 0;
+  if (config.agentId !== 'main' || cfg.bindings?.length || cfg.agents?.list?.length || cfg.agents?.ownership !== undefined ||
+      (entries !== undefined && !emptyMain) || cfg.channels?.discord?.accounts ||
       cfg.agents?.defaults?.memory || cfg.agents?.defaults?.tools) throw new Error('Agent/account/binding overrides are unsupported in the isolated profile');
   // This is a dedicated public-reference workspace, not an operator workspace.
   // Contents of these reviewed files are public; no runtime/transcript directory
@@ -63,8 +70,8 @@ export function assertIsolationRuntime(cfg, config, workspaceDir) {
   const publicFiles = new Set(['AGENTS.md', 'SOUL.md', 'IDENTITY.md', 'TOOLS.md', 'HEARTBEAT.md',
     'USER.md', 'DISCORD_ONBOARDING.md', 'community-directory.json']);
   for (const file of readdirSync(workspaceDir)) {
-    if (!publicFiles.has(file) || !lstatSync(join(workspaceDir, file)).isFile() ||
-        lstatSync(join(workspaceDir, file)).isSymbolicLink()) throw new Error('Workspace must contain only approved public reference files');
+    const stat = lstatSync(join(workspaceDir, file));
+    if (!publicFiles.has(file) || !stat.isFile() || stat.nlink !== 1) throw new Error('Workspace must contain only approved public reference files');
   }
 }
 
