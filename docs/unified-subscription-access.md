@@ -148,6 +148,8 @@ prepared hooks cannot start or adopt a gateway. Shutdown fences readiness before
 unstarted instance disposal cannot stop another instance's service. Credential rotation still
 invalidates the owning manager's readiness. This bridge uses standard JavaScript state rather
 than OpenClaw private runtime imports.
+Concurrent shutdown requests share one cleanup operation; the service refuses a restart until
+that operation settles.
 
 The service, CLI wrapper and offline import share a private profile lock. Controlled shutdown
 captures the owned process tree, including native clients in separate sessions, and checks PID
@@ -205,7 +207,7 @@ Before opening the page, the launcher runs Magpie's own `update auto off` comman
 profile. Configuration failure prevents startup. This keeps the verified binary pinned; upgrade
 the dependency through a reviewed lock-file change and `magpie:setup`.
 
-Eleven launcher unit tests cover fixed arguments, isolation, contention, updater setup, normal exit and signal
+Twelve launcher unit tests cover fixed arguments, isolation, contention, updater setup, normal exit and signal
 cleanup. The opt-in native check uses the actual pinned binary in a fresh synthetic profile: it
 starts with automatic updates enabled and verifies they are disabled, authenticated HTML/settings,
 the exact gateway catalog, zero model requests and removal
@@ -696,9 +698,11 @@ changes were needed.
 The [live Bailian acceptance record](bailian-subscription-acceptance-2026-10-15.md) verifies exactly
 two requests to the dedicated China Token Plan host, `qwen3.8-flash` as both requested and served
 model, thinking off, one native echo tool continuation and clean managed shutdown. Jev and
-fallback stayed disabled. The latest full Node run passed 1,018 tests with two optional native
+fallback stayed disabled. The latest full Node run passed 1,022 tests with two optional native
 tests skipped; the managed Bailian synthetic probe and native configuration UI test both passed
 separately.
+The operator chose code delivery first; remaining live account acceptance is deferred. The local
+configuration UI has been stopped, and the working OpenClaw profile remains inactive.
 
 | Acceptance criterion | Required evidence | Current result |
 | --- | --- | --- |

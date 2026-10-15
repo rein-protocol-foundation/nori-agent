@@ -125,7 +125,8 @@ async function readSmallJson(response) {
 
 /** A foreground child owned by one plugin instance; never adopts another daemon. */
 export function createManagedGateway({ gateway, routes, allowPaidUsage = false, environment = process.env,
-  spawnImpl = spawn, fetchImpl = globalThis.fetch, verifyInstallation = verifyManagedBinary }) {
+  spawnImpl = spawn, fetchImpl = globalThis.fetch, verifyInstallation = verifyManagedBinary,
+  stopImpl = stopOwnedProcessTree }) {
   const config = gateway.managed;
   const childEnvironment = buildManagedEnvironment({ homeDir: config.homeDir, baseUrl: gateway.baseUrl,
     environment, allowSubscriptionAccounts: config.allowSubscriptionAccounts });
@@ -140,27 +141,34 @@ export function createManagedGateway({ gateway, routes, allowPaidUsage = false, 
     } catch { return null; }
     finally { clearTimeout(timer); controller.abort(); }
   };
-  let child, ready = false, stopping = false, starting = false, generation = 0, serviceHealth, releaseProfile, cleanupFailed = false, activeKey;
+  let child, ready = false, stopping = false, starting = false, generation = 0, serviceHealth, releaseProfile, cleanupFailed = false, activeKey, stopPromise;
   const isReady = () => Boolean(ready && child && child.exitCode === null && !child.killed &&
     activeKey && environment[gateway.apiKeyEnvVar] === activeKey);
-  const stop = async () => {
+  const stop = () => {
     generation++; ready = false; stopping = true; activeKey = undefined;
-    if (cleanupFailed) throw failure('process_cleanup_required');
-    const previous = child;
-    if (!previous?.pid) { child = undefined; await releaseProfile?.(); releaseProfile = undefined; return; }
-    try { await stopOwnedProcessTree(previous); }
-    catch {
-      cleanupFailed = true;
-      serviceHealth?.reportFailure(failure('process_cleanup_required'));
-      // Keep the ownership lock: an unverified detached native client must not
-      // overlap a second service or an offline credential import.
-      throw failure('process_cleanup_required');
-    }
-    if (child === previous) child = undefined;
-    await releaseProfile?.(); releaseProfile = undefined;
+    // Startup retirement and host disposal can request the same stop while
+    // metadata is pending. Only one cleanup may own this child, including
+    // after it exits while that cleanup is still verifying its descendants.
+    if (stopPromise) return stopPromise;
+    stopPromise = (async () => {
+      if (cleanupFailed) throw failure('process_cleanup_required');
+      const previous = child;
+      if (!previous?.pid) { child = undefined; await releaseProfile?.(); releaseProfile = undefined; return; }
+      try { await stopImpl(previous); }
+      catch {
+        cleanupFailed = true;
+        serviceHealth?.reportFailure(failure('process_cleanup_required'));
+        // Keep the ownership lock: an unverified detached native client must not
+        // overlap a second service or an offline credential import.
+        throw failure('process_cleanup_required');
+      }
+      if (child === previous) child = undefined;
+      await releaseProfile?.(); releaseProfile = undefined;
+    })().finally(() => { stopPromise = undefined; });
+    return stopPromise;
   };
   const start = async context => {
-    if (child || starting || cleanupFailed) throw failure('already_started');
+    if (child || starting || stopPromise || cleanupFailed) throw failure('already_started');
     starting = true;
     const current = ++generation;
     stopping = false; ready = false; serviceHealth = context?.serviceHealth;

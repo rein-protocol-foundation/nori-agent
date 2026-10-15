@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { createServer } from 'node:net';
+import { EventEmitter } from 'node:events';
 import { buildManagedEnvironment, ensureManagedDirectories, acquireManagedProfileLock,
   verifyManagedBinary, createManagedGateway } from '../plugins/rein-router/managed-gateway.mjs';
 import { createRouter } from '../plugins/rein-router/runtime.mjs';
@@ -171,6 +172,48 @@ test('late readiness metadata cannot mark a stopped child as successfully starte
   await manager.stop();
   finishModels(); await settled;
   assert.equal(manager.isReady(), false);
+});
+
+test('concurrent stop requests share cleanup after the child exits while late startup metadata is pending', async t => {
+  const data = await fixture(t); let finishModels, observeModels, finishCleanup, cleanupCalls = 0;
+  const modelsStarted = new Promise(resolve => { observeModels = resolve; });
+  const cleanup = new Promise(resolve => { finishCleanup = resolve; });
+  // This synthetic handle never starts or signals an operating-system process.
+  const native = Object.assign(new EventEmitter(), { pid: 2147483647, exitCode: null, signalCode: null, killed: false });
+  const failures = [];
+  const manager = createManagedGateway({ ...data, routes: [route], spawnImpl: () => native,
+    fetchImpl: async url => {
+      if (new URL(url).pathname === '/') return Response.json({ name: 'magpie', version: lock.version });
+      observeModels();
+      return new Promise(resolve => { finishModels = () => resolve(Response.json({ data: [{ id: route.gatewayModel }] })); });
+    }, stopImpl: async child => {
+      cleanupCalls++;
+      assert.equal(child, native);
+      assert.equal(child.exitCode, null, 'Cleanup must begin while its child is live');
+      await cleanup;
+      return { complete: true };
+    } });
+  const starting = manager.start({ serviceHealth: { reportFailure: error => failures.push(error.message) } });
+  const settled = assert.rejects(() => starting, /startup_failed/);
+  await modelsStarted;
+  const stopping = manager.stop();
+  assert.equal(cleanupCalls, 1);
+  native.exitCode = 0; native.emit('exit', 0, null);
+  const concurrent = manager.stop();
+  assert.equal(concurrent, stopping, 'Concurrent callers must await the same ownership verification');
+  assert.equal(cleanupCalls, 1);
+  assert.equal(manager.isReady(), false);
+  await assert.rejects(() => acquireManagedProfileLock(data.gateway.managed.homeDir), /profile_busy/);
+  finishModels(); finishCleanup();
+  await Promise.all([stopping, concurrent, settled]);
+  assert.equal(cleanupCalls, 1);
+  assert.deepEqual(failures, []);
+  await manager.stop();
+  assert.equal(cleanupCalls, 1, 'A settled stop must not clean an exited child again');
+  const emptyStop = manager.stop();
+  await assert.rejects(() => manager.start({}), /already_started/);
+  await emptyStop;
+  const release = await acquireManagedProfileLock(data.gateway.managed.homeDir); await release();
 });
 
 test('managed gateway unavailability blocks routing, Jev spending and model transport', async t => {
