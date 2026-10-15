@@ -79,7 +79,7 @@ export async function runMagpieUi(input = [], { root = projectRoot, environment 
         if (cleanup) return cleanup;
         // Defer so synchronous test/event callbacks cannot enter cleanup twice.
         cleanup = Promise.resolve().then(async () => {
-          if (code === 0 && !exitSignal && !requestedSignal && !failedToStart) {
+          if (code === 0 && !exitSignal && !failedToStart) {
             // Native Quit already reaped the root. Verify its fixed gateway has
             // closed rather than trying to signal a potentially reused PID.
             try { if (await portCheck(new URL(gatewayBaseUrl)) !== false) throw failure('cleanup_required'); }

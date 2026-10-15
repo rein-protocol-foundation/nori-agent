@@ -113,6 +113,22 @@ test('SIGINT and SIGTERM clean the owned live process tree once and release the 
   }
 });
 
+test('a signal and normal native close in either same-turn order release the lock without stopping a reaped child', async t => {
+  for (const [signal, code] of [['SIGINT', 130], ['SIGTERM', 143]]) {
+    for (const signalFirst of [true, false]) {
+      let stopCalls = 0;
+      const f = fixture(t, { stopImpl: async () => { stopCalls++; throw new Error('must not stop an already closed child'); } });
+      const { result } = await f.run();
+      if (signalFirst) { f.signalSource.emit(signal); f.close(); }
+      else { f.close(); f.signalSource.emit(signal); }
+      assert.equal(await result, code); assert.equal(stopCalls, 0);
+      assert.equal(f.calls.ports.length, 2, 'normal close must still verify the gateway closed');
+      assert.equal(existsSync(f.lockPath), false);
+      assert.equal(f.signalSource.listenerCount('SIGINT'), 0); assert.equal(f.signalSource.listenerCount('SIGTERM'), 0);
+    }
+  }
+});
+
 test('an observed tree cleanup failure retains the lock and reports a fixed diagnostic', async t => {
   const f = fixture(t, { stopImpl: async () => { throw new Error('private child failure'); } });
   const { result } = await f.run(); f.signalSource.emit('SIGTERM');
