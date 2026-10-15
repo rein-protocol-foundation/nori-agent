@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { createConnection } from 'node:net';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -10,6 +10,17 @@ import { stopOwnedProcessTree } from '../plugins/rein-router/process-tree.mjs';
 const BASE_URL = 'http://127.0.0.1:3425/v1';
 const failure = reason => new Error(`magpie_ui_${reason}`);
 const signalExitCode = signal => signal === 'SIGINT' ? 130 : signal === 'SIGTERM' ? 143 : 1;
+
+/** Let upstream persist its own updater preference; keep output private and bounded. */
+export function disableMagpieAutoUpdate(binaryPath, { cwd, env }, execFileImpl = execFile) {
+  return new Promise((resolveConfigured, reject) => {
+    const complete = error => error ? reject(failure('configuration_failed')) : resolveConfigured();
+    try {
+      execFileImpl(binaryPath, ['update', 'auto', 'off'], { cwd, env, shell: false,
+        timeout: 3000, maxBuffer: 64 * 1024, windowsHide: true, killSignal: 'SIGKILL' }, complete);
+    } catch { complete(true); }
+  });
+}
 
 /** An inconclusive connection check never authorizes starting a second gateway. */
 async function gatewayOccupied(url) {
@@ -26,7 +37,7 @@ async function gatewayOccupied(url) {
 export async function runMagpieUi(input = [], { root = projectRoot, environment = process.env,
   gatewayBaseUrl = BASE_URL,
   spawnImpl = spawn, portCheck = gatewayOccupied, verifier = verifyMagpieInstallation,
-  stopImpl = stopOwnedProcessTree, signalSource = process } = {}) {
+  stopImpl = stopOwnedProcessTree, configureNative = disableMagpieAutoUpdate, signalSource = process } = {}) {
   const options = [...input];
   if (options[0] === '--') options.shift();
   if (options.length > 1 || (options.length === 1 && options[0] !== '--no-open'))
@@ -53,6 +64,9 @@ export async function runMagpieUi(input = [], { root = projectRoot, environment 
     try { occupied = await portCheck(new URL(gatewayBaseUrl)); }
     catch { throw failure('gateway_check_failed'); }
     if (occupied !== false) throw failure('gateway_occupied');
+    if (requestedSignal) return signalExitCode(requestedSignal);
+    try { await configureNative(installed.binaryPath, { cwd: paths.homeDir, env }); }
+    catch { throw failure('configuration_failed'); }
     if (requestedSignal) return signalExitCode(requestedSignal);
     try {
       child = spawnImpl(installed.binaryPath, ['web', '--addr', '127.0.0.1:0', ...options], {

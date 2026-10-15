@@ -201,9 +201,14 @@ SIWC route; Claude, Google and other providers use Magpie's corresponding native
 activation occurs. Close the page process with Ctrl-C before starting the managed gateway; the
 shared profile lock prevents simultaneous owners, and an occupied gateway port is refused.
 
-Nine launcher unit tests cover fixed arguments, isolation, contention, normal exit and signal
+Before opening the page, the launcher runs Magpie's own `update auto off` command in that private
+profile. Configuration failure prevents startup. This keeps the verified binary pinned; upgrade
+the dependency through a reviewed lock-file change and `magpie:setup`.
+
+Eleven launcher unit tests cover fixed arguments, isolation, contention, updater setup, normal exit and signal
 cleanup. The opt-in native check uses the actual pinned binary in a fresh synthetic profile: it
-verifies authenticated HTML/settings, the exact gateway catalog, zero model requests and removal
+starts with automatic updates enabled and verifies they are disabled, authenticated HTML/settings,
+the exact gateway catalog, zero model requests and removal
 of both listeners and the lock after SIGTERM. CI runs it after building Magpie. Reproduce it with:
 
 ```sh

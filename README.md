@@ -161,7 +161,8 @@ See the [subscription setup and billing boundaries](docs/unified-subscription-ac
 configuring accounts or activating a profile.
 
 `magpie:ui` opens Magpie's own loopback configuration page using the project-private profile.
-Connect providers there, then close it before starting the OpenClaw-managed gateway.
+The launcher disables native automatic updates to preserve the pinned binary. Connect providers
+there, then close it before starting the OpenClaw-managed gateway.
 
 ## Quick start
 

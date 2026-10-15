@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { magpiePaths } from '../scripts/magpie-dependency.mjs';
-import { runMagpieUi } from '../scripts/magpie-ui.mjs';
+import { disableMagpieAutoUpdate, runMagpieUi } from '../scripts/magpie-ui.mjs';
 import { acquireManagedProfileLock, buildManagedEnvironment,
   ensureManagedDirectories } from '../plugins/rein-router/managed-gateway.mjs';
 
@@ -14,7 +14,7 @@ function fixture(t, overrides = {}) {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'rein-magpie-ui-test-')));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const paths = magpiePaths(root), signalSource = new EventEmitter(), events = new EventEmitter();
-  const calls = { spawn: [], ports: [], stop: [], verify: [] };
+  const calls = { spawn: [], ports: [], stop: [], verify: [], configure: [] }, order = [];
   const child = new ChildProcess(); child.pid = process.pid + 1_000_000;
   child.exitCode = null; child.signalCode = null;
   const close = (code = 0, signal = null) => {
@@ -25,16 +25,20 @@ function fixture(t, overrides = {}) {
     CLAUDE_CONFIG_DIR: '/global-claude', GEMINI_CLI_HOME: '/global-gemini',
     MAGPIE_ADDR: '0.0.0.0:9999', MAGPIE_NO_ACCOUNTS: '1', MAGPIE_TRUST_PROXY: '1',
     OPENAI_API_KEY: 'must-not-leak', ANTHROPIC_API_KEY: 'must-not-leak', REIN_MAGPIE_GATEWAY_KEY: 'must-not-leak' },
-    verifier: async input => { calls.verify.push(input); return { binaryPath: paths.binary }; },
+    verifier: async input => { order.push('verify'); calls.verify.push(input); return { binaryPath: paths.binary }; },
     portCheck: async url => {
       assert.equal(existsSync(join(dirname(paths.homeDir), '.rein-magpie.lock')), true);
-      calls.ports.push(url.href); return false;
+      order.push('port'); calls.ports.push(url.href); return false;
     },
-    spawnImpl: (...args) => { calls.spawn.push(args); events.emit('spawn'); return child; },
+    configureNative: async (...args) => {
+      assert.equal(existsSync(join(dirname(paths.homeDir), '.rein-magpie.lock')), true);
+      order.push('configure'); calls.configure.push(args);
+    },
+    spawnImpl: (...args) => { order.push('spawn'); calls.spawn.push(args); events.emit('spawn'); return child; },
     stopImpl: async input => { calls.stop.push(input); close(null, 'SIGTERM'); return { complete: true }; },
     ...overrides,
   };
-  return { root, paths, signalSource, child, calls, options, close,
+  return { root, paths, signalSource, child, calls, order, options, close,
     lockPath: join(dirname(paths.homeDir), '.rein-magpie.lock'),
     run: async (args = []) => {
       const spawned = once(events, 'spawn');
@@ -58,6 +62,9 @@ test('launches only the verified native web UI with isolated project profile and
   assert.equal(options.env.MAGPIE_ADDR, '127.0.0.1:3425'); assert.equal(options.env.MAGPIE_TRUST_PROXY, '0');
   assert.equal(options.env.MAGPIE_NO_ACCOUNTS, undefined);
   for (const name of ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'REIN_MAGPIE_GATEWAY_KEY']) assert.equal(options.env[name], undefined);
+  assert.deepEqual(f.order, ['verify', 'port', 'configure', 'spawn']);
+  assert.equal(f.calls.configure[0][0], binary);
+  assert.equal(f.calls.configure[0][1].cwd, options.cwd); assert.equal(f.calls.configure[0][1].env, options.env);
   f.close(); assert.equal(await result, 0);
   assert.deepEqual(f.calls.ports, ['http://127.0.0.1:3425/v1', 'http://127.0.0.1:3425/v1']);
   assert.equal(f.calls.stop.length, 0, 'native Quit must not signal a reaped PID');
@@ -80,7 +87,8 @@ test('a busy private profile rejects before a gateway check or spawn', async t =
   const release = await acquireManagedProfileLock(f.paths.homeDir);
   try {
     await assert.rejects(runMagpieUi([], f.options), { message: 'rein_magpie_profile_busy' });
-    assert.equal(f.calls.ports.length, 0); assert.equal(f.calls.spawn.length, 0); assert.equal(existsSync(f.lockPath), true);
+    assert.equal(f.calls.ports.length, 0); assert.equal(f.calls.configure.length, 0);
+    assert.equal(f.calls.spawn.length, 0); assert.equal(existsSync(f.lockPath), true);
   } finally { await release(); }
 });
 
@@ -92,7 +100,7 @@ test('an occupied or inconclusive fixed gateway rejects without adopting or stop
     } }), { message: 'magpie_ui_gateway_occupied' });
     assert.equal(existsSync(f.lockPath), false);
   }
-  assert.equal(f.calls.spawn.length, 0); assert.equal(f.calls.stop.length, 0);
+  assert.equal(f.calls.configure.length, 0); assert.equal(f.calls.spawn.length, 0); assert.equal(f.calls.stop.length, 0);
 });
 
 test('SIGINT and SIGTERM clean the owned live process tree once and release the profile lock', async t => {
@@ -138,5 +146,26 @@ test('verification and port check errors stop before spawn and use fixed diagnos
     { message: 'magpie_ui_dependency_verification_failed' });
   await assert.rejects(runMagpieUi([], { ...f.options, portCheck: async () => { throw new Error('private socket error'); } }),
     { message: 'magpie_ui_gateway_check_failed' });
-  assert.equal(existsSync(f.lockPath), false); assert.equal(f.calls.spawn.length, 0);
+  assert.equal(existsSync(f.lockPath), false); assert.equal(f.calls.configure.length, 0); assert.equal(f.calls.spawn.length, 0);
+});
+
+test('native updater setup uses only the verified fixed command with private output and bounded execution', async () => {
+  const environment = { HOME: '/project/private/home' };
+  await disableMagpieAutoUpdate('/project/pinned/magpie', { cwd: environment.HOME, env: environment }, (binary, args, options, callback) => {
+    assert.equal(binary, '/project/pinned/magpie'); assert.deepEqual(args, ['update', 'auto', 'off']);
+    assert.equal(options.cwd, environment.HOME); assert.equal(options.env, environment); assert.equal(options.shell, false);
+    assert.equal(options.timeout, 3000); assert.equal(options.maxBuffer, 64 * 1024); assert.equal(options.killSignal, 'SIGKILL');
+    assert.equal(options.stdio, undefined, 'execFile must capture rather than inherit setup output');
+    callback(null, 'private native output', 'private native diagnostics');
+  });
+  await assert.rejects(disableMagpieAutoUpdate('/project/pinned/magpie', { cwd: environment.HOME, env: environment },
+    (_binary, _args, _options, callback) => callback(new Error('private native configuration failure'))),
+  { message: 'magpie_ui_configuration_failed' });
+});
+
+test('native configuration failure releases the lock and prevents web spawn with a fixed diagnostic', async t => {
+  const f = fixture(t, { configureNative: async () => { throw new Error('private settings error'); } });
+  await assert.rejects(runMagpieUi([], f.options), { message: 'magpie_ui_configuration_failed' });
+  assert.equal(f.calls.spawn.length, 0); assert.equal(f.calls.stop.length, 0); assert.equal(existsSync(f.lockPath), false);
+  assert.equal(f.signalSource.listenerCount('SIGINT'), 0); assert.equal(f.signalSource.listenerCount('SIGTERM'), 0);
 });

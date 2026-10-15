@@ -72,7 +72,7 @@ async function response(url, headers, maxBytes = 128 * 1024) {
   return { status: result.status, headers: result.headers, text };
 }
 
-test('native Magpie UI launcher bootstraps its private cookie and closes both owned listeners on SIGTERM',
+test('native Magpie UI launcher disables updates, bootstraps its private cookie and closes both listeners on SIGTERM',
   { skip: process.env.REIN_RUN_NATIVE_MAGPIE_UI !== '1', timeout: 90000 }, async () => {
     let phase = 'dependency';
     let temp, child, upstreamServer, denyProxy, gatewayPort, uiPort;
@@ -106,7 +106,9 @@ test('native Magpie UI launcher bootstraps its private cookie and closes both ow
       const gatewayKey = `sk-magpie-key-${randomBytes(24).toString('hex')}`;
       const profile = join(temp, 'runtime/magpie/config/magpie');
       const privateJson = (path, value) => writeFileSync(path, JSON.stringify(value), { mode: 0o600, flag: 'wx' });
-      privateJson(join(profile, 'settings.json'), { noAutoUpdate: true, noAccountDiscovery: true,
+      // Start with the upstream updater enabled so the native settings check
+      // below verifies the launcher's configuration rather than this fixture.
+      privateJson(join(profile, 'settings.json'), { noAutoUpdate: false, noAccountDiscovery: true,
         noStats: true, noUsageStats: true, quotaReads: 'asked' });
       privateJson(join(profile, 'providers.json'), { providers: [{ id: 'fixture', name: 'Synthetic UI fixture',
         key: 'synthetic-upstream-key', chat: `http://127.0.0.1:${upstreamPort}/v1`, models: ['capable'] }], noAutoGroups: true });
@@ -128,10 +130,11 @@ test('native Magpie UI launcher bootstraps its private cookie and closes both ow
       const script = `
         import {spawn} from 'node:child_process';
         import {writeFileSync} from 'node:fs';
-        import {runMagpieUi} from ${JSON.stringify(launcher)};
+        import {runMagpieUi,disableMagpieAutoUpdate} from ${JSON.stringify(launcher)};
         let output = '', recorded = false;
+        const isolatedTestEnv = env => ({...env,MAGPIE_NO_ACCOUNTS:'1'});
         const spawnImpl = (binary, args, options) => {
-          const native = spawn(binary, args, {...options, env: {...options.env, MAGPIE_NO_ACCOUNTS:'1'},
+          const native = spawn(binary, args, {...options, env: isolatedTestEnv(options.env),
             stdio:['ignore','pipe','pipe']});
           const capture = chunk => {
             if (Buffer.byteLength(output) >= 1024*1024) return;
@@ -149,7 +152,9 @@ test('native Magpie UI launcher bootstraps its private cookie and closes both ow
           return native;
         };
         try { process.exitCode = await runMagpieUi(['--no-open'], {root:process.env.REIN_UI_TEST_ROOT,
-          gatewayBaseUrl:process.env.REIN_UI_TEST_GATEWAY,environment:process.env,spawnImpl}); }
+          gatewayBaseUrl:process.env.REIN_UI_TEST_GATEWAY,environment:process.env,spawnImpl,
+          configureNative:(binary,options)=>disableMagpieAutoUpdate(binary,
+            {...options,env:isolatedTestEnv(options.env)})}); }
         catch { console.error('magpie_ui_native_launcher_failed'); process.exitCode = 1; }
       `;
       phase = 'startup';
