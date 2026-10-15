@@ -15,7 +15,10 @@ bot token before the socket starts. Each event must belong to that app/workspace
 matching bot installation authorization. Bot echoes, message edits/deletions, hidden/subtype events,
 Slack Connect, multiparty DMs and unknown workspaces/channels are not admitted.
 
-Every admitted event gets fresh `conversations.info` metadata. A changed or unknown channel
+Unmentioned channel traffic is rejected before Web API lookups when mentions are required.
+Admitted messages reserve a bounded per-native-sender/conversation lane at receipt, before awaiting
+acknowledgement or metadata. A slow lookup cannot reorder one member’s messages; other members can
+continue independently. Every admitted event gets fresh `conversations.info` metadata. A changed or unknown channel
 visibility fails closed; no cached public classification can turn a private channel into public.
 DM metadata must identify the approved native peer. Text claims never select another session.
 

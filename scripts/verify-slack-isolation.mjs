@@ -114,6 +114,12 @@ try {
   assert.ok(inputWithTools('CASE_BOARD_B').includes('board_membership_required'),'a non-director must still be refused');
   for(const marker of ['CASE_A2','CASE_B2','CASE_A3','CASE_A4','CASE_THREAD_NEW'])assert.ok(!inputWithTools(marker).includes('PRIVATE_BOARD_FUNDS_CANARY'));
   assert.ok(inputWithTools('CASE_THREAD_A2').includes('ALICE_THREAD_MEMORY_8821'));
+  assert.ok(inputFor('CASE_THREAD_A2').includes('THREAD_CONTEXT_CANARY'),'same-user thread context must persist');
+  for(const marker of ['CASE_THREAD_A','CASE_THREAD_NEW']) {
+    assert.ok(!inputWithTools(marker).includes('ALICE_PUBLIC_MEMORY_6382'),'thread notes must not inherit parent-room notes');
+    assert.ok(!inputFor(marker).includes('ALICE_PUBLIC_CANARY_7406'),'thread context must not inherit parent-room history');
+  }
+
   for(const marker of ['CASE_THREAD_B','CASE_THREAD_NEW','CASE_A3']) {
     assert.ok(!inputWithTools(marker).includes('ALICE_THREAD_MEMORY_8821'));
     assert.ok(!inputFor(marker).includes('THREAD_CONTEXT_CANARY'));

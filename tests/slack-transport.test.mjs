@@ -113,3 +113,41 @@ test('Slack message-level controls avoid native slash-command handling',async()=
   for(const text of ['constructor','__proto__','!forget all'])
     assert.equal((await normalizeSlackEvent(c,body({text}),fakeWeb())).text,text);
 });
+
+test('unmentioned shared-channel traffic consumes no metadata quota while mentioned requests and DMs work',async()=>{
+  const web=fakeWeb(),cfg={...c,requireMention:true};
+  for(let i=0;i<100;i++)assert.equal(await normalizeSlackEvent(cfg,body({text:'ordinary shared-channel discussion'}),web),null);
+  assert.deepEqual(web.infos,[]);
+  assert.ok(await normalizeSlackEvent(cfg,body(),web));
+  assert.ok(await normalizeSlackEvent(cfg,body({channel:'DSYNTH001',text:'hello in a DM'}),web));
+  assert.equal(web.infos.length,2);
+});
+test('slow metadata cannot reorder one sender, while another sender proceeds independently',async t=>{
+  const f=await transport(t);const original=f.web.conversations.info;let lookups=0,release;
+  const gate=new Promise(resolve=>{release=resolve;});
+  f.web.conversations.info=async p=>{lookups++;if(lookups===1)await gate;return original(p);};
+  const first=f.deliver(body({text:'first',ts:'1800000000.000001'}));
+  const second=f.deliver(body({text:'second',ts:'1800000000.000002'}));
+  await new Promise(resolve=>setImmediate(resolve));assert.equal(lookups,1);assert.equal(f.inputs.length,0);
+  await f.deliver(body({text:'bob',user:'USYNTHB02',ts:'1800000000.000003'}));
+  assert.equal(f.inputs[0].ctxPayload.sender.id,'USYNTHB02');
+  release();await Promise.all([first,second]);
+  assert.deepEqual(f.inputs.map(p=>p.ctxPayload.message.rawBody),['bob','first','second']);
+});
+test('acknowledgement timing does not change same-conversation message order',async t=>{
+  const f=await transport(t);let release;const gate=new Promise(resolve=>{release=resolve;});
+  const first=f.deliver(body({text:'first',ts:'1800000000.000001'}),()=>gate);
+  const second=f.deliver(body({text:'second',ts:'1800000000.000002'}));
+  await new Promise(resolve=>setImmediate(resolve));assert.equal(f.web.infos.length,0);
+  release();await Promise.all([first,second]);
+  assert.deepEqual(f.inputs.map(p=>p.ctxPayload.message.rawBody),['first','second']);
+});
+test('receipt snapshots cannot change sender or text while queued behind metadata',async t=>{
+  const f=await transport(t);const payload=body({text:'original'}),original=f.web.conversations.info;
+  let release;const gate=new Promise(resolve=>{release=resolve;});
+  f.web.conversations.info=async p=>{await gate;return original(p);};
+  const pending=f.deliver(payload);payload.event.user='USYNTHB02';payload.event.text='mutated';
+  release();await pending;
+  assert.equal(f.inputs[0].ctxPayload.sender.id,'USYNTHA01');
+  assert.equal(f.inputs[0].ctxPayload.message.rawBody,'original');
+});
