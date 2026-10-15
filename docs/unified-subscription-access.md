@@ -640,8 +640,8 @@ service-start evaluation through the real TypeSafe adapter against a local synth
 the strict managed inference regression above. The latter completed exactly two capped requests
 and one native echo tool continuation with observed effort and vendor model, then released its
 profile lock. Process cleanup and terminal fallback settlement also have focused regression
-coverage. The separately authorized hosted Jev classification run has now completed; real Bailian
-inference and native subscription-account calls remain pending.
+coverage. The separately authorized hosted Jev classification run has completed. The live Bailian
+tool round trip also passed; native OpenAI, Claude and Google calls remain pending.
 The earlier full Node run passed 1,000 tests with one opt-in native test skipped; that native test
 passed separately with the prepared binary. Scaffold validation and source-credential checks
 also passed. Neither upstream checkout contains tracked changes.
@@ -665,9 +665,15 @@ upstream shell fixtures interpolate temporary paths without quoting; use a priva
 temporary directory when reproducing them. Both suites passed locally; no upstream source
 changes were needed.
 
+The [live Bailian acceptance record](bailian-subscription-acceptance-2026-10-15.md) verifies exactly
+two requests to the dedicated China Token Plan host, `qwen3.8-flash` as both requested and served
+model, thinking off, one native echo tool continuation and clean managed shutdown. Jev and
+fallback stayed disabled. The latest full Node run passed 1,009 tests with one optional native
+test skipped; that native synthetic test passed separately after the probe cleanup.
+
 | Acceptance criterion | Required evidence | Current result |
 | --- | --- | --- |
-| AC-SUB1 | Each of the four provider families answers through OpenClaw/Magpie, performs a tool call and resumes after its tool result. Verify the actual gateway model, streaming and integration behavior. | Live pending; native adapters are delegated to Magpie; no Claude account is currently connected |
+| AC-SUB1 | Each of the four provider families answers through OpenClaw/Magpie, performs a tool call and resumes after its tool result. Verify the actual gateway model, streaming and integration behavior. | Bailian live round trip passed; OpenAI, Claude and Google live tests pending; no Claude account is currently connected |
 | AC-SUB2 | Manual model selection stays on its declared route; automatic routing changes eligible models while preserving agents, tools and workflows. | Live pending; synthetic policy/probe evidence only |
 | AC-SUB3 | Correlate each served provider/model/effort with gateway usage and the configured allowance/billing source; no new paid charge. An unverified route cannot activate. | Live pending; configuration labels are not provider-side billing records |
 | AC-SUB4 | Simulated rate limits, authentication errors and model failures obey the exact fallback list. Empty fallback returns failure. No paid route or unapproved Magpie path is attempted. | Live pending; synthetic failure coverage only |

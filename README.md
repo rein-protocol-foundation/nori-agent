@@ -116,6 +116,9 @@ connections across channels. Claude support is plan-agnostic (including Pro/Max/
 with operator-verified account model access and limits; no Claude account is currently connected. Existing
 profiles are not changed by installing the source.
 
+The existing China Token Plan passed a [live Bailian tool-call round trip](docs/bailian-subscription-acceptance-2026-10-15.md)
+through the production router and managed Magpie gateway, with two capped requests and no Jev or fallback.
+
 An authorized [60-call hosted Jev evaluation](docs/subscription-routing-evaluation-2026-10-15.md)
 selected 21 of 24 proposed economical opportunities with no unsafe economical selections against
 the synthetic labels. Label review, paired answer-quality evaluation and net savings remain pending.
