@@ -97,6 +97,10 @@ jobs:
         run: pnpm verify:subscriptions --magpie-checkout runtime/magpie-fixture
       - name: Prepare pinned headless Magpie dependency
         run: pnpm magpie:setup
+      - name: Verify project-local Magpie configuration UI without inference
+        env:
+          REIN_RUN_NATIVE_MAGPIE_UI: '1'
+        run: node --test tests/magpie-ui-native.test.mjs
       - name: Verify native managed Magpie lifecycle without inference
         run: pnpm verify:subscriptions:managed
       - name: Verify managed Magpie inference and tool continuation with synthetic upstream

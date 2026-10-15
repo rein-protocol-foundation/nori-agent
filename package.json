@@ -22,6 +22,7 @@
     "config:subscriptions": "node scripts/subscription-config.mjs",
     "magpie:setup": "node scripts/magpie-dependency.mjs",
     "magpie": "node scripts/magpie.mjs",
+    "magpie:ui": "node scripts/magpie-ui.mjs",
     "magpie:import-bailian": "node scripts/import-bailian-subscription.mjs",
     "magpie:prepare-key": "node scripts/prepare-magpie-key.mjs",
     "toolchain:pnpm": "npx --prefix .toolchain --no-install pnpm",

@@ -151,6 +151,7 @@ The optional subscription gateway also needs Git and Go for explicit bootstrap:
 ```sh
 npm run toolchain:pnpm -- run magpie:setup
 npm run toolchain:pnpm -- run magpie -- version
+npm run toolchain:pnpm -- run magpie:ui
 ```
 
 Bootstrap builds the pinned headless binary under `.toolchain/magpie-bin`; the wrapper uses
@@ -158,6 +159,9 @@ protected stores under `runtime/magpie`. A configured `rein-router` managed gate
 stops that prepared process with OpenClaw. It performs no runtime build or global installation.
 See the [subscription setup and billing boundaries](docs/unified-subscription-access.md) before
 configuring accounts or activating a profile.
+
+`magpie:ui` opens Magpie's own loopback configuration page using the project-private profile.
+Connect providers there, then close it before starting the OpenClaw-managed gateway.
 
 ## Quick start
 

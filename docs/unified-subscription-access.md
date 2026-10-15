@@ -187,6 +187,29 @@ only when explicitly configuring the intended ChatGPT/Claude accounts and their 
 access. It does not enable paid overages. Provider authentication and account access stay in
 Magpie; the router enforces its declared model routes and explicit fallback policy.
 
+The simplest account setup uses Magpie's native configuration page:
+
+```sh
+npm run toolchain:pnpm -- run magpie:ui
+```
+
+The launcher uses the verified project-local binary, the same private profile as the managed
+gateway, and an ephemeral loopback page. Magpie opens the browser and handles provider sign-in,
+account management, tokens and model discovery. Choose its ChatGPT API provider for the official
+SIWC route; Claude, Google and other providers use Magpie's corresponding native setup flows.
+`--no-open` leaves browser opening to the operator. No global installation or OpenClaw profile
+activation occurs. Close the page process with Ctrl-C before starting the managed gateway; the
+shared profile lock prevents simultaneous owners, and an occupied gateway port is refused.
+
+Nine launcher unit tests cover fixed arguments, isolation, contention, normal exit and signal
+cleanup. The opt-in native check uses the actual pinned binary in a fresh synthetic profile: it
+verifies authenticated HTML/settings, the exact gateway catalog, zero model requests and removal
+of both listeners and the lock after SIGTERM. CI runs it after building Magpie. Reproduce it with:
+
+```sh
+REIN_RUN_NATIVE_MAGPIE_UI=1 npm run toolchain:pnpm -- exec node --test tests/magpie-ui-native.test.mjs
+```
+
 With the managed gateway stopped, sign in through the protected project profile, one command at
 a time:
 
@@ -668,8 +691,9 @@ changes were needed.
 The [live Bailian acceptance record](bailian-subscription-acceptance-2026-10-15.md) verifies exactly
 two requests to the dedicated China Token Plan host, `qwen3.8-flash` as both requested and served
 model, thinking off, one native echo tool continuation and clean managed shutdown. Jev and
-fallback stayed disabled. The latest full Node run passed 1,009 tests with one optional native
-test skipped; that native synthetic test passed separately after the probe cleanup.
+fallback stayed disabled. The latest full Node run passed 1,018 tests with two optional native
+tests skipped; the managed Bailian synthetic probe and native configuration UI test both passed
+separately.
 
 | Acceptance criterion | Required evidence | Current result |
 | --- | --- | --- |
