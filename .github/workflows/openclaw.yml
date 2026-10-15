@@ -49,5 +49,9 @@ jobs:
       - run: pnpm setup:local
       - name: Validate runtime plugin loading
         run: pnpm verify:plugin
+      - name: Verify isolated Discord and Slack native pipelines
+        run: |
+          pnpm verify:discord-isolation
+          pnpm verify:slack-isolation
       - name: Confirm upstream tracked files remain unchanged
         run: test -z "$(git -C vendor/openclaw status --porcelain)"

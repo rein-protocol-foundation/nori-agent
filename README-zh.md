@@ -158,3 +158,7 @@ Contributor 提案 → 信息确认与评估 → 零预算授权快速通道 / B
 
 需求建议不等于组织政策；实现必须追溯到 PRD 的 R / US / AC 编号。参见 [贡献指南](CONTRIBUTING.md)。
 许可尚未选定，当前未授予开源许可。
+
+Slack 逐用户隔离现作为独立 stacked 变更提供：[实现说明](docs/slack-user-isolation.md)与
+[合成验证记录](docs/slack-user-isolation-verification-2026-10-14.md)。Discord 和 Slack 共用
+[会话／记忆隔离层](docs/channel-user-isolation.md)，后续飞书可复用；真实双账号验收仍待完成。

@@ -197,3 +197,11 @@ The activity core implements guarded local transitions for these dimensions. Cro
 | `scripts/` | Local bootstrap, CLI wrapper and upstream update helper |
 | `tests/` | Node test runner checks for the plugin and the update script |
 | `runtime/` | Gitignored local gateway state and config |
+
+## Shared chat isolation
+
+The opt-in Discord and Slack transports delegate per-user scope, memory, queue and dispatch control
+to `plugins/rein-isolation`. Native authentication, visibility, ID validation and reply mechanics stay
+in the adapters; Foundation identity and governance remain backend-owned. See the
+[shared contract and Feishu extension guide](channel-user-isolation.md). Profiles are currently
+dedicated per bot/platform; no cross-platform identity link implicitly merges private sessions.

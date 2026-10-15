@@ -1,0 +1,42 @@
+# Slack 用户隔离实现与验证 — 2026-10-14
+
+这是 stacked 在 Discord 隔离 PR #6 上的独立变更。新增 Slack 适配器，并把 Discord 已有的
+scope、排队、宿主消息分发、SQLite 记忆、分页、generation 与删除中止抽到共享包。
+没有修改上游子模块或 Foundation 后端，没有切换正在运行的机器人，也没有真实双账号验收。
+
+本轮本地完整测试 **761 项通过**，其中新增 Slack 隔离／传输测试 **45 项**；原有相关
+Discord／隐私测试 **65 项通过**。两个插件的固定 SDK 类型检查、结构与差异格式检查通过，
+上游 tracked 文件保持不变。Discord 原生探针 **17 次请求**回归通过；Slack 探针如下。
+
+## 实现与验证范围
+
+- 同频道／同线程的不同原生用户独立；同用户的公开频道、私有频道、DM 和不同线程独立。
+- workspace、app、bot 安装身份和频道可见性来自认证传输／Slack API，不使用显示名或邮件。
+- 私有频道仍按频道处理，保留现有 Board／提案／投票工具及后端身份、角色和频道检查。
+- DM 不开放治理或身份绑定工具；个人记忆始终绑定当前可信用户、会话及受众。
+- 全部 Discord 现有隔离功能使用共享实现；v1 公开频道／DM scope hash 和已隔离记忆保持兼容。
+- 共享层不依赖 Slack/Discord SDK 或 ID 格式；合成 Feishu namespace 验证平台、账号、bot、
+  workspace 命名空间不同。没有把“可扩展”表述成已经实现飞书接入。
+
+单元测试覆盖 native ID、频道类型、线程、伪造身份、namespace、私聊／私有频道隔离、重置、
+删除、权限设置、事件去重、Slack Connect 拒绝、元数据变化、错误确认和 Unicode 分段。
+
+原生 Slack 探针实际加载生产注册与接入实现，并执行 OpenClaw 宿主 ingress/session/model/tool
+链路。合成 Socket Mode／Web API 边缘和 localhost 后端提供受控数据，29 次真实模型协议请求
+验证以下行为：
+
+| 检查 | 证据 |
+| --- | --- |
+| A/B 同公开频道 | session key 不同，B 的模型输入不含 A 的上下文或个人记忆 |
+| A 的 DM 与私有 Board 频道 | 私聊资料不进入 Board 或公开模型请求，Board 资料不进入公开请求 |
+| 私有 Board 工具 | 现有后端收到了正确的 Slack 用户、workspace、原生频道与私有 proof |
+| 非 Director 的 Board 查询 | 返回 membership-required，未执行读取资金快照的后端 operation |
+| 同线程不同用户、不同线程 | 各自上下文／记忆独立，A 的同线程连续对话仍可使用自己的记忆 |
+| 重置与删除 | reset 保留本范围记忆；forget 后当前轮无模型续接，宿主确认，下一轮无已删除内容 |
+| 出站目标 | 回复仍在原始频道／线程，模型无法改写收件人 |
+
+这里只用合成身份、合成 Board 数据和确定性模型，不以“模型说不知道”当作隔离证据。
+未验证真实 Slack 连接、重连、实际权限、真实模型语气、真实双账号或生产部署。
+
+启用限制、配置与验证命令见[实现说明](slack-user-isolation.md)；后续 Feishu 适配器的接口见
+[共享隔离层说明](channel-user-isolation.md)。
