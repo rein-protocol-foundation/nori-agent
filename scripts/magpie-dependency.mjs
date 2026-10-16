@@ -27,6 +27,15 @@ export function magpieBuildCommand(lock, binaryPath) {
     '-ldflags', `-s -w -X main.version=${lock.version}`, '-o', binaryPath, '.'] };
 }
 
+/** Share the native headless build environment with integration fixtures. */
+export function magpieBuildEnvironment(root = projectRoot, environment = process.env) {
+  const env = { ...environment, CGO_ENABLED: '0', GOTOOLCHAIN: 'auto', GOENV: 'off', GOFLAGS: '',
+    GOWORK: 'off', GOEXPERIMENT: '', GOCACHE: join(resolve(root), '.toolchain/magpie-go-cache'),
+    GOMODCACHE: join(resolve(root), '.toolchain/magpie-go-mod') };
+  delete env.GOOS; delete env.GOARCH;
+  return env;
+}
+
 export async function sha256File(path) {
   const hash = createHash('sha256');
   for await (const chunk of createReadStream(path)) hash.update(chunk);
@@ -98,10 +107,7 @@ export async function bootstrapMagpie({ root = projectRoot, run = runProcess, en
   const temporary = `${paths.binary}.build-${randomUUID()}`;
   const receiptTemporary = `${paths.receipt}.build-${randomUUID()}`;
   const build = magpieBuildCommand(lock, temporary);
-  const buildEnv = { ...environment, CGO_ENABLED: '0', GOTOOLCHAIN: 'auto', GOENV: 'off', GOFLAGS: '',
-    GOWORK: 'off', GOEXPERIMENT: '', GOCACHE: join(paths.root, '.toolchain/magpie-go-cache'),
-    GOMODCACHE: join(paths.root, '.toolchain/magpie-go-mod') };
-  delete buildEnv.GOOS; delete buildEnv.GOARCH;
+  const buildEnv = magpieBuildEnvironment(paths.root, environment);
   try {
     await checked(build.command, build.args, { cwd: paths.source, env: buildEnv }, 'build');
     if (await git(['status', '--porcelain', '--untracked-files=all'], 'status'))

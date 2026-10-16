@@ -30,17 +30,23 @@ function fixture(t) {
 
 test('builds only the pinned project-local nogui CLI, with no installation command', async t => {
   const f = fixture(t);
+  const environment = Object.freeze({ PATH: '/usr/bin', CGO_ENABLED: '1', GOTOOLCHAIN: 'local',
+    GOENV: '/inherited/go.env', GOWORK: '/inherited/go.work', GOEXPERIMENT: 'invalid-experiment',
+    GOOS: 'invalid-target', GOARCH: 'invalid-arch', GOFLAGS: '-mod=mod' });
   const installed = await bootstrapMagpie({ root: f.root, run: f.run,
-    environment: { PATH: '/usr/bin', GOOS: 'invalid-target', GOARCH: 'invalid-arch', GOFLAGS: '-mod=mod' } });
+    environment });
   const build = f.calls.find(call => call.command === 'go');
   assert.deepEqual(build.args.slice(0, 7), ['build', '-mod=readonly', '-tags', 'nogui', '-trimpath', '-buildvcs=false', '-ldflags']);
   assert.equal(build.args[7], `-s -w -X main.version=${f.lock.version}`);
   assert.equal(build.options.env.CGO_ENABLED, '0');
   assert.equal(build.options.env.GOTOOLCHAIN, 'auto');
+  assert.equal(build.options.env.GOENV, 'off');
   assert.equal(build.options.env.GOWORK, 'off');
+  assert.equal(build.options.env.GOEXPERIMENT, '');
   assert.equal(build.options.env.GOFLAGS, '');
   assert.equal(build.options.env.GOOS, undefined);
   assert.equal(build.options.env.GOARCH, undefined);
+  assert.equal(environment.CGO_ENABLED, '1', 'Build isolation must not mutate the caller environment');
   assert.equal(installed.binaryPath, f.paths.binary);
   assert.deepEqual(Object.keys(installed.receipt).sort(), ['revision', 'sha256', 'version']);
   assert.equal(installed.receipt.revision, f.lock.revision);

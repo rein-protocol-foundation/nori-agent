@@ -10,6 +10,7 @@ import { PUBLIC_TOOLS } from '../plugins/rein-discord/isolation.mjs';
 import { buildOpenClawFragment } from '../plugins/rein-router/policy.mjs';
 import { createGatewayRequestHeaders, readGatewayHeaderEvidence, readGatewayRouteEvidence } from '../plugins/rein-router/provenance.mjs';
 import magpieLock from '../plugins/rein-router/magpie.lock.json' with { type: 'json' };
+import { magpieBuildEnvironment } from './magpie-dependency.mjs';
 
 requireSource();
 const MAGPIE_REVISION = magpieLock.revision;
@@ -105,9 +106,9 @@ if (magpieSource) {
   writeFileSync(join(helperDir, 'main.go'), readFileSync(join(root, 'tests/fixtures/magpie-gateway.go')));
   const binary = join(temp, 'magpie-fixture');
   try {
-    const built = spawnSync('go', ['build', '-mod=readonly', '-o', binary, `./.rein-probe-${process.pid}`], {
+    const built = spawnSync('go', ['build', '-mod=readonly', '-tags', 'nogui', '-o', binary, `./.rein-probe-${process.pid}`], {
       cwd: magpieSource, encoding: 'utf8', timeout: 600000, maxBuffer: 8 * 1024 * 1024,
-      env: { ...process.env, GOCACHE: join(root, '.toolchain/magpie-go-cache'), GOMODCACHE: join(root, '.toolchain/magpie-go-mod') },
+      env: magpieBuildEnvironment(root),
     });
     assert.equal(built.status, 0, `Could not build isolated Magpie fixture: ${built.stderr}`);
   } finally { rmSync(helperDir, { recursive: true, force: true }); }
