@@ -39,6 +39,30 @@ test('explicit manual model and unrelated providers bypass Jev', async () => {
   assert.equal(r.status(ctx()).currentSession.selection, 'manual');
 });
 
+test('manual routes stay pinned after failures even when alternate routes are in the fallback ladder', async () => {
+  for (const channel of ['discord', 'slack']) {
+    for (const selected of ['flash', 'standard']) {
+      for (const resolveModel of [true, false]) {
+        let decisions = 0;
+        const r = router(config({ fallbackRoutes: ['standard', 'code'] }), async () => { decisions++; return answer(); });
+        const manual = ctx({ channel, sessionKey: `agent:main:${channel}:alice`, modelId: selected });
+        if (resolveModel) await r.beforeModelResolve({ prompt: 'Use this model' }, manual);
+        assert.equal(r.beforeAgentRun({}, manual).outcome, 'pass');
+        // Attempt failures do not settle the outer run or unlock the manual pin.
+        for (const phase of ['error', 'end']) {
+          r.lifecycleEvent(lifecycle('r1', { data: { phase } }));
+          for (const alternate of ['standard', 'code'].filter(id => id !== selected)) {
+            assert.equal(r.beforeAgentRun({}, { ...manual, modelId: alternate }).reason,
+              'rein_router_fallback_disallowed', `${channel}: ${selected} must not switch to ${alternate}`);
+          }
+          assert.equal(r.beforeAgentRun({}, manual).outcome, 'pass', 'Retrying the pinned model remains allowed');
+        }
+        assert.equal(decisions, 0);
+      }
+    }
+  }
+});
+
 test('Jev separate billing opt-in, channel, attachment and prompt bounds skip classification', async () => {
   let calls = 0;
   for (const [c, event, context] of [
@@ -160,6 +184,21 @@ test('runtime configuration rejects inherited paid ladders and mismatched gatewa
   host.agents.defaults.model.fallbacks = [];
   host.models.providers['rein-magpie'].baseUrl = 'https://outside.example/v1';
   assert.throws(() => assertRuntimeConfig(r.config, host), /rein-magpie/);
+});
+
+test('runtime configuration requires the complete unique model catalog regardless of order', () => {
+  const r = router();
+  const host = buildOpenClawFragment(r.config, '/synthetic/rein-router');
+  const provider = host.models.providers['rein-magpie'];
+  const models = provider.models;
+  for (const incomplete of [undefined, [], ...models.map(omitted => models.filter(model => model !== omitted)),
+    [...models, models[0]], [...models.slice(0, -1), models[0]],
+    [...models.slice(0, -1), { id: 'outside-catalog' }], [...models.slice(0, -1), null]]) {
+    provider.models = incomplete;
+    assert.throws(() => assertRuntimeConfig(r.config, host), /rein_router_runtime_invalid: provider\.models/);
+  }
+  provider.models = [...models].reverse();
+  assert.doesNotThrow(() => assertRuntimeConfig(r.config, host));
 });
 
 test('gateway-reported serving metadata stays scoped and separate from billing assertions', async () => {

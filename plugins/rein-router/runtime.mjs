@@ -44,7 +44,9 @@ export function assertRuntimeConfig(config, host) {
   if (!reference && !prepared)
     throw new Error('rein_router_runtime_invalid: gateway credential binding');
   const allowed = new Set(['auto', ...config.routes.map(route => route.id)]);
-  if (!Array.isArray(provider.models) || provider.models.some(model => !allowed.has(model.id)))
+  if (!Array.isArray(provider.models) || provider.models.length !== allowed.size ||
+      new Set(provider.models.map(model => model?.id)).size !== allowed.size ||
+      provider.models.some(model => !allowed.has(model?.id)))
     throw new Error('rein_router_runtime_invalid: provider.models');
   const check = model => {
     if (!model || typeof model === 'string') return;
@@ -91,6 +93,8 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
     const previous = runs.get(ctx.runId);
     runs.set(ctx.runId, { ...previous, at: clock(), agentId: previous?.agentId ?? ctx.agentId,
       sessionKey: previous?.sessionKey ?? ctx.sessionKey,
+      // Automatic resolution also returns a named route; retain the original choice mode.
+      manual: previous?.manual ?? (ctx.modelId !== 'auto'),
       requested: previous?.requested ?? (ctx.modelId !== 'auto' ? ctx.modelId : undefined) });
   };
   function selection(outcome, { admin, hasAttachments }) {
@@ -177,12 +181,12 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
       if (ctx.modelProviderId !== PROVIDER_ID && !runs.has(ctx.runId)) return;
       if (config.gateway.managed && !gatewayReady?.()) return block('rein_router_gateway_unavailable');
       if (ctx.modelProviderId !== PROVIDER_ID || !routeById(ctx.modelId)) return block('rein_router_route_disallowed');
-      const requested = runs.get(ctx.runId)?.requested;
-      if (requested && ctx.modelId !== requested && !config.fallbackRoutes.includes(ctx.modelId))
+      const run = runs.get(ctx.runId);
+      const requested = run?.requested;
+      if (requested && ctx.modelId !== requested && (run.manual || !config.fallbackRoutes.includes(ctx.modelId)))
         return block('rein_router_fallback_disallowed');
       if (requested && ctx.modelId !== requested && routeById(ctx.modelId).billingMode === 'coding-plan' &&
           !runs.get(ctx.runId)?.codingEligible) return block('rein_router_coding_plan_task_ineligible');
-      const run = runs.get(ctx.runId);
       if (run?.lastRoute && ctx.modelId !== run.lastRoute) {
         const ladder = config.fallbackRoutes.filter(id => id !== requested);
         if (ctx.modelId !== ladder[run.fallbackCursor ?? 0]) return block('rein_router_fallback_order_disallowed');
