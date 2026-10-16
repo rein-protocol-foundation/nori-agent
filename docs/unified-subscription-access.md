@@ -64,6 +64,8 @@ Keeping Magpie as an unmodified executable lets upstream own its protocol adapte
 refresh and native-client bridges. The Rein plugin owns the OpenClaw SDK boundary, routing policy
 and process lifecycle. Upgrades require changing one dependency pin and passing the gateway and
 native-host probes; Rein does not maintain a Magpie fork or embed its Go internals in OpenClaw.
+For the reviewed upgrade workflow, including private-profile backups, pin updates, compatibility
+checks and rollback commands, see the [Magpie upgrade guide (Chinese)](magpie-upgrade-zh.md).
 
 | Provider | Magpie route | Rein integration responsibility |
 | --- | --- | --- |
@@ -208,7 +210,9 @@ shared profile lock prevents simultaneous owners, and an occupied gateway port i
 
 Before opening the page, the launcher runs Magpie's own `update auto off` command in that private
 profile. Configuration failure prevents startup. This keeps the verified binary pinned; upgrade
-the dependency through a reviewed lock-file change and `magpie:setup`.
+the dependency through a reviewed lock-file change and `magpie:setup`. That command builds the
+locked revision; it does not discover or select a newer upstream release. Upstream update
+monitoring and upgrade-PR creation are currently manual.
 
 Twelve launcher unit tests cover fixed arguments, isolation, contention, updater setup, normal exit and signal
 cleanup. The opt-in native check uses the actual pinned binary in a fresh synthetic profile: it

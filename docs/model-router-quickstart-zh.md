@@ -56,8 +56,8 @@ Magpie 的 **ChatGPT API** Provider；其他提供方使用 Magpie 对应的原�
 | Claude | `claude/<实际模型>` |
 | 中国区百炼 Token Plan | `bailian-token-plan/<实际模型>` |
 
-界面启动器会关闭 Magpie 自动更新，以保留项目固定版本。配置结束后，在启动终端按
-Ctrl-C 关闭界面，再查看模型目录：
+界面启动器会关闭 Magpie 自动更新，以保留项目固定版本。后续更新见[Magpie 升级流程](magpie-upgrade-zh.md)。
+配置结束后，在启动终端按 Ctrl-C 关闭界面，再查看模型目录：
 
 ```sh
 pnpm run magpie -- --allow-subscription-accounts models
@@ -318,10 +318,17 @@ Model Router 片段后重启。要关闭目标 Agent 的全部 Jev 决策，将�
 `""`（空字符串会覆盖继承值），或禁用 TypeSafe。
 关闭 Jev 后，`auto` 使用 `defaultRoute`，仍保留显式配置的推理回退。
 
+## 升级 Magpie
+
+按[Magpie 升级流程](magpie-upgrade-zh.md)完成停服备份、更新锁定提交、项目内构建、
+兼容性回归和回滚准备。维护者通过升级 PR 跟进上游；使用者应用已合并的升级。
+`magpie:setup` 只构建仓库锁定的版本，不会自动追踪上游最新版。
+
 ## 常用维护命令
 
 | 命令 | 用途 |
 | --- | --- |
+| `pnpm run magpie:setup` | 构建当前锁定版本；升级前先按升级流程备份并更新版本锁定 |
 | `pnpm run magpie -- version` | 查看准备好的项目内 Magpie 版本 |
 | `pnpm run magpie:ui` | 打开原生 Provider 配置界面；与 managed 网关错开运行 |
 | `pnpm run magpie -- --allow-subscription-accounts models` | 查看 Magpie 模型目录 |
