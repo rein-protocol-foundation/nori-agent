@@ -42,9 +42,10 @@ flowchart LR
 
 The diagram shows the P0 Slack governance slice. A separate operator-configured local Discord
 onboarding test now exists, using public navigation and DEV identity binding rather than governance.
-Its native public-channel sessions are shared by channel; per-user routing and member memory remain
-unimplemented. See the [privacy audit](discord-session-privacy-audit-2026-10-13.md); the local instance
-has been temporarily restricted to its original acceptance account, and is not a multi-user deployment.
+Its original native public-channel sessions are shared by channel. The opt-in
+[Rein Discord adapter](discord-user-isolation.md) now adds per-sender/per-audience routing and private
+scoped member notes in a dedicated profile. The original local instance remains restricted to its
+acceptance account; real two-account acceptance and multi-user deployment remain pending.
 
 `plugins/rein-operations` registers `rein_status`, `rein_simulate_proposal` and
 `rein_simulate_vote` through the public `openclaw/plugin-sdk/plugin-entry` entry point. Four v2 proposal tools are registered only with explicit single-platform, channel and storage configuration. They use host-supplied sender identity and local durable proposal records; the default three tools have no external effects. The deterministic

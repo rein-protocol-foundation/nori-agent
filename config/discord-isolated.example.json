@@ -1,0 +1,29 @@
+{
+  "agents": { "defaults": {
+    "workspace": "/absolute/path/to/public-discord-workspace",
+    "skipBootstrap": true,
+    "compaction": { "memoryFlush": { "enabled": false } }
+  } },
+  "memory": { "search": { "enabled": false, "rememberAcrossConversations": false } },
+  "session": { "dmScope": "per-account-channel-peer", "groupScope": "per-group" },
+  "tools": {
+    "allow": ["read", "web_search", "web_fetch", "rein_status", "rein_member_status", "rein_identity_bind_start", "rein_identity_bind_status", "rein_identity_bind_complete", "rein_memory_read", "rein_memory_remember", "rein_memory_forget"],
+    "fs": { "workspaceOnly": true }, "sessions": { "visibility": "self" }, "agentToAgent": { "enabled": false }
+  },
+  "channels": { "discord": { "enabled": true } },
+  "plugins": {
+    "allow": ["rein-operations", "rein-discord"],
+    "load": { "paths": ["/absolute/path/to/rein-agent/plugins/rein-operations", "/absolute/path/to/rein-agent/plugins/rein-discord"] },
+    "entries": {
+      "discord": { "enabled": false },
+      "rein-operations": { "enabled": true },
+      "rein-discord": { "enabled": true, "config": {
+        "agentId": "main", "botUserId": "100000000000000008", "tokenEnv": "DISCORD_BOT_TOKEN",
+        "memoryPath": "/absolute/path/to/private-discord-state/member-memory.sqlite",
+        "requireMention": true,
+        "guilds": [{ "id": "100000000000000001", "channelIds": ["100000000000000002"], "userIds": ["100000000000000003", "100000000000000004"] }],
+        "dmAllowFrom": []
+      } }
+    }
+  }
+}
