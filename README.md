@@ -4,6 +4,9 @@
 
 [中文说明](README-zh.md)
 
+[Model Router & Dynamic Router: 中文快速上手](docs/model-router-quickstart-zh.md) — installation,
+copyable configuration, manual model selection and Jev automatic routing.
+
 Rein Protocol Foundation's operations agent: an administrator, secretary, and online facilitator.
 
 Rein Agent helps members turn activity ideas into real-world action. It receives proposals,

@@ -1,5 +1,8 @@
 # Unified subscription access and dynamic routing
 
+For installation and operator commands in Chinese, see the
+[Model Router and Dynamic Router quickstart](model-router-quickstart-zh.md).
+
 Status: opt-in repository feature; live acceptance for all four providers is **pending**. The
 [example configuration](../config/subscription-router.example.json) is disabled, contains synthetic
 model IDs and limits, and marks every billing source unverified. It is not a discovered provider
@@ -320,8 +323,8 @@ overrides. Actual plan-specific tool and effort behavior still needs live verifi
    provider store. The managed process does not inherit provider-key environment variables or
    automatically migrate the existing profile. The router does not copy a direct provider key
    into its configuration or tool output. Do not put keys in the
-   repository or paste secret literals into shell commands or shell history. Google AI Pro is
-   excluded from this setup until a supported third-party allowance route becomes available.
+   repository or paste secret literals into shell commands or shell history. Configure Google
+   through Magpie's supported native routes and use the connected account's exposed model catalog.
 3. Create a named Magpie gateway key for Rein. Restrict it to the exact reviewed models and
    accounts; inspect the catalog using that same key. This is the enforcement boundary if other
    API providers exist in Magpie. Use a generated managed key beginning `sk-magpie-key-`; the
