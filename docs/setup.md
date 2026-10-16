@@ -381,3 +381,12 @@ was stopped after verification. No live platform integration or model inference 
 The upstream UI build reports an advisory Mermaid bundle budget violation
 (1555.8 KiB gzip versus 960 KiB); the build exits successfully. This is upstream
 output, and no upstream source was modified to suppress it.
+
+## Isolated Slack profile
+
+Use the [Slack isolation guide](slack-user-isolation.md) and
+[example configuration](../config/slack-isolated.example.json) for the opt-in Socket Mode transport.
+Disable bundled Slack, prepare a public reference workspace and configure private member state.
+`verify:slack-isolation` uses localhost model/backend servers and synthetic native events; it does
+not authorize connecting a real Slack workspace. The shared-core refactor also retains the native
+`verify:discord-isolation` regression probe.

@@ -86,6 +86,11 @@ now implements per-sender/per-audience sessions and scoped persistent notes, wit
 probe using synthetic senders. Real two-account acceptance is pending; the original local instance
 remains restricted to its acceptance account. Public course data was operator-supplied.
 
+Slack now has an opt-in [isolated adapter](docs/slack-user-isolation.md), stacked on the Discord
+isolation change. Both adapters reuse a [channel-neutral scope/memory/dispatch core](docs/channel-user-isolation.md);
+Slack preserves backend governance checks and separates public/private channels, DMs and threads.
+Native synthetic probes cover both transports; live two-account acceptance remains pending.
+
 ## Repository layout
 
 | Path | Purpose |

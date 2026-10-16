@@ -1,0 +1,34 @@
+{
+  "name": "@rein-protocol/openclaw-rein-slack",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "files": [
+    "index.ts",
+    "isolation.mjs",
+    "inbound.mjs",
+    "memory-tools.mjs",
+    "gateway.mjs",
+    "openclaw.plugin.json"
+  ],
+  "dependencies": {
+    "@rein-protocol/isolation-core": "workspace:*",
+    "@slack/socket-mode": "3.0.1",
+    "@slack/web-api": "8.1.1"
+  },
+  "devDependencies": {
+    "openclaw": "link:../../vendor/openclaw"
+  },
+  "peerDependencies": {
+    "openclaw": "2026.9.5"
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "compat": {
+      "pluginApi": ">=2026.9.5",
+      "minGatewayVersion": "2026.9.5"
+    }
+  }
+}
