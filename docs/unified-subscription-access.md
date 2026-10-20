@@ -98,6 +98,10 @@ the bounded Bailian live probe therefore retains an explicit add-on-pack declara
 
 Prepare Magpie explicitly through the repository toolchain:
 
+All commands use `npm run toolchain:pnpm -- ...`; no global pnpm installation or `PATH` export is
+needed. Prepare the ignored local `.toolchain` with npm as described in [setup](setup.md#prerequisites)
+first. Inline Node examples use `npm run toolchain:pnpm -- exec node` for the same supported runtime.
+
 ```sh
 npm run toolchain:pnpm -- run magpie:setup
 npm run toolchain:pnpm -- run magpie -- version
@@ -360,12 +364,15 @@ overrides. Actual plan-specific tool and effort behavior still needs live verifi
 7. Generate a merge fragment for review:
 
    ```sh
-   node scripts/subscription-config.mjs /absolute/path/router.local.json /absolute/path/rein-agent/plugins/rein-router
+   npm run toolchain:pnpm -- run config:subscriptions /absolute/path/router.local.json /absolute/path/rein-agent/plugins/rein-router --output /absolute/path/router.fragment.json
    ```
 
-   The optional plugin path defaults to this checkout's `plugins/rein-router`. The script prints
-   a fragment and performs no live writes, secret resolution, provider calls, sign-in or profile
-   activation. Merge dictionaries and append required plugin allow/load entries; do not replace
+   The optional plugin path defaults to this checkout's `plugins/rein-router`. `--output` writes
+   a private (0600) pure JSON fragment, replacing an older fragment after validation; npm/pnpm
+   lifecycle banners stay out of that file. Its parent directory must already exist. Omitting
+   `--output` prints the fragment for review, alongside any package-runner logs. The script does
+   not merge runtime configuration, resolve secrets, call providers, sign in or activate a profile.
+   Merge dictionaries and append required plugin allow/load entries; do not replace
    existing agents, allowed plugins, model providers or channel settings with the fragment.
    The disabled example intentionally cannot generate an enabled fragment.
 8. Inspect the merged local configuration and run the repository's checks/loader probe before

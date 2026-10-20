@@ -6,11 +6,13 @@ Rein 使用未经修改的 Magpie 可执行文件，Provider 协议、登录和 
 `magpie:setup` 只构建锁定版本，不会自动选择最新版。原生配置界面的自动更新也保持关闭。
 
 以下命令适用于 macOS / Linux，在仓库根目录、同一个终端执行。
-先完成[快速上手中的依赖安装](model-router-quickstart-zh.md#1-安装依赖)，确保 Git、Go、
-受支持的 Node.js 和 pnpm 可用；已有项目工具链时执行：
+先完成[快速上手中的依赖安装](model-router-quickstart-zh.md#1-安装依赖)，确保 npm、Git、Go 和
+项目内 `.toolchain` 可用。以下命令统一通过 npm 调用项目内 pnpm / Node，
+无需全局安装 pnpm，也无需修改 `PATH`：
 
 ```sh
-export PATH="$PWD/.toolchain/node_modules/.bin:$PATH"
+npm run toolchain:pnpm -- --version
+npm run toolchain:pnpm -- exec node --version
 ```
 
 维护者按步骤 1–5 准备升级 PR。使用者应用已合并的升级时，先按步骤 1 备份旧版本，
@@ -20,7 +22,7 @@ export PATH="$PWD/.toolchain/node_modules/.bin:$PATH"
 ## 1. 停止服务并备份旧版本
 
 先停止使用该 Magpie 私有目录的 OpenClaw 网关和配置界面。前台运行的进程在启动终端按 Ctrl-C；
-通过 OpenClaw 服务运行时，使用对应配置的 `pnpm run openclaw gateway stop`。
+通过 OpenClaw 服务运行时，使用对应配置的 `npm run toolchain:pnpm -- openclaw gateway stop`。
 若使用其他进程管理器，还需暂停它的自动重启。确认进程已退出后再操作文件。
 
 下面的备份包含 Magpie 私有账号、网关 Key、Router 配置、OpenClaw 状态以及旧二进制和校验凭据。
@@ -30,7 +32,7 @@ export PATH="$PWD/.toolchain/node_modules/.bin:$PATH"
 ```sh
 set -e
 umask 077
-node scripts/magpie-dependency.mjs --check
+npm run toolchain:pnpm -- run magpie:setup --check
 test ! -e runtime/magpie/.rein-magpie.lock
 MAGPIE_BACKUP_DIR="$PWD/runtime/backups/magpie-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$MAGPIE_BACKUP_DIR"
@@ -66,7 +68,7 @@ export MAGPIE_TARGET_REVISION='REPLACE_WITH_REVIEWED_40_CHARACTER_COMMIT_SHA'
 从该提交的 `go.mod` 读取 Go 版本，然后更新锁定文件；此时还不会替换已安装的二进制。
 
 ```sh
-node --input-type=module <<'NODE'
+npm run toolchain:pnpm -- exec node --input-type=module <<'NODE'
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
@@ -101,9 +103,9 @@ git diff -- plugins/rein-router/magpie.lock.json
 保持原网关与配置界面停止，执行：
 
 ```sh
-pnpm run magpie:setup
-node scripts/magpie-dependency.mjs --check
-pnpm run magpie -- version
+npm run toolchain:pnpm -- run magpie:setup
+npm run toolchain:pnpm -- run magpie:setup --check
+npm run toolchain:pnpm -- run magpie -- version
 ```
 
 首次构建可能下载 Go 工具链和模块依赖。准备脚本检出锁定提交，以 `nogui`、`CGO_ENABLED=0`
@@ -118,15 +120,15 @@ pnpm run magpie -- version
 在已安装依赖并构建 OpenClaw 的开发环境执行：
 
 ```sh
-pnpm run check
-pnpm test
-pnpm run eval:subscriptions
-pnpm run verify:subscriptions
-pnpm run verify:subscriptions:slack
-pnpm run verify:subscriptions --magpie-checkout .toolchain/magpie
-pnpm run verify:subscriptions:managed
-REIN_RUN_NATIVE_MAGPIE_UI=1 node --test tests/magpie-ui-native.test.mjs
-REIN_RUN_NATIVE_BAILIAN_SYNTHETIC=1 node --test tests/bailian-subscription-probe-native.test.mjs
+npm run toolchain:pnpm -- run check
+npm run toolchain:pnpm -- test
+npm run toolchain:pnpm -- run eval:subscriptions
+npm run toolchain:pnpm -- run verify:subscriptions
+npm run toolchain:pnpm -- run verify:subscriptions:slack
+npm run toolchain:pnpm -- run verify:subscriptions --magpie-checkout .toolchain/magpie
+npm run toolchain:pnpm -- run verify:subscriptions:managed
+REIN_RUN_NATIVE_MAGPIE_UI=1 npm run toolchain:pnpm -- exec node --test tests/magpie-ui-native.test.mjs
+REIN_RUN_NATIVE_BAILIAN_SYNTHETIC=1 npm run toolchain:pnpm -- exec node --test tests/bailian-subscription-probe-native.test.mjs
 git -C .toolchain/magpie status --porcelain --untracked-files=all
 git -C vendor/openclaw status --porcelain
 ```
@@ -148,13 +150,13 @@ PR 应记录新旧 Magpie 提交、相关上游变更、兼容性结果、迁移
 使用者应在升级 PR 合并后应用对应的 Rein 版本，再完成步骤 3。启动网关前检查模型目录：
 
 ```sh
-pnpm run magpie -- --allow-subscription-accounts models
+npm run toolchain:pnpm -- run magpie -- --allow-subscription-accounts models
 ```
 
 如果模型 ID 或路由目录发生变化，更新实际 Router 源 JSON，在网关停止时重新限定项目 Key：
 
 ```sh
-pnpm run magpie:prepare-key --replace runtime/magpie/router.quickstart.local.json
+npm run toolchain:pnpm -- run magpie:prepare-key --replace runtime/magpie/router.quickstart.local.json
 ```
 
 该路径来自快速上手示例，按部署替换。重新生成并合并相应的
@@ -163,19 +165,19 @@ pnpm run magpie:prepare-key --replace runtime/magpie/router.quickstart.local.jso
 保留原 Agent、频道和工具配置；目录未变时不需要轮换 Key。
 升级本身不应打开 `allowPaidUsage`、`allowPaidJev`，或增加未配置的 fallback。
 
-需要登录或迁移账号时使用 `pnpm run magpie:ui` 的 Magpie 原生流程，结束后关闭界面。
+需要登录或迁移账号时使用 `npm run toolchain:pnpm -- run magpie:ui` 的 Magpie 原生流程，结束后关闭界面。
 在维护者准备升级 PR 时继续保持原服务停止；本地兼容性测试不要求启用真实账号。
 使用者完成已合并升级后，按原部署方式恢复 OpenClaw。前台运行示例：
 
 ```sh
-pnpm run openclaw plugins doctor
-pnpm run openclaw gateway run
+npm run toolchain:pnpm -- openclaw plugins doctor
+npm run toolchain:pnpm -- openclaw gateway run
 ```
 
 另开终端检查健康状态，`18791` 按实际网关端口替换：
 
 ```sh
-pnpm run openclaw gateway health --port 18791
+npm run toolchain:pnpm -- openclaw gateway health --port 18791
 ```
 
 需要真实 Provider 验收时，另行按已配置的账号和计费开关安排小规模检查。
@@ -207,11 +209,11 @@ cp -a "$MAGPIE_BACKUP_DIR/openclaw" runtime/openclaw
 cp -p "$MAGPIE_BACKUP_DIR/magpie.lock.json" plugins/rein-router/magpie.lock.json
 cp -p "$MAGPIE_BACKUP_DIR/magpie" .toolchain/magpie-bin/magpie
 cp -p "$MAGPIE_BACKUP_DIR/magpie.json" .toolchain/magpie-bin/magpie.json
-node scripts/magpie-dependency.mjs --check
-pnpm run magpie -- version
+npm run toolchain:pnpm -- run magpie:setup --check
+npm run toolchain:pnpm -- run magpie -- version
 ```
 
-校验通过后按步骤 5 恢复服务。也可以在回到旧锁定文件后运行 `pnpm run magpie:setup`
+校验通过后按步骤 5 恢复服务。也可以在回到旧锁定文件后运行 `npm run toolchain:pnpm -- run magpie:setup`
 重新构建旧版本；重建二进制不会恢复私有存储，配置迁移仍需用备份回退。
 恢复 OpenClaw 目录会回到备份时的 session 和状态，升级后产生的数据保留在失败版本目录中。
 备份不能恢复已在远端撤销的 token / Key；若凭据失效，使用 Magpie 原生流程重新认证或准备 Key。

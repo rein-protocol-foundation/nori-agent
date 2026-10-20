@@ -5,7 +5,7 @@
 [中文说明](README-zh.md)
 
 [Model Router & Dynamic Router: 中文快速上手](docs/model-router-quickstart-zh.md) — installation,
-copyable configuration, manual model selection and Jev automatic routing.
+copyable npm commands, configuration, manual model selection and Jev automatic routing.
 
 Rein Protocol Foundation's operations agent: an administrator, secretary, and online facilitator.
 
@@ -137,12 +137,14 @@ remain unset, and real operations must not start without explicit authorization.
 ## Requirements
 
 - Node.js `>=24.16.0 <25` or `>=26.1.0` (Node 26 recommended). This mirrors upstream `engines`.
-- pnpm `12.4.2`, pinned by `packageManager` in `package.json`; enable it with `corepack enable`.
+- pnpm `12.4.2`, pinned by `packageManager` in `package.json`; the npm entry point below uses a
+  project-local copy, so a global installation or Corepack setup is optional.
 - git with submodule support.
 
 A gitignored local toolchain may already be installed in this working copy and can satisfy both
 without touching your shell `PATH`. It must exist at `.toolchain/`; the commands below fail if that
-directory is missing. Run pnpm through the pinned local toolchain with `npm run toolchain:pnpm`:
+directory is missing; prepare it with npm using [setup](docs/setup.md#prerequisites). Run pnpm
+through the pinned local toolchain with `npm run toolchain:pnpm`:
 
 ```sh
 npm run toolchain:pnpm -- --version   # expect 12.4.2

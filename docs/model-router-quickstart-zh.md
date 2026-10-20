@@ -2,6 +2,8 @@
 
 本文适用于包含 `plugins/rein-router` 的本仓库源码版本。所有命令在仓库根目录执行；
 OpenClaw 命令通过仓库包装器使用 `runtime/openclaw/openclaw.json`。
+本文统一使用 `npm run toolchain:pnpm -- ...`：只需在终端调用 npm，无需全局安装 pnpm，
+也无需导出 `PATH`。`--` 后的参数交给项目内 pnpm，脚本及 `exec node` 使用项目内 Node。
 
 | 模式 | 用途 | 需要安装什么 |
 | --- | --- | --- |
@@ -15,26 +17,28 @@ token 保存和刷新由 Magpie 处理。完整字段与验收说明见[详细�
 
 ### 1. 安装依赖
 
-需要 Node.js `>=24.16.0 <25` 或 `>=26.1.0`、pnpm `12.4.2`、Git 和 Go。
-Magpie 模块会选择固定的 Go `1.26.8` 工具链；首次准备需要下载依赖。
-已有仓库本地 `.toolchain` 时，可先在当前终端执行：
+需要 npm、Git 和 Go，以及项目内 `.toolchain` 提供的受支持 Node.js 和 pnpm `12.4.2`。
+尚无 `.toolchain` 时，先按 [Setup 的本地工具链准备步骤](setup.md#prerequisites)用 npm 安装到项目目录。
+工具链不会随 Git 克隆，不能只依赖全局 `node` / `pnpm`。准备后检查：
 
 ```sh
-export PATH="$PWD/.toolchain/node_modules/.bin:$PATH"
-node --version
-pnpm --version
+npm run toolchain:pnpm -- --version
+npm run toolchain:pnpm -- exec node --version
 ```
+
+应分别显示 pnpm `12.4.2` 和受支持的 Node.js（本地工具链示例为 `v24.16.0`）。
+Magpie 模块会选择固定的 Go `1.26.8` 工具链；首次准备需要下载依赖。
 
 准备源码与本地运行环境：
 
 ```sh
 git submodule update --init --recursive
-pnpm install --frozen-lockfile
-pnpm --dir vendor/openclaw install --frozen-lockfile
-pnpm --dir vendor/openclaw build
-pnpm run setup:local
-pnpm run magpie:setup
-pnpm run magpie -- version
+npm run toolchain:pnpm -- install --frozen-lockfile
+npm run toolchain:pnpm -- --dir vendor/openclaw install --frozen-lockfile
+npm run toolchain:pnpm -- --dir vendor/openclaw build
+npm run toolchain:pnpm -- run setup:local
+npm run toolchain:pnpm -- run magpie:setup
+npm run toolchain:pnpm -- run magpie -- version
 ```
 
 `setup:local` 会保留已有 OpenClaw 配置；首次运行才创建默认本地配置。
@@ -43,7 +47,7 @@ Magpie 安装在 `.toolchain/magpie-bin`，私有配置在 `runtime/magpie`，�
 ### 2. 在 Magpie 中连接模型提供方
 
 ```sh
-pnpm run magpie:ui
+npm run toolchain:pnpm -- run magpie:ui
 ```
 
 在打开的本地界面中连接你要使用的账号或 API 路由。OpenAI 的官方订阅接入选择
@@ -60,13 +64,13 @@ Magpie 的 **ChatGPT API** Provider；其他提供方使用 Magpie 对应的原�
 配置结束后，在启动终端按 Ctrl-C 关闭界面，再查看模型目录：
 
 ```sh
-pnpm run magpie -- --allow-subscription-accounts models
+npm run toolchain:pnpm -- run magpie -- --allow-subscription-accounts models
 ```
 
 已有本仓库百炼 Token Plan 配置时，可在网关与配置界面停止后复用它：
 
 ```sh
-pnpm run magpie:import-bailian
+npm run toolchain:pnpm -- run magpie:import-bailian
 ```
 
 Provider 凭据放在 Magpie 的私有存储中；下面的 Router 配置只引用网关凭据的环境变量名。
@@ -137,7 +141,7 @@ chmod 700 runtime/magpie
 自动填入当前仓库的绝对路径，并保护这个本地文件：
 
 ```sh
-node --input-type=module <<'NODE'
+npm run toolchain:pnpm -- exec node --input-type=module <<'NODE'
 import { readFileSync, writeFileSync, chmodSync } from 'node:fs';
 import { magpiePaths } from './scripts/magpie-dependency.mjs';
 const file = 'runtime/magpie/router.quickstart.local.json';
@@ -168,12 +172,14 @@ NODE
 先停止使用同一 Magpie 私有目录的配置界面和 OpenClaw 网关：
 
 ```sh
-pnpm run magpie:prepare-key runtime/magpie/router.quickstart.local.json
-node scripts/subscription-config.mjs runtime/magpie/router.quickstart.local.json > runtime/magpie/openclaw-router.fragment.json
+npm run toolchain:pnpm -- run magpie:prepare-key runtime/magpie/router.quickstart.local.json
+npm run toolchain:pnpm -- run config:subscriptions runtime/magpie/router.quickstart.local.json --output runtime/magpie/openclaw-router.fragment.json
 ```
 
 第一条命令创建或复用限定到这些模型的网关 Key，保存到私有 `runtime/magpie/gateway.env`。
-第二条仅生成 JSON 片段。启用匹配的 managed 配置后，仓库 OpenClaw 包装器自动读取网关 Key。
+第二条通过 `--output` 写入权限为 0600 的纯 JSON 片段，不会把 npm / pnpm 的启动日志写进文件，
+也不会自动合并或启动配置；重新生成时会替换旧片段。请勿使用普通 npm 命令的 stdout 重定向生成 JSON。
+启用匹配的 managed 配置后，仓库 OpenClaw 包装器自动读取网关 Key。
 
 备份并把片段合并到目标 `runtime/openclaw/openclaw.json`：
 
@@ -196,15 +202,15 @@ Router 源 JSON 是生成器输入；实际运行读取 OpenClaw 中的 `plugins
 ### 5. 启动与使用
 
 ```sh
-pnpm run openclaw plugins inspect rein-router --runtime --json
-pnpm run openclaw plugins doctor
-pnpm run openclaw gateway run
+npm run toolchain:pnpm -- openclaw plugins inspect rein-router --runtime --json
+npm run toolchain:pnpm -- openclaw plugins doctor
+npm run toolchain:pnpm -- openclaw gateway run
 ```
 
 另开终端检查健康状态，端口使用目标 OpenClaw 配置中的值，首次本地初始化默认是 `18791`：
 
 ```sh
-pnpm run openclaw gateway health --port 18791
+npm run toolchain:pnpm -- openclaw gateway health --port 18791
 ```
 
 OpenClaw 启动后管理 Magpie 进程。`3425` 是 Magpie 的模型网关端口，`18791` 是上述 OpenClaw 示例端口。
@@ -235,7 +241,7 @@ OpenClaw 启动后管理 Magpie 进程。`3425` 是 Magpie 的模型网关端口
 Jev 分类调用单独计费，与模型订阅额度分开。准备 Jev API Key，通过交互提示保存到 OpenClaw Secret Store：
 
 ```sh
-pnpm run openclaw secrets store set TYPESAFE_API_KEY --kind secret --allow-host api.typesafe.ai
+npm run toolchain:pnpm -- openclaw secrets store set TYPESAFE_API_KEY --kind secret --allow-host api.typesafe.ai
 ```
 
 Router 配置中不填写 Key 原文。若已经使用环境变量 `JEV_API_KEY`，也可在下面的 `apiKey` 位置改用
@@ -246,7 +252,7 @@ Router 配置中不填写 Key 原文。若已经使用环境变量 `JEV_API_KEY`
 以下命令更新本地 Router 的 Jev 开关，并生成包含 `rein-router` 与 `typesafe` 的完整增量片段：
 
 ```sh
-node --input-type=module <<'NODE'
+npm run toolchain:pnpm -- exec node --input-type=module <<'NODE'
 import { readFileSync, writeFileSync, chmodSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { buildOpenClawFragment } from './plugins/rein-router/policy.mjs';
@@ -326,20 +332,31 @@ Model Router 片段后重启。要关闭目标 Agent 的全部 Jev 决策，将�
 
 ## 常用维护命令
 
+全部从仓库根目录执行，无需安装全局 pnpm 或修改 `PATH`。
+Model Router 与 Dynamic Router 共用这些管理命令；Dynamic Router 另需上述 TypeSafe 配置与 Jev Key。
+
 | 命令 | 用途 |
 | --- | --- |
-| `pnpm run magpie:setup` | 构建当前锁定版本；升级前先按升级流程备份并更新版本锁定 |
-| `pnpm run magpie -- version` | 查看准备好的项目内 Magpie 版本 |
-| `pnpm run magpie:ui` | 打开原生 Provider 配置界面；与 managed 网关错开运行 |
-| `pnpm run magpie -- --allow-subscription-accounts models` | 查看 Magpie 模型目录 |
-| `pnpm run magpie -- --allow-subscription-accounts accounts` | 查看项目私有账号；刷新/重新登录使用 Magpie 原生流程 |
-| `pnpm run magpie:prepare-key --replace runtime/magpie/router.quickstart.local.json` | 模型目录变更后，在网关停止状态替换项目 Key；重新生成并合并片段后重启 |
-| `pnpm run openclaw plugins inspect rein-router --runtime --json` | 检查 Router 加载与注册 |
-| `pnpm run openclaw plugins doctor` | 检查插件配置问题 |
-| `pnpm run openclaw gateway health --port 18791` | 检查目标 OpenClaw 网关健康，按实际配置替换端口 |
-| `pnpm run verify:subscriptions` | 合成 Discord 路由与工具探针，无真实 Provider 调用 |
-| `pnpm run verify:subscriptions:slack` | 合成 Slack 路由与工具探针，无真实 Slack 连接 |
-| `pnpm run check` | 仓库文档与配置骨架检查 |
+| `npm run toolchain:pnpm -- run magpie:setup` | 构建当前锁定版本；升级前先按升级流程备份并更新版本锁定 |
+| `npm run toolchain:pnpm -- run magpie:setup --check` | 仅校验已准备的版本与摘要，不下载或构建 |
+| `npm run toolchain:pnpm -- run magpie -- version` | 查看准备好的项目内 Magpie 版本 |
+| `npm run toolchain:pnpm -- run magpie:ui` | 打开原生 Provider 配置界面；与 managed 网关错开运行 |
+| `npm run toolchain:pnpm -- run magpie -- --allow-subscription-accounts models` | 查看 Magpie 模型目录 |
+| `npm run toolchain:pnpm -- run magpie -- --allow-subscription-accounts accounts` | 查看项目私有账号；刷新/重新登录使用 Magpie 原生流程 |
+| `npm run toolchain:pnpm -- run magpie:import-bailian` | 停止网关后复用本仓库的百炼 Token Plan 配置 |
+| `npm run toolchain:pnpm -- run magpie:prepare-key runtime/magpie/router.quickstart.local.json` | 创建或复用限定到当前模型目录的项目 Key |
+| `npm run toolchain:pnpm -- run magpie:prepare-key --replace runtime/magpie/router.quickstart.local.json` | 模型目录变更后，在网关停止状态替换项目 Key；重新生成并合并片段后重启 |
+| `npm run toolchain:pnpm -- run config:subscriptions runtime/magpie/router.quickstart.local.json --output runtime/magpie/openclaw-router.fragment.json` | 离线生成 Model Router 配置片段，不改运行配置 |
+| `npm run toolchain:pnpm -- openclaw secrets store set TYPESAFE_API_KEY --kind secret --allow-host api.typesafe.ai` | 交互保存 Dynamic Router 的 Jev Key |
+| `npm run toolchain:pnpm -- openclaw plugins list --verbose` | 列出插件 |
+| `npm run toolchain:pnpm -- openclaw plugins inspect rein-router --runtime --json` | 检查 Router 加载与注册 |
+| `npm run toolchain:pnpm -- openclaw plugins doctor` | 检查插件配置问题 |
+| `npm run toolchain:pnpm -- openclaw gateway health --port 18791` | 检查目标 OpenClaw 网关健康，按实际配置替换端口 |
+| `npm run toolchain:pnpm -- run verify:subscriptions` | 合成 Discord 路由与工具探针，无真实 Provider 调用 |
+| `npm run toolchain:pnpm -- run verify:subscriptions:slack` | 合成 Slack 路由与工具探针，无真实 Slack 连接 |
+| `npm run toolchain:pnpm -- run verify:subscriptions:managed` | 已准备 Magpie 后，检查原生进程生命周期，不调用真实模型 |
+| `npm run toolchain:pnpm -- run eval:subscriptions` | 离线路由语料评估，不调用付费 Jev |
+| `npm run toolchain:pnpm -- run check` | 仓库文档与配置骨架检查 |
 
 常见问题：
 

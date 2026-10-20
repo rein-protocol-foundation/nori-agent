@@ -103,13 +103,15 @@ Rein 的功能全部以 Rein 自有插件的形式放在 `plugins/` 下，通过
 ## 环境要求
 
 - Node.js `>=24.16.0 <25` 或 `>=26.1.0`（推荐 Node 26），与上游 `engines` 一致。
-- pnpm `12.4.2`，由 `package.json` 的 `packageManager` 固定；执行 `corepack enable` 即会使用该版本。
+- pnpm `12.4.2`，由 `package.json` 的 `packageManager` 固定；下文通过 npm 使用项目内工具链，无需全局安装 pnpm。
 - 支持 submodule 的 git。
 
-本工作副本中可能已安装被 git 忽略的本地工具链，可同时满足以上两项：
+先按 [Setup](docs/setup.md#prerequisites) 用 npm 准备被 Git 忽略的 `.toolchain`。
+以下命令使用项目内 Node / pnpm，无需修改 `PATH`，默认终端的 Node 较旧也可运行：
 
 ```sh
-export PATH="$PWD/.toolchain/node_modules/.bin:$PATH"
+npm run toolchain:pnpm -- --version
+npm run toolchain:pnpm -- exec node --version
 ```
 
 ## 快速开始
@@ -117,17 +119,17 @@ export PATH="$PWD/.toolchain/node_modules/.bin:$PATH"
 ```sh
 git clone --recurse-submodules https://github.com/tempest2023/rein-agent.git
 cd rein-agent
-pnpm install                                        # 仅安装 Rein workspace 包
-pnpm --dir vendor/openclaw install --frozen-lockfile
-pnpm --dir vendor/openclaw build
-pnpm run setup:local                                # 生成隔离的本地网关配置
-pnpm run check
-pnpm test
-pnpm openclaw plugins inspect rein-operations --runtime --json
+npm run toolchain:pnpm -- install                                        # 仅安装 Rein workspace 包
+npm run toolchain:pnpm -- --dir vendor/openclaw install --frozen-lockfile
+npm run toolchain:pnpm -- --dir vendor/openclaw build
+npm run toolchain:pnpm -- run setup:local                                # 生成隔离的本地网关配置
+npm run toolchain:pnpm -- run check
+npm run toolchain:pnpm -- test
+npm run toolchain:pnpm -- openclaw plugins inspect rein-operations --runtime --json
 ```
 
 若仓库已克隆但未带 submodule，先执行 `git submodule update --init --recursive`。
-`pnpm run setup:local` 会在 `runtime/openclaw/openclaw.json`（已被 git 忽略，权限 0600）写入隔离配置：
+`npm run toolchain:pnpm -- run setup:local` 会在 `runtime/openclaw/openclaw.json`（已被 git 忽略，权限 0600）写入隔离配置：
 随机生成的网关 token、仅回环地址的 18791 端口、指向本仓库 `workspace/` 的工作区，并启用
 `rein-operations` 插件。聊天平台与模型保持未配置。完整步骤见 [部署准备](docs/setup.md)，更新与回滚
 见 [更新 OpenClaw](docs/upstream.md)。

@@ -30,21 +30,20 @@ routing behavior with synthetic identifiers after upstream is built; it is not r
 
 - Node.js `>=24.16.0 <25` or `>=26.1.0` (Node 26 recommended). This mirrors upstream `engines`; the
   source runtime does not run on Node 22.
-- pnpm `12.4.2`. `package.json` pins it through `packageManager`, so run `corepack enable` and the
-  pinned version is selected automatically. Installing `pnpm@12.4.2` directly also works.
+- pnpm `12.4.2`, pinned by `packageManager`. The npm commands below use a project-local copy;
+  installing it globally or enabling Corepack is optional.
 - git with submodule support.
 - Network access for the first dependency install.
 
-This repository may carry a gitignored local toolchain that satisfies both versions. Use it by
-prepending its bin directory:
+With npm available, prepare the ignored project-local toolchain once if `.toolchain/` is missing:
 
 ```sh
-export PATH="$PWD/.toolchain/node_modules/.bin:$PATH"
-node --version   # expect a supported release, for example v24.16.x
-pnpm --version   # expect 12.4.2
+npm install --prefix .toolchain --no-save --package-lock=false node@24.16.0 pnpm@12.4.2
 ```
 
-The default path needs no `PATH` change: the `toolchain:pnpm` script runs the pinned local toolchain
+This installs only inside `.toolchain`, not globally. The directory is not included in a Git clone.
+Skip the install if the version checks below already pass. The default path needs no `PATH`
+change: the `toolchain:pnpm` script runs the pinned local toolchain
 through `npx`, so it works from a plain shell even when the ambient `node` is older. It requires
 `.toolchain/` to exist in the checkout; the command fails if that directory is missing.
 
@@ -75,6 +74,36 @@ for every script in this file; none of them needs a `PATH` export.
 | `npm run toolchain:pnpm -- openclaw doctor` | runtime doctor |
 | `npm run toolchain:pnpm -- run smoke:gateway` | authenticated `rein_status` call, gateway-level smoke test |
 | `npm run toolchain:pnpm -- openclaw gateway auth-token --show` | reveals the shared token |
+
+For the optional Model Router, Dynamic Router and Magpie gateway, use the same npm entry point.
+The [Chinese quickstart](model-router-quickstart-zh.md) covers configuration and merging fragments;
+the [Magpie upgrade guide](magpie-upgrade-zh.md) covers backups, compatibility checks and rollback.
+Magpie bootstrap also requires Git and Go. These commands do not require a global pnpm install:
+
+| Command | Runs |
+| --- | --- |
+| `npm run toolchain:pnpm -- run magpie:setup` | builds the locked project-local Magpie version |
+| `npm run toolchain:pnpm -- run magpie:setup --check` | verifies the prepared version and binary digest without building |
+| `npm run toolchain:pnpm -- run magpie -- version` | reports the prepared Magpie version |
+| `npm run toolchain:pnpm -- run magpie:ui` | opens the private native provider configuration UI |
+| `npm run toolchain:pnpm -- run magpie -- --allow-subscription-accounts models` | lists the configured model catalog |
+| `npm run toolchain:pnpm -- run magpie -- --allow-subscription-accounts accounts` | lists private provider accounts |
+| `npm run toolchain:pnpm -- run magpie:import-bailian` | imports the existing local Bailian configuration while the gateway is stopped |
+| `npm run toolchain:pnpm -- run magpie:prepare-key runtime/magpie/router.quickstart.local.json` | prepares a key limited to the declared model catalog |
+| `npm run toolchain:pnpm -- run magpie:prepare-key --replace runtime/magpie/router.quickstart.local.json` | replaces that key for an intentional catalog change while stopped |
+| `npm run toolchain:pnpm -- run config:subscriptions runtime/magpie/router.quickstart.local.json --output runtime/magpie/openclaw-router.fragment.json` | generates a private JSON fragment for manual review and merge |
+| `npm run toolchain:pnpm -- openclaw secrets store set TYPESAFE_API_KEY --kind secret --allow-host api.typesafe.ai` | interactively stores the Jev key for Dynamic Router |
+| `npm run toolchain:pnpm -- openclaw plugins inspect rein-router --runtime --json` | reports Router registration after configuration |
+| `npm run toolchain:pnpm -- run verify:subscriptions` | runs synthetic Discord routing and tool checks |
+| `npm run toolchain:pnpm -- run verify:subscriptions:slack` | runs synthetic Slack routing and tool checks |
+| `npm run toolchain:pnpm -- run verify:subscriptions:managed` | checks prepared Magpie's managed lifecycle without real model calls |
+| `npm run toolchain:pnpm -- run eval:subscriptions` | evaluates the offline routing corpus without hosted Jev calls |
+
+Use `--output` for configuration files: npm/pnpm may print lifecycle logs to stdout, so redirecting
+an ordinary wrapped command with `> fragment.json` would mix those logs into JSON. The generator
+validates first and writes only the fragment with mode 0600; it does not merge or activate a profile.
+Create the output parent directory first. For inline configuration examples, invoke Node with
+`npm run toolchain:pnpm -- exec node --input-type=module` so it also uses the local toolchain.
 
 `npm run toolchain:pnpm -- run <script>`, `-- test`, and `-- openclaw <args>` execute through the
 toolchain's own Node, so they work from a default shell even when the ambient `node` is older than
