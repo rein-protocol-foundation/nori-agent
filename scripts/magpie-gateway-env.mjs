@@ -72,6 +72,21 @@ export function loadMagpieGatewayEnvironment({ root = projectRoot, environment =
         typeof parsed[name] !== 'string' || !KEY.test(parsed[name])) refuse('contents_invalid');
     if (copy[name] !== undefined && copy[name] !== parsed[name]) refuse('existing_value_conflict');
     copy[name] = parsed[name];
+    const otherTypeSafeUse = host.plugins?.entries?.typesafe?.enabled === true &&
+      host.plugins.entries.typesafe.config?.apiKey?.id === 'JEV_API_KEY' &&
+      [host.agents?.defaults, ...(host.agents?.list ?? []), ...Object.values(host.agents?.entries ?? {})]
+        .some(agent => typeof agent?.decisionModel === 'string' && agent.decisionModel.startsWith('typesafe/'));
+    if (gateway.managed.mode === 'console' && (entry.config.decision?.allowPaidJev === true || otherTypeSafeUse)) {
+      const secretPath = join(canonicalRoot, 'runtime/magpie/router-console-secret.json');
+      try {
+        const stat = lstatSync(secretPath);
+        if (stat.isSymbolicLink()) refuse('symlink_refused');
+        const saved = JSON.parse(readRegular(secretPath, 8192, { privateMode: true }));
+        if (typeof saved.jevApiKey !== 'string' || !saved.jevApiKey.trim() || /[\x00-\x1f]/.test(saved.jevApiKey)) refuse('contents_invalid');
+        if (copy.JEV_API_KEY !== undefined && copy.JEV_API_KEY !== saved.jevApiKey) refuse('existing_value_conflict');
+        copy.JEV_API_KEY = saved.jevApiKey;
+      } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    }
     return copy;
   } catch (error) {
     if (typeof error?.code === 'string' && /^magpie_gateway_env_[a-z_]+$/.test(error.code)) throw error;

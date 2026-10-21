@@ -97,6 +97,24 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
       manual: previous?.manual ?? (ctx.modelId !== 'auto'),
       requested: previous?.requested ?? (ctx.modelId !== 'auto' ? ctx.modelId : undefined) });
   };
+  async function consoleGatewayReady() {
+    if (config.gateway.managed?.mode !== 'console') return true;
+    const key = environment[config.gateway.apiKeyEnvVar];
+    if (typeof key !== 'string' || !/^sk-magpie-key-[A-Za-z0-9_-]{16,240}$/.test(key)) return false;
+    try {
+      const response = await fetchImpl(`${config.gateway.baseUrl}/models`, { redirect: 'error',
+        headers: { Authorization: `Bearer ${key}`, Origin: 'null' }, signal: AbortSignal.timeout(1000) });
+      if (!response.ok) { await response.body?.cancel(); return false; }
+      const chunks = []; let bytes = 0;
+      for await (const chunk of response.body) {
+        bytes += chunk.length; if (bytes > 128 * 1024) return false; chunks.push(chunk);
+      }
+      const data = JSON.parse(Buffer.concat(chunks).toString('utf8')).data;
+      const expected = new Set(config.routes.map(route => route.gatewayModel));
+      return Array.isArray(data) && data.length === expected.size && new Set(data.map(m => m.id)).size === expected.size &&
+        data.every(m => expected.has(m.id));
+    } catch { return false; }
+  }
   function selection(outcome, { admin, hasAttachments }) {
     let selected = selectRoute(config, outcome, { admin, hasAttachments });
     const answers = outcome?.status === 'ok' ? outcome.result?.answers : undefined;
@@ -126,7 +144,13 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
     async beforeModelResolve(event, ctx) {
       if (ctx.modelProviderId !== PROVIDER_ID) return;
       markRun(ctx);
-      if (config.gateway.managed && !gatewayReady?.()) return;
+      if (config.gateway.managed?.mode === 'console') {
+        const run = runs.get(ctx.runId);
+        if (run) run.gatewayUnavailable = true;
+        if (!await consoleGatewayReady()) return;
+        if (run) run.gatewayUnavailable = false;
+      }
+      if (config.gateway.managed && config.gateway.managed.mode !== 'console' && !gatewayReady?.()) return;
       if (ctx.modelId !== 'auto') {
         const route = routeById(ctx.modelId);
         if (route) remember(ctx, { selection: 'manual', configured: describeRoute(config, route.id) });
@@ -179,7 +203,8 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
     },
     beforeAgentRun(_event, ctx) {
       if (ctx.modelProviderId !== PROVIDER_ID && !runs.has(ctx.runId)) return;
-      if (config.gateway.managed && !gatewayReady?.()) return block('rein_router_gateway_unavailable');
+      if (runs.get(ctx.runId)?.gatewayUnavailable) return block('rein_router_gateway_unavailable');
+      if (config.gateway.managed && config.gateway.managed.mode !== 'console' && !gatewayReady?.()) return block('rein_router_gateway_unavailable');
       if (ctx.modelProviderId !== PROVIDER_ID || !routeById(ctx.modelId)) return block('rein_router_route_disallowed');
       const run = runs.get(ctx.runId);
       const requested = run?.requested;
@@ -239,7 +264,7 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
     wrapStreamFn({ streamFn, agentId }) {
       if (typeof streamFn !== 'function') throw new Error('rein_router_transport_unavailable');
       return (model, context, options) => {
-        if (config.gateway.managed && !gatewayReady?.()) throw new Error('rein_router_gateway_unavailable');
+        if (config.gateway.managed && config.gateway.managed.mode !== 'console' && !gatewayReady?.()) throw new Error('rein_router_gateway_unavailable');
         const route = routeById(model.id);
         if (!route || model.provider !== PROVIDER_ID || model.baseUrl !== config.gateway.baseUrl || model.api !== 'openai-completions')
           throw new Error('rein_router_transport_disallowed');

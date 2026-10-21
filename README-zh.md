@@ -5,6 +5,7 @@
 [English](README.md)
 
 [Model Router 与 Dynamic Router 中文快速上手](docs/model-router-quickstart-zh.md)
+统一界面：`npm run toolchain:pnpm -- run router:ui`。Provider 和模型只在 Magpie 配置一次，插件自动同步给 OpenClaw；指南包含真实界面截图。
 
 Rein Protocol Foundation 的组织运营 Agent：管理员、秘书与线上主持人。
 

@@ -55,6 +55,8 @@ jobs:
         run: pnpm verify:plugin
       - name: Verify subscription routing with local synthetic endpoints
         run: pnpm verify:subscriptions
+      - name: Verify Console-owned gateway mode with local synthetic endpoints
+        run: pnpm verify:subscriptions --console-mode
       - name: Verify Slack subscription routing with local synthetic endpoints
         run: pnpm verify:subscriptions:slack
       - name: Read pinned Magpie dependency
@@ -101,6 +103,11 @@ jobs:
         env:
           REIN_RUN_NATIVE_MAGPIE_UI: '1'
         run: node --test tests/magpie-ui-native.test.mjs
+      - name: Prepare Chromium for the integrated Router Console
+        working-directory: vendor/openclaw
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Verify integrated Router Console and native provider tool calls
+        run: pnpm verify:router-console
       - name: Verify native managed Magpie lifecycle without inference
         run: pnpm verify:subscriptions:managed
       - name: Verify managed Magpie inference and tool continuation with synthetic upstream

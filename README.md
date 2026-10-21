@@ -5,7 +5,8 @@
 [中文说明](README-zh.md)
 
 [Model Router & Dynamic Router: 中文快速上手](docs/model-router-quickstart-zh.md) — installation,
-copyable npm commands, configuration, manual model selection and Jev automatic routing.
+screenshots, one-time Magpie provider setup, automatic OpenClaw model sync and Jev routing.
+Start the integrated UI with `npm run toolchain:pnpm -- run router:ui`.
 
 Rein Protocol Foundation's operations agent: an administrator, secretary, and online facilitator.
 
@@ -156,18 +157,19 @@ The optional subscription gateway also needs Git and Go for explicit bootstrap:
 ```sh
 npm run toolchain:pnpm -- run magpie:setup
 npm run toolchain:pnpm -- run magpie -- version
-npm run toolchain:pnpm -- run magpie:ui
+npm run toolchain:pnpm -- run router:ui
 ```
 
-Bootstrap builds the pinned headless binary under `.toolchain/magpie-bin`; the wrapper uses
-protected stores under `runtime/magpie`. A configured `rein-router` managed gateway starts and
-stops that prepared process with OpenClaw. It performs no runtime build or global installation.
-See the [subscription setup and billing boundaries](docs/unified-subscription-access.md) before
-configuring accounts or activating a profile.
+Bootstrap builds the pinned headless binary under `.toolchain/magpie-bin`; protected stores live
+under `runtime/magpie`. Router Console serves Magpie's native Providers UI plus an OpenClaw Router
+page using its native controls. It owns the gateway, synchronizes models and scoped keys, and merges
+OpenClaw configuration automatically. Keep that terminal running alongside OpenClaw.
 
-`magpie:ui` opens Magpie's own loopback configuration page using the project-private profile.
-The launcher disables native automatic updates to preserve the pinned binary. Connect providers
-there, then close it before starting the OpenClaw-managed gateway.
+`magpie:ui` is an alias for the integrated console. `magpie:ui:native` retains the standalone native
+UI for legacy/manual setups, which must be closed before starting an independently OpenClaw-managed
+gateway. Both launchers disable native auto-updates to preserve the pinned binary.
+See the [screenshot walkthrough](docs/model-router-quickstart-zh.md) for setup and use, or the
+[configuration reference](docs/unified-subscription-access.md) for manual deployment details.
 
 ## Quick start
 

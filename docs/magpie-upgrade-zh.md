@@ -6,7 +6,7 @@ Rein 使用未经修改的 Magpie 可执行文件，Provider 协议、登录和 
 `magpie:setup` 只构建锁定版本，不会自动选择最新版。原生配置界面的自动更新也保持关闭。
 
 以下命令适用于 macOS / Linux，在仓库根目录、同一个终端执行。
-先完成[快速上手中的依赖安装](model-router-quickstart-zh.md#1-安装依赖)，确保 npm、Git、Go 和
+先完成[快速上手中的依赖安装](model-router-quickstart-zh.md#1-准备项目依赖)，确保 npm、Git、Go 和
 项目内 `.toolchain` 可用。以下命令统一通过 npm 调用项目内 pnpm / Node，
 无需全局安装 pnpm，也无需修改 `PATH`：
 
@@ -153,19 +153,22 @@ PR 应记录新旧 Magpie 提交、相关上游变更、兼容性结果、迁移
 npm run toolchain:pnpm -- run magpie -- --allow-subscription-accounts models
 ```
 
-如果模型 ID 或路由目录发生变化，更新实际 Router 源 JSON，在网关停止时重新限定项目 Key：
+Router Console 用户在升级后重启 Console 即可自动同步目录与 Key，再检查页面上的任务策略。
+以下是独立 managed / 旧版手工配置的流程：模型 ID 或路由目录变化时，更新 Router 源 JSON，
+在网关停止时重新限定项目 Key：
 
 ```sh
 npm run toolchain:pnpm -- run magpie:prepare-key --replace runtime/magpie/router.quickstart.local.json
 ```
 
-该路径来自快速上手示例，按部署替换。重新生成并合并相应的
-[Model Router](model-router-quickstart-zh.md#4-准备网关-key并生成-openclaw-配置片段)或
-[Dynamic Router](model-router-quickstart-zh.md#2-生成-dynamic-router-配置片段)配置片段，
+该路径来自旧版配置示例，按部署替换。按照
+[Model Router 手工配置](unified-subscription-access.md#prepare-and-review-a-local-profile)或
+[Dynamic Router 手工配置](unified-subscription-access.md#configure-jev-separately)重新生成并合并片段，
 保留原 Agent、频道和工具配置；目录未变时不需要轮换 Key。
 升级本身不应打开 `allowPaidUsage`、`allowPaidJev`，或增加未配置的 fallback。
 
-需要登录或迁移账号时使用 `npm run toolchain:pnpm -- run magpie:ui` 的 Magpie 原生流程，结束后关闭界面。
+旧版手工配置需要登录或迁移账号时，使用 `npm run toolchain:pnpm -- run magpie:ui:native`，结束后关闭界面。
+Router Console 用户改用 `npm run toolchain:pnpm -- run router:ui`，在原生 Providers 页完成登录后保持 Console 运行。
 在维护者准备升级 PR 时继续保持原服务停止；本地兼容性测试不要求启用真实账号。
 使用者完成已合并升级后，按原部署方式恢复 OpenClaw。前台运行示例：
 
@@ -218,3 +221,28 @@ npm run toolchain:pnpm -- run magpie -- version
 恢复 OpenClaw 目录会回到备份时的 session 和状态，升级后产生的数据保留在失败版本目录中。
 备份不能恢复已在远端撤销的 token / Key；若凭据失效，使用 Magpie 原生流程重新认证或准备 Key。
 目前备份、升级和回滚均由维护者手动执行。
+
+
+## Router Console 页面适配与截图
+
+Console 复用锁定 Magpie 的 `internal/gui/assets/kernel.js` 页面扩展机制、`ctx.ui` 菜单/开关/设置行、
+原生 CSS 和 `/api/providers`、`/api/caller-keys` API。Magpie 使用 MIT License（Copyright 2026 yetone）。
+这些资产由原生二进制直接提供，Rein 不维护一份上游 UI fork；源码保持不变。
+升级时还需验证这些接口和 HTML 挂载点。挂载点不兼容时会报错，不能视为升级验收通过。
+
+```sh
+npm run toolchain:pnpm -- exec node --test tests/router-console.test.mjs
+npm run toolchain:pnpm -- run verify:router-console
+npm run toolchain:pnpm -- run verify:subscriptions --console-mode
+```
+
+原生验收使用隔离临时目录、模拟 Provider 和本地工具调用，不连接真实账号，不调用托管 Jev。
+浏览器需要 Playwright Chromium；macOS 上也可复用已安装的 Google Chrome。
+在确认界面后重新拍摄文档截图：
+
+```sh
+npm run toolchain:pnpm -- run verify:router-console --screenshots
+```
+
+输出为 `docs/images/router-console/`。截图必须继续使用模拟 Provider，不能包含账号、Key 或登录凭据。
+升级前先停止 Console；升级和校验完成后用 `npm run toolchain:pnpm -- run router:ui` 重启。

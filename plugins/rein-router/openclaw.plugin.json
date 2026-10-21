@@ -32,7 +32,8 @@
             "properties": {
               "binaryPath": { "type": "string", "minLength": 1, "maxLength": 4096 },
               "homeDir": { "type": "string", "minLength": 1, "maxLength": 4096 },
-              "allowSubscriptionAccounts": { "type": "boolean", "default": false }
+              "allowSubscriptionAccounts": { "type": "boolean", "default": false },
+              "mode": { "enum": ["managed", "console"], "description": "console: Router Console owns the gateway and UI together" }
             }
           }
         }

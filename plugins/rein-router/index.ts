@@ -9,7 +9,7 @@ export default definePluginEntry({
   description: 'Opt-in Magpie subscription routes and bounded Jev decisions.',
   register(api) {
     const config = validateRouterConfig(api.pluginConfig);
-    const gateway = config.enabled && config.gateway.managed ? bindManagedService({
+    const gateway = config.enabled && config.gateway.managed && config.gateway.managed.mode !== 'console' ? bindManagedService({
       registry: managedServiceRegistry(),
       scope: managedServiceScope({ source: api.runtimeSource ?? api.source,
         stateDir: api.runtime.state.resolveStateDir(), config }),
@@ -29,7 +29,7 @@ export default definePluginEntry({
       envVars: [router.config.gateway.apiKeyEnvVar], wrapStreamFn: router.wrapStreamFn,
       wrapSimpleCompletionStreamFn: router.wrapStreamFn });
     api.on('before_model_resolve', router.beforeModelResolve,
-      { priority: 100, timeoutMs: router.config.decision.timeoutMs + 1000 });
+      { priority: 100, timeoutMs: router.config.decision.timeoutMs + (config.gateway.managed?.mode === 'console' ? 2000 : 1000) });
     api.on('before_agent_run', router.beforeAgentRun, { priority: 100 });
     api.on('llm_output', router.llmOutput);
     api.registerTool({ contextVersion: 2, create(ctx) {

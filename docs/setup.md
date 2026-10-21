@@ -85,7 +85,9 @@ Magpie bootstrap also requires Git and Go. These commands do not require a globa
 | `npm run toolchain:pnpm -- run magpie:setup` | builds the locked project-local Magpie version |
 | `npm run toolchain:pnpm -- run magpie:setup --check` | verifies the prepared version and binary digest without building |
 | `npm run toolchain:pnpm -- run magpie -- version` | reports the prepared Magpie version |
-| `npm run toolchain:pnpm -- run magpie:ui` | opens the private native provider configuration UI |
+| `npm run toolchain:pnpm -- run router:ui` | integrated Magpie Providers + OpenClaw Router; automatic model sync |
+| `npm run toolchain:pnpm -- run magpie:ui` | alias for the integrated Router Console |
+| `npm run toolchain:pnpm -- run magpie:ui:native` | standalone native provider UI for manual/legacy setups |
 | `npm run toolchain:pnpm -- run magpie -- --allow-subscription-accounts models` | lists the configured model catalog |
 | `npm run toolchain:pnpm -- run magpie -- --allow-subscription-accounts accounts` | lists private provider accounts |
 | `npm run toolchain:pnpm -- run magpie:import-bailian` | imports the existing local Bailian configuration while the gateway is stopped |

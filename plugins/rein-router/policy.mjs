@@ -75,13 +75,14 @@ function gateway(raw) {
   if (!isGatewayCredentialEnvironmentName(apiKeyEnvVar)) invalid('gateway.apiKeyEnvVar');
   let managed;
   if (raw.managed !== undefined) {
-    object(raw.managed, 'gateway.managed', ['binaryPath', 'homeDir', 'allowSubscriptionAccounts']);
+    object(raw.managed, 'gateway.managed', ['binaryPath', 'homeDir', 'allowSubscriptionAccounts', 'mode']);
     const binaryPath = text(raw.managed.binaryPath, 'gateway.managed.binaryPath', 4096);
     const homeDir = text(raw.managed.homeDir, 'gateway.managed.homeDir', 4096);
     if (!isAbsolute(binaryPath) || !isAbsolute(homeDir)) invalid('gateway.managed');
     if (parsed.protocol !== 'http:' || !['127.0.0.1', '[::1]'].includes(parsed.hostname) || !parsed.port)
       invalid('gateway.baseUrl');
     managed = { binaryPath, homeDir,
+      ...(raw.managed.mode === undefined ? {} : { mode: oneOf(raw.managed.mode, 'gateway.managed.mode', ['managed', 'console']) }),
       allowSubscriptionAccounts: boolean(raw.managed.allowSubscriptionAccounts, 'gateway.managed.allowSubscriptionAccounts', false) };
   }
   return { baseUrl: parsed.href, apiKeyEnvVar, ...(managed ? { managed } : {}),

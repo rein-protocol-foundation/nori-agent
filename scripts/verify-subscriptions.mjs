@@ -16,6 +16,8 @@ requireSource();
 const MAGPIE_REVISION = magpieLock.revision;
 const extraArgs = process.argv.slice(2);
 if (extraArgs[0] === '--') extraArgs.shift();
+const consoleMode = extraArgs.includes('--console-mode');
+if (consoleMode) extraArgs.splice(extraArgs.indexOf('--console-mode'), 1);
 assert.ok(extraArgs.length === 0 || (extraArgs.length === 2 && extraArgs[0] === '--magpie-checkout'),
   'Usage: verify-subscriptions.mjs [--magpie-checkout <reviewed-source-directory>]');
 const magpieSource = extraArgs.length ? resolve(extraArgs[1]) : undefined;
@@ -36,6 +38,10 @@ const markerFor = request => {
 };
 const server = createServer(async (req, res) => {
   if (req.method === 'GET') {
+    if (req.url === '/v1/models') {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ data: ['openai', 'claude', 'google', 'bailian'].map(id => ({ id: `fixture/${id}` })) })); return;
+    }
     const session = new URL(req.url, 'http://127.0.0.1').searchParams.get('session');
     if (traces.has(session)) {
       res.writeHead(200, { 'content-type': 'application/json' });
@@ -153,6 +159,8 @@ const router = { enabled: true, gateway: { baseUrl: gatewayBaseUrl, apiKeyEnvVar
   defaultRoute: 'openai', fallbackRoutes: ['openai'], channels: ['discord', 'slack'],
   adminSenders: [{ channel: 'discord', accountId: 'default', senderId: '100000000000000003' }],
   decision: { allowPaidJev: true, timeoutMs: 5000, maxPromptChars: 16000 } };
+if (consoleMode) router.gateway.managed = { mode: 'console', binaryPath: join(temp, 'not-spawned-magpie'),
+  homeDir: join(temp, 'console-profile/home'), allowSubscriptionAccounts: false };
 const cfg = buildOpenClawFragment(router, join(root, 'plugins/rein-router'));
 cfg.gateway = { mode: 'local', bind: 'loopback', port: gatewayPort, auth: { mode: 'token', token: 'synthetic-subscription-probe' } };
 Object.assign(cfg.agents.defaults, { workspace: publicDir, skipBootstrap: true, decisionModel: 'typesafe/jev-latest', compaction: { memoryFlush: { enabled: false } } });

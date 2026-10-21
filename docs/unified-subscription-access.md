@@ -1,5 +1,13 @@
 # Unified subscription access and dynamic routing
 
+For the integrated setup, use `npm run toolchain:pnpm -- run router:ui` and the
+[screenshot walkthrough](model-router-quickstart-zh.md). Magpie Providers is the sole model catalog;
+the added OpenClaw Router page reuses Magpie’s native page kernel, UI kit and styles. It synchronizes
+exact-model keys and OpenClaw configuration, with Provider-level billing controls and task policy.
+The console owns the native web/gateway process (`gateway.managed.mode: "console"`); OpenClaw
+does not launch a second one. Existing independent managed/manual setups below remain supported.
+Use `magpie:ui:native` for the original standalone UI.
+
 For installation and operator commands in Chinese, see the
 [Model Router and Dynamic Router quickstart](model-router-quickstart-zh.md).
 
@@ -201,7 +209,7 @@ Magpie; the router enforces its declared model routes and explicit fallback poli
 The simplest account setup uses Magpie's native configuration page:
 
 ```sh
-npm run toolchain:pnpm -- run magpie:ui
+npm run toolchain:pnpm -- run magpie:ui:native
 ```
 
 The launcher uses the verified project-local binary, the same private profile as the managed
