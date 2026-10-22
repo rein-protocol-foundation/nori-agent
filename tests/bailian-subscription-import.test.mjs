@@ -198,6 +198,24 @@ test('destination must remain ignored and untracked with private permissions', a
   assert.equal(readFileSync(publicFile.destination, 'utf8'), '{"providers":[]}');
 });
 
+test('Windows synthesized permission bits do not prevent refreshing an existing provider', async t => {
+  const f = fixture(t);
+  f.writeDestination({ providers: [{ id: providerId, name: 'Existing provider', key: otherKey, models: ['old'] }] });
+  chmodSync(f.destination, 0o666);
+  const descriptor = Object.getOwnPropertyDescriptor(process, 'platform');
+  Object.defineProperty(process, 'platform', { value: 'win32' });
+  try {
+    await f.run();
+    // A second import also works against the file that the first import wrote.
+    chmodSync(f.destination, 0o666);
+    await f.run({ environment: { [envName]: otherKey } });
+  } finally { Object.defineProperty(process, 'platform', descriptor); }
+  const provider = JSON.parse(readFileSync(f.destination, 'utf8')).providers[0];
+  assert.equal(provider.name, 'Existing provider');
+  assert.equal(provider.key, otherKey);
+  assert.deepEqual(provider.models, ['auto', 'qwen3.8-flash']);
+});
+
 test('symlinked destination directories/files and linked files cannot escape the isolated runtime', async t => {
   for (const mode of ['directory', 'file', 'hardlink']) {
     const f = fixture(t); const outside = join(f.projectRoot, 'outside'); mkdirSync(outside);

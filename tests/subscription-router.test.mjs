@@ -92,6 +92,31 @@ test('context-dependent, missing context decision, uncertain and unknown decisio
   ]) assert.equal((await router(config(), async () => outcome).beforeModelResolve({ prompt: 'What about the earlier proposal?' }, ctx())).modelOverride, 'standard');
 });
 
+test('economical defaults cannot bypass context and uncertainty guards, while manual selection still works', async () => {
+  for (const effort of ['off', 'low']) {
+    const c = config(); c.routes[0].effort = effort; c.defaultRoute = 'flash';
+    for (const [outcome, event] of [
+      [{ status: 'unavailable' }, { prompt: 'Continue the previous task' }],
+      [answer('flash', { route: { type: 'choice', choice: 'flash', probabilities: { flash: 0.3 } } }), { prompt: 'Hello' }],
+      [answer('flash', { task: { type: 'choice', choice: 'research', probabilities: { research: 0.99 } } }), { prompt: 'Find resources' }],
+      [answer('flash', { contextIndependent: { type: 'boolean', probabilityTrue: 0.2 } }), { prompt: 'What about mine?' }],
+      [answer('flash'), { prompt: 'Summarize this', attachments: [{ kind: 'image' }] }],
+    ]) {
+      const r = router(c, async () => outcome);
+      await assert.rejects(r.beforeModelResolve(event, ctx()), /rein_router_capable_default_required/);
+      assert.equal(r.beforeAgentRun({}, ctx()).outcome, 'block');
+      assert.equal(r.beforeAgentRun({}, ctx({ modelId: 'flash' })).outcome, 'block');
+      assert.equal(r.beforeAgentRun({}, ctx({ modelId: 'standard' })).outcome, 'block');
+    }
+    const simple = router(c);
+    assert.equal((await simple.beforeModelResolve({ prompt: 'Hello' }, ctx())).modelOverride, 'flash');
+    assert.equal(simple.beforeAgentRun({}, ctx({ modelId: 'flash' })).outcome, 'pass');
+    const manual = router(c, async () => { throw new Error('must not classify'); });
+    assert.equal(await manual.beforeModelResolve({ prompt: 'Use the model I chose' }, ctx({ modelId: 'flash' })), undefined);
+    assert.equal(manual.beforeAgentRun({}, ctx({ modelId: 'flash' })).outcome, 'pass');
+  }
+});
+
 test('administrator coding uses high effort only for the scoped authenticated sender', async () => {
   const c = config({ adminSenders: [{ channel: 'discord', accountId: 'default', senderId: 'alice' }] });
   const coding = answer('flash', { task: { type: 'choice', choice: 'coding', probabilities: { coding: 0.98 } } });

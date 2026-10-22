@@ -7,6 +7,11 @@ const COMMANDS = new Set(['help', '--help', '-h', 'version', '--version', '-v', 
   'accounts', 'providers', 'presets', 'models', 'provider', 'quota', 'gateway-key', 'usage']);
 const PROVIDER_COMMANDS = new Set(['add', 'set', 'models', 'fallback', 'on', 'off', 'test']);
 const ACCOUNT_COMMANDS = new Set(['add', 'refresh', 'project', 'alias']);
+// Keep provider argv closed to new upstream fields: authentication belongs in the native UI.
+const PROVIDER_PUBLIC_FIELDS = new Set(['id', 'name', 'url', 'chat', 'openai', 'responses',
+  'anthropic', 'gemini', 'decide', 'workspace', 'project', 'location', 'region', 'plan',
+  'catalog', 'models', 'website', 'keys', 'balance', 'balance.path', 'models.url',
+  'codex', 'user-agent', 'ua', 'search', 'compaction', 'unmasked', 'context', 'family', 'tag', 'icon']);
 
 /** No credentials in argv; this wrapper never installs host services or changes agents. */
 export function validateMagpieArguments(input) {
@@ -31,7 +36,8 @@ export function validateMagpieArguments(input) {
     throw new Error('magpie_account_command_disallowed');
   if (args[0] === 'provider') {
     if (!PROVIDER_COMMANDS.has(args[1])) throw new Error('magpie_provider_command_disallowed');
-    if (['add', 'set'].includes(args[1]) && args.slice(3).some(arg => !arg.includes('=')))
+    if (['add', 'set'].includes(args[1]) && args.slice(3).some(arg =>
+      !arg.includes('=') || !PROVIDER_PUBLIC_FIELDS.has(arg.slice(0, arg.indexOf('=')).toLowerCase())))
       throw new Error('magpie_credentials_in_arguments_disallowed');
   }
   if (args[0].toLowerCase() === 'quota' && args[1]?.toLowerCase() === 'credits' && args.some(arg => arg.toLowerCase() === 'on'))

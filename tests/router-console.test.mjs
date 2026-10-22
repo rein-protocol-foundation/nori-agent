@@ -63,8 +63,10 @@ async function fixture(t) {
   await mkdir(join(root,'runtime/openclaw'),{recursive:true});
   const hostPath=join(root,'runtime/openclaw/openclaw.json');await writeFile(hostPath,JSON.stringify({channels:{slack:{enabled:true}},agents:{defaults:{model:'old/a'}}}),{mode:0o600});
   let raw=metadata(), keys=[], calls=[];
+  const unavailable = new Set();
   const native=async (path,body)=>{
     calls.push({path,body});
+    if (unavailable.has(path)) throw new Error('synthetic-native-unavailable');
     if(path==='/api/providers')return structuredClone(raw);
     if(path==='/api/caller-keys')return {keys:structuredClone(keys).map(({secret,...k})=>k)};
     if(path.endsWith('/add-key'))keys.push({id:'owned',name:body.name,secret:'sk-magpie-key-'+ 'a'.repeat(48)});
@@ -76,7 +78,7 @@ async function fixture(t) {
     return {keys:structuredClone(keys).map(({secret,...k})=>k),secret:keys.find(k=>k.id===body?.key)?.secret ?? keys.at(-1)?.secret};
   };
   const sync=createConsoleSync({root,native,spendCheck:async()=>{},environment:{}});await sync.init();
-  return {root,hostPath,sync,calls,keys,get raw(){return raw;},set raw(v){raw=v;}};
+  return {root,hostPath,sync,calls,keys,unavailable,get raw(){return raw;},set raw(v){raw=v;}};
 }
 
 test('one save creates scoped credentials, backs up and merges profile; polling tracks new and removed models', async t=>{
@@ -153,6 +155,30 @@ test('an invalid tightened policy stays paused across refreshes instead of resto
   await assert.rejects(f.sync.save(tightened),/no_eligible_models/);assert.equal(f.keys[0].off,true);
   await assert.rejects(f.sync.refresh(),/no_eligible_models/);assert.equal(f.keys[0].off,true);
   assert.equal(JSON.parse(await readFile(join(f.root,'runtime/magpie/router-console.json'),'utf8')).funding.test.confirmed,false);
+});
+
+test('pausing revokes the active key before a failed catalog refresh and never re-enables it on recovery', async t => {
+  const f = await fixture(t); await f.sync.save(settings());
+  const before = await readFile(f.hostPath, 'utf8'); f.calls.length = 0;
+  f.unavailable.add('/api/providers');
+  await assert.rejects(f.sync.save({ ...settings(), enabled: false }));
+  assert.equal(f.keys[0].off, true);
+  assert.ok(f.calls.findIndex(c => c.path.endsWith('/off-key')) < f.calls.findIndex(c => c.path === '/api/providers'));
+  assert.equal(JSON.parse(await readFile(join(f.root,'runtime/magpie/router-console.json'),'utf8')).enabled, false);
+  f.unavailable.clear(); await f.sync.refresh();
+  assert.equal(f.keys[0].off, true);
+  assert.ok(!f.calls.some(c => c.path.endsWith('/on-key')));
+  assert.equal(await readFile(f.hostPath, 'utf8'), before);
+});
+
+test('a failed key revocation is retried on disabled refreshes after native service recovery', async t => {
+  const f = await fixture(t); await f.sync.save(settings()); f.calls.length = 0;
+  f.unavailable.add('/api/caller-keys/off-key');
+  await assert.rejects(f.sync.save({ ...settings(), enabled: false }));
+  assert.equal(f.keys[0].off, false);
+  f.unavailable.clear(); await f.sync.refresh();
+  assert.equal(f.keys[0].off, true);
+  assert.ok(!f.calls.some(c => c.path.endsWith('/on-key')));
 });
 
 test('removing a saved default automatically repairs policy from the remaining confirmed catalog',async t=>{

@@ -54,7 +54,7 @@ function readPrivateFile(path, { optional = false, privateMode = false } = {}) {
   try {
     const info = fstatSync(fd);
     if (!info.isFile() || info.nlink !== 1 || info.size > MAX_BYTES) refuse('file_invalid');
-    if (privateMode && (info.mode & 0o077) !== 0) refuse('destination_permissions');
+    if (privateMode && process.platform !== 'win32' && (info.mode & 0o077) !== 0) refuse('destination_permissions');
     return readFileSync(fd);
   } finally { closeSync(fd); }
 }

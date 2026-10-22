@@ -101,6 +101,8 @@ export function createConsoleSync({ root, native, gatewayBaseUrl = 'http://127.0
     lastSync = new Date().toISOString(); lastError = null;
   }
   async function refreshInner({ repair = true } = {}) {
+    // Pausing is independent of catalog availability. Retry revocation on every disabled refresh.
+    if (!state.enabled) await disableKey();
     catalog = readMagpieCatalog(await native('/api/providers'));
     if (state.enabled) {
       if (repair) {
@@ -151,7 +153,6 @@ export function createConsoleSync({ root, native, gatewayBaseUrl = 'http://127.0
       await writePrivate(root, statePath, JSON.stringify(state, null, 2) + '\n');
       try {
         await refreshInner({ repair: false });
-        if (!state.enabled) await disableKey();
         await writePrivate(root, statePath, JSON.stringify(state, null, 2) + '\n');
         return view();
       } catch (e) { throw e; }

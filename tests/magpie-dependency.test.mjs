@@ -133,3 +133,16 @@ test('project CLI rejects host lifecycle changes and credentials in argv', () =>
     ['accounts', 'import', 'codex', '/real/account/auth.json']])
     assert.throws(() => validateMagpieArguments(args), /disallowed|no_web_or_tls_flags/);
 });
+
+test('provider configuration refuses credential aliases and unknown fields without echoing their values', () => {
+  for (const command of ['add', 'set']) for (const field of [
+    'secretAccessKey', 'accessKeyID', 'access_key_id', 'SECRET_ACCESS_KEY', 'access.key', 'access.secret',
+    'apiKey', 'api-key', 'token', 'credentials', 'header.Authorization', 'futureCredentialField',
+  ]) {
+    const args = ['provider', command, 'synthetic', `${field}=PRIVATE_ARGV_CANARY`];
+    assert.throws(() => validateMagpieArguments(args), error => {
+      assert.equal(error.message, 'magpie_credentials_in_arguments_disallowed');
+      assert.ok(!error.message.includes('PRIVATE_ARGV_CANARY')); return true;
+    });
+  }
+});

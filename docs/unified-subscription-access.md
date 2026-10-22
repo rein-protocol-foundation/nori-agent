@@ -298,10 +298,13 @@ than an invented route. Probabilities are decision evidence, not an accuracy gua
 model choice must remain manual. Jev sees selected bounded routing evidence and route purposes;
 the ordinary agent remains responsible for using conversation context and tools to answer.
 
-An automatic non-default route with `off` or `low` effort additionally requires confident
+Every automatic route with `off` or `low` effort, including the default, requires confident
 `task: simple` and `contextIndependent: true` judgments, both meeting `minProbability`. If a
 decision proposes such a route for research, coding, contextual or complex work, the router uses
-the capable default. Trusted administrator coding receives a high-effort route; message text
+the capable default. If that default also has `off` or `low` effort, the automatic run stops with
+`rein_router_capable_default_required` instead of starting inference. Choose a `medium` or `high`
+default for automatic routing; explicitly selected manual models remain available at any effort.
+Trusted administrator coding receives a high-effort route; message text
 claiming administrator status grants no authority.
 
 Run guards remain in place across individual model attempts. They are released only by the

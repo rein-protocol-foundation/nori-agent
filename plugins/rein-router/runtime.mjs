@@ -130,13 +130,17 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
     }
     if (selected.route.billingMode === 'coding-plan' && !codingEligible)
       selected = { route: routeById(config.defaultRoute), reason: 'coding-plan-task-ineligible' };
-    // Cheap routes need an independent judgment that no prior context is needed.
-    if (['off', 'low'].includes(selected.route.effort) && selected.route.id !== config.defaultRoute &&
-        !(taskCertain && task.choice === 'simple' && answers?.contextIndependent?.type === 'boolean' &&
+    // The default is not exempt: cheap automatic routes require a certain, independent task.
+    if (['off', 'low'].includes(selected.route.effort) &&
+        !(selected.reason === 'jev' && !hasAttachments && taskCertain && task.choice === 'simple' && answers?.contextIndependent?.type === 'boolean' &&
           Number.isFinite(answers.contextIndependent.probabilityTrue) &&
           answers.contextIndependent.probabilityTrue <= 1 &&
-          answers.contextIndependent.probabilityTrue >= config.decision.minProbability))
-      selected = { route: routeById(config.defaultRoute), reason: 'context-required' };
+          answers.contextIndependent.probabilityTrue >= config.decision.minProbability)) {
+      const capable = routeById(config.defaultRoute);
+      // Keep manual low-effort models usable, but never turn an unsafe default into inference.
+      if (['off', 'low'].includes(capable.effort)) throw new Error('rein_router_capable_default_required');
+      selected = { route: capable, reason: 'context-required' };
+    }
     return { ...selected, codingEligible };
   }
   return {
@@ -208,6 +212,8 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
       if (ctx.modelProviderId !== PROVIDER_ID || !routeById(ctx.modelId)) return block('rein_router_route_disallowed');
       const run = runs.get(ctx.runId);
       const requested = run?.requested;
+      // A swallowed/failed automatic selection must not become a named fallback attempt.
+      if (run?.manual === false && !requested) return block('rein_router_route_disallowed');
       if (requested && ctx.modelId !== requested && (run.manual || !config.fallbackRoutes.includes(ctx.modelId)))
         return block('rein_router_fallback_disallowed');
       if (requested && ctx.modelId !== requested && routeById(ctx.modelId).billingMode === 'coding-plan' &&
