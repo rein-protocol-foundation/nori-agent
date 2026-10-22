@@ -12,7 +12,8 @@
     "inbound.mjs",
     "gateway.mjs",
     "reply-chunks.mjs",
-    "openclaw.plugin.json"
+    "openclaw.plugin.json",
+    "model-selection.mjs"
   ],
   "dependencies": {
     "discord.js": "14.27.0",
