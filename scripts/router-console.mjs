@@ -108,55 +108,71 @@ async function occupied(port) {
 
 export async function runRouterConsole({ root = projectRoot, noOpen = false, port = 3431, gatewayPort = 3425,
   environment = process.env } = {}) {
-  const installation = await verifyMagpieInstallation({ root });
-  const paths = magpiePaths(root), base = `http://127.0.0.1:${gatewayPort}/v1`;
-  const env = buildManagedEnvironment({ homeDir: paths.homeDir, baseUrl: base, environment, allowSubscriptionAccounts: true });
-  await ensureManagedDirectories(env);
-  const release = await acquireManagedProfileLock(paths.homeDir);
-  let child, web, sync, stopping;
+  let child, web, sync, stopping, release, requestedSignal, finish, childClosed = false;
+  const finished = new Promise(resolveDone => { finish = resolveDone; });
+  const handlers = new Map(['SIGINT', 'SIGTERM'].map(signal => [signal, () => {
+    requestedSignal ??= signal; finish();
+  }]));
+  const assertRunning = () => { if (requestedSignal) throw new Error('router_console_interrupted'); };
   const stop = () => stopping ??= (async () => {
     await web?.close();
     await sync?.close().catch(() => {});
     if (child?.pid && child.exitCode === null && child.signalCode === null) {
       const result = await stopOwnedProcessTree(child); if (!result.complete) throw new Error('router_console_cleanup_required');
     } else if (child?.pid && await occupied(gatewayPort)) throw new Error('router_console_cleanup_required');
-    await release();
+    await release?.();
   })();
+  // Latch termination before any asynchronous setup can acquire a lock or start a detached child.
+  for (const [signal, handler] of handlers) process.on(signal, handler);
   try {
+    const installation = await verifyMagpieInstallation({ root }); assertRunning();
+    const paths = magpiePaths(root), base = `http://127.0.0.1:${gatewayPort}/v1`;
+    const env = buildManagedEnvironment({ homeDir: paths.homeDir, baseUrl: base, environment, allowSubscriptionAccounts: true });
+    await ensureManagedDirectories(env); assertRunning();
+    release = await acquireManagedProfileLock(paths.homeDir); assertRunning();
     if (await occupied(gatewayPort)) throw new Error('router_magpie_port_in_use');
-    await disableMagpieAutoUpdate(installation.binaryPath, { cwd: paths.homeDir, env });
-    const probe = createSocketServer(); const nativePort = await listen(probe); await new Promise(r => probe.close(r));
+    assertRunning();
+    await disableMagpieAutoUpdate(installation.binaryPath, { cwd: paths.homeDir, env }); assertRunning();
+    const probe = createSocketServer(); const nativePort = await listen(probe); await new Promise(r => probe.close(r)); assertRunning();
     const nativeSecret = randomBytes(24).toString('hex'), nativeOrigin = `http://127.0.0.1:${nativePort}`;
     child = spawn(installation.binaryPath, ['web', '--gateway', '--no-open', '--addr', `127.0.0.1:${nativePort}`], {
       cwd: paths.homeDir, env: { ...env, MAGPIE_WEB_KEY: nativeSecret }, detached: process.platform !== 'win32', stdio: ['ignore','ignore','ignore'], shell: false,
     });
     let startError; child.once('error', e => { startError = e; });
+    child.once('close', () => { childClosed = true; finish(); });
     const native = await nativeClient(nativeOrigin, nativeSecret);
     let ready = false;
     for (let i = 0; i < 100; i++) {
-      if (startError || child.exitCode !== null) throw new Error('router_magpie_start_failed');
-      try { await native('/api/providers'); ready = true; break; } catch { await sleep(100); }
+      assertRunning();
+      if (startError || childClosed || child.exitCode !== null || child.signalCode !== null) throw new Error('router_magpie_start_failed');
+      try { await native('/api/providers'); ready = true; break; } catch { assertRunning(); await sleep(100); }
     }
+    assertRunning();
     if (!ready) throw new Error('router_magpie_start_timeout');
     sync = createConsoleSync({ root, native, gatewayBaseUrl: base, environment });
     try { await sync.init(); } catch { /* Persisted errors are displayed in the UI; never unblock its key. */ }
+    assertRunning();
     web = await createConsoleServer({ sync, nativeOrigin, nativeSecret, port });
+    assertRunning();
     console.log(`OpenClaw Router: ${web.link}\nMagpie owns providers and models. Keep this terminal open. Ctrl-C stops this gateway.`);
     if (!noOpen) {
       const command = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'rundll32' : 'xdg-open';
       const opened = spawn(command, process.platform === 'win32' ? ['url.dll,FileProtocolHandler', web.link] : [web.link], { stdio: 'ignore', shell: false });
       opened.on('error', () => {});
     }
-    await new Promise(resolveDone => {
-      const done = () => { process.off('SIGINT', done); process.off('SIGTERM', done); resolveDone(); };
-      process.on('SIGINT', done); process.on('SIGTERM', done); child.once('close', done);
-    });
-  } finally { await stop(); }
+    await finished;
+  } catch (e) { if (!requestedSignal) throw e; }
+  finally {
+    // Repeated signals must not bypass key revocation, process reaping or lock release.
+    try { await stop(); }
+    finally { for (const [signal, handler] of handlers) process.off(signal, handler); }
+  }
+  return requestedSignal === 'SIGINT' ? 130 : requestedSignal === 'SIGTERM' ? 143 : 0;
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   try {
     const args = process.argv.slice(2);
     if (args.some(v => v !== '--no-open') || args.length > 1) throw new Error('router_arguments_invalid');
-    await runRouterConsole({ noOpen: args.includes('--no-open') });
+    process.exitCode = await runRouterConsole({ noOpen: args.includes('--no-open') });
   } catch (e) { console.error(safeError(e)); process.exitCode = 1; }
 }

@@ -27,6 +27,7 @@ magpie.plugin('rein-router', ctx => {
   const messages = {
     router_catalog_empty: '还没有可用模型，请先在 Providers 添加并启用模型。',
     router_no_eligible_models: '请选择 Provider 的计费来源并确认额度设置。',
+    router_capable_default_required: '默认策略需要支持 medium 或 high 的模型。请在 Providers 启用合适的模型，并确认计费设置后重新保存。',
     router_jev_key_required: '启用 Dynamic Router 前，请填写 Jev API Key 或设置 JEV_API_KEY。',
     router_coding_plan_scope: 'Coding Plan 仅用于编码路由；请为通用任务选择其他 Provider。',
     router_catalog_limit: '可用模型过多。请在 Magpie 缩小暴露给 OpenClaw 的模型目录（最多 60 个）。',

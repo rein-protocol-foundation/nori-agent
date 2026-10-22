@@ -40,10 +40,11 @@ export function readMagpieCatalog(raw) {
 
 export function recommendPolicy(models) {
   const sorted = [...models].sort((a, b) => rank(b) - rank(a) || a.id.localeCompare(b.id));
-  const general = sorted[0], quick = [...sorted].reverse()[0];
+  const general = sorted.find(m => m.efforts.some(e => ['medium', 'high'].includes(e)));
+  const quick = [...sorted].reverse()[0];
   const coding = sorted.find(m => m.efforts.includes('high')) ?? general;
   const choice = (m, preferred) => m ? { model: m.id, effort: m.efforts.includes(preferred) ? preferred : preferred === 'off' ? m.efforts[0] : m.efforts.at(-1) } : null;
-  return { general: choice(general, 'medium'), quick: choice(quick, 'off'),
+  return { general: choice(general, general?.efforts.includes('medium') ? 'medium' : 'high'), quick: choice(quick, 'off'),
     research: choice(general, 'high'), code: choice(coding, 'high') };
 }
 
@@ -63,9 +64,11 @@ export function compileCatalog({ catalog, settings, gateway, pluginPath }) {
     'Manually selectable model; choose only when suitable for this task.'));
   for (const [role, purpose] of Object.entries(roles)) {
     const selected = policy[role];
+    if (role === 'general' && !selected) throw new Error('router_capable_default_required');
     const model = eligible.find(m => m.id === selected?.model);
     if (!model) throw new Error(`router_policy_model_missing_${role}`);
     if (!model.efforts.includes(selected.effort)) throw new Error(`router_policy_effort_invalid_${role}`);
+    if (role === 'general' && !['medium', 'high'].includes(selected.effort)) throw new Error('router_capable_default_required');
     if (role !== 'code' && funding[model.providerId].mode === 'coding-plan') throw new Error('router_coding_plan_scope');
     routes.push(makeRoute(model, role, selected.effort, purpose));
   }

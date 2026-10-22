@@ -48,6 +48,32 @@ test('strategies reject removed models and unsupported efforts instead of invent
   assert.throws(()=>validateConsoleSettings(JSON.parse('{"funding":{"__proto__":{}}}')),/invalid/);
 });
 
+test('automatic defaults require a capable effort before any OpenClaw configuration is published', async t => {
+  for (const dynamic of [false, true]) {
+    const f = await fixture(t), before = await readFile(f.hostPath, 'utf8');
+    f.raw.providers[0].models = f.raw.providers[0].models.filter(m => m.reasonless);
+    await assert.rejects(f.sync.save({ ...settings(), dynamic }), /router_capable_default_required/);
+    assert.equal(await readFile(f.hostPath, 'utf8'), before);
+    assert.equal(f.keys.length, 0);
+    for (const effort of ['off', 'low']) {
+      const s = { ...settings(), dynamic, policy: { general: { model: effort === 'off' ? 'test/flash' : 'test/pro', effort } } };
+      assert.throws(() => compile(undefined, s), /router_capable_default_required/);
+    }
+  }
+});
+
+test('recommendations choose a capable default even when a reasonless model has a higher name rank', () => {
+  const c = readMagpieCatalog(metadata()); c[0].id = 'test/large-pro'; c[1].id = 'test/mini';
+  const result = compile(c);
+  assert.equal(result.policy.general.model, 'test/mini');
+  assert.equal(result.policy.general.effort, 'medium');
+  const manual = result.fragment.plugins.entries['rein-router'].config.routes.find(r => r.gatewayModel === 'test/large-pro');
+  assert.equal(manual.effort, 'off');
+  assert.ok(result.fragment.models.providers['rein-magpie'].models.some(m => m.id === manual.id));
+  c[1].efforts = ['high', 'off', 'low'];
+  assert.equal(compile(c).policy.general.effort, 'high', 'capable recommendations must not depend on metadata effort ordering');
+});
+
 test('merging preserves unrelated provider, agents, tools, channels, secrets and model overrides', () => {
   const host={ models:{providers:{existing:{baseUrl:'unchanged'}}},agents:{defaults:{model:'existing/a',models:{'existing/a':{alias:'old'}}},list:[{id:'nori',model:'existing/a'}]},
     channels:{discord:{enabled:true}},tools:{allow:['test']}, secrets:{providers:{store:{source:'file'}}}, plugins:{entries:{other:{enabled:true}}} };
@@ -182,10 +208,27 @@ test('a failed key revocation is retried on disabled refreshes after native serv
 });
 
 test('removing a saved default automatically repairs policy from the remaining confirmed catalog',async t=>{
-  const f=await fixture(t);const s=settings();s.policy=recommendPolicy(readMagpieCatalog(f.raw));await f.sync.save(s);
-  f.raw.providers[0].models=f.raw.providers[0].models.filter(m=>m.id==='flash');await f.sync.refresh();
+  const f=await fixture(t);
+  f.raw.providers[0].models.push({id:'zz-pro',on:true,efforts:['medium','high']});
+  const s=settings();s.policy=recommendPolicy(readMagpieCatalog(f.raw));await f.sync.save(s);
+  f.raw.providers[0].models=f.raw.providers[0].models.filter(m=>m.id!=='pro');await f.sync.refresh();
   const host=JSON.parse(await readFile(f.hostPath,'utf8'));
-  assert.equal(host.plugins.entries['rein-router'].config.routes.find(r=>r.id==='general').gatewayModel,'test/flash');
+  assert.equal(host.plugins.entries['rein-router'].config.routes.find(r=>r.id==='general').gatewayModel,'test/zz-pro');
+});
+
+test('losing the last capable model pauses the key without publishing an unusable default, then recovers', async t => {
+  const f = await fixture(t); await f.sync.save(settings());
+  const before = await readFile(f.hostPath, 'utf8'), previous = structuredClone(f.raw);
+  f.raw.providers[0].models = f.raw.providers[0].models.filter(m => m.reasonless);
+  for (let attempt = 0; attempt < 2; attempt++) {
+    await assert.rejects(f.sync.refresh(), /router_capable_default_required/);
+    assert.equal(f.keys[0].off, true);
+    assert.equal(await readFile(f.hostPath, 'utf8'), before);
+    assert.equal((await f.sync.view()).error, 'router_capable_default_required');
+  }
+  f.raw = previous; await f.sync.refresh();
+  assert.equal(f.keys[0].off, false);
+  assert.equal((await f.sync.view()).error, null);
 });
 
 
