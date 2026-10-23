@@ -4,6 +4,9 @@
 
 [English](README.md)
 
+[Model Router 与 Dynamic Router 中文快速上手](docs/model-router-quickstart-zh.md)
+统一界面：`npm run toolchain:pnpm -- run router:ui`。Provider 和模型只在 Magpie 配置一次，插件自动同步给 OpenClaw；指南包含真实界面截图。
+
 Rein Protocol Foundation 的组织运营 Agent：管理员、秘书与线上主持人。
 
 帮助成员把活动想法变成真实行动：受理提案、整理材料、主持 Board 经费评选、推进筹备、收集成果、
@@ -70,12 +73,19 @@ Discord 入群引导已纳入工作区模板，覆盖可选介绍与同伴互动
 实现逐发送者／公私受众 session 与持久记忆，已通过模拟双用户的原生链路验证；真实双账号验收待进行。
 原本地实例仍限制为原验收账号，测试课程来自操作者预置的公开目录。
 
+## 模型路由快速上手
+
+[Model Router 与 Dynamic Router 中文快速上手](docs/model-router-quickstart-zh.md)
+分别介绍统一 Magpie 网关的安装、Provider 接入、手动选模，以及 TypeSafe/Jev 动态路由的配置与使用，
+包含可复制的配置示例和常用命令。完整字段和验收记录见[详细指南](docs/unified-subscription-access.md)。
+
 ## 仓库结构
 
 | 路径 | 用途 |
 | --- | --- |
 | `vendor/openclaw` | 官方 OpenClaw 源码（git submodule，固定在单个 commit）。属于上游，可直接使用，不要修改。 |
-| `plugins/rein-operations` | Rein 功能的唯一实现位置；含确定性业务模块、三个默认只读工具、四个提案工具，以及 12 个需显式配置的后端 Slack 工具（4 读、1 个只读字段采集、4 写、3 个结果反馈）。 |
+| `plugins/rein-operations` | Rein 业务插件；含确定性业务模块、三个默认只读工具、四个提案工具，以及 12 个需显式配置的后端 Slack 工具（4 读、1 个只读字段采集、4 写、3 个结果反馈）。 |
+| `plugins/rein-router` | 可选的模型路由插件，提供项目内 Magpie 网关、手动选模与 Jev 动态路由。 |
 | `workspace/` | 与 OpenClaw 兼容的 Agent 工作区模板：身份、策略、头像，以及 Discord 对话引导与初始未配置的公开目录。 |
 | `config/operations.example.json` | 拟定的业务配置。它不是 OpenClaw 原生配置，也没有任何执行器加载它。 |
 | `scripts/` | 本地初始化、CLI 包装与上游更新脚本。 |
@@ -94,13 +104,15 @@ Rein 的功能全部以 Rein 自有插件的形式放在 `plugins/` 下，通过
 ## 环境要求
 
 - Node.js `>=24.16.0 <25` 或 `>=26.1.0`（推荐 Node 26），与上游 `engines` 一致。
-- pnpm `12.4.2`，由 `package.json` 的 `packageManager` 固定；执行 `corepack enable` 即会使用该版本。
+- pnpm `12.4.2`，由 `package.json` 的 `packageManager` 固定；下文通过 npm 使用项目内工具链，无需全局安装 pnpm。
 - 支持 submodule 的 git。
 
-本工作副本中可能已安装被 git 忽略的本地工具链，可同时满足以上两项：
+先按 [Setup](docs/setup.md#prerequisites) 用 npm 准备被 Git 忽略的 `.toolchain`。
+以下命令使用项目内 Node / pnpm，无需修改 `PATH`，默认终端的 Node 较旧也可运行：
 
 ```sh
-export PATH="$PWD/.toolchain/node_modules/.bin:$PATH"
+npm run toolchain:pnpm -- --version
+npm run toolchain:pnpm -- exec node --version
 ```
 
 ## 快速开始
@@ -108,17 +120,17 @@ export PATH="$PWD/.toolchain/node_modules/.bin:$PATH"
 ```sh
 git clone --recurse-submodules https://github.com/tempest2023/rein-agent.git
 cd rein-agent
-pnpm install                                        # 仅安装 Rein workspace 包
-pnpm --dir vendor/openclaw install --frozen-lockfile
-pnpm --dir vendor/openclaw build
-pnpm run setup:local                                # 生成隔离的本地网关配置
-pnpm run check
-pnpm test
-pnpm openclaw plugins inspect rein-operations --runtime --json
+npm run toolchain:pnpm -- install                                        # 仅安装 Rein workspace 包
+npm run toolchain:pnpm -- --dir vendor/openclaw install --frozen-lockfile
+npm run toolchain:pnpm -- --dir vendor/openclaw build
+npm run toolchain:pnpm -- run setup:local                                # 生成隔离的本地网关配置
+npm run toolchain:pnpm -- run check
+npm run toolchain:pnpm -- test
+npm run toolchain:pnpm -- openclaw plugins inspect rein-operations --runtime --json
 ```
 
 若仓库已克隆但未带 submodule，先执行 `git submodule update --init --recursive`。
-`pnpm run setup:local` 会在 `runtime/openclaw/openclaw.json`（已被 git 忽略，权限 0600）写入隔离配置：
+`npm run toolchain:pnpm -- run setup:local` 会在 `runtime/openclaw/openclaw.json`（已被 git 忽略，权限 0600）写入隔离配置：
 随机生成的网关 token、仅回环地址的 18791 端口、指向本仓库 `workspace/` 的工作区，并启用
 `rein-operations` 插件。聊天平台与模型保持未配置。完整步骤见 [部署准备](docs/setup.md)，更新与回滚
 见 [更新 OpenClaw](docs/upstream.md)。
