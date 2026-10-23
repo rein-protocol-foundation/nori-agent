@@ -1,4 +1,5 @@
 import { isAbsolute } from 'node:path';
+import { configuredRouterStatusTool, ROUTE_STATUS_TOOL } from './model-selection.mjs';
 import { createScopedOwner, sessionKey, MEMORY_TOOLS } from '@rein-protocol/isolation-core/scope';
 import { assertIsolatedRuntime } from '@rein-protocol/isolation-core/runtime-guard';
 export { sessionKey, MEMORY_TOOLS, createOwnerQueue } from '@rein-protocol/isolation-core/scope';
@@ -8,6 +9,11 @@ export const PUBLIC_TOOLS = ['read', 'web_search', 'web_fetch', 'rein_status', '
   'rein_identity_bind_start', 'rein_identity_bind_status', 'rein_identity_bind_complete',
   'rein_resources_search', 'rein_resource_get', 'rein_events_search', 'rein_event_get', ...MEMORY_TOOLS];
 export const PRIVATE_TOOLS = ['read', 'web_search', 'web_fetch', 'rein_status', ...MEMORY_TOOLS];
+
+export function isolatedToolsForAudience(cfg, audience) {
+  const defaults = audience === 'public' ? PUBLIC_TOOLS : PRIVATE_TOOLS;
+  return configuredRouterStatusTool(cfg) ? [...defaults, ROUTE_STATUS_TOOL] : defaults;
+}
 
 export function validateIsolationConfig(config) {
   if (!config || !snowflake(config.botUserId) || !/^[a-z][a-z0-9-]{0,50}$/.test(config.agentId ?? '') ||
@@ -31,7 +37,7 @@ export function validateIsolationConfig(config) {
 
 export function assertIsolationRuntime(cfg, config, workspaceDir) {
   validateIsolationConfig(config);
-  assertIsolatedRuntime(cfg,config,workspaceDir,{platform:'discord',publicTools:PUBLIC_TOOLS,publicReferences:['DISCORD_ONBOARDING.md'],publicSkills:['rein-community-discovery']});
+  assertIsolatedRuntime(cfg,config,workspaceDir,{platform:'discord',publicTools:isolatedToolsForAudience(cfg,'public'),publicReferences:['DISCORD_ONBOARDING.md'],publicSkills:['rein-community-discovery']});
 }
 
 // Only the authenticated transport supplies these fields. Message text, display
