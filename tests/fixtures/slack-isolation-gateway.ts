@@ -28,6 +28,12 @@ export default {...production,register(api) {
       {...base,text:'CASE_AFTER_TOOL_FORGET Check my notes.'},
       {...base,text:'!forget'},
       {...base,text:'CASE_A4 Check forgotten notes.'},
+      {...base,text:'CASE_DISCOVERY_SKILL Read the community discovery skill.'},
+      {...base,text:'CASE_RESOURCE_SEARCH Find an organization course.'},
+      {...base,thread_ts:'1800000001.000003',text:'CASE_RESOURCE_GET Recheck the course details.'},
+      {...base,channel:'GSYNTHPRI',text:'CASE_EVENT_SEARCH Find upcoming organization events.'},
+      {...base,channel:'GSYNTHPRI',thread_ts:'1800000001.000004',text:'CASE_EVENT_GET Recheck an event.'},
+      {...base,user:'USYNTHB02',text:'CASE_DISCOVERY_DENIED Find an organization course.'},
     ];
     socket.start=async()=>{
       socket.emit('connected');

@@ -67,8 +67,9 @@ DEV 结果必须标明开发验证，不能称为生产查询。数据库环境�
 
 先部署对应 Website 后端代码，再为已批准的调用方增加 `community.read`，然后重新
 加载 Agent 插件。将 `workspace/skills/rein-community-discovery/SKILL.md` 一起同步到实际
-运行 workspace。专用隔离 Discord 配置需把四个工具加入 `tools.allow`；示例已更新，
-隔离适配器仅允许这份公开 skill 文件，不放开任意目录、脚本、符号链接或额外工具。
+运行 workspace。专用隔离 Discord／Slack 配置需把四个工具加入 `tools.allow`；两个示例
+均已更新，隔离适配器仅允许这份公开 skill 文件，不放开任意目录、脚本、符号链接或
+额外工具。Slack 的已批准公开／私有频道及其线程均可查询；DM 不开放查询工具。
 
 本地验证：
 

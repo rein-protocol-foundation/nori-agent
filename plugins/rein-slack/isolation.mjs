@@ -8,6 +8,7 @@ export const slackChannelId = value=>nativeId(value,'CG');
 export const slackMessageId = value=>typeof value==='string' && /^[0-9]{10,16}\.[0-9]{6}$/.test(value);
 export const PRIVATE_TOOLS = ['read','web_search','web_fetch','rein_status',...MEMORY_TOOLS];
 export const CHANNEL_TOOLS = [...PRIVATE_TOOLS,'rein_member_status','rein_identity_bind_start','rein_identity_bind_status',
+  'rein_resources_search','rein_resource_get','rein_events_search','rein_event_get',
   'rein_identity_bind_complete','rein_funds','rein_poll_candidates','rein_vote_type_resolve','rein_proposal_collect',
   'rein_governance_proposal_submit','rein_poll_open','rein_poll_vote','rein_poll_result','rein_proposal_comment_suggest',
   'rein_revision_approve','rein_revision_apply'];
@@ -28,7 +29,7 @@ export function validateIsolationConfig(c) {
 }
 export function assertSlackRuntime(cfg,c,workspaceDir) {
   validateIsolationConfig(c);
-  assertIsolatedRuntime(cfg,c,workspaceDir,{platform:'slack',publicTools:CHANNEL_TOOLS});
+  assertIsolatedRuntime(cfg,c,workspaceDir,{platform:'slack',publicTools:CHANNEL_TOOLS,publicSkills:['rein-community-discovery']});
   // Business permissions stay in the existing backend. Ensure its native channel
   // enrollment cannot name another workspace under this authenticated bot.
   const backend=cfg.plugins?.entries?.['rein-operations']?.config?.foundationDb;
