@@ -178,6 +178,11 @@ See the [screenshot walkthrough](docs/model-router-quickstart-zh.md) for setup a
 
 ## Quick start
 
+Nori can use the pinned official agent-browser CLI and Skill for operator-authorized
+browser tasks, with a local encrypted credential vault, encrypted session reuse and bounded
+login recovery. See [browser setup and verification](docs/agent-browser.md). Credentials
+are enrolled locally; existing public-channel permissions are not expanded.
+
 ```sh
 git clone --recurse-submodules https://github.com/tempest2023/rein-agent.git
 cd rein-agent
