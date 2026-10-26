@@ -70,6 +70,10 @@ for every script in this file; none of them needs a `PATH` export.
 | `npm run toolchain:pnpm -- openclaw plugins inspect rein-operations --runtime --json` | runtime tool report |
 | `npm run toolchain:pnpm -- openclaw plugins doctor` | plugin diagnostics |
 | `npm run toolchain:pnpm -- openclaw gateway run` | local gateway, foreground |
+| `npm run toolchain:pnpm -- openclaw gateway start` | project gateway, background |
+| `npm run toolchain:pnpm -- openclaw gateway stop` | gracefully stops this project's background or foreground gateway |
+| `npm run toolchain:pnpm -- openclaw gateway restart` | restarts this project's gateway with fresh configuration and credentials, in the background |
+| `npm run toolchain:pnpm -- openclaw gateway status` | reports this project's instance and readiness |
 | `npm run toolchain:pnpm -- openclaw gateway health --port 18791` | gateway health from a second terminal |
 | `npm run toolchain:pnpm -- openclaw doctor` | runtime doctor |
 | `npm run toolchain:pnpm -- run smoke:gateway` | authenticated `rein_status` call, gateway-level smoke test |
@@ -225,6 +229,44 @@ echo the secret itself.
 ```sh
 npm run toolchain:pnpm -- openclaw gateway run       # foreground; stop it with Ctrl-C when finished
 ```
+
+This checkout uses `runtime/openclaw` as its isolated state directory and config path.
+The repository wrapper provides project-local `start`, `stop`, `restart` and `status` commands;
+they use the same configuration and verified upstream instance locks as `gateway run`.
+They do not install or mutate an account-wide LaunchAgent, systemd service or Windows task.
+
+| Command suffix after `npm run toolchain:pnpm -- openclaw` | Behavior |
+| --- | --- |
+| `gateway run` | Runs in the foreground; logs stay in this terminal and Ctrl-C stops it. |
+| `gateway start` | Starts a detached background process and returns after readiness. Repeating it reports the existing instance. |
+| `gateway stop` | Sends a graceful stop to the verified instance for this project, including one started with `run`; repeating it is safe. |
+| `gateway restart` | Checks configuration and credential loading, stops the current instance, then starts a background replacement with fresh values. |
+| `gateway status --json` | Shows project instance PID, port, readiness and configuration/log paths. |
+
+For background use:
+
+```sh
+npm run toolchain:pnpm -- openclaw gateway start
+npm run toolchain:pnpm -- openclaw gateway status
+npm run toolchain:pnpm -- openclaw gateway restart
+npm run toolchain:pnpm -- openclaw gateway stop
+```
+
+Background logs append to `runtime/openclaw/logs/project-gateway.log` with mode `0600`.
+The process survives closing the terminal, but **does not start automatically at login or reboot**.
+Keep the Router Console terminal running separately when using Magpie.
+Run these commands from this checkout to select this project's instance. A foreign process using
+the configured port is reported rather than stopped. `stop/status` do not need provider keys.
+Restart replaces a foreground instance with a background one; use `stop` followed by `run` to
+return to foreground operation.
+
+Lifecycle commands accept `--json` and `--timeout N` (milliseconds). `start/restart` accept
+`--port N`; otherwise the successor uses the current project configuration's port.
+Stops are graceful by default; `restart --safe` is accepted as the same project-local behavior.
+If shutdown exceeds its wait budget, the command fails without starting a second instance.
+Explicit `--force` permits killing the still-verified original process after that timeout.
+The upstream `gateway install/uninstall` commands remain system-service operations and are not
+used for this isolated project profile.
 
 From a second terminal:
 
