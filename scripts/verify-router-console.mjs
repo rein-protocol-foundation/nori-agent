@@ -37,6 +37,8 @@ export async function verifyRouterConsole({ screenshots = false } = {}) {
     await writeFile(join(root,'runtime/magpie/config/magpie/providers.json'),JSON.stringify(providers),{mode:0o600});
     await writeFile(join(root,'runtime/magpie/config/magpie/settings.json'),JSON.stringify({noAutoUpdate:true,noAccountDiscovery:true,noStats:true,noUsageStats:true,quotaReads:'asked',proxy}),{mode:0o600});
     await writeFile(join(root,'runtime/openclaw/openclaw.json'),JSON.stringify({agents:{defaults:{model:'existing/model'}},channels:{discord:{enabled:true}},tools:{allow:['synthetic_lookup']}}),{mode:0o600});
+    const savedJevKey = 'synthetic-saved-jev-for-ui-test';
+    await writeFile(join(root,'runtime/magpie/router-console-secret.json'),JSON.stringify({jevApiKey:savedJevKey}),{mode:0o600});
     const free=createServer();const gatewayPort=await listen(free);await new Promise(r=>free.close(r));
     const entry = new URL('./router-console.mjs', import.meta.url).href;
     const code=`import { runRouterConsole } from ${JSON.stringify(entry)};await runRouterConsole({root:process.env.REIN_CONSOLE_FIXTURE,port:0,gatewayPort:${gatewayPort},noOpen:true,environment:process.env});`;
@@ -56,6 +58,23 @@ export async function verifyRouterConsole({ screenshots = false } = {}) {
     await page.waitForFunction(()=>document.querySelector('#rein-catalog')?.textContent.includes('Demo Subscription'));
     assert.equal(errors.length,0,errors.join('\n'));
     assert.ok(await page.locator('#view-agents').isHidden());
+    const keyField = page.getByLabel('Jev API Key', { exact: true });
+    assert.equal(await keyField.getAttribute('type'),'password');
+    assert.equal(await keyField.inputValue(),'');
+    assert.equal(await keyField.getAttribute('placeholder'),'********');
+    await page.getByRole('button',{name:'显示 Jev API Key',exact:true}).click();
+    await page.waitForFunction(()=>document.querySelector('#rein-jev-key')?.type==='text');
+    assert.equal(await keyField.inputValue(),savedJevKey);
+    await page.getByRole('button',{name:'隐藏 Jev API Key',exact:true}).click();
+    assert.equal(await keyField.getAttribute('type'),'password');
+    assert.equal(await keyField.inputValue(),'');
+    await keyField.fill('synthetic-unsaved-jev');
+    await page.getByRole('button',{name:'显示 Jev API Key',exact:true}).click();
+    assert.equal(await keyField.inputValue(),'synthetic-unsaved-jev');
+    await page.getByRole('button',{name:'隐藏 Jev API Key',exact:true}).click();
+    assert.equal(await keyField.getAttribute('type'),'password');
+    assert.equal(await keyField.inputValue(),'synthetic-unsaved-jev');
+    await keyField.fill('');
     if (screenshots) {
       await mkdir(resolve(projectRoot,'docs/images/router-console'),{recursive:true});
       await page.screenshot({path:resolve(projectRoot,'docs/images/router-console/01-router-overview.png'),fullPage:true});

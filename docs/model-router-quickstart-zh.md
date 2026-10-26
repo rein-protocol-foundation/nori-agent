@@ -113,7 +113,8 @@ npm run toolchain:pnpm -- openclaw gateway run
 ![Dynamic Router 的 Jev Key、启用开关与应用范围](images/router-console/03-dynamic-router.png)
 
 1. 打开“自动判断任务 · Jev”开关。这允许单独计费的 Jev 分类请求。
-2. 填写 Jev API Key。已保存的 Key 不回显，留空保留。也可在本地私有配置
+2. 填写 Jev API Key。已保存的 Key 默认显示为 `********`，点击“显示”查看明文，再点击“隐藏”恢复掩码；留空保留。
+   也可在本地私有配置
    `runtime/magpie/router-console-secret.json` 的 `jevApiKey` 字段中配置，并保持文件权限为 `0600`；
    不要提交此文件，也不需要在 `.zshrc` 中导出 Key。
 3. 按需展开“回退顺序与管理员编码任务”，设置允许的自动回退顺序。

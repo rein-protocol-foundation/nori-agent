@@ -69,6 +69,7 @@ export async function createConsoleServer({ sync, nativeOrigin, nativeSecret, po
         return res.end(url.pathname.endsWith('.css') ? css : js);
       }
       if (url.pathname === '/_rein/api/state' && req.method === 'GET') return reply(200, await sync.view());
+      if (url.pathname === '/_rein/api/jev-key/reveal' && req.method === 'POST') return reply(200, await sync.revealJevKey());
       if (url.pathname === '/_rein/api/refresh' && req.method === 'POST') return reply(200, await sync.refresh());
       if (url.pathname === '/_rein/api/settings' && req.method === 'POST') {
         const body = JSON.parse((await boundedBody(req, 64 * 1024)).toString('utf8'));

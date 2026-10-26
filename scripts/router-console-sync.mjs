@@ -145,6 +145,11 @@ export function createConsoleSync({ root, native, gatewayBaseUrl = 'http://127.0
       catch (e) { lastError = /^router_[a-z_]+$/.test(e.message) ? e.message : 'router_sync_failed'; throw new Error(lastError); }
     }),
     view,
+    async revealJevKey() {
+      const secret = JSON.parse(await readPrivate(root, secretPath, '{}'));
+      if (!validJevKey(secret.jevApiKey)) throw new Error('router_jev_key_required');
+      return { jevApiKey: secret.jevApiKey };
+    },
     save: (settings, jevApiKey) => locked(async () => {
       const next = validateConsoleSettings(settings);
       if (jevApiKey !== undefined && !validJevKey(jevApiKey))

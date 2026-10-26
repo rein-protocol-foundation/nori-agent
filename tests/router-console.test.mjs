@@ -183,6 +183,36 @@ test('UI proxy requires authenticated session, exact host and same-origin mutati
   assert.equal(rejected,403);
 });
 
+test('saved Jev keys are revealed only by authenticated same-origin POST and never by normal state', async t => {
+  const f = await fixture(t), secret = 'synthetic-reveal-only-jev';
+  await assert.rejects(f.sync.revealJevKey(), /router_jev_key_required/);
+  await f.sync.save({ ...settings(), enabled: false }, secret);
+  const keyPath = join(f.root, 'runtime/magpie/router-console-secret.json');
+  const beforeKey = await readFile(keyPath, 'utf8'), beforeConfig = await readFile(f.hostPath, 'utf8');
+  const server = await createConsoleServer({ sync: f.sync, nativeOrigin: 'http://127.0.0.1:9', nativeSecret: 'private' });
+  t.after(() => server.close());
+  const path = server.origin + '/_rein/api/jev-key/reveal';
+  assert.equal((await fetch(path, { method: 'POST', headers: { Origin: server.origin } })).status, 401);
+  const login = await fetch(server.link, { redirect: 'manual' });
+  const Cookie = login.headers.get('set-cookie').split(';')[0];
+  assert.equal((await fetch(path, { headers: { Cookie } })).status, 404);
+  assert.equal((await fetch(path, { method: 'POST', headers: { Cookie } })).status, 403);
+  assert.equal((await fetch(path, { method: 'POST', headers: { Cookie, Origin: 'https://attacker.invalid' } })).status, 403);
+  const response = await fetch(path, { method: 'POST', headers: { Cookie, Origin: server.origin } });
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('cache-control'), 'no-store');
+  assert.deepEqual(await response.json(), { jevApiKey: secret });
+  const state = await fetch(server.origin + '/_rein/api/state', { headers: { Cookie } });
+  const text = await state.text(); assert.ok(!text.includes(secret));
+  assert.equal(JSON.parse(text).jevKeyConfigured, true);
+  assert.equal(await readFile(keyPath, 'utf8'), beforeKey);
+  assert.equal(await readFile(f.hostPath, 'utf8'), beforeConfig);
+  await rm(keyPath);
+  const missing = await fetch(path, { method: 'POST', headers: { Cookie, Origin: server.origin } });
+  assert.equal(missing.status, 400);
+  assert.deepEqual(await missing.json(), { error: 'router_jev_key_required' });
+});
+
 test('native page decoration adds page using upstream kernel and leaves Provider editor in place',()=>{
   const html='<head></head><button data-view="providers">Providers</button><button data-view="routing">Routing</button><script src="kernel.js"></script><script src="app.js"></script>';
   const result=decorateMagpieHtml(html);assert.ok(result.includes('data-view="providers"'));assert.ok(result.includes('data-view="rein-router"'));

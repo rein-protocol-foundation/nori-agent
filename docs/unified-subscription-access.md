@@ -418,6 +418,9 @@ uses an ambient shell `JEV_API_KEY` as a fallback. The launcher removes that inh
 and supplies only the saved project credential to the generated SecretRef. Without a saved
 credential, the Console reports Jev as unconfigured and refuses to enable Dynamic Router.
 For manual deployments, use the explicitly configured OpenClaw secret-store reference below.
+The Console masks saved keys by default. Its Show action retrieves the key through an
+authenticated, same-origin POST response with `Cache-Control: no-store`; ordinary state
+responses remain secret-free. Hiding the key or leaving the page clears the revealed value.
 
 The router uses OpenClaw's native decision runtime and the official `typesafe` plugin; it does
 not create another Jev HTTP client or read a Jev environment key independently. The pinned
