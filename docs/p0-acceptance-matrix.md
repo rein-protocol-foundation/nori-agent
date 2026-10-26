@@ -1,6 +1,8 @@
 # P0 acceptance evidence matrix
 
-This matrix tracks the PRD's AC01–AC20 against **current evidence**. “Core tested” means synthetic inputs exercised deterministic Rein-owned modules. It does not mean the real chat, member registry, website or finance provider has passed. A production result requires the provider evidence in the last column. The ten synthetic Slack
+This matrix preserves the PRD's AC01–AC20 **historical acceptance evidence**. Current configuration
+and the 19 backend tools are documented in [setup](setup.md#optional-enable-backend-backed-tools);
+older direct-database tool counts and test results below are not current deployment instructions. “Core tested” means synthetic inputs exercised deterministic Rein-owned modules. It does not mean the real chat, member registry, website or finance provider has passed. A production result requires the provider evidence in the last column. The ten synthetic Slack
 rehearsal cases and their final verdicts are in the [v0.1 governance acceptance record](governance-acceptance-2026-09-28.md).
 
 ## v0.1 slice versus deferred work
@@ -10,11 +12,11 @@ The strict P0 v0.1 slice is the four steps in [PRD §2.3](PRD-agent-community-op
 AC01–AC04, plus the parts of AC05–AC07 and AC16–AC17 those steps exercise. AC08–AC14 and AC18–AC20
 belong to the deferred remainder and stay open until their phase starts.
 
-**Build state: current PR head 2026-09-28** (the earlier 2026-09-24 build state is superseded; the
+**Historical build state: PR head on 2026-09-28** (the earlier 2026-09-24 build state is superseded; the
 date below no longer describes the present tool set). The current PR head carries the long-term
 `rein_*` interface names in the plugin and config, with the database-side rename migration applied
 to the linked project but no live code run behind it, and has **no live Slack retest after the
-rename**. It has **12 database-backed tools —
+rename**. That build had **12 database-backed tools** —
 four reads
 (`rein_member_status`, `rein_funds`, `rein_poll_candidates`, `rein_vote_type_resolve`), one read-only
 field collector (`rein_proposal_collect`), four writes and three post-result feedback tools — and they
@@ -75,15 +77,11 @@ cross-process exactly-once behaviour.
 The Agent's tools have been exercised against real providers in the synthetic rehearsals: synthetic
 test identities in a real test Slack workspace, reading and writing the linked `dev_*` Supabase
 schema with synthetic rows, while every `prod_*` business table stayed at zero. The rows below remain
-synthetic dev and module-level evidence, not a production pass. One installation serves one Slack
-workspace; the pinned runtime supplies a trusted per-message sender in admitted channel and group
-messages as well as in DMs, but no team ID. Slack sender identity is specified by D13 as an exact
-match between the sender's Slack profile email and one `<env>_contact_identities` row, which needs
-the governance app's `users:read` and `users:read.email` bot scopes; the resolver is implemented in
-local code with tests, but it is opt-in and off by default (`foundationDb.identityEmailMatch` defaults to
-`disabled`), and the email resolver's scopes and bot token are not installed or configured, so no live
-workspace exercises that resolver and the retained link table stays the read path until it is
-enabled. Two
+synthetic dev and module-level evidence, not a production pass. The old single-workspace and
+profile-email setup has been removed. Current configuration admits explicit `workspaces`, and the
+Agent obtains backend-signed proofs from trusted host context; the backend resolves verified member
+bindings. No profile-email lookup or email scope is required. See [setup](setup.md#optional-enable-backend-backed-tools).
+The following migration and PR details are historical. Two
 migrations are **tracked in the sibling Foundation repository**
 (`tempest2023/ReinProtocolFoundation`) on its PR #13 branch (PR #13, open). Its current PR head is
 `78281fa` ("Recover Remote-Only Case 7 Same-Day Fixture Migration", 2026-09-28); the rename commit
@@ -119,16 +117,14 @@ with synthetic rows only; the `prod_*` business tables were never written, and n
 has run against the current post-rename head, so no schema claim here should be treated as a live
 end-to-end result on the current head.
 
-The Supabase/PostgREST boundary itself has a local integration test,
-`tests/foundation-db-gateway.test.mjs`: it runs the reader and writer against a real HTTP loopback
-server that simulates the PostgREST routes and the Supabase gateway's header rules, covering both a
-modern `sb_secret_` key and a legacy `service_role` JWT, and asserting that a 401 becomes
-`auth_error` while a 5xx stays `http_error`. That is a transport-level test, not a live project or a
-real PostgREST instance.
+Current backend boundary coverage lives in `tests/backend-boundary.test.mjs`,
+`tests/backend-adapter.test.mjs`, `tests/backend-runtime.test.mjs` and `tests/identity-tools.test.mjs`.
+The earlier direct-PostgREST tests describe a retired architecture and are not deployment checks for
+the current Agent. Local boundary tests do not establish live provider acceptance.
 
 | AC | Current evidence | Status | Evidence still required for launch |
 | --- | --- | --- | --- |
-| AC01 | `proposals.test.mjs` rejects formal submission by an unidentified account; `proposal-tool-bridge.test.mjs` proves a first unidentified sender can draft using host identity and cannot confirm; `foundation-db-reader.test.mjs` resolves a sender only through a verified identity link in the configured team. The D13 email resolver — trusted sender to a `users.info` profile email, exact match to one `<env>_contact_identities` row, contact and current role derived per request, a `revoked` or conflicting `verified` link row vetoing, and a missing, hidden, unmatched or ambiguous email failing closed — is implemented in local code and covered by `slack-email-lookup.test.mjs` and `foundation-db-reader.test.mjs`, but it is opt-in and off by default, so the reader still resolves through the link table unless `foundationDb.identityEmailMatch` is enabled. | Local tool, link-based reader and email resolver tested; the resolver is implemented but disabled by default, and its bot scopes and token are not installed or configured | The installed `users:read` and `users:read.email` scopes, a configured bot token, the resolver enabled against a live workspace, and a selected-platform sender joined to the authoritative current member registry. A normally invited member whose profile email is unmatched or missing is expected to fail closed as unidentified rather than to be treated as an ordinary unlinked user. |
+| AC01 | Historical proposal/core checks cover refusal of unidentified senders. Current identity uses authenticated backend operations and canonical verified bindings; relevant local coverage is in `backend-runtime.test.mjs`, `backend-adapter.test.mjs` and `identity-tools.test.mjs`. Profile-email resolution has been removed. | The historical case 1 was skipped, not passed; updating configuration does not change that verdict | Isolated end-to-end evidence for unbound, bound, revoked and expired identities, current role checks and cross-workspace refusal, against the approved backend and transport. |
 | AC02 | `proposals.test.mjs` checks fields, versions and reconfirmation; `proposal-tool-bridge.test.mjs` exercises guarded create/revise/confirm/submit calls. | Local tool tested | Real chat conversation that gathers fields across messages and returns the confirmed summary. |
 | AC03 | `proposals.test.mjs` checks explicit zero-budget authorization and blockers. | Core tested | Approved policy scope, responsible exception handler and real fast-track rehearsal. |
 | AC04 | `proposals.test.mjs` routes complete funding requests to governance, including small amounts. | Core tested | Live Board round presentation and provider-backed proposal records. |

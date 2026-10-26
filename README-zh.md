@@ -27,19 +27,22 @@ Contributor 提案、完成一次简单的 Board 投票并由 Agent 记录结果
 凭据、也不做任何数据库操作：全部治理读写、身份解析与身份绑定都经由同一个已认证的基金会后端 API，
 Agent 从不依据资料邮箱解析身份。此前的合成演练确实经由**真实 Slack 提供方**（测试工作区、合成测试身份）
 并对已链接的 `dev_*` 表集写入过合成数据；未发生的是生产使用：没有真实成员名册，未写入任何 `prod_*`
-业务表，也没有生产部署。切片已落地 12 个工具，全部经由后端 API 访问：
+业务表，也没有生产部署。当前有 19 个工具经由后端 API 访问：
 只读的 `rein_member_status`、`rein_funds`、`rein_poll_candidates`、`rein_vote_type_resolve`，
 只读字段采集的 `rein_proposal_collect`，写入的 `rein_governance_proposal_submit`、
 `rein_poll_open`、`rein_poll_vote`、`rein_poll_result`，以及结果反馈的
-`rein_proposal_comment_suggest`、`rein_revision_approve`、`rein_revision_apply`。
+`rein_proposal_comment_suggest`、`rein_revision_approve`、`rein_revision_apply`；
+三个身份绑定工具 `rein_identity_bind_start`、`rein_identity_bind_status`、`rein_identity_bind_complete`，
+以及四个社区查询工具 `rein_resources_search`、`rein_resource_get`、`rein_events_search`、`rein_event_get`。
 它们**只在显式启用 `foundationDb` 配置块时注册**，且启用后会隐藏合成模拟器与旧提案工具。该配置块
 通过环境变量指向后端（`backendApiBaseUrlEnvVar`、`agentCallerIdEnvVar`、`agentCredentialEnvVar`），
-并携带 `platform: 'slack'`、`workspaces` 列表（每个工作区带一组非空的原生频道 ID）、
-`proposalChannelIds`、`boardChannelIds` 与可选的 `voteTypeAliases`。后端会签发一份绑定
+并携带 `workspaces` 列表（每个条目包含平台、工作区 ID 和非空的原生频道 ID）、
+`proposalChannelIds`、`boardChannelIds` 与可选的 `voteTypeAliases`。写入还需要 `proposalConfirmationKeyEnvVar`，
+顶层 `platform` 可省略。完整示例见[当前安装指南](docs/setup-zh.md#可选启用后端业务工具)。后端会签发一份绑定
 （平台、工作区、用户、频道、事件）与调用方 Agent 的私有凭证；Agent 在每次调用时携带该凭证，
 它绝不会作为工具参数、工具结果或状态字段出现，任何工具都不接受由模型提供的执行者。
 
-接口名称为 `rein_member_status`、`rein_funds`、`rein_poll_candidates`、`rein_vote_type_resolve`、
+治理接口名称为 `rein_member_status`、`rein_funds`、`rein_poll_candidates`、`rein_vote_type_resolve`、
 `rein_governance_proposal_submit`、`rein_poll_open`、`rein_poll_vote`、`rein_poll_result`、
 `rein_proposal_collect`、`rein_proposal_comment_suggest`、`rein_revision_approve` 与
 `rein_revision_apply`；配置块为 `foundationDb`。Agent 从不直接访问表，只调用后端操作；schema 由
@@ -112,7 +115,7 @@ Rein 的功能全部以 Rein 自有插件的形式放在 `plugins/` 下，通过
 - pnpm `12.4.2`，由 `package.json` 的 `packageManager` 固定；下文通过 npm 使用项目内工具链，无需全局安装 pnpm。
 - 支持 submodule 的 git。
 
-先按 [Setup](docs/setup.md#prerequisites) 用 npm 准备被 Git 忽略的 `.toolchain`。
+先按 [环境准备](docs/setup-zh.md#环境要求) 用 npm 准备被 Git 忽略的 `.toolchain`。
 以下命令使用项目内 Node / pnpm，无需修改 `PATH`，默认终端的 Node 较旧也可运行：
 
 ```sh
@@ -137,7 +140,7 @@ npm run toolchain:pnpm -- openclaw plugins inspect rein-operations --runtime --j
 若仓库已克隆但未带 submodule，先执行 `git submodule update --init --recursive`。
 `npm run toolchain:pnpm -- run setup:local` 会在 `runtime/openclaw/openclaw.json`（已被 git 忽略，权限 0600）写入隔离配置：
 随机生成的网关 token、仅回环地址的 18791 端口、指向本仓库 `workspace/` 的工作区，并启用
-`rein-operations` 插件。聊天平台与模型保持未配置。完整步骤见 [部署准备](docs/setup.md)，更新与回滚
+`rein-operations` 插件。聊天平台与模型保持未配置。完整步骤见 [部署准备](docs/setup-zh.md)，更新与回滚
 见 [更新 OpenClaw](docs/upstream.md)。
 
 ## 三种工作角色
@@ -163,7 +166,7 @@ Contributor 提案 → 信息确认与评估 → 零预算授权快速通道 / B
 - [组织使命与治理蓝图（源项目快照）](PROJECT.md)
 - [文档来源与上下文](docs/provenance.md)
 - [架构与集成边界](docs/architecture.md)
-- [部署准备](docs/setup.md)
+- [部署准备](docs/setup-zh.md)
 - [Discord 入群引导、公开目录与对话演练](docs/discord-onboarding-zh.md)
 - [更新 OpenClaw](docs/upstream.md)
 - [P0 实施与验收清单](docs/roadmap.md)

@@ -13,10 +13,12 @@ Nori 默认连接 `https://rein-protocol.org`。`REIN_BACKEND_URL` 的优先级�
 等部署配置控制，不能由 Agent 通过 URL 或本地数据库变量随意切换。
 默认使用线上 API 不代表授权测试写入生产数据，也不代表已完成生产端到端验收。
 
+当前完整配置示例与工具清单见[安装指南](setup-zh.md#可选启用后端业务工具)。当前 `foundationDb` 模式保留 `rein_status`，并注册 19 个后端工具（12 个治理、3 个身份绑定、4 个社区查询）。下文历史验收表中的 14 个工具是当时版本的记录，不是当前注册预期。
+
 中英文版本需同步维护。以下交付范围、工具数量、PR 状态与验收数字保留原有历史记录的时间口径；
 它们不是对当前线上部署的实时状态声明。当前连接方式以本节及下方启动说明为准。
 
-## 当前交付边界
+## 交付边界（历史记录）
 
 Rein Agent 继续以官方 OpenClaw 源码作为运行时，业务代码只放在 `plugins/rein-operations/`。本次交付是**可重复验证的本地业务核心与开发演练**，不是已接入真实成员和资金的 NGO 生产系统。
 
@@ -62,7 +64,7 @@ v0.1 方向已落地 14 个工具，且**只在显式 `foundationDb` 配置块�
 | 只读资金快照 | `backend-db-adapter.ts` 调用后端的 `available_funds` 操作，`governance-read-tools.ts` 在已批准的 Board 频道提供 `rein_funds` | 缺的是真实资金／提供方数据、真实成员名册与生产验收。快照 schema 已在姊妹仓库 PR #13 分支（PR #13，当前 head `78281fa`）提交并应用到已链接项目，但**尚未有工具经后端路径读过它** |
 | 结果公布后的反馈与修订（C15／D10／D11） | `proposal-feedback-tools.ts` 注册 `rein_proposal_comment_suggest`、`rein_revision_approve`、`rein_revision_apply`，写入 `<env>_rein_proposal_revisions` 并经 `<env>_rein_approve_revision` 批准；只改标题或摘要的普通修订由 Agent 自行接受并生效，重大修订（预算、地点、日程、人员、活动主流程）在记录到现任董事批准前被 `revision_not_approved` 拒绝 | 真实数据库连接（含已应用的改名迁移）与真实 Slack 验收；是否允许有效 Contributor 作为反馈作者仍待确认（数据库行允许，注册工具要求现任董事） |
 
-启用 `foundationDb` 配置块时注册 14 个后端工具：4 个只读（`rein_member_status`、`rein_funds`、`rein_poll_candidates`、`rein_vote_type_resolve`）、1 个只读字段采集（`rein_proposal_collect`）、4 个写入（`rein_governance_proposal_submit`、`rein_poll_open`、`rein_poll_vote`、`rein_poll_result`）、3 个结果反馈工具（`rein_proposal_comment_suggest`、`rein_revision_approve`、`rein_revision_apply`）与 2 个身份绑定工具（`rein_identity_bind_start`、`rein_identity_bind_complete`），同时隐藏合成模拟器与旧提案工具；未显式启用时不注册任何后端工具。**Agent 不持有数据库凭据、也不经 PostgREST 访问数据库**（2026-09-30 架构变更）：每次读、写、身份解析与身份绑定都是对 `foundationDb.backendApiBaseUrlEnvVar` 所指后端服务的一次已认证调用，证明由宿主上下文按工具调用签发。它不向 Slack 主动发消息，也从不回显凭据、后端地址、工作区 ID 或私密联系人标识。
+历史版本启用 `foundationDb` 配置块时注册 14 个后端工具：4 个只读（`rein_member_status`、`rein_funds`、`rein_poll_candidates`、`rein_vote_type_resolve`）、1 个只读字段采集（`rein_proposal_collect`）、4 个写入（`rein_governance_proposal_submit`、`rein_poll_open`、`rein_poll_vote`、`rein_poll_result`）、3 个结果反馈工具（`rein_proposal_comment_suggest`、`rein_revision_approve`、`rein_revision_apply`）与 2 个身份绑定工具（`rein_identity_bind_start`、`rein_identity_bind_complete`），同时隐藏合成模拟器与旧提案工具；未显式启用时不注册任何后端工具。**Agent 不持有数据库凭据、也不经 PostgREST 访问数据库**（2026-09-30 架构变更）：每次读、写、身份解析与身份绑定都是对 `foundationDb.backendApiBaseUrlEnvVar` 所指后端服务的一次已认证调用，证明由宿主上下文按工具调用签发。它不向 Slack 主动发消息，也从不回显凭据、后端地址、工作区 ID 或私密联系人标识。
 
 **结果公布后的修订规则（C15／D10／D11），两侧分界明确。** 只改**标题或摘要**的修订属于普通修订：Agent 可以接受其中合理的建议，并在调用方所在的回合里用 `rein_revision_apply` 直接使其生效，**不需要**另行取得 Board 批准，也没有第二条批准 RPC。涉及**预算、地点、日程、人员或活动主流程**的修订属于重大修订：在记录到现任董事的批准（`rein_revision_approve`，数据库侧为 `<env>_rein_approve_revision`）之前，写入层与数据库触发器都会以 `revision_not_approved` 拒绝生效。当前实现把 `schedule` 视为重大字段，因此**日期或时间的承诺变更走重大闸门**。工具层把三个反馈调用都限制在已批准的 Board 频道，并要求发送者本人的社群记录当前是董事（投票人即 Board）；数据库行另外允许**有效 Contributor** 作为修订作者（`author_contact_id`），这是数据库层的放宽，当前注册的工具并未开放。评论只记录文本、不改提案版本。任何修订都不移动、不预留、不支付资金。
 
@@ -97,8 +99,8 @@ v0.1 方向已落地 14 个工具，且**只在显式 `foundationDb` 配置块�
    前两个都已在姊妹仓库的 PR #13 分支（PR #13，当前 head `78281fa`，原提交 `4bd5ce8`）提交并应用到上述已链接项目，且同时覆盖 `dev_*` 与 `prod_*` 两套对象。**已应用且已演练，但未投产**：合成演练的工具确实对已链接项目的 `dev_*` 表集做过读写（行为合成 fixture），`prod_*` 业务行始终为 0；**仍未核对与仍未验证的是 `prod_*` 业务数据、真实成员／资金数据与生产端到端**。向 `prod_*` 写入真实数据要另做一次独立决定。第三个迁移与第四个（改名）迁移均已**应用**：时钟规则与稳定名称在已链接 schema 中都已生效，改名迁移的过渡兼容视图与包装已由第五个已应用迁移 `20260929045543_remove_stage_compatibility_objects.sql` 删除。但**已应用不等于已实机验证**，不得据此声称工具已端到端跑通。迁移不含具体的名额／批准额度数值：`<env>_rein_vote_types` 的行由人播种，结果由 RPC 在截止时按已存选票计算，不含政策默认值。
 4. **播种也由后端侧的人做。** 规范化联系人、Contributor 的 `active` 状态、董事的 `person_type`、第一条可用资金快照，以及每个提案类型在 `<env>_rein_vote_types` 中的 `max_candidates` 与 `max_approvals_per_voter` 都由人通过后端已复核的管理路径写入；**官方身份来源是后端持有的规范化已验证绑定**（一张联系人可以有多个绑定），不再使用邮箱到联系人表的匹配。Agent 不创建这些记录，也不提供注册工具，更不读取任何邮箱。具体名额与批准额度属运维配置，须组织批准后再写入；不要往真实环境灌入虚构人员。改名迁移已应用，播种时请写到当前名 `<env>_rein_vote_types`；旧名兼容视图已被删除，播种只能写稳定名称。
 5. **登记已批准的工作区与频道 ID。** `foundationDb.workspaces` 是一个列表，每个条目写 `platform`（如 `slack`、`discord`）、该平台的 `workspaceId` 与它的 `nativeChannelIds`；`proposalChannelIds` 与 `boardChannelIds` 里的每个频道都必须出现在某个工作区条目里。工具按宿主可信上下文里的 `messageChannel` 与该频道 ID 选出**恰好一个**工作区，因此一个部署可以服务多个工作区，互不串号。`platform` 只是单平台部署的旧默认值，可省略；省略时以工作区列表为准。
-6. **显式启用 `foundationDb` 配置块。** 在隔离网关的 `runtime/openclaw/openclaw.json` 中，为 `plugins.entries.rein-operations.config` 增加 `foundationDb` 对象，字段为 `enabled`（必须为 `true`）、可选 `platform`、`workspaces`（上述列表）、`proposalChannelIds`、`boardChannelIds`、可选的 `voteTypeAliases`，以及三个服务端环境变量名 `backendApiBaseUrlEnvVar`、`agentCallerIdEnvVar`、`agentCredentialEnvVar`；写入切片另外需要 `proposalConfirmationKeyEnvVar`。配置里只写变量名，绝不写任何值。**旧的数据库字段（`slackTeamId`、`environment`、`supabaseUrlEnvVar`、`supabaseServiceKeyEnvVar`、`identityEmailMatch`、`slackBotTokenEnvVar`）会被明确拒绝，不再作为回退。** 未设置 `enabled: true` 时，14 个后端工具都不注册。
-7. **先验后接。** 依次运行 `npm run toolchain:pnpm -- run check`、`npm run toolchain:pnpm -- test`、`npm run toolchain:pnpm -- run verify:plugin`，再用 `npm run toolchain:pnpm -- openclaw plugins doctor`，以及 `npm run toolchain:pnpm -- openclaw plugins inspect rein-operations --runtime --json` 确认实际注册的是这 14 个后端工具（`rein_member_status`、`rein_funds`、`rein_poll_candidates`、`rein_vote_type_resolve`、`rein_proposal_collect`、`rein_governance_proposal_submit`、`rein_poll_open`、`rein_poll_vote`、`rein_poll_result`、`rein_proposal_comment_suggest`、`rein_revision_approve`、`rein_revision_apply`、`rein_identity_bind_start`、`rein_identity_bind_complete`），且合成模拟器与旧提案工具已隐藏。用 `docs/agent-test-cases-zh.md` 的十个合成案例逐条演练，并保留发送者 ID、工具调用 ID 与后端记录。
+6. **显式启用 `foundationDb` 配置块。** 在隔离网关的 `runtime/openclaw/openclaw.json` 中，为 `plugins.entries.rein-operations.config` 增加 `foundationDb` 对象，字段为 `enabled`（必须为 `true`）、可选 `platform`、`workspaces`（上述列表）、`proposalChannelIds`、`boardChannelIds`、可选的 `voteTypeAliases`，以及三个服务端环境变量名 `backendApiBaseUrlEnvVar`、`agentCallerIdEnvVar`、`agentCredentialEnvVar`；写入切片另外需要 `proposalConfirmationKeyEnvVar`。配置里只写变量名，绝不写任何值。**旧的数据库字段（`slackTeamId`、`environment`、`supabaseUrlEnvVar`、`supabaseServiceKeyEnvVar`、`identityEmailMatch`、`slackBotTokenEnvVar`）会被明确拒绝，不再作为回退。** 未设置 `enabled: true` 时，19 个后端工具都不注册。
+7. **先验后接。** 依次运行 `npm run toolchain:pnpm -- run check`、`npm run toolchain:pnpm -- test`、`npm run toolchain:pnpm -- run verify:plugin`，再用 `npm run toolchain:pnpm -- openclaw plugins doctor`，以及 `npm run toolchain:pnpm -- openclaw plugins inspect rein-operations --runtime --json` 确认 `rein_status` 与[当前安装指南](setup-zh.md#5-检查插件)列出的 19 个后端工具均已注册，且合成模拟器与旧提案工具已隐藏。用 `docs/agent-test-cases-zh.md` 的十个合成案例逐条演练，并保留发送者 ID、工具调用 ID 与后端记录。
 
 **没有任何自动付款。** 通过投票只是决策记录：不预留、不付款、不改动资金快照。付款、报销与结算始终由有权限的人在 Agent 之外完成；预算竞争与分配金额不在 v0.1 内。
 
@@ -170,7 +172,7 @@ v0.1 方向已落地 14 个工具，且**只在显式 `foundationDb` 配置块�
 
    `discord` 仅示意配置格式，并非组织已选择的平台；也可填 `slack`，P0 只能启用一个。未明确设置 `enabled: true` 时四个提案业务工具不注册。当前插件尚未连接权威名册提供方，因此即使启用这四个工具，正式确认与提交也会返回 `authoritative_registry_required`；草稿与修订可用于隔离试运行。测试中的合成名册授权回调不能用于生产。当前工具调用 ID 只保证同一次调用重试的幂等，无法代替可信入站消息 ID 的跨调用唯一性验收。
 
-   若要试运行 v0.1 切片，请改用同一个配置文件里的 `foundationDb` 块（完整步骤见上面的部署手册）：`enabled`、`workspaces`（每个条目含 `platform`、`workspaceId`、`nativeChannelIds`）、`proposalChannelIds`、`boardChannelIds`、可选的 `voteTypeAliases`，以及环境变量名 `backendApiBaseUrlEnvVar`、`agentCallerIdEnvVar`、`agentCredentialEnvVar`（写入切片再加 `proposalConfirmationKeyEnvVar`）。**Agent 不再持有数据库凭据**：后端基址、调用方 ID、Agent 凭据与签名密钥都只从服务端环境变量读取，绝不写入配置，配置里也没有任何数据库地址或 service key 字段。启用 `foundationDb` 后注册 14 个后端工具（含只读采集、写入、结果反馈与身份绑定），并隐藏合成模拟器与旧提案工具。数据库与两套 `dev_*` / `prod_*` schema 属于后端服务；旧文在**真实测试工作区 + 已链接的 `dev_*` 表集**上直接读写的是变更前的构建，`prod_*` 业务写入为 0，`prod_*` 数据未经端到端核对。因此新环境目前只能对着后端服务的 `dev_*` 或隔离环境演练，不要指向生产数据。
+   若要试运行 v0.1 切片，请改用同一个配置文件里的 `foundationDb` 块（完整步骤见上面的部署手册）：`enabled`、`workspaces`（每个条目含 `platform`、`workspaceId`、`nativeChannelIds`）、`proposalChannelIds`、`boardChannelIds`、可选的 `voteTypeAliases`，以及环境变量名 `backendApiBaseUrlEnvVar`、`agentCallerIdEnvVar`、`agentCredentialEnvVar`（写入切片再加 `proposalConfirmationKeyEnvVar`）。**Agent 不再持有数据库凭据**：后端基址、调用方 ID、Agent 凭据与签名密钥都只从服务端环境变量读取，绝不写入配置，配置里也没有任何数据库地址或 service key 字段。启用 `foundationDb` 后注册 19 个后端工具（含只读采集、写入、结果反馈、身份绑定与社区查询），并隐藏合成模拟器与旧提案工具。数据库与两套 `dev_*` / `prod_*` schema 属于后端服务；旧文在**真实测试工作区 + 已链接的 `dev_*` 表集**上直接读写的是变更前的构建，`prod_*` 业务写入为 0，`prod_*` 数据未经端到端核对。因此新环境目前只能对着后端服务的 `dev_*` 或隔离环境演练，不要指向生产数据。
 
 ## 命名与改名迁移
 
