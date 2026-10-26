@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync,mkdirSync,rmSync } from 'node:fs';
+import { mkdtempSync,mkdirSync,rmSync,readFileSync,writeFileSync,symlinkSync,linkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -22,6 +22,7 @@ function fixture(t) {
 const runtimeConfig = workspace=>({agents:{defaults:{workspace,skipBootstrap:true,compaction:{memoryFlush:{enabled:false}}}},
   memory:{search:{enabled:false,rememberAcrossConversations:false}},plugins:{entries:{slack:{enabled:false}}},channels:{slack:{enabled:true}},
   tools:{allow:CHANNEL_TOOLS,fs:{workspaceOnly:true},sessions:{visibility:'self'},agentToAgent:{enabled:false}}});
+const discoveryTools = ['rein_resources_search','rein_resource_get','rein_events_search','rein_event_get'];
 
 test('Slack config validates native identifiers and explicit channel audiences',t=>{
   const {c}=fixture(t);assert.equal(validateIsolationConfig(c),c);
@@ -72,6 +73,25 @@ test('Foundation enrollment cannot silently attach another workspace or channel'
     if(workspaceId===c.teamId)assert.doesNotThrow(()=>assertSlackRuntime(cfg,c,workspace));else assert.throws(()=>assertSlackRuntime(cfg,c,workspace),/Foundation enrollment/);
   }
 });
+test('Slack example accepts catalog tools and only the approved discovery skill',t=>{
+  const {c,dir}=fixture(t);const workspace=join(dir,'public');mkdirSync(workspace);
+  const cfg=JSON.parse(readFileSync(new URL('../config/slack-isolated.example.json',import.meta.url)));
+  cfg.agents.defaults.workspace=workspace;
+  for(const name of discoveryTools)assert.ok(cfg.tools.allow.includes(name),`Slack example must enable ${name}`);
+  const skill=join(workspace,'skills','rein-community-discovery');mkdirSync(skill,{recursive:true});
+  writeFileSync(join(skill,'SKILL.md'),readFileSync(new URL('../workspace/skills/rein-community-discovery/SKILL.md',import.meta.url)));
+  assert.doesNotThrow(()=>assertSlackRuntime(cfg,c,workspace));
+  const extra=join(workspace,'skills','unapproved');mkdirSync(extra);
+  assert.throws(()=>assertSlackRuntime(cfg,c,workspace),/public reference/);rmSync(extra,{recursive:true});
+  writeFileSync(join(skill,'script.mjs'),'');assert.throws(()=>assertSlackRuntime(cfg,c,workspace),/public reference/);
+  rmSync(join(skill,'script.mjs'));rmSync(join(skill,'SKILL.md'));
+  const privateFile=join(dir,'private.txt');writeFileSync(privateFile,'private');
+  symlinkSync(privateFile,join(skill,'SKILL.md'));assert.throws(()=>assertSlackRuntime(cfg,c,workspace),/public reference/);
+  rmSync(join(skill,'SKILL.md'));linkSync(privateFile,join(skill,'SKILL.md'));
+  assert.throws(()=>assertSlackRuntime(cfg,c,workspace),/public reference/);
+  rmSync(skill,{recursive:true});symlinkSync(dir,skill);
+  assert.throws(()=>assertSlackRuntime(cfg,c,workspace),/public reference/);
+});
 test('private-channel/DM memory cannot be read by a public invocation or another sender',async t=>{
   const {c,memory,turns}=fixture(t);const a=resolveOwner(c,event()),b=resolveOwner(c,event({senderId:'USYNTHB02'}));
   const dm=resolveOwner(c,event({channelId:'DSYNTH001',kind:'direct'}));
@@ -116,6 +136,19 @@ test('private channels preserve channel classification and existing governance t
   await receive(event({channelId:'DSYNTH001',kind:'direct',id:'1800000000.000002'}));
   assert.equal(inputs[0].ctxPayload.conversation.kind,'channel');assert.ok(inputs[0].toolsAllow.includes('rein_poll_vote'));
   assert.equal(inputs[1].ctxPayload.conversation.kind,'direct');assert.deepEqual(inputs[1].toolsAllow,PRIVATE_TOOLS);
+});
+test('catalog tools reach public/private Slack channels and threads but remain unavailable in DMs',async t=>{
+  const {receive,inputs}=receiver(t);
+  await receive(event());
+  await receive(event({threadId:'1800000000.000003',id:'1800000000.000004'}));
+  await receive(event({channelId:'GSYNTHPRI',audience:'private'}));
+  await receive(event({channelId:'GSYNTHPRI',audience:'private',threadId:'1800000000.000005',id:'1800000000.000006'}));
+  await receive(event({channelId:'DSYNTH001',kind:'direct'}));
+  assert.equal(inputs.length,5);
+  for(const name of discoveryTools) {
+    for(const input of inputs.slice(0,4))assert.ok(input.toolsAllow.includes(name),`channel dispatch must allow ${name}`);
+    assert.ok(!inputs[4].toolsAllow.includes(name),`DM dispatch must exclude ${name}`);
+  }
 });
 test('ambient history, quotes, thread roots and attachments never enter a Slack model request',async t=>{
   const {receive,inputs}=receiver(t);

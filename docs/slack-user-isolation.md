@@ -47,7 +47,11 @@ Approved channels retain the existing Foundation identity, proposal, Board, vote
 including private Board channels. The backend still resolves native identity and current roles using
 its authenticated ingress proof. The adapter does not grant a Contributor/Board role or bypass
 channel restrictions. Backend workspace/channel enrollment must match this bot's configured team and
-approved channels. DMs expose scoped memory and public-reference tools; governance and identity-link
+approved channels. Those channels and their threads also expose the four
+[community discovery tools](community-discovery.md) for published resources and activities.
+Each lookup still requires the backend's `community.read` caller scope and the sender's current
+verified Community Member link; the adapter allowlist does not grant membership.
+DMs expose scoped memory and public-reference tools; governance, identity-link and catalog-query
 tools remain on the explicitly enrolled organizational channels.
 
 ## Setup
@@ -56,6 +60,9 @@ tools remain on the explicitly enrolled organizational channels.
 2. Create a dedicated public reference workspace with reviewed AGENTS.md, SOUL.md, IDENTITY.md,
    TOOLS.md, HEARTBEAT.md, public USER.md and/or community-directory.json. Do not copy personal memory,
    runtime records, private ballots/funds or credentials. Disable bootstrap creation and native recall.
+   For catalog discovery, also copy `workspace/skills/rein-community-discovery/SKILL.md` to
+   `skills/rein-community-discovery/SKILL.md` inside that workspace. Only this approved skill's
+   single regular file is permitted; extra skills, scripts, symlinks and hardlinks fail startup.
 3. Adapt [the Slack example](../config/slack-isolated.example.json). All native IDs are synthetic
    placeholders. Set real app/workspace/bot and channel IDs, declare each channel's audience, use a
    private memory path, and supply both tokens only through the named environment variables.
@@ -73,11 +80,13 @@ tools remain on the explicitly enrolled organizational channels.
    `{ main: {} }` agent entry is allowed; alternate agent, runtime, account and binding overrides fail.
 6. Keep `requireMention: true` in shared channels. Set false only in approved dedicated bot channels.
    `dmAllowFrom: []` disables DMs; add only approved native users when enabling them.
-7. Configure the existing `rein-operations.foundationDb` block separately when using governance:
+7. Configure the existing `rein-operations.foundationDb` block separately when using governance or discovery:
    backend URL/caller/credential and proposal confirmation key are environment-variable references;
    `workspaces` uses this exact Slack team and approved channel IDs, `proposalChannelIds` names the
    proposal channel and `boardChannelIds` names the Board channel. No backend/schema migration is needed.
    The example does not enable a backend or authorize real governance operations by itself.
+   For discovery, deploy the catalog backend and explicitly grant the intended caller
+   `community.read`; retain its ingress/identity scopes and native channel restrictions.
 8. Supply a model/provider and local Gateway authentication, validate the config, run the synthetic
    probes, then explicitly approve live rollout. This change does not switch a running bot.
 
@@ -97,6 +106,9 @@ npm run toolchain:pnpm -- run verify:slack-isolation
 The Slack probe uses production registration and transport admission, synthetic Socket Mode/Web API
 edges, the real OpenClaw ingress/session/tool pipeline and deterministic localhost model/backend
 servers. It checks actual model inputs and actual backend ingress tuples, including rejection of a
-non-director's Board funds request. It never logs in to Slack or calls a real Foundation backend.
+non-director's Board funds request. It also stages and reads the discovery skill, executes all four
+catalog tools from channels/threads, and checks an unlinked sender receives an explicit failure
+without another member's catalog results. The extended probe makes 41 local provider requests.
+It never logs in to Slack or calls a real Foundation backend.
 Live two-account, Slack network/reconnection, real permissions and production rollout are still
 unverified. See the [verification record](slack-user-isolation-verification-2026-10-14.md).

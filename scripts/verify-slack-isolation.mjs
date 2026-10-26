@@ -13,6 +13,14 @@ requireSource();
 const temp = mkdtempSync(join(tmpdir(), 'rein-native-slack-isolation-'));
 const requests = [], backendCalls=[], serverErrors=[];
 const proofs=new Map();
+const catalogId='10000000-0000-4000-8000-000000000001';
+const catalogAt='2030-01-01T00:00:00Z';
+const discoveryCases={
+  CASE_DISCOVERY_SKILL:'read',
+  CASE_RESOURCE_SEARCH:'rein_resources_search',CASE_RESOURCE_GET:'rein_resource_get',
+  CASE_EVENT_SEARCH:'rein_events_search',CASE_EVENT_GET:'rein_event_get',
+  CASE_DISCOVERY_DENIED:'rein_resources_search',
+};
 const server = createServer(async (req,res) => {
   try {
   let body='';for await(const chunk of req) body+=chunk;
@@ -25,6 +33,17 @@ const server = createServer(async (req,res) => {
       const actor=proofs.get(request.proof?.assertion);
       assert.ok(actor,'operation must carry a proof minted from native ingress');
       if(req.url==='/api/identity/resolve')response={ok:true,status:'resolved',contact_id:`synthetic-${actor.platform_user_id}`,is_active_contributor:true,is_director:actor.platform_user_id==='USYNTHA01'};
+      else if(req.url==='/api/agent/operations' && request.operation.startsWith('community_')) {
+        if(actor.platform_user_id==='USYNTHB02') {
+          res.writeHead(403,{'content-type':'application/json'});res.end(JSON.stringify({ok:false,reason:'binding_not_verified'}));return;
+        }
+        const resources=request.operation.startsWith('community_resource');
+        const items=resources?[{id:catalogId,title:'SYNTHETIC_CATALOG_COURSE',summary:'Synthetic course',
+          url:'https://catalog.example.org/course',type:'Course',language:'English',difficulty:null,topics:[],
+          authorPublisher:null,accessNotes:null,verifiedAt:catalogAt,updatedAt:catalogAt,publicationStatus:'published'}]:[];
+        response={ok:true,operation:request.operation,result:{ok:true,status:resources?'found':request.operation.endsWith('_get')?'not_found':'empty',
+          source:'foundation_catalog',environment:'dev',retrievedAt:catalogAt,items,hasMore:false,nextOffset:null}};
+      }
       else if(req.url==='/api/agent/operations')response={ok:true,result:{status:'snapshot',reason:'snapshot',currency:'USD',availableMinor:12345,sourceNote:'PRIVATE_BOARD_FUNDS_CANARY',recordedAt:'2030-01-01T00:00:00Z',recordedBy:'synthetic-operator'}};
       else throw new Error('Unexpected synthetic backend operation');
     }
@@ -34,8 +53,8 @@ const server = createServer(async (req,res) => {
   const userIndex=request.messages.findLastIndex(m=>m.role==='user' && /CASE_[A-Z0-9_]+/.test(JSON.stringify(m.content)));
   const marker=JSON.stringify(request.messages[userIndex]?.content).match(/CASE_[A-Z0-9_]+/)?.[0];
   const toolResult=request.messages.slice(userIndex+1).some(m=>m.role==='tool');
-  const tool=['CASE_A1','CASE_DM','CASE_THREAD_A'].includes(marker)?'rein_memory_remember':['CASE_PRIVATE','CASE_BOARD_B'].includes(marker)?'rein_funds':marker==='CASE_TOOL_FORGET'?'rein_memory_forget':'rein_memory_read';
-  const args=tool==='rein_memory_remember'?{name:'canary',value:marker==='CASE_A1'?'ALICE_PUBLIC_MEMORY_6382':marker==='CASE_DM'?'ALICE_PRIVATE_MEMORY_9921':'ALICE_THREAD_MEMORY_8821'}:tool==='rein_funds'?{currency:'USD'}:{};
+  const tool=discoveryCases[marker]??(['CASE_A1','CASE_DM','CASE_THREAD_A'].includes(marker)?'rein_memory_remember':['CASE_PRIVATE','CASE_BOARD_B'].includes(marker)?'rein_funds':marker==='CASE_TOOL_FORGET'?'rein_memory_forget':'rein_memory_read');
+  const args=tool==='read'?{path:'skills/rein-community-discovery/SKILL.md'}:tool==='rein_memory_remember'?{name:'canary',value:marker==='CASE_A1'?'ALICE_PUBLIC_MEMORY_6382':marker==='CASE_DM'?'ALICE_PRIVATE_MEMORY_9921':'ALICE_THREAD_MEMORY_8821'}:tool==='rein_funds'?{currency:'USD'}:tool.endsWith('_get')?{id:catalogId}:{};
   const delta=toolResult ? {role:'assistant',content:marker==='CASE_TOOL_FORGET'?'STALE_FORGOTTEN_OUTPUT_CANARY':'OK'} : {role:'assistant',tool_calls:[{index:0,id:`call_${marker}`,type:'function',function:{name:'tool_call',arguments:JSON.stringify({id:tool,args})}}]};
   res.writeHead(200, {'content-type':'text/event-stream'});
   const completion={id:'privacy-probe',object:'chat.completion.chunk',created:1,model:'canary',choices:[{index:0,delta,finish_reason:null}]};
@@ -51,6 +70,8 @@ await new Promise(r=>reservation.listen(0,'127.0.0.1',r));
 const gatewayPort=reservation.address().port;
 await new Promise(r=>reservation.close(r));
 const publicDir=join(temp,'public');mkdirSync(publicDir);
+const skillDir=join(publicDir,'skills','rein-community-discovery');mkdirSync(skillDir,{recursive:true});
+writeFileSync(join(skillDir,'SKILL.md'),readFileSync(join(root,'workspace/skills/rein-community-discovery/SKILL.md')));
 const pluginDir=join(temp,'plugin');mkdirSync(pluginDir);
 const fixture=readFileSync(join(root,'tests/fixtures/slack-isolation-gateway.ts'),'utf8').replaceAll('../../plugins/rein-slack/',`${join(root,'plugins/rein-slack')}/`);
 writeFileSync(join(pluginDir,'index.ts'),fixture);
@@ -82,7 +103,7 @@ try {
   assert.ok(!evidence.error,evidence.error);
   assert.deepEqual(serverErrors,[]);
   assert.equal(evidence.privateMemorySaved,true,'DM tool must really persist a private note before testing its exclusion from public requests');
-  assert.equal(requests.length,29,`Expected twenty-nine real provider requests; forget must not continue the old model loop:\n${output.slice(-10000)}`);
+  assert.equal(requests.length,41,`Expected forty-one real provider requests; forget must not continue the old model loop:\n${output.slice(-10000)}`);
   const requestsFor=marker=>requests.filter(r=>{
     const user=r.messages.findLast(m=>m.role==='user' && /CASE_[A-Z0-9_]+/.test(JSON.stringify(m.content)));
     return JSON.stringify(user?.content).match(/CASE_[A-Z0-9_]+/)?.[0]===marker;
@@ -105,6 +126,12 @@ try {
   assert.ok(JSON.stringify(requestsFor('CASE_A3').at(-1).messages).includes('ALICE_PUBLIC_MEMORY_6382'),'own memory must survive session reset');
   assert.ok(!inputFor('CASE_DM').includes('ALICE_PUBLIC_CANARY_7406'),'DM must also be separate from public context');
   const inputWithTools=marker=>JSON.stringify(requestsFor(marker).at(-1).messages);
+  const toolOutputFor=marker=>{
+    const messages=requestsFor(marker).at(-1).messages;
+    const userIndex=messages.findLastIndex(message=>message.role==='user' && /CASE_[A-Z0-9_]+/.test(JSON.stringify(message.content)));
+    return messages.slice(userIndex+1).filter(message=>message.role==='tool')
+      .map(message=>typeof message.content==='string'?message.content:message.content.map(part=>part.text??'').join('\n')).join('\n');
+  };
   assert.ok(inputWithTools('CASE_PRIVATE').includes('PRIVATE_BOARD_FUNDS_CANARY'),'Board tool must execute through the existing backend');
   assert.ok(!inputWithTools('CASE_BOARD_B').includes('PRIVATE_BOARD_FUNDS_CANARY'));
   for(const marker of ['CASE_PRIVATE','CASE_BOARD_B']) {
@@ -126,17 +153,35 @@ try {
   }
   const relays=backendCalls.filter(call=>call.path==='/api/ingress/relay');
   assert.deepEqual(new Set(relays.map(call=>call.body.platform_user_id)),new Set(['USYNTHA01','USYNTHB02']));
-  for(const {body:relay} of relays) {assert.equal(relay.platform,'slack');assert.equal(relay.workspace_id,privacy.teamId);assert.equal(relay.channel_id,'GSYNTHPRI');}
-  const fundCalls=backendCalls.filter(call=>call.path==='/api/agent/operations');
+  for(const {body:relay} of relays) {
+    assert.equal(relay.platform,'slack');assert.equal(relay.workspace_id,privacy.teamId);
+    assert.ok(['CSYNTHPUB','GSYNTHPRI'].includes(relay.channel_id));
+  }
+  const fundCalls=backendCalls.filter(call=>call.path==='/api/agent/operations' && call.body.operation==='available_funds');
   assert.equal(fundCalls.length,1,'non-director must not read the funds snapshot');
   assert.equal(fundCalls[0].body.operation,'available_funds');
   assert.equal(fundCalls[0].body.input.channelId,'GSYNTHPRI');
   assert.equal(fundCalls[0].body.input.workspaceId,privacy.teamId);
+  const catalogCalls=backendCalls.filter(call=>call.path==='/api/agent/operations' && call.body.operation.startsWith('community_'));
+  assert.deepEqual(catalogCalls.map(call=>call.body.operation),[
+    'community_resources_search','community_resource_get','community_events_search','community_event_get','community_resources_search']);
+  for(const [index,{body}] of catalogCalls.entries()) {
+    const actor=proofs.get(body.proof.assertion);
+    assert.equal(actor.platform_user_id,index===4?'USYNTHB02':'USYNTHA01');
+    assert.equal(actor.channel_id,[2,3].includes(index)?'GSYNTHPRI':'CSYNTHPUB');
+    assert.deepEqual(body.input,body.operation.endsWith('_get')?{id:catalogId}:{});
+  }
+  for(const marker of ['CASE_RESOURCE_SEARCH','CASE_RESOURCE_GET'])assert.ok(inputWithTools(marker).includes('SYNTHETIC_CATALOG_COURSE'));
+  assert.match(toolOutputFor('CASE_EVENT_SEARCH'),/"status"\s*:\s*"empty"/);
+  assert.match(toolOutputFor('CASE_EVENT_GET'),/"status"\s*:\s*"not_found"/);
+  assert.ok(toolOutputFor('CASE_DISCOVERY_DENIED').includes('community_member_required'));
+  assert.ok(!inputWithTools('CASE_DISCOVERY_DENIED').includes('SYNTHETIC_CATALOG_COURSE'),'unlinked sender must not receive another member\'s catalog results');
+  assert.ok(toolOutputFor('CASE_DISCOVERY_SKILL').includes('Loading this skill does not authorize a query.'),'native read must load the approved discovery skill');
   assert.notEqual(evidence.trace[0].sessionKey,evidence.trace[1].sessionKey);
   assert.equal(evidence.trace[0].sessionKey,evidence.trace[5].sessionKey);
-  assert.equal(evidence.acks.length,17);
+  assert.equal(evidence.acks.length,23);
   assert.ok(evidence.sent.some(reply=>reply.thread_ts==='1800000001.000001'));
-  console.log('Native Slack probe passed: 29 actual model requests, two synthetic users, public/private channels, DM, threads, scoped memory, atomic forget and existing Foundation actor/Board checks. No real Slack or Foundation connection.');
+  console.log('Native Slack probe passed: 41 actual model requests, two synthetic users, public/private channels, DM, threads, scoped memory, atomic forget, Foundation actor/Board checks and all four catalog tools with an unlinked-member refusal. Discovery skill read successfully. No real Slack or Foundation connection.');
 } catch(error) {
   if(process.env.REIN_ISOLATION_KEEP_EVIDENCE==='1') {
     writeFileSync(join(temp,'gateway.log'),output);writeFileSync(join(temp,'requests.json'),JSON.stringify(requests,null,2));writeFileSync(join(temp,'backend.json'),JSON.stringify(backendCalls,null,2));console.error(`Synthetic probe evidence retained at ${temp}`);
