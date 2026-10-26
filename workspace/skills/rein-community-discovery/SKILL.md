@@ -8,6 +8,13 @@ description: Find Rein organization learning resources and activities for a link
 Use the Foundation catalog tools in the current turn. They read the same published records as the
 Website and recheck the current sender's verified Community Member link on every call. Contributor
 or Board status is not required. Never supply an actor, platform user, role or membership flag.
+Call catalog tools one at a time, waiting for each result before starting another lookup, including
+when checking multiple activity formats. Each call needs its own current invocation proof.
+
+If tool discovery cannot find the catalog tools, the lookup has failed before reaching the catalog.
+Report that the catalog connection is unavailable and stop; do not fall back to web search.
+An empty tool-search result is not an empty catalog result. Never infer that an externally found
+course has not been collected or approved by Rein, or needs submission, without a successful query.
 
 For resources, call `rein_resources_search` with the preferences already given. `query` is literal
 text matched in titles and summaries; `language` and `difficulty` match catalog text, while `topic`
@@ -35,11 +42,16 @@ soonest-first. Do not claim to have searched every result when more pages remain
   Name the queried scope in the answer, e.g. “这次在组织开发目录里没查到符合条件的线下活动”.
   Do not turn this into “目前确实没有可以报名的活动”. Translate enum values into ordinary words,
   such as 线下／线上／混合, without showing `in_person`, `hybrid` or other API field values.
+  No in-person/hybrid matches does not establish that online events exist. Do not claim that
+  another format, city or date range has available entries without querying it successfully.
 - `not_found`: the detail is unavailable or no longer published. Do not repeat a previous result
   as if it were still current. Cancelled and unpublished events are excluded.
 - `community_member_required`: the lookup **failed**. Say the current Discord/Slack account needs
   a verified Community Member link. Stop discovery; use the existing binding tools to offer the
   real verification entry, then retry only after binding succeeds. Do not ask for email in chat.
+  In Chinese, explicitly say “本次查询失败”, not “没查到”; the latter implies an empty catalog.
+  The person verifies their email on the website and only returns the website's final platform
+  binding code to this chat. Never ask them to post the email's verification code in the channel.
 - `permission_denied`: say this lookup failed for lack of permission. Do not retry using another
   account, channel, environment or data source.
 - `unavailable` or another failure: say this lookup failed and the source/identity could not be
