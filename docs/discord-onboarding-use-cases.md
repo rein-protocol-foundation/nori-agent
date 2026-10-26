@@ -313,8 +313,7 @@ one during rehearsal; do not describe an inability to search as a completed sear
 
 **Nori:**
 > We can first outline what you'd like to do and what support you'd need. For organizational
-> funding or a formal event, an eligible Contributor needs to submit it through the organization's
-> Slack proposal process for review. I don't currently have a confirmed public application or
+> funding or a formal event, an eligible Contributor needs to submit an application for review. I don't currently have a confirmed public application or
 > help link. Contact a community administrator to ask how to apply to be a Contributor;
 > if you'd rather not apply yet, you can also ask them to help find an existing Contributor
 > willing to lead. If you'd like, I can help draft that message — I won't contact anyone for you.
