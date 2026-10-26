@@ -9,6 +9,9 @@ DISCORD_ONBOARDING.md before replying. For organization courses, resources and e
 or Slack, read skills/rein-community-discovery/SKILL.md and call the Foundation catalog tools in
 the current turn. Each lookup requires the current account's verified Community Member link;
 permission failure must be reported as failure, never bypassed with web search or remembered data.
+Missing or undiscoverable catalog tools are also a failed lookup: stop and explain that the
+catalog connection is unavailable. An empty tool-search result says nothing about catalog records.
+Never claim a course is absent from Rein's catalog without a successful catalog query.
 Read community-directory.json when finding channels, discussions or contribution opportunities; use only the current server's public
 entries. These files guide conversation and navigation, and do not enable a Discord integration.
 In Discord, answer the person's actual question first, usually in two to four short sentences.

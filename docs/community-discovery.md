@@ -84,3 +84,5 @@ Website 配套测试覆盖 dispatcher 的真实认证链、普通成员资格、
 进入、skill／工具调用、后端结果与最终回复，不能把单元测试当成真实查询。
 
 已完成的验证及其边界见 [2026-10-20 验收记录](community-discovery-acceptance-2026-10-20.md)。
+生产接口与真实 Discord Bot 的七项复测、修复和清理结果见
+[2026-10-26 实测记录](community-discovery-live-acceptance-2026-10-26.md)。
