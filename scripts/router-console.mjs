@@ -149,7 +149,7 @@ export async function runRouterConsole({ root = projectRoot, noOpen = false, por
     }
     assertRunning();
     if (!ready) throw new Error('router_magpie_start_timeout');
-    sync = createConsoleSync({ root, native, gatewayBaseUrl: base, environment });
+    sync = createConsoleSync({ root, native, gatewayBaseUrl: base });
     try { await sync.init(); } catch { /* Persisted errors are displayed in the UI; never unblock its key. */ }
     assertRunning();
     web = await createConsoleServer({ sync, nativeOrigin, nativeSecret, port });

@@ -41,6 +41,10 @@ export function loadMagpieGatewayEnvironment({ root = projectRoot, environment =
   try {
     if (typeof root !== 'string' || !isAbsolute(root) || !object(environment)) refuse('arguments_invalid');
     const copy = { ...environment };
+    // JEV_API_KEY is only a transport for a configured project credential.
+    // Never let a shell export become the credential source, even if the
+    // project has no saved key or routing is disabled.
+    delete copy.JEV_API_KEY;
     const configPath = copy.OPENCLAW_CONFIG_PATH;
     if (typeof configPath !== 'string' || !isAbsolute(configPath)) return copy;
     let host;
@@ -59,6 +63,10 @@ export function loadMagpieGatewayEnvironment({ root = projectRoot, environment =
     const gateway = entry.config.gateway;
     if (!object(gateway?.managed) || gateway.managed.binaryPath !== paths.binary ||
         gateway.managed.homeDir !== paths.homeDir) return copy;
+    // The console owns this project's credentials. A shell may still export an
+    // older key after a UI edit or rotation; use the validated local store for
+    // this child process without changing the shell or either credential file.
+    const consoleManaged = gateway.managed.mode === 'console';
     const name = gateway.apiKeyEnvVar;
     if (!isGatewayCredentialEnvironmentName(name)) refuse('variable_disallowed');
     const text = readRegular(privateEnvironmentPath(canonicalRoot), 4096, { privateMode: true });
@@ -70,20 +78,19 @@ export function loadMagpieGatewayEnvironment({ root = projectRoot, environment =
     if (entries.length !== 1 || entries[0] !== name || declarations.length !== 1 ||
         !new RegExp(`^\\s*(?:export\\s+)?${name}\\s*=`).test(declarations[0]) ||
         typeof parsed[name] !== 'string' || !KEY.test(parsed[name])) refuse('contents_invalid');
-    if (copy[name] !== undefined && copy[name] !== parsed[name]) refuse('existing_value_conflict');
+    if (!consoleManaged && copy[name] !== undefined && copy[name] !== parsed[name]) refuse('existing_value_conflict');
     copy[name] = parsed[name];
     const otherTypeSafeUse = host.plugins?.entries?.typesafe?.enabled === true &&
       host.plugins.entries.typesafe.config?.apiKey?.id === 'JEV_API_KEY' &&
       [host.agents?.defaults, ...(host.agents?.list ?? []), ...Object.values(host.agents?.entries ?? {})]
         .some(agent => typeof agent?.decisionModel === 'string' && agent.decisionModel.startsWith('typesafe/'));
-    if (gateway.managed.mode === 'console' && (entry.config.decision?.allowPaidJev === true || otherTypeSafeUse)) {
+    if (consoleManaged && (entry.config.decision?.allowPaidJev === true || otherTypeSafeUse)) {
       const secretPath = join(canonicalRoot, 'runtime/magpie/router-console-secret.json');
       try {
         const stat = lstatSync(secretPath);
         if (stat.isSymbolicLink()) refuse('symlink_refused');
         const saved = JSON.parse(readRegular(secretPath, 8192, { privateMode: true }));
-        if (typeof saved.jevApiKey !== 'string' || !saved.jevApiKey.trim() || /[\x00-\x1f]/.test(saved.jevApiKey)) refuse('contents_invalid');
-        if (copy.JEV_API_KEY !== undefined && copy.JEV_API_KEY !== saved.jevApiKey) refuse('existing_value_conflict');
+        if (typeof saved.jevApiKey !== 'string' || !saved.jevApiKey.trim() || saved.jevApiKey.length > 4096 || /[\x00-\x1f]/.test(saved.jevApiKey)) refuse('contents_invalid');
         copy.JEV_API_KEY = saved.jevApiKey;
       } catch (error) { if (error.code !== 'ENOENT') throw error; }
     }

@@ -28,7 +28,7 @@ magpie.plugin('rein-router', ctx => {
     router_catalog_empty: '还没有可用模型，请先在 Providers 添加并启用模型。',
     router_no_eligible_models: '请选择 Provider 的计费来源并确认额度设置。',
     router_capable_default_required: '默认策略需要支持 medium 或 high 的模型。请在 Providers 启用合适的模型，并确认计费设置后重新保存。',
-    router_jev_key_required: '启用 Dynamic Router 前，请填写 Jev API Key 或设置 JEV_API_KEY。',
+    router_jev_key_required: '启用 Dynamic Router 前，请在此页面或项目私有配置文件中保存 Jev API Key；不使用 shell 环境变量。',
     router_coding_plan_scope: 'Coding Plan 仅用于编码路由；请为通用任务选择其他 Provider。',
     router_catalog_limit: '可用模型过多。请在 Magpie 缩小暴露给 OpenClaw 的模型目录（最多 60 个）。',
     router_config_changed_retry: 'OpenClaw 配置刚刚发生变化，请重新保存。',
@@ -118,7 +118,7 @@ magpie.plugin('rein-router', ctx => {
     box.append(ctx.ui.row('自动判断任务 · Jev', '启用后允许单独计费的 Jev 分类调用；不改变 LLM 额外付费设置。',
       ctx.ui.toggle(settings.dynamic === true, '启用 Dynamic Router 和 Jev 分类计费', v => { settings.dynamic = v; changed(); })));
     const keyRow = el('label', 'rein-field'); keyRow.append(el('span', '', 'Jev API Key'));
-    const key = el('input'); key.type = 'password'; key.autocomplete = 'new-password'; key.id = 'rein-jev-key'; key.placeholder = state.jevKeyConfigured ? '已配置 · 留空保留现有 Key' : '输入 Key，或由启动进程提供 JEV_API_KEY'; key.oninput = changed;
+    const key = el('input'); key.type = 'password'; key.autocomplete = 'new-password'; key.id = 'rein-jev-key'; key.placeholder = state.jevKeyConfigured ? '已配置 · 留空保留现有 Key' : '输入 Key，将保存到当前项目的私有配置'; key.oninput = changed;
     keyRow.append(key); box.append(keyRow);
     box.append(ctx.ui.row('允许 LLM 额外按量付费', '默认关闭。关闭时，API 按量付费 Provider 不会进入路由目录。',
       ctx.ui.toggle(settings.allowPaidUsage === true, '允许 LLM 额外按量付费', v => { settings.allowPaidUsage = v; changed(); })));

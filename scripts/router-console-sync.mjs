@@ -15,6 +15,7 @@ const FILE = 'runtime/magpie/router-console.json';
 const ENV = 'runtime/magpie/gateway.env';
 const SECRET = 'runtime/magpie/router-console-secret.json';
 const object = v => v && typeof v === 'object' && !Array.isArray(v);
+const validJevKey = v => typeof v === 'string' && Boolean(v.trim()) && v.length <= 4096 && !/[\x00-\x1f]/.test(v);
 function plain(value) {
   if (!value || typeof value !== 'object') return true;
   if (Array.isArray(value)) return value.every(plain);
@@ -37,7 +38,7 @@ export function validateConsoleSettings(s) {
 }
 
 export function createConsoleSync({ root, native, gatewayBaseUrl = 'http://127.0.0.1:3425/v1',
-  environment = process.env, spendCheck = assertManagedSpendPolicy }) {
+  spendCheck = assertManagedSpendPolicy }) {
   let state = { enabled: false, dynamic: false, funding: {}, policy: {}, fallbacks: [] };
   let catalog = [], lastError = null, lastSync = null, digest, busy = Promise.resolve();
   const statePath = join(root, FILE), secretPath = join(root, SECRET), configPath = join(root, 'runtime/openclaw/openclaw.json');
@@ -74,7 +75,7 @@ export function createConsoleSync({ root, native, gatewayBaseUrl = 'http://127.0
     const result = compileCatalog({ catalog, settings: state, gateway, pluginPath: resolve(root, 'plugins/rein-router') });
     await spendCheck({ gateway, routes: result.fragment.plugins.entries['rein-router'].config.routes, allowPaidUsage: state.allowPaidUsage });
     const secret = JSON.parse(await readPrivate(root, secretPath, '{}'));
-    if (state.dynamic && !secret.jevApiKey && !environment.JEV_API_KEY) throw new Error('router_jev_key_required');
+    if (state.dynamic && !validJevKey(secret.jevApiKey)) throw new Error('router_jev_key_required');
     const fingerprint = createHash('sha256').update(JSON.stringify(result.fragment)).digest('hex');
     const desiredModels = [...new Set(result.eligible.map(m => m.id))].sort();
     const current = await ownedKey();
@@ -130,7 +131,7 @@ export function createConsoleSync({ root, native, gatewayBaseUrl = 'http://127.0
     const host = parseHost(await readPrivate(root, configPath, '{}', { publicFile: true }));
     const agentTargets = [...new Set([...(host.agents?.list ?? []).map(a => a.id), ...Object.keys(host.agents?.entries ?? {})])];
     return { settings: structuredClone(state), agentTargets, catalog, recommendations: recommendPolicy(catalog), lastSync, error: lastError,
-      jevKeyConfigured: Boolean(secret.jevApiKey || environment.JEV_API_KEY),
+      jevKeyConfigured: validJevKey(secret.jevApiKey),
       configPath, openclawModel: 'rein-magpie/auto' };
   }
   return {
@@ -146,7 +147,7 @@ export function createConsoleSync({ root, native, gatewayBaseUrl = 'http://127.0
     view,
     save: (settings, jevApiKey) => locked(async () => {
       const next = validateConsoleSettings(settings);
-      if (jevApiKey !== undefined && (typeof jevApiKey !== 'string' || !jevApiKey.trim() || jevApiKey.length > 4096 || /[\x00-\x1f]/.test(jevApiKey)))
+      if (jevApiKey !== undefined && !validJevKey(jevApiKey))
         throw new Error('router_jev_key_invalid');
       if (jevApiKey) await writePrivate(root, secretPath, JSON.stringify({ jevApiKey }));
       state = next;

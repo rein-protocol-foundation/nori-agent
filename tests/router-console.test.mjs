@@ -103,7 +103,7 @@ async function fixture(t) {
     else throw new Error('unexpected request');
     return {keys:structuredClone(keys).map(({secret,...k})=>k),secret:keys.find(k=>k.id===body?.key)?.secret ?? keys.at(-1)?.secret};
   };
-  const sync=createConsoleSync({root,native,spendCheck:async()=>{},environment:{}});await sync.init();
+  const sync=createConsoleSync({root,native,spendCheck:async()=>{}});await sync.init();
   return {root,hostPath,sync,calls,keys,unavailable,get raw(){return raw;},set raw(v){raw=v;}};
 }
 
@@ -141,6 +141,27 @@ test('Jev secrets never appear in state, OpenClaw JSON or backups and are loaded
   assert.equal(env.JEV_API_KEY,'synthetic-jev-test-key');
   const cfg=JSON.parse(host);cfg.plugins.entries['rein-router'].config.decision.allowPaidJev=false;cfg.plugins.entries.typesafe.enabled=false;await writeFile(f.hostPath,JSON.stringify(cfg));
   assert.equal(loadMagpieGatewayEnvironment({root:f.root,environment:{OPENCLAW_CONFIG_PATH:f.hostPath}}).JEV_API_KEY,undefined);
+});
+
+test('an ambient Jev key cannot mark the console configured, enable routing or rescue a deleted saved key', async t => {
+  const previous = process.env.JEV_API_KEY;
+  process.env.JEV_API_KEY = 'synthetic-shell-jev';
+  t.after(() => { if (previous === undefined) delete process.env.JEV_API_KEY; else process.env.JEV_API_KEY = previous; });
+  const f = await fixture(t), before = await readFile(f.hostPath, 'utf8');
+  assert.equal((await f.sync.view()).jevKeyConfigured, false);
+  await assert.rejects(f.sync.save({ ...settings(), dynamic: true }), /router_jev_key_required/);
+  assert.equal(await readFile(f.hostPath, 'utf8'), before);
+  assert.equal(f.keys.length, 0);
+  await f.sync.save({ ...settings(), dynamic: true }, 'synthetic-project-jev');
+  assert.equal((await f.sync.view()).jevKeyConfigured, true);
+  const env = loadMagpieGatewayEnvironment({ root: f.root, environment: {
+    OPENCLAW_CONFIG_PATH: f.hostPath, JEV_API_KEY: process.env.JEV_API_KEY,
+  } });
+  assert.equal(env.JEV_API_KEY, 'synthetic-project-jev');
+  await rm(join(f.root, 'runtime/magpie/router-console-secret.json'));
+  await assert.rejects(f.sync.refresh(), /router_jev_key_required/);
+  assert.equal(f.keys[0].off, true);
+  assert.equal((await f.sync.view()).jevKeyConfigured, false);
 });
 
 test('symlink config targets cannot be overwritten by the console',async t=>{

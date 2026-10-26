@@ -87,12 +87,72 @@ test('foreign or near-matching managed paths cannot redirect secret loading', t 
   }
 });
 
-test('existing same key is accepted, while a different key never gets overwritten', t => {
+test('manual managed profiles accept the same key and reject conflicting inherited keys', t => {
   const f = fixture(t); f.writeEnv(`${name}=${secret}\n`);
   assert.equal(f.load({ environment: { ...f.environment, [name]: secret } })[name], secret);
   const environment = { ...f.environment, [name]: other };
   refuses(() => f.load({ environment }), 'magpie_gateway_env_existing_value_conflict');
   assert.equal(environment[name], other);
+});
+
+test('console profiles use saved gateway and Jev keys after UI changes without mutating the shell or files', t => {
+  const f = fixture(t); f.writeEnv(`${name}=${secret}\n`);
+  const config = f.host.plugins.entries['rein-router'].config;
+  config.gateway.managed.mode = 'console';
+  config.decision = { allowPaidJev: true };
+  f.writeHost(f.host);
+  const secretPath = join(f.root, 'runtime/magpie/router-console-secret.json');
+  writeFileSync(secretPath, JSON.stringify({ jevApiKey: 'synthetic-current-jev' }), { mode: 0o600 });
+  const environment = { ...f.environment, [name]: other, JEV_API_KEY: 'synthetic-stale-jev' };
+  const before = { ...environment };
+  const files = [f.configPath, f.envPath, secretPath].map(path => [path, readFileSync(path)]);
+  const result = f.load({ environment });
+  assert.deepEqual(result, { ...before, [name]: secret, JEV_API_KEY: 'synthetic-current-jev' });
+  assert.deepEqual(environment, before);
+  for (const [path, contents] of files) assert.deepEqual(readFileSync(path), contents);
+});
+
+test('console credential precedence does not bypass private-store validation', t => {
+  const f = fixture(t); f.writeEnv(`${name}=${secret}\n`);
+  const config = f.host.plugins.entries['rein-router'].config;
+  config.gateway.managed.mode = 'console'; config.decision = { allowPaidJev: true };
+  f.writeHost(f.host);
+  const secretPath = join(f.root, 'runtime/magpie/router-console-secret.json');
+  const environment = { ...f.environment, [name]: other, JEV_API_KEY: 'synthetic-stale-jev' };
+  writeFileSync(secretPath, JSON.stringify({ jevApiKey: '' }), { mode: 0o600 });
+  refuses(() => f.load({ environment }), 'magpie_gateway_env_contents_invalid');
+  writeFileSync(secretPath, JSON.stringify({ jevApiKey: 'synthetic-current-jev' }));
+  chmodSync(secretPath, 0o644);
+  refuses(() => f.load({ environment }), 'magpie_gateway_env_file_permissions');
+});
+
+test('shell Jev credentials are excluded when disabled or no key was saved', t => {
+  const f = fixture(t); f.writeEnv(`${name}=${secret}\n`);
+  const config = f.host.plugins.entries['rein-router'].config;
+  config.gateway.managed.mode = 'console'; config.decision = { allowPaidJev: false };
+  f.writeHost(f.host);
+  const secretPath = join(f.root, 'runtime/magpie/router-console-secret.json');
+  writeFileSync(secretPath, JSON.stringify({ jevApiKey: 'synthetic-saved-jev' }), { mode: 0o600 });
+  const environment = { ...f.environment, JEV_API_KEY: 'synthetic-environment-jev' };
+  assert.equal(f.load({ environment }).JEV_API_KEY, undefined);
+  rmSync(secretPath); config.decision.allowPaidJev = true; f.writeHost(f.host);
+  assert.equal(f.load({ environment }).JEV_API_KEY, undefined);
+  assert.equal(environment.JEV_API_KEY, 'synthetic-environment-jev');
+});
+
+test('shell Jev keys cannot supply unconfigured or manual profiles; explicit configured credentials stay intact', t => {
+  const f = fixture(t); f.writeEnv(`${name}=${secret}\n`);
+  f.host.plugins.entries.typesafe = { enabled: true, config: {
+    apiKey: { source: 'store', provider: 'default', id: 'TYPESAFE_API_KEY' },
+  } };
+  f.writeHost(f.host);
+  const beforeConfig = readFileSync(f.configPath);
+  const environment = { ...f.environment, JEV_API_KEY: 'synthetic-shell-jev' };
+  assert.equal(f.load({ environment }).JEV_API_KEY, undefined);
+  assert.deepEqual(readFileSync(f.configPath), beforeConfig);
+  rmSync(f.configPath);
+  assert.equal(f.load({ environment }).JEV_API_KEY, undefined);
+  assert.equal(f.load({ environment: { JEV_API_KEY: 'synthetic-shell-jev' } }).JEV_API_KEY, undefined);
 });
 
 test('active managed profiles fail closed when the prepared secret file is unavailable', t => {
