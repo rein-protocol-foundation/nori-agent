@@ -1,5 +1,21 @@
 # Rein Agent 开发、验证与部署记录
 
+[English](implementation-and-deployment.md) | 简体中文
+
+## 当前后端配置（2026-10-26）
+
+Nori 默认连接 `https://rein-protocol.org`。`REIN_BACKEND_URL` 的优先级为：启动进程环境变量、
+本仓库 `.env.local`、线上默认地址。仅在明确进行隔离开发时覆盖为本地或 DEV 后端地址。
+显式设置为空的值不会回退到线上地址，而会按无效配置处理。
+
+调用方 ID 与凭据必须在目标后端所使用的环境中登记；更换 URL 不会迁移 DEV 调用方，也不会
+自动获得 Production 权限。`dev_*` / `prod_*` 的选择由后端的 `DATABASE_ENVIRONMENT`
+等部署配置控制，不能由 Agent 通过 URL 或本地数据库变量随意切换。
+默认使用线上 API 不代表授权测试写入生产数据，也不代表已完成生产端到端验收。
+
+中英文版本需同步维护。以下交付范围、工具数量、PR 状态与验收数字保留原有历史记录的时间口径；
+它们不是对当前线上部署的实时状态声明。当前连接方式以本节及下方启动说明为准。
+
 ## 当前交付边界
 
 Rein Agent 继续以官方 OpenClaw 源码作为运行时，业务代码只放在 `plugins/rein-operations/`。本次交付是**可重复验证的本地业务核心与开发演练**，不是已接入真实成员和资金的 NGO 生产系统。
@@ -86,7 +102,17 @@ v0.1 方向已落地 14 个工具，且**只在显式 `foundationDb` 配置块�
 
 **没有任何自动付款。** 通过投票只是决策记录：不预留、不付款、不改动资金快照。付款、报销与结算始终由有权限的人在 Agent 之外完成；预算竞争与分配金额不在 v0.1 内。
 
-## 部署到本地隔离环境
+## 部署与本地隔离运行
+
+后端连接配置可保存在本仓库被 Git 忽略的 `.env.local`（权限 `0600`）中：
+`REIN_BACKEND_URL`、`REIN_AGENT_CALLER_ID`、`REIN_AGENT_CREDENTIAL` 和
+`REIN_PROPOSAL_CONFIRMATION_KEY`。通过 `npm run toolchain:pnpm -- openclaw ...`
+启动时，仅这四项会被加载，已有进程环境变量优先；其他账户凭据不会随该文件一起注入。
+自定义变量名仍需由启动环境提供。已运行的 Gateway 需要重新启动才能读取新值。
+`REIN_BACKEND_URL` 默认是 `https://rein-protocol.org`，无需启动本地 Website 服务。
+需要隔离开发时才显式覆盖地址，并确保该后端使用 DEV 数据及对应的调用凭据。
+`DATABASE_ENVIRONMENT` 以及数据库凭据留在后端部署配置或 Website 仓库的 `.env.local`，
+不会自动从兄弟仓库传给 Agent。
 
 1. 获取仓库和官方运行时：
 
