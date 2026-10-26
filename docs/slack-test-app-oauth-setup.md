@@ -12,9 +12,8 @@ keeps listening on plain `http://127.0.0.1:8765`.
 
 Do not add user scopes to the existing governance app. Adding `chat:write` as a user scope there would
 let any authorizing Board member's token post as them, which collides with the app-scope boundary in
-[decisions.md](decisions.md). The governance app does need two **bot** scopes for the D13 email
-match — `users:read` and `users:read.email` — and those are not installed yet; keep them on the
-governance app and keep them out of this test app.
+[decisions.md](decisions.md). Current governance identity is resolved by the backend from verified
+bindings; do not add profile-email bot scopes to either app for that purpose.
 
 ## What the app is
 
@@ -35,19 +34,15 @@ A desktop redirect is not allowed to request bot scopes, which is why the scope 
 The manifest contains no credential and is safe to review and commit; the client ID it produces is
 also non-secret, and the app has **no client secret** in this flow.
 
-## What this app is not: the identity email lookup
+## Governance identity is resolved by the backend
 
-Slack sender identity for the governance slice is resolved on the **governance bot app**, not here (D13 in
-[decisions.md](decisions.md)). That bot calls `users.info` with the bot scopes `users:read` and
-`users:read.email`, normalizes the sender's profile email, and requires an exact match to exactly one
-`<env>_contact_identities` row. The resolver exists in local code (`slack-email-lookup.ts`) with
-local tests, but it is opt-in and off by default (`foundationDb.identityEmailMatch` defaults to `disabled`),
-and those scopes and the governance bot token are not installed or configured, so nothing in this
-guide should be read as claiming the lookup is live.
-
-This test app keeps its single user scope `chat:write` and takes no bot scope. Adding bot scopes here
-would not help the identity path, because the lookup runs on the app that receives the inbound
-message, and it would blur the line between a human message-injection tool and the governance app.
+This app sends test messages with the single user scope `chat:write`; it does not resolve identity.
+The governance Agent relays trusted host context to the authenticated Foundation backend, which
+resolves canonical verified member bindings (D13 in [decisions](decisions.md)). The Agent does not
+call `users.info` or match profile emails, and no profile-email bot scopes should be added for
+identity resolution. Members use the backend identity binding flow. See the
+[current setup guide](setup.md#optional-enable-backend-backed-tools) for caller credentials,
+workspace/channel allowlists and the required configuration.
 
 ## Redirect URL: quick tunnel plus loopback listener
 
@@ -178,15 +173,15 @@ permissions and not real member records. The role is resolved from the current d
 request time (`dev_contributors` / `dev_directors`), and the operator's OAuth token neither grants
 nor changes any role. Scenario mapping: AC02 (`lead-1`, active Contributor) is `lead`; AC03 / AC04
 (`member-2`, inactive Contributor) is `member`; AC04 / AC05 / AC06 / R1 (current directors) are
-`dir1` / `dir2` / `dir3`. The unmatched-email case needs a separate Slack user whose profile email
-matches no `<env>_contact_identities` row, or whose profile email is hidden; none of these five
-accounts represents that case. Under D13 identity is resolved from that email match, so no account
-here relies on a `dev_rein_slack_links` row.
+`dir1` / `dir2` / `dir3`. The unbound-identity case needs a separate Slack test user without a
+current verified binding in the selected backend environment; none of these five fixture identities
+represents that case. Their current bindings and roles must be verified through the backend rather
+than inferred from Slack profile emails or these historical fixture records.
 
-### Optional `guest` account for the unmatched-email case
+### Optional `guest` account for the unbound-identity case
 
-The harness also supports one **optional** sixth identity, `guest`, for the unmatched-email case
-above. It is off until an operator provisions it, because its Slack user id does not exist at build
+The harness also supports one **optional** sixth identity, `guest`, for the unbound-identity case.
+It is off until an operator provisions it, because its Slack user id does not exist at build
 time: the account must first be invited to `T0C4GRL55HB`, and its id recorded. Nothing about it is
 hardcoded, and the five accounts above are unaffected whether or not it exists.
 
@@ -212,8 +207,8 @@ node scripts/slack-test-oauth.mjs start --account guest
 ```
 
 Do not provide a real member for this account: it exists to be a person the Agent **cannot** match to
-a community record, so it should hold no verified `dev_rein_slack_links` row and an email that matches
-no `<env>_contact_identities` row. This harness support is preparation only; inviting the account,
+a community record, so the selected isolated backend should have no current verified binding for
+its platform/workspace/user tuple. Its profile email is irrelevant to this check. This harness support is preparation only; inviting the account,
 minting its token and running the case are separate operator steps.
 
 User ids and channel ids are non-secret Slack identifiers; the harness source

@@ -30,21 +30,26 @@ profile email. Earlier synthetic rehearsal cases ran through a real Slack provid
 workspace, with synthetic test identities) and against the linked `dev_*` schema with synthetic
 rows; what has not happened is production use: no real member registry, no `prod_*` business-table
 write, and no production deployment.
-Twelve backend-backed tools talk to that backend API — the reads
+Nineteen backend-backed tools talk to that backend API — the reads
 `rein_member_status`, `rein_funds`, `rein_poll_candidates` and `rein_vote_type_resolve`, the
 read-only field collector `rein_proposal_collect`, the writes `rein_governance_proposal_submit`,
 `rein_poll_open`, `rein_poll_vote` and `rein_poll_result`, and the post-result feedback tools
-`rein_proposal_comment_suggest`, `rein_revision_approve` and `rein_revision_apply`. They register
+`rein_proposal_comment_suggest`, `rein_revision_approve` and `rein_revision_apply`; three identity
+binding tools (`rein_identity_bind_start`, `rein_identity_bind_status`, `rein_identity_bind_complete`);
+and four community query tools (`rein_resources_search`, `rein_resource_get`, `rein_events_search`,
+`rein_event_get`). They register
 **only** when an explicit `foundationDb` config block enables them, and enabling it hides the
 simulators and the legacy proposal tools. The block names the backend by environment variable
 (`backendApiBaseUrlEnvVar`, `agentCallerIdEnvVar`, `agentCredentialEnvVar`) together with
-`platform: 'slack'`, the `workspaces` list with each workspace's native channel IDs,
-`proposalChannelIds`, `boardChannelIds` and the optional `voteTypeAliases`. The backend signs a
+the `workspaces` list with each workspace's platform, workspace ID and native channel IDs,
+`proposalChannelIds`, `boardChannelIds` and the optional `voteTypeAliases`. Writes also require
+`proposalConfirmationKeyEnvVar`; top-level `platform` is optional. Use the
+[current setup example](docs/setup.md#optional-enable-backend-backed-tools). The backend signs a
 private proof bound to the platform, workspace, user, channel and event plus the calling Agent; the
 Agent presents that proof on every call, never as a tool argument, a tool result or a status field,
 and no tool accepts a model-supplied actor.
 
-The interface names are `rein_member_status`, `rein_funds`, `rein_poll_candidates`,
+The governance interface names are `rein_member_status`, `rein_funds`, `rein_poll_candidates`,
 `rein_vote_type_resolve`, `rein_governance_proposal_submit`, `rein_poll_open`, `rein_poll_vote`,
 `rein_poll_result`, `rein_proposal_collect`, `rein_proposal_comment_suggest`, `rein_revision_approve`
 and `rein_revision_apply`; the config block is `foundationDb`. The Agent never addresses a table
@@ -104,7 +109,7 @@ Native synthetic probes cover both transports; live two-account acceptance remai
 | Path | Purpose |
 | --- | --- |
 | `vendor/openclaw` | Official OpenClaw source as a git submodule, pinned to one reviewed commit. Upstream-owned; use it, do not edit it. |
-| `plugins/rein-operations` | Rein-owned business modules; three default status/simulation tools, four proposal tools, and twelve backend-backed Slack tools (four reads, one read-only field collector, four writes, three result-feedback) that register only with explicit platform, workspace, channel and backend configuration. |
+| `plugins/rein-operations` | Rein-owned business modules; three default status/simulation tools, four proposal tools, and nineteen backend-backed tools (twelve governance, three identity binding, four community queries) that register only with explicit platform, workspace, channel and backend configuration. |
 | `plugins/rein-router` | Optional subscription router, pinned project-local Magpie dependency, gateway lifecycle and scoped route status. |
 | `workspace/` | OpenClaw-compatible agent workspace template: identity, policy, avatar and Discord conversation guidance with an initially unconfigured public directory. |
 | `config/operations.example.json` | Proposed business configuration. Not native OpenClaw config, and nothing loads it. |

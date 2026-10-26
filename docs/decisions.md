@@ -194,9 +194,11 @@ the voting window length; channel and space mapping; and who may see an individu
   person carries back.
 
 - **The `foundationDb` config block now names the backend, not a database.** It carries `enabled`,
-  `platform` (`'slack'`), `workspaces` (each entry an `id` with a non-empty native channel ID list),
+  optional `platform`, `workspaces` (each entry has `platform`, `workspaceId` and a non-empty
+  `nativeChannelIds` list),
   `proposalChannelIds`, `boardChannelIds`, `backendApiBaseUrlEnvVar`, `agentCallerIdEnvVar`,
-  `agentCredentialEnvVar` and the optional `voteTypeAliases`. The earlier keys `slackTeamId`,
+  `agentCredentialEnvVar`, `proposalConfirmationKeyEnvVar` for writes, and optional `voteTypeAliases`.
+  See the [current setup example](setup.md#optional-enable-backend-backed-tools). The earlier keys `slackTeamId`,
   `environment`, `supabaseUrlEnvVar`, `supabaseServiceKeyEnvVar`, `identityEmailMatch` and
   `slackBotTokenEnvVar` are removed: there is no Supabase service key and no Slack profile-email
   lookup in the Agent.

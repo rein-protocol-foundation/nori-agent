@@ -1,9 +1,11 @@
 # Setup and local runtime
 
+[中文说明](setup-zh.md)
+
 This is the local bootstrap for the vendored OpenClaw runtime and the `rein-operations` plugin. It
 configures no chat platform or model provider and activates no governance policy. Its proposal and
-vote tools default to synthetic simulation; the database-backed v0.1 Slack tools described at the end
-of this file register only when an operator explicitly enables them.
+vote tools default to synthetic simulation; the backend-backed governance, identity and community
+tools described below register only when an operator explicitly enables them.
 
 ## Discord multi-member privacy
 
@@ -35,7 +37,8 @@ routing behavior with synthetic identifiers after upstream is built; it is not r
 - git with submodule support.
 - Network access for the first dependency install.
 
-With npm available, prepare the ignored project-local toolchain once if `.toolchain/` is missing:
+Run the following commands from the repository root; if it is not cloned yet, complete step 1
+first. With npm available, prepare the ignored project-local toolchain once if `.toolchain/` is missing:
 
 ```sh
 npm install --prefix .toolchain --no-save --package-lock=false node@24.16.0 pnpm@12.4.2
@@ -205,20 +208,29 @@ npm run toolchain:pnpm -- run verify:proposal-tools
 npm run toolchain:pnpm -- openclaw plugins doctor
 ```
 
-`--runtime` reports what the gateway actually registered, which is stronger than reading the
-manifest. With no `foundationDb` block configured, expect three tools - `rein_status`,
-`rein_simulate_proposal` and `rein_simulate_vote` - and no live business action. Configuring the
-optional `proposalTools` block adds the four legacy proposal tools; configuring `foundationDb`
-instead registers the twelve database-backed tools and hides both the simulators and the legacy
-proposal tools. The twelve are `rein_member_status`, `rein_funds`, `rein_poll_candidates`,
-`rein_vote_type_resolve`, `rein_governance_proposal_submit`, `rein_poll_open`, `rein_poll_vote`,
-`rein_poll_result`, `rein_proposal_collect`, `rein_proposal_comment_suggest`, `rein_revision_approve`
-and `rein_revision_apply`. `verify:plugin` checks all of this through the
-real loader; `verify:proposal-tools` does the same for the four v2 proposal tools.
+`--runtime` reports what the gateway actually registered. Without `foundationDb`, the default
+three tools are `rein_status`, `rein_simulate_proposal` and `rein_simulate_vote`. The optional
+`proposalTools` block adds four local proposal tools. Enabling `foundationDb` instead hides those
+simulators and local proposal tools, retains `rein_status`, and registers 19 backend tools:
+
+| Group | Tools |
+| --- | --- |
+| Governance reads (4) | `rein_member_status`, `rein_funds`, `rein_poll_candidates`, `rein_vote_type_resolve` |
+| Read-only collection (1) | `rein_proposal_collect` |
+| Governance writes (4) | `rein_governance_proposal_submit`, `rein_poll_open`, `rein_poll_vote`, `rein_poll_result` |
+| Result feedback (3) | `rein_proposal_comment_suggest`, `rein_revision_approve`, `rein_revision_apply` |
+| Identity binding (3) | `rein_identity_bind_start`, `rein_identity_bind_status`, `rein_identity_bind_complete` |
+| Community queries (4) | `rein_resources_search`, `rein_resource_get`, `rein_events_search`, `rein_event_get` |
+
+Registration does not grant backend permissions: each call still requires an admitted host context,
+a current private ingress proof, and the relevant caller scope and member eligibility.
+`verify:plugin` checks registration through the real loader; `verify:proposal-tools` checks the
+four local v2 proposal tools.
 
 `rein_status` reports which of these groups are registered through
 `foundationDbReadToolsEnabled`, `foundationDbWriteToolsEnabled`,
-`foundationDbCollectToolsEnabled` and `foundationDbFeedbackToolsEnabled`. A malformed `foundationDb`
+`foundationDbCollectToolsEnabled`, `foundationDbFeedbackToolsEnabled`,
+`identityBindToolsEnabled` and `communityQueryToolsEnabled`. A malformed `foundationDb`
 block is refused with
 `foundation_db_config_invalid`, and a named server environment variable that is unset or empty is
 refused with `foundation_db_env_value_missing`; both name the offending key or variable and never
@@ -279,7 +291,8 @@ npm run toolchain:pnpm -- openclaw doctor
 `npm run toolchain:pnpm -- run smoke:gateway` calls the read-only `rein_status` through the
 authenticated local HTTP endpoint without printing the token. It needs no model API key, and it
 needs the gateway to have printed `ready`; a refused connection during startup is not a tool
-failure. `gateway health` is the unauthenticated readiness probe for the same port, and
+failure. `gateway health` queries the gateway health RPC using the configured authentication;
+the unauthenticated HTTP readiness probe is `/readyz` on the gateway port.
 `openclaw doctor` reports the runtime configuration state.
 
 Reveal the generated shared token only when a client needs it, and treat the output as a secret:
@@ -294,107 +307,95 @@ local work does not touch a global `~/.openclaw` profile.
 
 ## What is still unconfigured
 
-- No chat platform, model provider or credential is connected.
-- `config/operations.example.json` is a design input, not native OpenClaw configuration, and
+- A newly generated local profile has no chat transport, model provider or enabled backend tools.
+  Existing local configurations are preserved by `setup:local`.
+- `config/operations.example.json` is an unapproved design input, not native OpenClaw configuration;
   nothing loads it.
-- The v0.1 slice exists as code but is not wired to anything: no Slack workspace and no live database
-  connection. Two base migrations are applied to the linked `BeneficenceProtocol` project (the
-  `20260924094436` identity/funds migration and the `20260924095705` proposals/polls/ballots
-  migration, in filename order); the `20260927103000` clock migration and the `20260927110000`
-  rename migration are also **applied** there as of 2026-09-28. Applied schema is not Agent use: no
-  tool has used the new names live, and the twelve tools stay unregistered until an operator enables
-  them explicitly. There is no deployment or live use of these tools to report.
-- The opt-in Slack identity email match is implemented and locally tested but disabled by default;
-  the governance app's `users:read` and `users:read.email` bot scopes and its bot token are not
-  installed or configured, so senders still resolve through the retained link table.
-- Budget, outcome, publishing and oversight behaviour does not exist in v0.1. Weighted voting,
-  quorum, recusal and competing-budget allocation are deferred.
-- Governance parameters, storage, hosting and website contracts remain unresolved; see
-  [decisions](decisions.md).
+- Chat credentials, approved workspaces/channels, backend caller enrollment and scopes, verified
+  member bindings and governance policy must be configured separately.
+- Payments, reservations and website publishing are not enabled by this bootstrap. Applied database
+  migrations and local tests do not establish production acceptance. Review [decisions](decisions.md)
+  and the dated evidence in the [deployment record](implementation-and-deployment.md).
 
-## Optional: enabling the database-backed Slack tools locally
+## Optional: enable backend-backed tools
 
-The slice needs a Slack app in Socket Mode, one target workspace, approved proposal and Board
-channel IDs, and a database whose migrations have been reviewed and applied by a person. The database
-names in this guide are the stable ones: the plugin now calls the tables and RPCs
-`<env>_rein_proposals`, `<env>_rein_polls`, `<env>_rein_ballots`, `<env>_rein_vote_types`,
-`<env>_rein_proposal_revisions`, `<env>_rein_finalize_poll` and `<env>_rein_approve_revision`. Those
-names arrive through the forward migration `20260927110000_rein_governance_names.sql`, ordered after
-the committed `20260927103000`; both are **applied** to the linked project as of 2026-09-28, so the
-new names resolve there. The compatibility views and wrappers that once kept the earlier
-stage-prefixed names reachable were removed by the later applied migration
-`20260929045543_remove_stage_compatibility_objects.sql`, so only the stable `<env>_rein_*` names
-remain. Applying the migration is not Agent use: the live code path has no end-to-end result.
-The plugin config names server environment variables rather than carrying credentials:
+Use an approved chat transport and a Foundation backend. Slack can use Socket Mode with bot and
+app-level tokens; multi-member deployments should follow the [Slack isolation guide](slack-user-isolation.md)
+or [Discord isolation guide](discord-user-isolation.md). Add the chosen transport's exact plugin ID
+and load path where required; do not run the bundled and isolated adapters for the same account.
+
+Merge the following object under `plugins.entries.rein-operations.config` in
+`runtime/openclaw/openclaw.json`, preserving other plugin configuration. Replace every
+`APPROVED_*` placeholder with an approved native ID before enabling it:
 
 ```json
 {
   "foundationDb": {
     "enabled": true,
-    "platform": "slack",
-    "slackTeamId": "T01234567",
-    "environment": "dev",
-    "proposalChannelIds": ["APPROVED_PROPOSAL_CHANNEL_ID"],
-    "boardChannelIds": ["APPROVED_BOARD_CHANNEL_ID"],
-    "supabaseUrlEnvVar": "REIN_SUPABASE_URL",
-    "supabaseServiceKeyEnvVar": "REIN_SUPABASE_SERVICE_KEY",
-    "proposalConfirmationKeyEnvVar": "REIN_PROPOSAL_CONFIRMATION_KEY",
-    "identityEmailMatch": "disabled",
-    "slackBotTokenEnvVar": "REIN_SLACK_BOT_TOKEN"
+    "workspaces": [
+      {
+        "platform": "slack",
+        "workspaceId": "APPROVED_SLACK_WORKSPACE_ID",
+        "nativeChannelIds": [
+          "APPROVED_PROPOSAL_CHANNEL_ID",
+          "APPROVED_BOARD_CHANNEL_ID"
+        ]
+      }
+    ],
+    "proposalChannelIds": [
+      "APPROVED_PROPOSAL_CHANNEL_ID"
+    ],
+    "boardChannelIds": [
+      "APPROVED_BOARD_CHANNEL_ID"
+    ],
+    "backendApiBaseUrlEnvVar": "REIN_BACKEND_URL",
+    "agentCallerIdEnvVar": "REIN_AGENT_CALLER_ID",
+    "agentCredentialEnvVar": "REIN_AGENT_CREDENTIAL",
+    "proposalConfirmationKeyEnvVar": "REIN_PROPOSAL_CONFIRMATION_KEY"
   }
 }
 ```
 
-`environment` has no implicit default and selects the `dev_` or `prod_` table set. `slackTeamId` must
-be the single workspace this installation serves. Enable this only against an isolated database. The
-two migrations are applied to the linked `BeneficenceProtocol` project and define both the `dev_*`
-and `prod_*` objects, but the Agent has no connection to it and neither set has verified data, so
-treat every environment as unseeded until a human runs the reviewed seeding steps. The full sequence
-is in the
-[deployment runbook](implementation-and-deployment-zh.md).
+Each `workspaces` entry requires `platform`, `workspaceId` and non-empty `nativeChannelIds`.
+All proposal and Board channel IDs must occur in those lists. The trusted `messageChannel` and
+native channel ID must select exactly one workspace; avoid overlapping channel assignments for the
+same platform. Multiple Slack/Discord workspaces are supported. The top-level `platform` is optional
+and, when present, must name a platform enrolled in `workspaces`. Optional `voteTypeAliases` map
+operator-approved language to backend type codes; see the [deployment guide](implementation-and-deployment.md).
 
-All four `*EnvVar` fields name server environment variables; the values are read from the server
-process and never stored in plugin config, results or logs. Set them on the deployment side:
+The four `*EnvVar` fields name server environment variables; never put credential values in the JSON:
 
-- `REIN_SUPABASE_URL` is the bare project URL. It must be `https`, except for a loopback address
-  (`http://localhost` or `http://127.0.0.1`) during local development, so the key is never sent over
-  a plaintext network hop.
-- `REIN_SUPABASE_SERVICE_KEY` is the server-only Supabase key. Both key generations work: a legacy
-  `service_role` JWT is presented in `apikey` and `Authorization: Bearer`, while a modern
-  `sb_secret_` key is presented in `apikey` only, because Supabase rejects it as a bearer token.
-- `REIN_PROPOSAL_CONFIRMATION_KEY` is a random server-only secret of at least 32 bytes, used to sign
-  the short-lived proposal confirmation token. Generate it once per deployment, for example with
-  `openssl rand -base64 48`, keep it out of the repository, and rotate it only if it may have leaked:
-  rotating invalidates any confirmation prepared before the rotation, which the proposer can simply
-  re-prepare.
-- `REIN_SLACK_BOT_TOKEN` (named by `slackBotTokenEnvVar`) holds the governance app's bot token with
-  `users:read` and `users:read.email`, and is read only when `identityEmailMatch` is `"enabled"`.
+| Variable | Meaning |
+| --- | --- |
+| `REIN_BACKEND_URL` | Backend base origin; HTTPS, or loopback HTTP for local development. No embedded credentials, path, query or fragment. |
+| `REIN_AGENT_CALLER_ID` | Caller ID enrolled in the target backend environment. |
+| `REIN_AGENT_CREDENTIAL` | Credential for that enrolled Agent caller, with only approved scopes. |
+| `REIN_PROPOSAL_CONFIRMATION_KEY` | Stable private secret for proposal confirmation tokens; use a strong random value, for example generated once with `openssl rand -base64 48`. Rotating it invalidates outstanding confirmations. |
 
-### Slack identity email match (opt-in, disabled by default)
+The repository launcher loads these four names from the Git-ignored `.env.local`, while explicit
+process environment values take precedence. Keep that file private (mode `0600`). If neither source
+sets `REIN_BACKEND_URL`, the launcher uses `https://rein-protocol.org`; an explicitly empty value
+fails validation rather than falling back. Custom variable names are supported by the plugin but
+must be supplied in the process environment; `.env.local` loading only covers the four names above.
+After changing credentials or configuration, restart the project gateway.
 
-D13 resolves a Slack sender by the sender's current profile email, matched exactly to one
-`<env>_contact_identities` row. The resolver ships in `slack-email-lookup.ts` with local tests, but
-it is opt-in and **off by default**: with `identityEmailMatch` absent or `"disabled"`, the reader
-keeps resolving through the retained link table and `slackBotTokenEnvVar` is not read at all.
+For synthetic rehearsals, explicitly select an isolated backend and a caller enrolled there. The
+backend's deployment configuration selects its data environment; changing the URL does not migrate
+a DEV caller or grant production access. The Agent never receives a database URL or service key.
+The online default does not authorize test writes to production.
 
-Enabling it is four human steps; none of them is an Agent action:
+Identity is resolved by the backend from verified links, using a private proof bound to the trusted
+platform/workspace/user/channel/event and caller. Use `rein_identity_bind_start`,
+`rein_identity_bind_status` and `rein_identity_bind_complete` for the backend's member binding flow;
+a claimed email or role is not identity evidence. No Slack profile-email lookup or associated bot
+scope is required for identity resolution. Database migration, seeding and member administration
+belong to backend operators.
 
-1. On the **governance** Slack app (not the local human test user app), add the bot scopes
-   `users:read` and `users:read.email`, then reinstall the app in the single target workspace. Those
-   scopes are not installed today.
-2. Put that app's bot token in the server environment variable named by `slackBotTokenEnvVar`, for
-   example `REIN_SLACK_BOT_TOKEN`. Keep the value in the deployment's own secret store, outside git;
-   never paste it into plugin config, a prompt, a result or a log.
-3. Set `identityEmailMatch` to `"enabled"` in the same `foundationDb` block, with `slackBotTokenEnvVar` naming
-   that variable. An `"enabled"` mode without a valid variable name fails the configuration instead
-   of silently falling back to the link table.
-4. Seed one normalized email per contact in `<env>_contact_identities`. With no seeded rows the
-   enabled resolver refuses every sender, and a missing or hidden profile email, an unmatched or
-   ambiguous match, and a revoked or conflicting retained link row all fail closed.
-
-The token is read from the server process only and never appears in plugin config, a status, a
-result or a log. The lookup calls `users.info` for the trusted sender alone, and a profile from
-another team is refused.
+Backend enrollment must include the required ingress, identity and operation scopes. Community
+queries additionally require `community.read` and a current Community Member link; governance
+scopes do not substitute for that permission. See [community discovery](community-discovery.md).
+Validate the merged configuration with `plugins doctor` and `plugins inspect ... --runtime --json`
+as shown above, then rehearse only in the approved environment.
 
 ### Proposal author confirmation
 
@@ -408,12 +409,16 @@ proposal table has no draft status or confirmation column, the registered
    call the tool again with `confirmationToken` returned unchanged and
    `confirmPronouncedByAuthor: true`.
 
-The token is an HMAC-SHA256 signature over the proposer and the exact proposal fields, so changing
+The current token seals the exact proposal payload with AES-256-GCM using an HKDF-derived key,
+authenticating the proposer and expiry as well. Changing
 the title, the type, the amount or the currency after the preview is refused with
 `proposal_confirmation_mismatch`, an expired token with `proposal_confirmation_expired`, a missing
 statement or token with `proposal_confirmation_required`, and a token the server did not mint with
 `proposal_confirmation_invalid`. The proposal identifier is derived from the confirmed text, so
 re-confirming the same version returns the same record instead of inserting a second proposal.
+
+Preparation and confirmation must occur in separate inbound turns; a same-turn token echo is
+refused with `proposal_confirmation_next_turn_required`.
 
 The conversation is the requirement: the proposer has to confirm the prepared text. The token and
 the boolean are only the technical gate that stops a tool call from standing in for that

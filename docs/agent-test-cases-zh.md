@@ -1,6 +1,8 @@
 # Rein Agent v0.1 十个 Slack 演练案例
 
-这些案例对应**已确认的 v0.1 纵向切片**：Slack 身份解析（邮箱匹配） → Contributor 提案 → Board 只投赞成票的批准投票与结果 → 只读资金快照。范围与延后项见[决策登记册](decisions.md)，逐项证据见 [AC01–AC20 验收矩阵](p0-acceptance-matrix.md)。
+这些案例对应**已确认的 v0.1 纵向切片**：Slack 身份解析（后端验证绑定） → Contributor 提案 → Board 只投赞成票的批准投票与结果 → 只读资金快照。范围与延后项见[决策登记册](decisions.md)，逐项证据见 [AC01–AC20 验收矩阵](p0-acceptance-matrix.md)。
+
+配置与身份前提已按当前后端架构更新；这不改变以下历史验收结论，也不代表更新后的案例已重跑。当前配置示例见[安装指南](setup-zh.md#可选启用后端业务工具)。
 
 **本轮最终结论（2026-09-28）：** 案例 2–10 按合成开发证据通过，案例 1 由负责人决定跳过、**未通过**。
 全部证据来自改名前的构建；当前 PR head 只有单元与加载器级验证，改名后尚未在真实 Slack 重跑，`prod_*`
@@ -18,26 +20,21 @@
 - **用户可见**：Agent 回应里应出现的内容（期望行为，含尚未实现的引导）。
 - **工具 / 数据库**：工具返回字段与数据库写入结果（已实现能力，可被合成演练复核）。
 
-技术前提（单工作区、频道、迁移、播种、`foundationDb` 配置块、记录口径与数据库对象速查）移到了[附录 A](#附录-a运维与技术前提)，让 Contributor 侧提示保持日常语气。规则口径与代码路径的依据是 [决策登记册](decisions.md)（D04、D05、D06、D08、D09、D10、D11、D13）与 [AC01–AC20 验收矩阵](p0-acceptance-matrix.md)。
+技术前提（工作区、频道、迁移、播种、`foundationDb` 配置块、记录口径与数据库对象速查）移到了[附录 A](#附录-a运维与技术前提)，让 Contributor 侧提示保持日常语气。规则口径与代码路径的依据是 [决策登记册](decisions.md)（D04、D05、D06、D08、D09、D10、D11、D13）与 [AC01–AC20 验收矩阵](p0-acceptance-matrix.md)。
 
-身份解析按 D13：Agent 取发送者的**当前 Slack 资料邮箱**，比对唯一一条 `<env>_contact_identities` 记录，联系人与当前角色在每次请求重新推导，不落库新关联；保留的关联行只作撤销或冲突否决。下文说某人「身份已解析」，指的就是这种邮箱匹配成立，而不是「有一条人工建的关联行」。
+身份解析按当前 D13：Agent 将宿主可信的平台、工作区、发送者、频道与事件交给后端，后端依据当前有效的验证绑定解析联系人及角色。Agent 不读取 Slack 个人资料邮箱，也不直接访问身份表。下文「身份已解析」指后端验证成立。
 
-## 1. Slack 邮箱对不上（或没有邮箱）的新人问「怎么提案」（AC01）
+## 1. 尚未完成验证绑定的新人问「怎么提案」（AC01）
 
-- **准备**：`guest-1` 是正常受邀加入的人，提案频道已批准；但他的 Slack 资料邮箱隐藏或缺失，或该邮箱在 `<env>_contact_identities` 里对不上唯一一行（没有对应行，或同一邮箱对应多行）。这是**身份未解析**的情形，不是「已有人替他建好关联、只差连上」的普通状态。
-- **对话**：
-  - 用户：`@Agent 你好，我刚进社群，下周想办个读书会，要怎么才能正式提一个提案？`
-  - Agent（期望）：说明 Agent 无法从 Slack 资料邮箱确认他的社群身份（邮箱缺失、隐藏，或对不上唯一一条社群邮箱记录），所以还不能以本人社群记录提交；给出人工下一步——请人核对或补齐邮箱与社群记录的对应关系——但不替他提交。
-- **用户可见**：给出「先由人核对邮箱与社群记录的对应关系 → 再在提案频道提交」的下一步；不声称已经提交或已经立项，也不把邮箱对不上说成「已受理、只差一步关联」。
-- **工具 / 数据库**：
-  - 身份解析按 D13 **失败关闭**：资料邮箱缺失、隐藏、对不上任何行、命中多行，或命中的记录没有可用联系人时，都不解析出联系人与角色；`rein_member_status` 不给出可用的联系人／角色。
-  - 若本轮调用 `rein_governance_proposal_submit`，返回 `ok = false` 并失败关闭；`<env>_rein_proposals` 不新增行。
-  - **原因码随实现而定。** 邮箱解析路径（D13）已在本地代码与测试中就绪，但默认关闭（`foundationDb.identityEmailMatch` 默认 `disabled`），治理 Bot 应用的 `users:read`／`users:read.email` scope 与 Bot token 也未安装／未配置，未启用时现有读取器仍按关联表解析（rehearsal 中的 5 个合成身份都走关联表）；演练时必须读取当前注册工具的实际返回值，不要引用 `identity_not_linked`、`identity_link_required` 之类的固定字面量，也不要断言所有未解析路径都返回同一个词。参数里自称的 `contactId`、`memberId` 或角色一律不作为身份依据。
-- **缺口**：D13 的邮箱解析（`users.info` 加 `users:read`／`users:read.email` 两个 Bot scope）**已在本地代码与测试中就绪，但默认关闭**（`foundationDb.identityEmailMatch` 默认 `disabled`），scope 与 Bot token 均未安装／未配置，未启用时现有实现仍按关联表解析；因此本条既是「身份未解析即失败关闭」的期望行为，也是当前验收缺口，见[验收缺口](#验收缺口)。「怎么才能提案」的分步对话引导同样只有 `workspace/AGENTS.md` 的持久原则引导，尚无确定性流程，也未经真实对话验证。
+- **准备**：`guest-1` 已加入测试工作区，提案频道已批准，但后端没有该发送者的有效验证绑定。
+- **对话**：用户问「`@Agent 你好，我刚进社群，下周想办个读书会，要怎么才能正式提一个提案？`」。Agent 说明需先完成社群身份绑定，并使用后端绑定流程提供下一步。
+- **用户可见**：先完成绑定，再核对 Contributor 资格和提案内容；不声称已经提交、立项或获得角色。
+- **工具 / 后端**：`rein_member_status` 不返回可用的成员资格；未绑定时正式提交失败且不新增提案。身份绑定使用 `rein_identity_bind_start`、`rein_identity_bind_status` 与 `rein_identity_bind_complete`，完成后重新检查资格。读取工具实际返回的原因码，不从参数中的 `contactId`、`memberId`、邮箱或角色推断身份。
+- **验收要求**：在隔离环境覆盖未绑定、撤销、过期、绑定完成以及跨工作区拒绝；本节更新未改变 2026-09-28 案例 1 被跳过、未通过的历史结论。
 
 ## 2. 已关联但非有效 Contributor 想提案（AC01、AC04）
 
-- **准备**：`member-2` 的 Slack 资料邮箱能对上唯一一条 `<env>_contact_identities` 记录，但对应 Contributor 行状态为 `inactive`，或根本没有 Contributor 行。
+- **准备**：`member-2` 已有后端验证绑定，但对应 Contributor 状态为 `inactive`，或没有 Contributor 记录。
 - **对话**：
   - 用户：`@Agent 帮我提交一个工作坊提案吧，预算 165 美元，用来买材料。`
   - Agent（期望）：说明正式提交需要当前有效的 Contributor 记录，你目前不满足；可以帮你联系管理员确认状态。
@@ -188,29 +185,30 @@
 - **没有结果叙述或回帖**：案例 7 的解释性叙述与频道回帖都未实现，工具只返回结果字段。
 - **反馈作者范围未确认**：数据库行允许有效 Contributor 作为 `author_contact_id`，当前注册工具只接受现任董事。
 - **平票口径未确认**：当前按「无赢家」落库，不得对外宣布为组织正式规则。
-- **Slack 邮箱身份解析已在本地实现，但默认关闭（案例 1）**：D13 规定的 `users.info` 资料邮箱匹配与 `<env>_contact_identities` 唯一行匹配已落在 `slack-email-lookup.ts` 与读取器的邮箱优先路径中，并有本地测试；`users:read`／`users:read.email` 两个 Bot scope 与 Bot token 尚未安装／未配置，`foundationDb.identityEmailMatch` 默认 `disabled`，未启用时读取器仍按 `rein_slack_links` 关联表解析。因此案例 1 的「邮箱对不上或缺失即失败关闭」在本地测试中已有覆盖，但尚未经真实工作区验收。
+- **当前身份流程需重新验收（案例 1）**：旧邮箱匹配路径已移除；应针对后端验证绑定、撤销、过期与工作区隔离重新演练。历史验收未覆盖当前绑定流程。
 - **没有生产端到端验收**：以上全部为合成演练。真实 Slack 提供方与真实 Supabase 提供方确实参与了演练（测试工作区 + 已链接的 `dev_*` 表集、行为合成数据），但真实成员名册、`prod_*` 业务写入、生产部署与资金／支付提供方都没有接入；当前 PR head 改名后也尚未在真实 Slack 重跑。
 - **命名与改名迁移（新增）**：审查要求移除工具、表、配置与 skill 中带阶段前缀的命名。插件与配置现已改用 v0.1 稳定名称（`rein_member_status`、`rein_funds`、`rein_governance_proposal_submit`、`rein_poll_open`、`rein_poll_vote`、`rein_poll_result`、`rein_proposal_comment_suggest`、`rein_revision_approve`、`rein_revision_apply` 与 `foundationDb` 配置块）；数据库侧的改名由向前迁移 `20260927110000_rein_governance_names.sql` 完成，它排在已提交的 `20260927103000` 之后，重命名物理表与两个 RPC。该迁移**已在 PR #13 提交并已应用到已链接项目**（2026-09-28 只读核对：版本已列出，十张新物理表均在），因此新名称在已链接 schema 中已可用。改名迁移的过渡兼容视图与 RPC 包装已由后续已应用迁移 `20260929045543_remove_stage_compatibility_objects.sql` 删除，旧名不再可用。**已应用不等于代码已实机验证**：仍不得声称 Agent 已使用新名称跑通端到端。接口见[服务方接口契约](integration-contracts.md#naming-and-the-rename-migration)。
 
 ## 附录 A：运维与技术前提
 
-以下内容由人执行并复核；Agent 不参与建表、播种、建应用或写入凭据。所有值都必须替换为**已批准**的唯一平台、原生频道 ID 与隔离环境；仓库中不得出现令牌、签名密钥或工作区 ID。
+以下内容由人执行并复核；Agent 不参与建表、播种、建应用或写入凭据。所有值都必须替换为**已批准**的平台与工作区、原生频道 ID 与隔离环境；仓库中不得出现令牌、签名密钥或工作区 ID。
 
-- **一个部署只服务一个 Slack 工作区。** 使用 Socket Mode 与官方 OpenClaw `slack` 插件；v2 工具上下文不携带团队 ID，因此 `slackTeamId` 必须正好是被服务的那个工作区。
-- **只放服务端环境变量引用。** Supabase 地址与密钥只从 `supabaseUrlEnvVar`、`supabaseServiceKeyEnvVar` 指向的服务端环境变量读取，绝不写入配置或结果。
+- **按工作区与频道显式登记。** `foundationDb.workspaces` 可包含多个 Slack／Discord 工作区，每项包含 `platform`、`workspaceId` 和非空 `nativeChannelIds`；可信平台与频道必须恰好选中一个工作区。Slack 可用 Socket Mode；多成员配置参照 [Slack 隔离指南](slack-user-isolation.md)。
+- **只放服务端环境变量引用。** 使用 `backendApiBaseUrlEnvVar`、`agentCallerIdEnvVar`、`agentCredentialEnvVar` 与 `proposalConfirmationKeyEnvVar`，完整示例见[安装指南](setup-zh.md#可选启用后端业务工具)。Agent 不持有数据库地址或密钥。
   - **迁移由人执行。** 前两个迁移已在姊妹仓库的 PR #13 分支（PR #13，当前 head `78281fa`，原提交 `4bd5ce8`）提交，并按文件名顺序应用到已链接的 `BeneficenceProtocol` 项目：`20260924094436_rein_slack_identity_and_fund_snapshots.sql`（身份关联表与只追加的可用资金快照表）与 `20260924095705_rein_mvp_proposals_polls_ballots.sql`（提案、投票、选票三张表，投票类型表、修订记录表与 `effective_revision_id` 列，以及冻结候选名单、按当前董事校验选票、`rein_finalize_poll` 计票与 `rein_approve_revision` 重大修订批准）。两个迁移都在同一事务里定义 `dev_*` 与 `prod_*` 两套对象，`supabase migration list --linked` 又是项目级，因此两套 schema 都已建成；2026-09-27 只读核对时两个版本都显示为已应用。第三个迁移 `20260927103000_rein_mvp_ballot_cast_at_db_clock.sql`（选票 `cast_at` 改由数据库时钟决定）**已在 `32977bfb` 提交，并已应用到已链接项目**（2026-09-28 只读核对：版本已列出，两个时钟函数均在），因此该时钟规则在已链接 schema 中已生效；但尚无真实选票在真实库上被投出，所以只能说 schema 层已生效，不能说端到端已验证。**已应用但只被演练使用**：工具确实读写过 `dev_*` 表集（合成 fixture），`prod_*` 业务行始终为 0，**不得据此声称已投产或 `prod_*` 已被端到端验证**。按类型的具体名额与批准额度需由人写入 `rein_vote_types`。
-- **播种由人完成。** 邮箱到联系人的对应关系（`<env>_contact_identities`，每行一个规范化邮箱与一个唯一联系人）、Contributor 的 `active` 状态、董事的 `person_type`、第一条可用资金快照，以及每个提案类型在 `rein_vote_types` 中的 `max_candidates` 与 `max_approvals_per_voter` 都由人直接写库或走已复核的管理路径；Agent 不创建这些记录，也不提供注册工具。
-- **身份邮箱解析需要 Bot scope（尚未安装）。** D13 的邮箱匹配要求治理 Bot 应用装 `users:read` 与 `users:read.email` 两个 Bot scope；目前**未安装**，治理 Bot 的 token 也未配置，且 `foundationDb.identityEmailMatch` 默认 `disabled`，未启用时读取器仍按关联表解析（rehearsal 中 5 个合成身份全部走关联表解析），因此该路径尚未在真实工作区启用。测试传输用的用户应用保持只用 `chat:write`，不加 scope。
-- **显式启用 `foundationDb` 配置块。** 启用后注册 12 个数据库工具（4 读、4 写、1 个只读字段采集、3 个结果反馈），并隐藏合成模拟器与旧提案工具；未设置 `enabled: true` 时一个都不注册。
+- **后端管理由人负责。** 通过已复核的管理路径准备成员、Contributor 状态、董事资格、资金快照与投票类型限额；成员身份来自后端验证绑定。Agent 不直接建表、播种或授予角色。
+- **身份解析不依赖邮箱 scope。** Agent 不查询 Slack 资料邮箱；测试传输应用仍只使用 `chat:write` 用户 scope，身份验证由后端及其绑定流程完成。
+- **显式启用 `foundationDb` 配置块。** 当前启用后保留 `rein_status`，注册 19 个后端工具（12 个治理、3 个身份绑定、4 个社区查询），并隐藏合成模拟器与本地提案工具。注册不代表取得后端权限；每次调用仍需验证 scope、频道、私有凭证与成员资格。
 - **每轮记录。** 记录入站事件的发送者 ID、工具调用 ID、Agent 回复、数据库记录与拒绝原因。所有拒绝都走固定原因码，且不返回 Supabase 地址、密钥、团队 ID 或私密联系人标识。
 - **Agent 不自动回帖。** 当前工具只把结果返回到调用它的那一轮；把结果回帖到 Slack 的消息发送尚未实现，因此各案例只核对工具返回，不核对频道回帖。
 
 ### 预期数据库记录速查
 
+下表由后端操作员核对，Agent 只调用后端 API，不直接读写任何表。
+
 | 数据库对象 | 何时新增 |
 | --- | --- |
-| `<env>_contact_identities` | 由人播种：每行一个规范化邮箱与一个社群联系人；身份按邮箱在这里精确匹配（D13），Agent 只读，不写入 |
-| `<env>_rein_slack_links` | **遗留记录**：不再作为身份凭据，保留下来只作撤销与冲突否决（`revoked` 否决该发送者；`verified` 但与邮箱匹配结果的联系人冲突也否决）。Agent 只读，不写入 |
+| 后端验证绑定 | 由后端身份流程管理；Agent 通过认证 API 解析身份，不按资料邮箱直接读表 |
 | `<env>_rein_proposals` | `rein_governance_proposal_submit` 成功时新增一行；同一轮对话里的同一调用重试不新增第二行 |
 | `<env>_rein_polls` | `rein_poll_open` 成功时新增一行，候选名单与窗口就此固定；`candidate_limit` 与 `max_approvals_per_voter` 由数据库从投票类型冻结，不由调用方给出 |
 | `<env>_rein_ballots` | `rein_poll_vote` 成功时新增一行，`approved_proposal_ids` 为该人批准的候选人（可多个，空数组即弃权）；`(poll_id, voter_contact_id)` 唯一，同一投票同一人改投会被拒 |

@@ -16,6 +16,11 @@ arbitrarily switch them through a URL or its own database environment variables.
 Using the online API by default does not authorize test writes to production data or establish
 production end-to-end acceptance.
 
+See [setup](setup.md#optional-enable-backend-backed-tools) for the current complete configuration
+and tool inventory. Current `foundationDb` mode retains `rein_status` and registers 19 backend
+tools (12 governance, 3 identity binding, 4 community queries). Counts of 14 in the historical
+acceptance tables describe the recorded build, not the current registration expectation.
+
 Maintain the English and Chinese versions together. The delivery scope, tool counts, PR status and
 acceptance figures below retain the dates and scope of the original historical records; they are
 not live statements about the current online deployment. This section and the startup instructions
@@ -317,17 +322,14 @@ registering each workspace separately for Slack, Discord or both.
    names `backendApiBaseUrlEnvVar`, `agentCallerIdEnvVar`, `agentCredentialEnvVar`. Writes also need
    `proposalConfirmationKeyEnvVar`. Store names, never values. **Legacy fields `slackTeamId`,
    `environment`, `supabaseUrlEnvVar`, `supabaseServiceKeyEnvVar`, `identityEmailMatch` and
-   `slackBotTokenEnvVar` are rejected, not used as fallbacks.** Without `enabled: true`, the recorded
-   14 backend tools do not register.
+   `slackBotTokenEnvVar` are rejected, not used as fallbacks.** Without `enabled: true`, the
+   19 backend tools do not register.
 7. **Verify before connecting.** Run `npm run toolchain:pnpm -- run check`,
    `npm run toolchain:pnpm -- test` and `npm run toolchain:pnpm -- run verify:plugin`, then
    `npm run toolchain:pnpm -- openclaw plugins doctor` and
    `npm run toolchain:pnpm -- openclaw plugins inspect rein-operations --runtime --json`.
-   Confirm the recorded 14 tools (`rein_member_status`, `rein_funds`, `rein_poll_candidates`,
-   `rein_vote_type_resolve`, `rein_proposal_collect`, `rein_governance_proposal_submit`,
-   `rein_poll_open`, `rein_poll_vote`, `rein_poll_result`, `rein_proposal_comment_suggest`,
-   `rein_revision_approve`, `rein_revision_apply`, `rein_identity_bind_start`,
-   `rein_identity_bind_complete`) and that simulators/legacy proposal tools are hidden. Rehearse
+   Confirm `rein_status` and all 19 backend tools in the [current inventory](setup.md#5-inspect-the-plugin),
+   with simulators and local proposal tools hidden. Rehearse
    the ten synthetic cases in `docs/agent-test-cases-zh.md`, retaining sender IDs, tool-call IDs
    and backend records.
 
@@ -434,7 +436,7 @@ is exactly `12.4.2` and Node is within the supported range.
    `agentCallerIdEnvVar`, `agentCredentialEnvVar`, plus `proposalConfirmationKeyEnvVar` for writes.
    **The Agent no longer holds database credentials.** Backend URL, caller ID, credential and
    signing key come only from server environment variables; configuration has neither their values
-   nor database URL/service-key fields. The historical slice registers 14 backend tools and hides
+   nor database URL/service-key fields. The current plugin registers 19 backend tools (governance, identity and community) and hides
    simulators/legacy proposal tools. The backend owns the database and both DEV/PROD schemas.
    Earlier direct writes in the real test workspace and linked DEV tables belonged to the prior
    build; PROD business writes were zero and PROD data had no end-to-end verification. That
