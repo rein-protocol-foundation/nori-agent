@@ -71,7 +71,7 @@ No production member registry or production data set is connected. Governance re
 run against a test Slack workspace and the linked `dev_*` schema only; the live governance evidence predates the
 rename, and the current PR head has **no live Slack retest after the rename**. A passed vote is a decision record: payments, reservations and publishing are not enabled,
 and weighted voting, quorum, recusal, competing-budget allocation, activities, reminders, articles and
-oversight remain deferred. See the [implementation and deployment record](docs/implementation-and-deployment-zh.md)
+oversight remain deferred. See the [implementation and deployment record](docs/implementation-and-deployment.md)
 and the [v0.1 governance acceptance record](docs/governance-acceptance-2026-09-28.md): cases 2-10 are accepted on
 synthetic development evidence, and case 1 was skipped by the owner and is not passed.
 
@@ -251,7 +251,7 @@ social-media image and text publishing, and DAO integration belong to later phas
 - [Architecture and integration boundaries](docs/architecture.md)
 - [Setup and local runtime](docs/setup.md)
 - [Discord onboarding requirements](docs/discord-onboarding.md) · [中文流程、目录与演练](docs/discord-onboarding-zh.md)
-- [Development, verification, deployment and ten Agent rehearsals](docs/implementation-and-deployment-zh.md)
+- [Development, verification, deployment and ten Agent rehearsals](docs/implementation-and-deployment.md)
 - [v0.1 governance acceptance record (2026-09-28)](docs/governance-acceptance-2026-09-28.md)
 - [P0 requirement evidence matrix](docs/p0-acceptance-matrix.md)
 - [Provider integration contracts](docs/integration-contracts.md)
