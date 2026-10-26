@@ -159,7 +159,37 @@ test('log symlinks cannot redirect daemon output to another file', async t => {
   await assert.rejects(f.gateway.execute('start'), /path_invalid/); assert.equal(f.launches.length, 0);
 });
 
-test('foreground run and non-lifecycle commands retain the existing upstream path', async () => {
-  for (const args of [['gateway', 'run'], ['gateway', 'health'], ['plugins', 'list']])
+test('foreground help and non-lifecycle commands retain the existing upstream path', async () => {
+  for (const args of [['gateway', 'run', '--help'], ['gateway', 'run', '-h'], ['gateway', 'health'], ['plugins', 'list']])
     assert.equal(await runProjectGatewayCommand(args, {}), null);
+});
+
+test('foreground launch refuses an existing owner before upstream maintenance, even on a different port', async t => {
+  const f = await fixture(t);
+  await f.gateway.execute('start');
+  const messages = [];
+  t.mock.method(console, 'error', message => messages.push(message));
+  for (const ready of [true, false]) {
+    assert.equal(await runProjectGatewayCommand(['gateway', 'run', '--port', '18792'], {
+      root: f.root, environment: {}, runtime: f.runtime, health: async () => ready,
+      loadEnvironment: () => { throw new Error('must not load provider credentials'); },
+    }), 1);
+    assert.match(messages.at(-1), /already running.*18791/);
+    assert.match(messages.at(-1), ready ? / — ready/ : / — not ready/);
+    assert.match(messages.at(-1), /gateway stop/);
+  }
+  assert.equal(f.signals.length, 0);
+  assert.equal(f.launches.length, 1);
+});
+
+test('foreground launch without a project owner preserves upstream startup and options', async t => {
+  const f = await fixture(t);
+  for (const busy of [false, true]) {
+    assert.equal(await runProjectGatewayCommand(['gateway', 'run', '--port', '18792', '--verbose'], {
+      root: f.root, environment: {}, runtime: f.runtime, portBusy: async () => busy,
+      loadEnvironment: () => { throw new Error('must not load provider credentials'); },
+    }), null);
+  }
+  assert.equal(f.signals.length, 0);
+  assert.equal(f.launches.length, 0);
 });
