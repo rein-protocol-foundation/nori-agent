@@ -113,13 +113,16 @@ npm run toolchain:pnpm -- openclaw gateway run
 ![Dynamic Router 的 Jev Key、启用开关与应用范围](images/router-console/03-dynamic-router.png)
 
 1. 打开“自动判断任务 · Jev”开关。这允许单独计费的 Jev 分类请求。
-2. 填写 Jev API Key；也可由启动进程提供 `JEV_API_KEY`。已保存的 Key 不回显，留空保留。
+2. 填写 Jev API Key。已保存的 Key 默认显示为 `********`，点击“显示”查看明文，再点击“隐藏”恢复掩码；留空保留。
+   也可在本地私有配置
+   `runtime/magpie/router-console-secret.json` 的 `jevApiKey` 字段中配置，并保持文件权限为 `0600`；
+   不要提交此文件，也不需要在 `.zshrc` 中导出 Key。
 3. 按需展开“回退顺序与管理员编码任务”，设置允许的自动回退顺序。
 4. 填入管理员的平台身份，格式为 `channel/accountId/senderId`，每行一个；
    例如 `discord/default/YOUR_DISCORD_USER_ID`。管理员编码任务需要至少一条 high 路由。
 5. 保存后，首次配置 Key 时重启 OpenClaw。
 
-Key 保存在权限为 0600 的本地私有文件；OpenClaw 配置只引用环境变量，
+Jev Key 只从 UI 或上述私有配置文件读取，不使用 shell 中的 `JEV_API_KEY`；未配置时无法启用 Dynamic Router。
 插件不会把 Jev Key 写入模型目录或发给 LLM。
 关闭动态模式后，`auto` 使用配置的默认策略。
 Jev 超时、不可用、判断不确定或任务需要额外上下文时，使用能力较强的默认策略。

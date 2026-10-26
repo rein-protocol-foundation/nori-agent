@@ -69,6 +69,7 @@ export async function createConsoleServer({ sync, nativeOrigin, nativeSecret, po
         return res.end(url.pathname.endsWith('.css') ? css : js);
       }
       if (url.pathname === '/_rein/api/state' && req.method === 'GET') return reply(200, await sync.view());
+      if (url.pathname === '/_rein/api/jev-key/reveal' && req.method === 'POST') return reply(200, await sync.revealJevKey());
       if (url.pathname === '/_rein/api/refresh' && req.method === 'POST') return reply(200, await sync.refresh());
       if (url.pathname === '/_rein/api/settings' && req.method === 'POST') {
         const body = JSON.parse((await boundedBody(req, 64 * 1024)).toString('utf8'));
@@ -149,7 +150,7 @@ export async function runRouterConsole({ root = projectRoot, noOpen = false, por
     }
     assertRunning();
     if (!ready) throw new Error('router_magpie_start_timeout');
-    sync = createConsoleSync({ root, native, gatewayBaseUrl: base, environment });
+    sync = createConsoleSync({ root, native, gatewayBaseUrl: base });
     try { await sync.init(); } catch { /* Persisted errors are displayed in the UI; never unblock its key. */ }
     assertRunning();
     web = await createConsoleServer({ sync, nativeOrigin, nativeSecret, port });

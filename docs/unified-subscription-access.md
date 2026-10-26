@@ -412,6 +412,16 @@ money. [Gateway/account reference](https://github.com/yetone/magpie/blob/95e7c6b
 
 ## Configure Jev separately
 
+The integrated Router Console accepts Jev credentials only from its UI or the private project
+configuration `runtime/magpie/router-console-secret.json` (`jevApiKey`, mode 0600). It never
+uses an ambient shell `JEV_API_KEY` as a fallback. The launcher removes that inherited variable
+and supplies only the saved project credential to the generated SecretRef. Without a saved
+credential, the Console reports Jev as unconfigured and refuses to enable Dynamic Router.
+For manual deployments, use the explicitly configured OpenClaw secret-store reference below.
+The Console masks saved keys by default. Its Show action retrieves the key through an
+authenticated, same-origin POST response with `Cache-Control: no-store`; ordinary state
+responses remain secret-free. Hiding the key or leaving the page clears the revealed value.
+
 The router uses OpenClaw's native decision runtime and the official `typesafe` plugin; it does
 not create another Jev HTTP client or read a Jev environment key independently. The pinned
 OpenClaw source is `4a11f89e840b2bb3eedcad2820ab25b8520905b6`. Its

@@ -103,7 +103,7 @@ async function fixture(t) {
     else throw new Error('unexpected request');
     return {keys:structuredClone(keys).map(({secret,...k})=>k),secret:keys.find(k=>k.id===body?.key)?.secret ?? keys.at(-1)?.secret};
   };
-  const sync=createConsoleSync({root,native,spendCheck:async()=>{},environment:{}});await sync.init();
+  const sync=createConsoleSync({root,native,spendCheck:async()=>{}});await sync.init();
   return {root,hostPath,sync,calls,keys,unavailable,get raw(){return raw;},set raw(v){raw=v;}};
 }
 
@@ -143,6 +143,27 @@ test('Jev secrets never appear in state, OpenClaw JSON or backups and are loaded
   assert.equal(loadMagpieGatewayEnvironment({root:f.root,environment:{OPENCLAW_CONFIG_PATH:f.hostPath}}).JEV_API_KEY,undefined);
 });
 
+test('an ambient Jev key cannot mark the console configured, enable routing or rescue a deleted saved key', async t => {
+  const previous = process.env.JEV_API_KEY;
+  process.env.JEV_API_KEY = 'synthetic-shell-jev';
+  t.after(() => { if (previous === undefined) delete process.env.JEV_API_KEY; else process.env.JEV_API_KEY = previous; });
+  const f = await fixture(t), before = await readFile(f.hostPath, 'utf8');
+  assert.equal((await f.sync.view()).jevKeyConfigured, false);
+  await assert.rejects(f.sync.save({ ...settings(), dynamic: true }), /router_jev_key_required/);
+  assert.equal(await readFile(f.hostPath, 'utf8'), before);
+  assert.equal(f.keys.length, 0);
+  await f.sync.save({ ...settings(), dynamic: true }, 'synthetic-project-jev');
+  assert.equal((await f.sync.view()).jevKeyConfigured, true);
+  const env = loadMagpieGatewayEnvironment({ root: f.root, environment: {
+    OPENCLAW_CONFIG_PATH: f.hostPath, JEV_API_KEY: process.env.JEV_API_KEY,
+  } });
+  assert.equal(env.JEV_API_KEY, 'synthetic-project-jev');
+  await rm(join(f.root, 'runtime/magpie/router-console-secret.json'));
+  await assert.rejects(f.sync.refresh(), /router_jev_key_required/);
+  assert.equal(f.keys[0].off, true);
+  assert.equal((await f.sync.view()).jevKeyConfigured, false);
+});
+
 test('symlink config targets cannot be overwritten by the console',async t=>{
   const f=await fixture(t);const target=join(f.root,'target');await writeFile(target,'unchanged');await rm(f.hostPath);await symlink(target,f.hostPath);
   await assert.rejects(f.sync.save(settings()),/path_invalid|sync_failed/);assert.equal(await readFile(target,'utf8'),'unchanged');
@@ -160,6 +181,36 @@ test('UI proxy requires authenticated session, exact host and same-origin mutati
   assert.equal((await fetch(server.origin+'/_rein/api/refresh',{method:'POST',headers:{...headers,Origin:server.origin}})).status,200);
   const rejected = await new Promise(resolve => { const r=request(server.origin+'/_rein/api/state',{headers:{...headers,Host:'attacker.invalid'}},res=>{res.resume();resolve(res.statusCode);}); r.end(); });
   assert.equal(rejected,403);
+});
+
+test('saved Jev keys are revealed only by authenticated same-origin POST and never by normal state', async t => {
+  const f = await fixture(t), secret = 'synthetic-reveal-only-jev';
+  await assert.rejects(f.sync.revealJevKey(), /router_jev_key_required/);
+  await f.sync.save({ ...settings(), enabled: false }, secret);
+  const keyPath = join(f.root, 'runtime/magpie/router-console-secret.json');
+  const beforeKey = await readFile(keyPath, 'utf8'), beforeConfig = await readFile(f.hostPath, 'utf8');
+  const server = await createConsoleServer({ sync: f.sync, nativeOrigin: 'http://127.0.0.1:9', nativeSecret: 'private' });
+  t.after(() => server.close());
+  const path = server.origin + '/_rein/api/jev-key/reveal';
+  assert.equal((await fetch(path, { method: 'POST', headers: { Origin: server.origin } })).status, 401);
+  const login = await fetch(server.link, { redirect: 'manual' });
+  const Cookie = login.headers.get('set-cookie').split(';')[0];
+  assert.equal((await fetch(path, { headers: { Cookie } })).status, 404);
+  assert.equal((await fetch(path, { method: 'POST', headers: { Cookie } })).status, 403);
+  assert.equal((await fetch(path, { method: 'POST', headers: { Cookie, Origin: 'https://attacker.invalid' } })).status, 403);
+  const response = await fetch(path, { method: 'POST', headers: { Cookie, Origin: server.origin } });
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('cache-control'), 'no-store');
+  assert.deepEqual(await response.json(), { jevApiKey: secret });
+  const state = await fetch(server.origin + '/_rein/api/state', { headers: { Cookie } });
+  const text = await state.text(); assert.ok(!text.includes(secret));
+  assert.equal(JSON.parse(text).jevKeyConfigured, true);
+  assert.equal(await readFile(keyPath, 'utf8'), beforeKey);
+  assert.equal(await readFile(f.hostPath, 'utf8'), beforeConfig);
+  await rm(keyPath);
+  const missing = await fetch(path, { method: 'POST', headers: { Cookie, Origin: server.origin } });
+  assert.equal(missing.status, 400);
+  assert.deepEqual(await missing.json(), { error: 'router_jev_key_required' });
 });
 
 test('native page decoration adds page using upstream kernel and leaves Provider editor in place',()=>{

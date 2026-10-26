@@ -11,10 +11,18 @@ magpie.plugin('rein-router', ctx => {
     <details class="rein-advanced"><summary>回退顺序与管理员编码任务</summary><div id="rein-fallbacks"></div><label class="rein-field">管理员身份（每行 channel/accountId/senderId）<textarea id="rein-admins" rows="3" placeholder="discord/default/YOUR_USER_ID"></textarea></label><p>管理员编码任务优先使用 high 思考强度；这里的身份配置不授予工具权限。</p></details>
     <footer class="rein-save"><div><strong>连接到现有 OpenClaw</strong><p>保存后自动合并配置。首次连接后启动或重启 OpenClaw，后续目录变更自动更新。</p></div><div class="rein-actions"><button type="button" id="rein-pause" class="text" hidden>暂停路由</button><button type="button" id="rein-save" class="text primary">保存并连接 OpenClaw</button></div></footer>
     <p class="rein-footnote">OpenClaw 就是你的 harness，无需连接 Magpie 的 Agents。手动选模型时使用 /model；自动模式使用 /model auto。</p></div>`,
-    mount() { document.addEventListener('visibilitychange', () => { if (!document.hidden && !document.getElementById('view-rein-router').hidden && !dirty) void load(); }); },
+    mount() {
+      const page = document.getElementById('view-rein-router');
+      const visibility = () => { if (document.hidden || page.hidden) hideJevKey(); else if (!dirty) void load(); };
+      document.addEventListener('visibilitychange', visibility);
+      const observer = new MutationObserver(() => { if (page.hidden) hideJevKey(); });
+      observer.observe(page, { attributes: true, attributeFilter: ['hidden'] });
+      ctx.onDispose(() => { document.removeEventListener('visibilitychange', visibility); observer.disconnect(); hideJevKey(); });
+    },
     open() { return load(); },
   });
-  let state, settings, policy, dirty = false;
+  let state, settings, policy, dirty = false, jevDraft = '', viewingJev = false;
+  let hideJevKey = () => {};
   const refreshTimer = setInterval(() => {
     if (!document.hidden && !document.getElementById('view-rein-router').hidden && !dirty) void load();
   }, 5000);
@@ -28,7 +36,7 @@ magpie.plugin('rein-router', ctx => {
     router_catalog_empty: '还没有可用模型，请先在 Providers 添加并启用模型。',
     router_no_eligible_models: '请选择 Provider 的计费来源并确认额度设置。',
     router_capable_default_required: '默认策略需要支持 medium 或 high 的模型。请在 Providers 启用合适的模型，并确认计费设置后重新保存。',
-    router_jev_key_required: '启用 Dynamic Router 前，请填写 Jev API Key 或设置 JEV_API_KEY。',
+    router_jev_key_required: '启用 Dynamic Router 前，请在此页面或项目私有配置文件中保存 Jev API Key；不使用 shell 环境变量。',
     router_coding_plan_scope: 'Coding Plan 仅用于编码路由；请为通用任务选择其他 Provider。',
     router_catalog_limit: '可用模型过多。请在 Magpie 缩小暴露给 OpenClaw 的模型目录（最多 60 个）。',
     router_config_changed_retry: 'OpenClaw 配置刚刚发生变化，请重新保存。',
@@ -45,8 +53,12 @@ magpie.plugin('rein-router', ctx => {
   function message(text, error = false) { const node = $r('#rein-message'); node.textContent = text; node.className = error ? 'rein-error' : 'rein-notice'; node.hidden = !text; }
   function changed() { dirty = true; $r('#rein-sync').textContent = '有未保存的更改'; $r('#rein-sync').classList.remove('connected'); $r('#rein-save').textContent = '保存并连接 OpenClaw'; }
   async function load() {
-    if (dirty) return;
-    try { state = await api('state'); settings = structuredClone(state.settings); policy = { ...state.recommendations, ...settings.policy }; render(); }
+    if (dirty || viewingJev) return;
+    try {
+      const next = await api('state');
+      if (dirty || viewingJev) return;
+      state = next; settings = structuredClone(state.settings); policy = { ...state.recommendations, ...settings.policy }; render();
+    }
     catch (e) { message(labelError(e.message), true); }
   }
   function render() {
@@ -111,17 +123,56 @@ magpie.plugin('rein-router', ctx => {
     }
   }
   function renderDynamic() {
+    hideJevKey();
     const box = $r('#rein-dynamic'); box.replaceChildren();
     box.append(ctx.ui.row('应用到 OpenClaw', '已有 Agent 的工具、会话及频道配置保持原样。',
       ctx.ui.menu([{ v: 'defaults', name: '默认模型 · 继承默认的 Agents' }, ...(state.agentTargets ?? []).map(v => ({ v, name: v }))], settings.targetAgent ?? 'defaults', '选择 Agent',
         v => { settings.targetAgent = v; changed(); })));
     box.append(ctx.ui.row('自动判断任务 · Jev', '启用后允许单独计费的 Jev 分类调用；不改变 LLM 额外付费设置。',
       ctx.ui.toggle(settings.dynamic === true, '启用 Dynamic Router 和 Jev 分类计费', v => { settings.dynamic = v; changed(); })));
-    const keyRow = el('label', 'rein-field'); keyRow.append(el('span', '', 'Jev API Key'));
-    const key = el('input'); key.type = 'password'; key.autocomplete = 'new-password'; key.id = 'rein-jev-key'; key.placeholder = state.jevKeyConfigured ? '已配置 · 留空保留现有 Key' : '输入 Key，或由启动进程提供 JEV_API_KEY'; key.oninput = changed;
-    keyRow.append(key); box.append(keyRow);
+    renderJevKey(box);
     box.append(ctx.ui.row('允许 LLM 额外按量付费', '默认关闭。关闭时，API 按量付费 Provider 不会进入路由目录。',
       ctx.ui.toggle(settings.allowPaidUsage === true, '允许 LLM 额外按量付费', v => { settings.allowPaidUsage = v; changed(); })));
+  }
+  function renderJevKey(box) {
+    const row = el('div', 'rein-field'), label = el('label', '', 'Jev API Key'); label.htmlFor = 'rein-jev-key';
+    const controls = el('div', 'rein-secret'), key = el('input');
+    key.id = 'rein-jev-key'; key.type = 'password'; key.autocomplete = 'new-password'; key.spellcheck = false;
+    key.value = jevDraft; key.placeholder = state.jevKeyConfigured ? '********' : '输入 Key，将保存到当前项目的私有配置';
+    key.setAttribute('aria-describedby', 'rein-jev-help');
+    const toggle = ctx.ui.button('显示', async () => {
+      if (key.type === 'text') { hide(); return; }
+      if (jevDraft) { key.type = 'text'; viewingJev = true; update(); return; }
+      const current = ++request; loading = true; viewingJev = true; update();
+      try {
+        const result = await api('jev-key/reveal', {});
+        if (current !== request || !key.isConnected) return;
+        key.value = result.jevApiKey; revealedSaved = true; key.type = 'text';
+      } catch (e) { if (current === request) message(labelError(e.message), true); }
+      finally { if (current === request) { loading = false; viewingJev = key.type === 'text'; update(); } }
+    });
+    toggle.id = 'rein-jev-show'; toggle.setAttribute('aria-controls', key.id);
+    let request = 0, loading = false, revealedSaved = false;
+    function update() {
+      const visible = key.type === 'text';
+      toggle.textContent = loading ? '读取中…' : visible ? '隐藏' : '显示';
+      toggle.setAttribute('aria-label', (visible ? '隐藏' : '显示') + ' Jev API Key');
+      toggle.setAttribute('aria-pressed', String(visible));
+      toggle.disabled = loading || (!state.jevKeyConfigured && !jevDraft);
+    }
+    function hide() {
+      request++; loading = false; viewingJev = false; key.type = 'password';
+      if (revealedSaved) { key.value = ''; revealedSaved = false; }
+      update();
+    }
+    hideJevKey = hide;
+    key.oninput = () => {
+      request++; loading = false; revealedSaved = false; jevDraft = key.value;
+      viewingJev = key.type === 'text'; changed(); update();
+    };
+    update(); controls.append(key, toggle); row.append(label, controls);
+    row.append(el('small', 'rein-key-help', state.jevKeyConfigured ? '已配置；留空保留现有 Key。' : '保存后用于 Dynamic Router。'));
+    row.lastChild.id = 'rein-jev-help'; box.append(row);
   }
   function renderFallbacks() {
     const box = $r('#rein-fallbacks'); box.replaceChildren();
@@ -135,9 +186,9 @@ magpie.plugin('rein-router', ctx => {
       const admins = $r('#rein-admins').value.trim();
       settings.adminSenders = admins ? admins.split('\n').map(line => { const [channel,accountId,senderId] = line.trim().split('/'); return { channel,accountId,senderId }; }) : [];
       settings.policy = policy; settings.enabled = true;
-      const key = $r('#rein-jev-key').value;
+      const key = jevDraft;
       state = await api('settings', { settings, ...(key ? { jevApiKey: key } : {}) });
-      dirty = false; settings = structuredClone(state.settings); render();
+      jevDraft = ''; dirty = false; settings = structuredClone(state.settings); render();
       message('已同步到 OpenClaw。首次连接请启动或重启 OpenClaw；在 Discord / Slack 选择 rein-magpie/auto。');
       button.textContent = '已保存 · 自动同步中';
     } catch (e) {
