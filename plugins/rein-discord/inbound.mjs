@@ -1,3 +1,4 @@
+import { profileLabel } from '@rein-protocol/isolation-core/inbound';
 import { resolveOwner, sessionKey, isolatedToolsForAudience, createOwnerQueue } from './isolation.mjs';
 import { createTurnControl } from './turn-control.mjs';
 import { configuredModelRoutes, handleModelSelection } from './model-selection.mjs';
@@ -60,7 +61,7 @@ export function createIsolatedReceiver({ config, cfg, runtime, memory, send, sig
         channel: 'discord', accountId: 'default', channelIngress: ingress,
         messageId: event.id, timestamp: event.timestamp,
         from: owner.audience === 'public' ? `discord:channel:${owner.channelId}` : `discord:${owner.senderId}`,
-        sender: { id: owner.senderId },
+        sender: { id: owner.senderId, name: profileLabel(event.senderName), username: profileLabel(event.senderUsername) },
         conversation: { kind, id: owner.channelId, spaceId: owner.guildId ?? undefined, nativeChannelId: owner.channelId },
         route: { agentId: owner.agentId, accountId: 'default', routeSessionKey: key, dispatchSessionKey: key,
           dmScope: 'per-account-channel-peer' },

@@ -26,6 +26,7 @@ export async function startIsolatedDiscord({ config, cfg, runtime, memory, turns
     // Discord's authenticated author/guild/channel, never embed author fields
     // or referenced-message bodies, define the privacy boundary.
     void receive({ id: message.id, senderId: message.author.id, channelId: message.channelId,
+      senderUsername: message.author.username, senderName: message.member?.displayName ?? message.author.globalName ?? message.author.username,
       guildId: message.guildId, kind: message.channel.type === ChannelType.DM ? 'direct' : 'channel',
       text: message.content.replace(new RegExp(`<@!?${client.user?.id}>`, 'g'), '').trim(),
       mentioned: message.mentions.users.has(client.user?.id),

@@ -261,6 +261,8 @@ test('my status reports the trusted sender without leaking the private contact I
     reason: 'resolved',
     isActiveContributor: true,
     isDirector: true,
+    profile: null,
+    roles: ['community_member', 'contributor', 'director'],
     authorizesSpending: false,
   });
   assert.equal(result.content[0].text, JSON.stringify(result.details));
@@ -1153,4 +1155,37 @@ test('a second platform is admitted only through its own workspace entry', async
   const unknownPlatform = registration.create(ctxFor({ messageChannel: 'teams', nativeChannelId: BOARD_CHANNEL }));
   const unknown = await unknownPlatform.find(tool => tool.name === 'rein_member_status').execute('call-4', {});
   assert.equal(unknown.details.error, 'platform_out_of_scope');
+});
+
+
+test('self identity works in enrolled community channels on both platforms without enabling Board reads', async () => {
+  for (const platform of ['discord', 'slack']) {
+    const config = { ...baseConfig, platform, workspaces: [{ platform, workspaceId: TEAM,
+      nativeChannelIds: [PROPOSAL_CHANNEL, BOARD_CHANNEL, 'C_COMMUNITY'] }] };
+    const profile = { name: 'Synthetic Member', email: 'member@example.invalid', joinedAt: '2026-01-01T00:00:00Z' };
+    const { reader, calls } = createFakeReader({ member: memberResult({ profile }) });
+    const { tool } = build({ config, reader, ctx: { messageChannel: platform, nativeChannelId: 'C_COMMUNITY' } });
+    const result = await tool('rein_member_status').execute('self', {});
+    assert.equal(result.details.linked, true);
+    assert.deepEqual(result.details.profile, profile);
+    assert.deepEqual(calls.member, [SENDER]);
+    assert.equal((await tool('rein_funds').execute('funds', { currency: 'USD' })).details.error, 'channel_out_of_scope');
+  }
+});
+
+test('identity outages are not reported as an unlinked user; revoked identity discloses no profile or roles', async () => {
+  for (const status of ['unavailable', 'identity_revoked', 'identity_expired']) {
+    const { reader } = createFakeReader({ member: memberResult({ status, profile: { name: 'PRIVATE', email: 'private@example.invalid' } }) });
+    const result = await build({ reader }).tool('rein_member_status').execute('self', {});
+    assert.ok(!JSON.stringify(result).includes('PRIVATE'));
+    if (status === 'unavailable') {
+      assert.equal(result.details.ok, false);
+      assert.equal(result.details.error, 'identity_check_unavailable');
+    } else {
+      assert.equal(result.details.profile, null);
+      assert.deepEqual(result.details.roles, []);
+      assert.equal(result.details.isDirector, false);
+      assert.equal(result.details.isActiveContributor, false);
+    }
+  }
 });
