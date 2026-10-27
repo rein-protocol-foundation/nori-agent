@@ -38,6 +38,8 @@
     "verify:plugin": "node scripts/verify-plugin.mjs",
     "verify:proposal-tools": "node scripts/verify-proposal-tools.mjs",
     "smoke:gateway": "node scripts/smoke-gateway.mjs",
-    "verify:slack-isolation": "node scripts/verify-slack-isolation.mjs"
+    "verify:slack-isolation": "node scripts/verify-slack-isolation.mjs",
+    "dashboard:serve": "node scripts/dashboard-server.mjs",
+    "dashboard:router": "node scripts/dashboard-router.mjs"
   }
 }

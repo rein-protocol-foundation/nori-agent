@@ -60,6 +60,7 @@ magpie.plugin('rein-router', ctx => {
       state = next; settings = structuredClone(state.settings); policy = { ...state.recommendations, ...settings.policy }; render();
     }
     catch (e) { message(labelError(e.message), true); }
+    finally { document.getElementById('view-rein-router').setAttribute('data-rein-ready', ''); }
   }
   function render() {
     $r('#rein-sync').textContent = state.error ? '同步暂停' : settings.enabled ? '已连接 · 自动同步' : '等待连接';
