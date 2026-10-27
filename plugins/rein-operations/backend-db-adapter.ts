@@ -181,6 +181,9 @@ const identityStatus = (value: unknown): SlackMemberStatus =>
     ? (value as SlackMemberStatus)
     : 'unavailable';
 
+const boundedProfileText = (value: unknown, max: number): string | null =>
+  typeof value === 'string' && value.trim() && value.length <= max && !/[\u0000-\u001f\u007f]/.test(value) ? value.trim() : null;
+
 export function createBackendReader(options: BackendReaderOptions): FoundationDbReader {
   const { transport, getProof, ...identity } = options;
   if (!identity.platform || !identity.workspaceId || !identity.nativeChannelId) {
@@ -232,6 +235,11 @@ export function createBackendReader(options: BackendReaderOptions): FoundationDb
       reason: status,
       contactId: resolved && typeof body.contact_id === 'string' ? body.contact_id : null,
       matchedBy: resolved ? 'platform_link' : null,
+      profile: resolved && isPlainObject(body.profile) ? {
+        name: boundedProfileText(body.profile.name, 200),
+        email: boundedProfileText(body.profile.email, 320),
+        joinedAt: boundedProfileText(body.profile.joinedAt, 40),
+      } : null,
       isActiveContributor: resolved && body.is_active_contributor === true,
       isDirector: resolved && body.is_director === true,
       httpStatus: response.httpStatus,

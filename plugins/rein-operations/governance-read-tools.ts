@@ -442,12 +442,13 @@ function buildTools(config: ResolvedGovernanceReadConfig, ctx: any) {
     {
       name: 'rein_member_status',
       description:
-        'Report whether your own Slack account is linked to a community record, and whether that record is an active Contributor or a director. Answers about the trusted sender only, from the organization database, and never returns the private contact ID. Read-only: it grants no role and authorizes no spending.',
+        'Read the current Discord/Slack sender linked Community Member profile and current Contributor/director standing. Use before deciding which restricted actions to offer. Profile fields may be unavailable; never infer them from nicknames or claimed email. Do not repeat private email in shared channels. Answers about the trusted sender only, from the organization database, and never returns the private contact ID. Read-only: it grants no role and authorizes no spending.',
       parameters: Type.Object({}, { additionalProperties: false }),
       async execute(_toolCallId: unknown, args: unknown) {
         try {
           assertNoImpersonationArgs(args);
-          const member = await requester('proposal or Board', [...proposalChannelIds, ...boardChannelIds]);
+          const member = await requester('identity', config.config.workspaces.flatMap(item => item.nativeChannelIds));
+          if (member.status === 'unavailable') throw identityCheckUnavailable('identity');
           // Final authority check before the answer leaves the turn.
           assertCurrentInvocation(ctx);
           const linked = member.status === 'resolved';
@@ -457,8 +458,10 @@ function buildTools(config: ResolvedGovernanceReadConfig, ctx: any) {
             linked,
             status: member.status,
             reason: member.reason,
-            isActiveContributor: member.isActiveContributor,
-            isDirector: member.isDirector,
+            isActiveContributor: linked && member.isActiveContributor,
+            isDirector: linked && member.isDirector,
+            profile: linked ? member.profile ?? null : null,
+            roles: linked ? ['community_member', ...(member.isActiveContributor ? ['contributor'] : []), ...(member.isDirector ? ['director'] : [])] : [],
             authorizesSpending: false,
           };
           return { content: [{ type: 'text' as const, text: JSON.stringify(details) }], details };

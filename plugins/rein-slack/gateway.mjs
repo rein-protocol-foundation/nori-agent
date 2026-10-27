@@ -33,6 +33,15 @@ async function verifyConversation(event,web) {
   if(response.ok!==true || !channel || channel.id!==event.channelId || channel.is_mpim || channel.is_ext_shared ||
      (direct ? channel.is_im!==true || channel.user!==event.senderId : channel.is_im===true ||
        typeof channel.is_private!=='boolean' || (channel.is_private?'private':'public')!==event.audience)) return null;
+  // Lookup only the authenticated sender. Missing scopes/rate limits must not block chat.
+  try {
+    const result = await web.users.info({ user: event.senderId });
+    const user = result?.user;
+    if (result?.ok === true && user?.id === event.senderId && user?.team_id === event.teamId) {
+      return Object.freeze({ ...event, senderUsername: user.name,
+        senderName: user.profile?.display_name || user.real_name || user.name });
+    }
+  } catch { /* Profile is optional; do not log private provider payloads. */ }
   return event;
 }
 export async function normalizeSlackEvent(config,body,web) {
