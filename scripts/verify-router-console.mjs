@@ -53,10 +53,21 @@ export async function verifyRouterConsole({ screenshots = false } = {}) {
     const {chromium}=require('playwright');browser=await chromium.launch({headless:true, ...(!existsSync(chromium.executablePath()) && process.platform==='darwin' && existsSync('/Applications/Google Chrome.app') ? {channel:'chrome'} : {})});
     const page=await browser.newPage({viewport:{width:1440,height:1100},deviceScaleFactor:1});
     const errors=[];page.on('pageerror',e=>errors.push(e.stack));
-    await page.goto(link);
+    // Hold a large native script to reproduce a cold public-network load. The
+    // first visible surface must be Rein's loading UI, never the Agents page.
+    let releaseApp;
+    const appGate = new Promise(resolveGate => { releaseApp = resolveGate; });
+    await page.route('**/app.js', async route => { await appGate; await route.continue(); });
+    await page.goto(link, { waitUntil: 'commit' });
+    await page.locator('#rein-boot').waitFor({ state: 'visible' });
+    assert.match(await page.locator('#rein-boot').innerText(), /正在打开 OpenClaw Router/);
+    assert.equal(await page.locator('#view-agents').isVisible(), false);
+    releaseApp();
     try { await page.waitForSelector('#rein-save',{state:'visible',timeout:12000}); } catch(e) { console.error('UI errors:',errors);console.error((await page.locator('body').innerText()).slice(0,2500));await page.screenshot({path:'/tmp/rein-router-console-debug.png',fullPage:true});throw e; }
     await page.waitForFunction(()=>document.querySelector('#rein-catalog')?.textContent.includes('Demo Subscription'));
     assert.equal(errors.length,0,errors.join('\n'));
+    await page.locator('#rein-boot').waitFor({state:'detached'});
+    await page.unroute('**/app.js');
     assert.ok(await page.locator('#view-agents').isHidden());
     const keyField = page.getByLabel('Jev API Key', { exact: true });
     assert.equal(await keyField.getAttribute('type'),'password');

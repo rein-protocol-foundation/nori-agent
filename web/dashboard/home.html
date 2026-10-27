@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>工作台 · Nori</title>
+    <link rel="stylesheet" href="/_dashboard/style.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header>
+        <div class="brand" aria-label="Nori · Rein Protocol">
+          <span class="wordmark">nori</span><span>REIN<br />PROTOCOL</span>
+        </div>
+        <form method="post" action="/logout"><button type="submit">退出登录</button></form>
+      </header>
+      <main>
+        <div class="intro">
+          <p class="eyebrow">YOUR WORKSPACE</p>
+          <h1>Nori 工作台</h1>
+          <p>管理智能体，连接模型。</p>
+        </div>
+        <div class="panels">
+          <section class="panel claw" aria-labelledby="claw-title">
+            <div class="panel-top">
+              <span class="index">01 / AGENT</span
+              ><svg class="symbol" aria-hidden="true" viewBox="0 0 40 40">
+                <rect x="5" y="7" width="30" height="26" rx="4" />
+                <path d="M5 15h30M14 15v18M10 11h1m3 0h1M20 22l4 3-4 3m7 0h3" />
+              </svg>
+            </div>
+            <h2 id="claw-title"><a class="panel-title" href="/dashboard">OpenClaw</a></h2>
+            <p class="category" id="claw-category">Dashboard</p>
+            <p class="description">渠道消息与网页对话，按实例查看。</p>
+            <nav class="panel-bottom instance-links" aria-label="OpenClaw 实例">
+              {{INSTANCE_LINKS}}
+            </nav>
+          </section>
+          <a
+            class="panel magpie"
+            href="/?view=rein-router"
+            aria-labelledby="magpie-title magpie-category"
+            ><div class="panel-top">
+              <span class="index">02 / MODELS</span
+              ><svg class="symbol" aria-hidden="true" viewBox="0 0 40 40">
+                <circle cx="8" cy="20" r="4" />
+                <circle cx="31" cy="9" r="4" />
+                <circle cx="31" cy="31" r="4" />
+                <path d="M12 20h5c6 0 4-11 10-11M17 20c6 0 4 11 10 11" />
+              </svg>
+            </div>
+            <h2 id="magpie-title">Magpie</h2>
+            <p class="category" id="magpie-category">插件配置</p>
+            <p class="description">管理模型账号，配置自动路由。</p>
+            <div class="panel-bottom">
+              <span>打开配置</span
+              ><span class="arrow" aria-hidden="true"
+                ><svg viewBox="0 0 20 20"><path d="M4 10h12M10 4l6 6-6 6" /></svg
+              ></span></div
+          ></a>
+        </div>
+      </main>
+      <footer><span>REIN PROTOCOL FOUNDATION</span><span>Nori · 你的日常协作伙伴</span></footer>
+    </div>
+  </body>
+</html>

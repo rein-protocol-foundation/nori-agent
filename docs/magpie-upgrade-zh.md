@@ -246,3 +246,6 @@ npm run toolchain:pnpm -- run verify:router-console --screenshots
 
 输出为 `docs/images/router-console/`。截图必须继续使用模拟 Provider，不能包含账号、Key 或登录凭据。
 升级前先停止 Console；升级和校验完成后用 `npm run toolchain:pnpm -- run router:ui` 重启。
+
+公网/多实例首页使用 [Nori Dashboard 集成层](dashboard-zh.md)。升级回归还包括慢速资源下的首屏加载、
+`kernel.js → Rein page → app.js → start.js` 顺序和 HTML 挂载点校验；不修改上游脚本实现或放宽其安全头。

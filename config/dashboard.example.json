@@ -1,0 +1,11 @@
+{
+  "hostname": "dashboard.example.org",
+  "port": 3440,
+  "routerPort": 3431,
+  "user": "nori-owner",
+  "keyHash": "REPLACE_WITH_SHA256_OF_A_RANDOM_32_BYTE_HEX_KEY",
+  "instances": [
+    { "id": "slack", "label": "Slack", "basePath": "/slack", "port": 18791 },
+    { "id": "discord", "label": "Discord", "basePath": "/discord", "port": 18793 }
+  ]
+}

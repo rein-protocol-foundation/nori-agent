@@ -214,9 +214,13 @@ test('saved Jev keys are revealed only by authenticated same-origin POST and nev
 });
 
 test('native page decoration adds page using upstream kernel and leaves Provider editor in place',()=>{
-  const html='<head></head><button data-view="providers">Providers</button><button data-view="routing">Routing</button><script src="kernel.js"></script><script src="app.js"></script>';
-  const result=decorateMagpieHtml(html);assert.ok(result.includes('data-view="providers"'));assert.ok(result.includes('data-view="rein-router"'));
-  assert.ok(result.indexOf('/_rein/router.js')<result.indexOf('src="app.js"'));assert.throws(()=>decorateMagpieHtml('<html>changed</html>'),/incompatible/);
+  const html='<html><head></head><body><template data-slot="page"></template><button data-view="providers">Providers</button><button data-view="routing">Routing</button><script src="kernel.js"></script><script src="app.js"></script><script src="start.js"></script></body></html>';
+  const result=decorateMagpieHtml(html,{initialView:'rein-router'});assert.ok(result.includes('data-view="providers"'));assert.ok(result.includes('data-view="rein-router"'));
+  assert.ok(result.indexOf('src="/_rein/router.js"')<result.indexOf('src="app.js"'));
+  assert.match(result, /data-rein-boot/);assert.match(result, /rel="preload" as="script" href="app.js"/);
+  assert.ok(result.indexOf('id="rein-boot"')<result.indexOf('src="app.js"'));
+  assert.ok(result.indexOf('data-rein-started')>result.indexOf('src="start.js"'));
+  for(const marker of ['<script src="kernel.js"></script>','<script src="start.js"></script>','<template data-slot="page"></template>','<button data-view="routing"'])assert.throws(()=>decorateMagpieHtml(html.replace(marker,'')),/incompatible/);assert.throws(()=>decorateMagpieHtml('<html>changed</html>'),/incompatible/);
 });
 
 test('an explicit Agent target receives routing without changing defaults or other agents',()=>{

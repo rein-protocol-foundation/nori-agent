@@ -37,17 +37,39 @@ export async function nativeClient(origin, secret) {
 }
 
 /** Decorate upstream's page through its public kernel; do not patch its source or assets. */
-export function decorateMagpieHtml(html) {
+export function decorateMagpieHtml(html, { initialView = '' } = {}) {
   const appTag = /<script src="app\.js(?:\?[^"<>]*)?"><\/script>/;
-  if (!appTag.test(html) || !html.includes('data-view="providers"')) throw new Error('router_magpie_ui_incompatible');
+  const startTag = /<script src="start\.js(?:\?[^"<>]*)?"><\/script>/;
+  const kernelTag = /<script src="kernel\.js(?:\?[^"<>]*)?"><\/script>/;
+  if (!appTag.test(html) || !startTag.test(html) || !kernelTag.test(html) ||
+      html.search(kernelTag) > html.search(appTag) || html.search(appTag) > html.search(startTag) ||
+      !html.includes('<html') || !html.includes('<body>') || !html.includes('<head>') || !html.includes('</head>') ||
+      !html.includes('data-view="providers"') || !html.includes('<button data-view="routing"') ||
+      !html.includes('<template data-slot="page"')) throw new Error('router_magpie_ui_incompatible');
   const nav = '<button data-view="rein-router"><svg class="nav-ic" viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M3 10h5l4-5h5M8 10l4 5h5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span data-t>OpenClaw Router</span></button>';
-  return html.replace('</head>', '<link rel="stylesheet" href="/_rein/router.css"></head>')
+  // Classic script execution order stays upstream-owned. Preloads remove the
+  // request waterfall without changing those scripts to async/defer or bundling them.
+  const scripts = [...html.matchAll(/<script src="([a-zA-Z0-9_./?=&%-]+)"><\/script>/g)]
+    .map(match => match[1]).filter(src => !src.startsWith('//') && !src.includes('..'));
+  const preloads = [...new Set([...scripts, '/_rein/boot.js', '/_rein/router.js'])]
+    .map(src => `<link rel="preload" as="script" href="${src.replaceAll('&', '&amp;')}">`).join('');
+  const critical = `<style>
+html[data-rein-boot] body>:not(#rein-boot){visibility:hidden!important}
+#rein-boot{position:fixed;inset:0;z-index:2147483647;display:grid;place-content:center;gap:16px;padding:32px;background:#f3f4f5;color:#253e33;font:14px/1.7 "Avenir Next","PingFang SC",sans-serif}
+#rein-boot strong{font-size:28px;font-weight:500;letter-spacing:-.6px}#rein-boot p{margin:0;color:#5c6a60}#rein-boot a{color:#253e33}#rein-boot a[hidden]{display:none}
+</style>`;
+  const boot = `<section id="rein-boot" data-target="${initialView === 'rein-router' ? 'rein-router' : ''}" aria-label="Magpie 加载状态"><strong>Magpie</strong><p role="status">正在打开${initialView === 'rein-router' ? ' OpenClaw Router' : '配置页面'}…</p><a href="" hidden>重新加载</a><noscript>请启用 JavaScript 后重新加载此页面。</noscript></section><script src="/_rein/boot.js"></script>`;
+  return html.replace('<html', '<html data-rein-boot')
+    .replace('<head>', '<head>' + critical + preloads)
+    .replace('</head>', '<link rel="stylesheet" href="/_rein/router.css"></head>')
+    .replace('<body>', '<body>' + boot)
     .replace('<button data-view="routing"', nav + '<button data-view="routing"')
-    .replace(appTag, tag => '<script src="/_rein/router.js"></script>' + tag);
+    .replace(appTag, tag => '<script src="/_rein/router.js"></script>' + tag)
+    .replace(startTag, tag => tag + '<script>document.documentElement.setAttribute("data-rein-started", "");</script>');
 }
 
 export async function createConsoleServer({ sync, nativeOrigin, nativeSecret, port = 0, token = randomBytes(24).toString('hex') }) {
-  const css = await readFile(new URL('router.css', assets)), js = await readFile(new URL('router.js', assets));
+  const css = await readFile(new URL('router.css', assets)), js = await readFile(new URL('router.js', assets)), boot = await readFile(new URL('boot.js', assets));
   let origin, cookie;
   const same = value => typeof value === 'string' && Buffer.byteLength(value) === Buffer.byteLength(token) && timingSafeEqual(Buffer.from(value), Buffer.from(token));
   const server = createServer(async (req, res) => {
@@ -64,9 +86,9 @@ export async function createConsoleServer({ sync, nativeOrigin, nativeSecret, po
         return reply(401, { error: 'router_sign_in_required' });
       if (req.headers['sec-fetch-site'] === 'cross-site' || (req.headers.origin && req.headers.origin !== origin) ||
           (req.method !== 'GET' && req.headers.origin !== origin)) return reply(403, { error: 'router_origin_denied' });
-      if (url.pathname === '/_rein/router.css' || url.pathname === '/_rein/router.js') {
+      if (url.pathname === '/_rein/router.css' || url.pathname === '/_rein/router.js' || url.pathname === '/_rein/boot.js') {
         res.setHeader('Content-Type', url.pathname.endsWith('.css') ? 'text/css' : 'text/javascript');
-        return res.end(url.pathname.endsWith('.css') ? css : js);
+        return res.end(url.pathname.endsWith('.css') ? css : url.pathname.endsWith('/boot.js') ? boot : js);
       }
       if (url.pathname === '/_rein/api/state' && req.method === 'GET') return reply(200, await sync.view());
       if (url.pathname === '/_rein/api/jev-key/reveal' && req.method === 'POST') return reply(200, await sync.revealJevKey());
@@ -87,7 +109,7 @@ export async function createConsoleServer({ sync, nativeOrigin, nativeSecret, po
       const type = response.headers.get('content-type') ?? 'application/octet-stream';
       res.statusCode = response.status; res.setHeader('Content-Type', type);
       if (response.headers.get('location')?.startsWith('/')) res.setHeader('Location', response.headers.get('location'));
-      if (type.includes('text/html') && url.pathname === '/') res.end(decorateMagpieHtml(bytes.toString('utf8')));
+      if (type.includes('text/html') && url.pathname === '/') res.end(decorateMagpieHtml(bytes.toString('utf8'), { initialView: url.searchParams.get('view') }));
       else res.end(bytes);
       if (req.method === 'POST' && response.ok) void sync.refresh().catch(() => {});
     } catch (e) { if (!res.headersSent) reply(400, { error: safeError(e) }); else res.end(); }
@@ -108,7 +130,7 @@ async function occupied(port) {
 }
 
 export async function runRouterConsole({ root = projectRoot, noOpen = false, port = 3431, gatewayPort = 3425,
-  environment = process.env } = {}) {
+  environment = process.env, onReady } = {}) {
   let child, web, sync, stopping, release, requestedSignal, finish, childClosed = false;
   const finished = new Promise(resolveDone => { finish = resolveDone; });
   const handlers = new Map(['SIGINT', 'SIGTERM'].map(signal => [signal, () => {
@@ -155,7 +177,8 @@ export async function runRouterConsole({ root = projectRoot, noOpen = false, por
     assertRunning();
     web = await createConsoleServer({ sync, nativeOrigin, nativeSecret, port });
     assertRunning();
-    console.log(`OpenClaw Router: ${web.link}\nMagpie owns providers and models. Keep this terminal open. Ctrl-C stops this gateway.`);
+    if (onReady) await onReady({ origin: web.origin, token: new URL(web.link).searchParams.get('k') });
+    else console.log(`OpenClaw Router: ${web.link}\nMagpie owns providers and models. Keep this terminal open. Ctrl-C stops this gateway.`);
     if (!noOpen) {
       const command = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'rundll32' : 'xdg-open';
       const opened = spawn(command, process.platform === 'win32' ? ['url.dll,FileProtocolHandler', web.link] : [web.link], { stdio: 'ignore', shell: false });
