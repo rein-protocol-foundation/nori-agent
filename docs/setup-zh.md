@@ -205,6 +205,10 @@ npm run toolchain:pnpm -- openclaw gateway stop
 
 从本仓库运行这些命令即可选择本项目实例。若其他进程占用配置端口，只报告占用，不会停止该进程。`stop/status` 不需要供应商密钥。`restart` 会将前台实例替换为后台实例；要恢复前台运行，先 `stop` 再 `run`。
 
+如果 `gateway run` 提示已有实例，先检查 `gateway status`。健康的后台实例已经在运行 Nori；日常后台启动使用可重复执行的 `gateway start`，切换到前台则先 `gateway stop` 再 `gateway run`。封装脚本会在前台启动前检查本项目的现有实例；否则，上游的第二个进程可能因争用同一状态锁而报 `StateDatabaseCoordinatorContentionError`，并附带容易误解的维护／迁移提示。仅凭锁冲突不能认定需要迁移。如果已停止经过验证的实例后，启动仍提示需要迁移，再执行 `npm run toolchain:pnpm -- openclaw doctor --fix`，完成后重新启动。
+
+如果 `stop` 成功后，稍后的 `run` 又发现已有实例，请比较两次报告的 PID，并检查其他终端或开发任务是否在此期间调用了 `start`。`stop` 只停止当前实例，不会禁止后续启动。
+
 生命周期命令接受 `--json` 与 `--timeout N`（毫秒）；`start/restart` 接受 `--port N`，否则新实例使用当前项目配置中的端口。默认优雅停止；`restart --safe` 采用相同行为。停止超时会失败，不启动第二个实例；显式 `--force` 允许超时后强制终止仍经验证属于本项目的原进程。上游 `gateway install/uninstall` 仍是系统服务操作，不用于此隔离配置。
 
 在第二个终端执行：

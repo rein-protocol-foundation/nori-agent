@@ -175,9 +175,24 @@ const help = `Project-local Gateway (uses runtime/openclaw; no system service in
 Background start does not enable automatic startup at login or reboot.`;
 
 export async function runProjectGatewayCommand(args, options) {
-  if (args[0] !== 'gateway' || !commands.has(args[1])) return null;
+  const foreground = args[0] === 'gateway' && args[1] === 'run';
+  if (args[0] !== 'gateway' || (!foreground && !commands.has(args[1]))) return null;
+  // Keep upstream's foreground flags/help, but detect our existing owner before
+  // upstream startup tries to enter Doctor maintenance and reports contention
+  // as a migration failure. Native locking still arbitrates concurrent starts.
+  if (foreground && (args.includes('--help') || args.includes('-h'))) return null;
   if (args.includes('--help') || args.includes('-h')) { console.log(help); return 0; }
   try {
+    if (foreground) {
+      const gateway = await createProjectGateway(options);
+      const current = await gateway.execute('status');
+      if (current.status !== 'running') return null;
+      console.error(`Project Gateway is already running (pid ${current.pid}) on 127.0.0.1:${current.port}${current.healthy ? ' — ready' : ' — not ready'}.\n` +
+        'Use "npm run toolchain:pnpm -- openclaw gateway status" to inspect it.\n' +
+        'To switch to foreground, run "npm run toolchain:pnpm -- openclaw gateway stop", then repeat gateway run.\n' +
+        'To restart in the background, use "npm run toolchain:pnpm -- openclaw gateway restart".');
+      return 1;
+    }
     const parsed = parseOptions(args[1], args.slice(2));
     const gateway = await createProjectGateway(options);
     const result = await gateway.execute(args[1], parsed);

@@ -272,6 +272,19 @@ the configured port is reported rather than stopped. `stop/status` do not need p
 Restart replaces a foreground instance with a background one; use `stop` followed by `run` to
 return to foreground operation.
 
+If `gateway run` reports an existing instance, check `gateway status` first. A ready
+background instance is already serving Nori; use `gateway start` for repeatable background
+startup, or `gateway stop` followed by `gateway run` to switch to the foreground.
+The wrapper checks for an existing project owner before foreground startup. Without this
+check, upstream can report `StateDatabaseCoordinatorContentionError` and a misleading
+maintenance/migration failure when a second process attempts to use the same state.
+This contention alone does not establish that migration is needed. If startup still
+requires migration after the verified instance has stopped, run
+`npm run toolchain:pnpm -- openclaw doctor --fix` before starting it again.
+If `stop` succeeded but a later `run` finds another owner, compare the reported PIDs
+and check whether another terminal or development task called `start` in between.
+`stop` terminates the current instance; it does not disable future launches.
+
 Lifecycle commands accept `--json` and `--timeout N` (milliseconds). `start/restart` accept
 `--port N`; otherwise the successor uses the current project configuration's port.
 Stops are graceful by default; `restart --safe` is accepted as the same project-local behavior.
