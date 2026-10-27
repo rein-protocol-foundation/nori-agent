@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Nori main for merged changes every two minutes
+
+[Timer]
+OnCalendar=*-*-* *:0/2:00
+RandomizedDelaySec=15s
+Persistent=true
+Unit=nori-update.service
+
+[Install]
+WantedBy=timers.target

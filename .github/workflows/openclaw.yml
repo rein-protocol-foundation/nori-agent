@@ -7,6 +7,7 @@ on:
       - .gitmodules
       - plugins/**
       - scripts/**
+      - deploy/**
       - tests/**
       - evals/**
       - package.json
@@ -19,6 +20,7 @@ on:
       - .gitmodules
       - plugins/**
       - scripts/**
+      - deploy/**
       - tests/**
       - evals/**
       - package.json

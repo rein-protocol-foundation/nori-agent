@@ -2,6 +2,8 @@
 
 [Nori 管理首页与多实例入口](docs/dashboard-zh.md) — 原生 OpenClaw / Magpie 导航、部署与升级兼容性。
 
+[Nori 远程自动更新](docs/auto-update-zh.md) — 合并 main 后构建、检查、重启与失败回滚。
+
 <img src="workspace/avatars/rein-agent.png" alt="Nori official avatar" width="192" height="192">
 
 [中文说明](README-zh.md)

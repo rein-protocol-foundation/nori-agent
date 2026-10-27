@@ -1,0 +1,433 @@
+#!/usr/bin/env python3
+"""Linux/systemd pull deployer. Installed copy stays outside the replaced checkout.
+
+Only merged main code runs as the configured service user. This controller handles
+service lifecycle and directory moves; it never imports candidate application code.
+"""
+import argparse
+import datetime as dt
+import fcntl
+import json
+import os
+from pathlib import Path
+import pwd
+import re
+import shutil
+import signal
+import socket
+import subprocess
+import sys
+import time
+import urllib.request
+import uuid
+
+
+class UpdateError(Exception):
+    pass
+
+
+def atomic_json(path, value):
+    path = Path(path)
+    temporary = path.with_suffix('.tmp')
+    with open(temporary, 'w', encoding='utf-8') as stream:
+        os.chmod(temporary, 0o600)
+        json.dump(value, stream, indent=2)
+        stream.flush()
+        os.fsync(stream.fileno())
+    os.replace(temporary, path)
+    fd = os.open(path.parent, os.O_RDONLY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def read_json(path, default=None):
+    try:
+        return json.loads(Path(path).read_text())
+    except FileNotFoundError:
+        return default
+
+
+def timestamp():
+    return dt.datetime.now(dt.timezone.utc).isoformat()
+
+
+def durable_rename(source, destination):
+    os.rename(source, destination)
+    for parent in {Path(source).parent, Path(destination).parent}:
+        descriptor = os.open(parent, os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+
+
+def validate_config(config):
+    for key in ('root', 'releases', 'state'):
+        value = Path(config[key])
+        if not value.is_absolute() or value == Path('/') or value.resolve() != value:
+            raise UpdateError('paths_must_be_absolute_without_symlinks')
+    root, releases, state = (Path(config[k]) for k in ('root', 'releases', 'state'))
+    if any(a == b or a in b.parents or b in a.parents for a, b in ((root, releases), (root, state), (releases, state))):
+        raise UpdateError('deployment_directories_must_be_separate')
+    if not re.fullmatch(r'https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:\.git)?', config['repository']):
+        raise UpdateError('repository_must_be_a_github_https_url')
+    if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._/-]*', config.get('branch', 'main')) or '..' in config.get('branch', 'main'):
+        raise UpdateError('invalid_branch')
+    if not re.fullmatch(r'[a-z_][a-z0-9_-]*', config['user']) or config['user'] == 'root':
+        raise UpdateError('build_user_must_be_unprivileged')
+    if not re.fullmatch(r'\d+\.\d+\.\d+', config['nodeVersion']):
+        raise UpdateError('invalid_node_version')
+    for item in config['preserve']:
+        path = Path(item)
+        if path.is_absolute() or '..' in path.parts or not path.parts or path.parts[0] in ('.git', '.toolchain', 'node_modules', 'vendor', 'scripts', 'deploy'):
+            raise UpdateError('invalid_preserved_path')
+    for service in config['services']:
+        if not re.fullmatch(r'nori-[a-z0-9-]+', service):
+            raise UpdateError('invalid_service_name')
+    if not config['services'] or len(set(config['services'])) != len(config['services']):
+        raise UpdateError('invalid_services')
+    for key in ('routerSession',):
+        if Path(config[key]).is_absolute() or '..' in Path(config[key]).parts:
+            raise UpdateError('invalid_health_path')
+    for gateway in config['gateways']:
+        if Path(gateway['config']).is_absolute() or '..' in Path(gateway['config']).parts or not isinstance(gateway['port'], int):
+            raise UpdateError('invalid_gateway_probe')
+    return config
+
+
+class Host:
+    def __init__(self, config):
+        self.config = validate_config(config)
+        self.root = Path(config['root'])
+        self.releases = Path(config['releases'])
+        self.state = Path(config['state'])
+        self.uid = pwd.getpwnam(config['user']).pw_uid
+        self.gid = pwd.getpwnam(config['user']).pw_gid
+        self.log = None
+        self.bootstrap = self.root / '.toolchain/node_modules/.bin'
+        self.env = {'PATH': '/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin', 'LANG': 'C.UTF-8', 'HOME': str(self.releases / 'build-home'), 'CI': '1', 'GIT_TERMINAL_PROMPT': '0', 'PYTHONDONTWRITEBYTECODE': '1'}
+
+    def command(self, args, cwd=None, user=False, env=None, timeout=1800, capture=False):
+        command = list(map(str, args))
+        clean = dict(self.env, **(env or {}))
+        if user:
+            command = ['/usr/sbin/runuser', '-u', self.config['user'], '--', 'env', '-i'] + [f'{k}={v}' for k, v in clean.items()] + command
+        try:
+            process = subprocess.Popen(command, cwd=cwd, env=clean, stdin=subprocess.DEVNULL,
+                                       stdout=subprocess.PIPE if capture else self.log,
+                                       stderr=self.log, start_new_session=True)
+        except OSError as error:
+            raise UpdateError(f'cannot_start:{Path(command[0]).name}:{error.strerror}') from error
+        try:
+            output, _ = process.communicate(timeout=timeout)
+        except BaseException:
+            try:
+                os.killpg(process.pid, signal.SIGTERM)
+                process.wait(timeout=10)
+            except (ProcessLookupError, subprocess.TimeoutExpired):
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                process.wait()
+            raise
+        if process.returncode:
+            raise UpdateError(f'command_failed:{Path(str(args[0])).name}:{process.returncode}')
+        return output.decode().strip() if capture else ''
+
+    def git(self, root, *args):
+        return self.command(['git', '-C', root, *args], user=True, capture=True)
+
+    def revision(self, root):
+        return self.git(root, 'rev-parse', 'HEAD')
+
+    def latest(self):
+        line = self.command(['git', 'ls-remote', '--exit-code', self.config['repository'], 'refs/heads/' + self.config.get('branch', 'main')], user=True, capture=True, timeout=120)
+        sha = line.split()[0]
+        if not re.fullmatch('[a-f0-9]{40}', sha):
+            raise UpdateError('invalid_remote_revision')
+        return sha
+
+    def ensure_clean(self, root):
+        if self.git(root, 'status', '--porcelain', '--untracked-files=normal'):
+            raise UpdateError('checkout_has_local_changes')
+        if self.git(root, 'submodule', 'foreach', '--quiet', 'git status --porcelain --untracked-files=normal'):
+            raise UpdateError('upstream_has_local_changes')
+
+    def active(self):
+        for service in self.config['services']:
+            self.command(['systemctl', 'is-active', '--quiet', service], timeout=30)
+
+    def build(self, revision, destination):
+        # Candidate directory is created by the controller, then written only as
+        # the service user. Its HOME has no provider accounts or live runtime.
+        destination.mkdir(mode=0o700)
+        os.chown(destination, self.uid, self.gid)
+        home = self.releases / 'build-home'
+        home.mkdir(mode=0o700, exist_ok=True)
+        os.chown(home, self.uid, self.gid)
+        self.command(['git', 'clone', '--depth=1', '--single-branch', '--branch', self.config.get('branch', 'main'), self.config['repository'], destination], user=True, timeout=300)
+        if self.revision(destination) != revision:
+            self.git(destination, 'fetch', '--depth=1', 'origin', revision)
+        self.git(destination, 'checkout', '--detach', revision)
+        # Reuse only upstream source objects, never its running build output.
+        old_pin = self.git(self.root, 'rev-parse', 'HEAD:vendor/openclaw')
+        new_pin = self.git(destination, 'rev-parse', 'HEAD:vendor/openclaw')
+        if old_pin == new_pin:
+            self.command(['git', '-c', 'protocol.file.allow=always', '-c', f'submodule.vendor/openclaw.url={self.root}/vendor/openclaw', '-C', destination, 'submodule', 'update', '--init'], user=True, timeout=300)
+            self.git(destination / 'vendor/openclaw', 'remote', 'set-url', 'origin', 'https://github.com/openclaw/openclaw.git')
+            self.git(destination, 'submodule', 'sync')
+        else:
+            self.command(['git', '-C', destination, 'submodule', 'update', '--init', '--recursive', '--depth=1'], user=True, timeout=600)
+        package = read_json(destination / 'package.json')
+        manager = package.get('packageManager', '')
+        if not re.fullmatch(r'pnpm@\d+\.\d+\.\d+', manager):
+            raise UpdateError('unsupported_package_manager')
+        env = {'PATH': f'{self.bootstrap}:{self.env["PATH"]}'}
+        self.command(['npm', 'install', '--prefix', destination / '.toolchain', '--no-save', '--package-lock=false', 'node@' + self.config['nodeVersion'], manager], user=True, env=env, timeout=600)
+        node = destination / '.toolchain/node_modules/node/bin/node'
+        os.chmod(node, 0o755)  # OpenClaw secret exec validation disallows group-writable binaries.
+        env['PATH'] = f'{destination}/.toolchain/node_modules/.bin:{self.env["PATH"]}'
+        env['NODE_OPTIONS'] = '--max-old-space-size=8192'
+        pnpm = [destination / '.toolchain/node_modules/.bin/pnpm']
+        self.command(pnpm + ['--dir', destination / 'vendor/openclaw', 'install', '--frozen-lockfile'], user=True, cwd=destination, env=env)
+        self.command(pnpm + ['--dir', destination / 'vendor/openclaw', 'build'], user=True, cwd=destination, env=env)
+        self.command(pnpm + ['install', '--frozen-lockfile'], user=True, cwd=destination, env=env)
+        # Copy a verified native binary only if the lock is byte-for-byte equal;
+        # an upstream pin change builds a fresh binary under the candidate root.
+        lock = Path('plugins/rein-router/magpie.lock.json')
+        if (self.root / lock).read_bytes() == (destination / lock).read_bytes():
+            self.command(['cp', '-a', self.root / '.toolchain/magpie-bin', destination / '.toolchain/magpie-bin'], user=True)
+        else:
+            self.command([node, 'scripts/magpie-dependency.mjs'], user=True, cwd=destination, env=env)
+        self.command([node, 'scripts/magpie-dependency.mjs', '--check'], user=True, cwd=destination, env=env)
+        if (destination / 'config/agent-browser.lock.json').exists():
+            self.command([node, 'scripts/agent-browser-dependency.mjs'], user=True, cwd=destination, env=env, timeout=300)
+        self.command([node, 'scripts/check.mjs'], user=True, cwd=destination, env=env)
+        tests = sorted(str(p.relative_to(destination)) for p in (destination / 'tests').glob('*.test.mjs'))
+        self.command([node, '--test', '--test-concurrency=4', *tests], user=True, cwd=destination, env=env)
+        self.command([node, 'scripts/verify-plugin.mjs'], user=True, cwd=destination, env=env)
+        self.ensure_clean(destination)
+        self.rebase_shims(destination)
+
+    def rebase_shims(self, destination):
+        # pnpm's generated shell shims contain absolute NODE_PATH entries. Keep
+        # their runtime paths valid after directory relocation; no source edits.
+        before, after = str(destination), str(self.root)
+        for directory, dirs, files in os.walk(destination, followlinks=False):
+            dirs[:] = [d for d in dirs if d != '.git']
+            if Path(directory).name != '.bin':
+                continue
+            for name in files:
+                path = Path(directory) / name
+                if path.is_symlink() or path.stat().st_size > 1024 * 1024:
+                    continue
+                try:
+                    content = path.read_text()
+                except UnicodeError:
+                    continue
+                if content.startswith('#!') and before in content:
+                    path.write_text(content.replace(before, after))
+
+    def stop(self):
+        self.command(['systemctl', 'stop', *reversed(self.config['services'])], timeout=180)
+        for service in self.config['services']:
+            state = self.command(['systemctl', 'show', service, '--property=ActiveState', '--value'], capture=True, timeout=30)
+            if state not in ('inactive', 'failed'):
+                raise UpdateError('service_not_stopped')
+        for port in [self.config['routerPort'], *self.config.get('auxiliaryPorts', []), *[g['port'] for g in self.config['gateways']]]:
+            with socket.socket() as probe:
+                probe.settimeout(1)
+                if probe.connect_ex(('127.0.0.1', port)) == 0:
+                    raise UpdateError('service_port_still_occupied')
+
+    def start(self):
+        self.command(['systemctl', 'reset-failed', *self.config['services']], timeout=30)
+        # Configured order is router, dashboard, then channel gateways.
+        for service in self.config['services']:
+            self.command(['systemctl', 'start', service], timeout=120)
+
+    def preserve(self, destination):
+        for name in self.config['preserve']:
+            source, target = self.root / name, destination / name
+            if not source.exists() and not source.is_symlink():
+                continue
+            if self.git(destination, 'ls-files', '--', name):
+                raise UpdateError('preserved_path_became_tracked')
+            if target.is_dir() and not target.is_symlink():
+                shutil.rmtree(target)
+            elif target.exists() or target.is_symlink():
+                target.unlink()
+            target.parent.mkdir(parents=True, exist_ok=True)
+            self.command(['cp', '-a', source, target])
+
+    def health(self):
+        deadline = time.monotonic() + self.config.get('healthTimeout', 150)
+        while time.monotonic() < deadline:
+            try:
+                self.active()
+                session = read_json(self.root / self.config['routerSession'])
+                request = urllib.request.Request(f'http://127.0.0.1:{self.config["routerPort"]}/_rein/api/state', headers={'Cookie': f'rein_router_{self.config["routerPort"]}={session["token"]}'})
+                with urllib.request.urlopen(request, timeout=5) as response:
+                    status = json.load(response)
+                if status.get('error') or not status.get('lastSync'):
+                    raise UpdateError('router_not_ready')
+                for gateway in self.config['gateways']:
+                    settings = read_json(self.root / gateway['config'])
+                    auth = settings['gateway']['auth']
+                    token = auth.get('password') or auth.get('token')
+                    if not token:
+                        raise UpdateError('gateway_probe_credential_missing')
+                    request = urllib.request.Request(f'http://127.0.0.1:{gateway["port"]}/tools/invoke', data=b'{"tool":"rein_status","args":{}}', headers={'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'})
+                    with urllib.request.urlopen(request, timeout=5) as response:
+                        result = json.load(response)
+                    if result.get('ok') is not True or not result.get('result'):
+                        raise UpdateError('gateway_plugin_not_ready')
+                return
+            except (OSError, ValueError, KeyError, TypeError, UpdateError):
+                time.sleep(2)
+        raise UpdateError('health_check_timeout')
+
+
+class Updater:
+    def __init__(self, host):
+        self.host = host
+        self.journal = host.state / 'transaction.json'
+        self.status = host.state / 'status.json'
+
+    def record(self, state, **values):
+        value = {'state': state, 'at': timestamp(), **values}
+        atomic_json(self.status, value)
+        print(json.dumps(value), flush=True)
+
+    def recover(self):
+        transaction = read_json(self.journal)
+        if not transaction:
+            return False
+        if transaction['phase'] == 'committed':
+            self.record('updated', revision=transaction['target'])
+            self.journal.unlink()
+            return True
+        for key in ('candidate', 'previous', 'failed'):
+            path = Path(transaction[key])
+            if path.parent != self.host.releases or path.is_symlink():
+                raise UpdateError('invalid_recovery_path')
+        if Path(transaction['previous']).exists():
+            if self.host.revision(Path(transaction['previous'])) != transaction['previousRevision']:
+                raise UpdateError('previous_release_changed; manual_recovery_required')
+            if self.host.root.exists() and self.host.revision(self.host.root) != transaction['target']:
+                raise UpdateError('active_release_changed; manual_recovery_required')
+        self.record('rolling_back', revision=transaction['target'])
+        self.host.stop()
+        previous = Path(transaction['previous'])
+        if previous.exists():
+            if self.host.root.exists():
+                durable_rename(self.host.root, transaction['failed'])
+            durable_rename(previous, self.host.root)
+        if not self.host.root.exists():
+            raise UpdateError('manual_recovery_required')
+        self.host.start()
+        self.host.health()
+        self.record('rolled_back', revision=transaction['target'], restoredRevision=transaction['previousRevision'])
+        self.journal.unlink()
+        return True
+
+    def activate(self, candidate, revision):
+        ident = candidate.name
+        transaction = {'phase': 'prepared', 'target': revision, 'previousRevision': self.host.revision(self.host.root),
+                       'candidate': str(candidate), 'previous': str(self.host.releases / ('previous-' + ident)),
+                       'failed': str(self.host.releases / ('failed-' + ident))}
+        atomic_json(self.journal, transaction)
+        try:
+            self.host.stop()
+            self.host.preserve(candidate)
+            transaction['phase'] = 'switching'
+            atomic_json(self.journal, transaction)
+            durable_rename(self.host.root, transaction['previous'])
+            durable_rename(candidate, self.host.root)
+            self.host.start()
+            self.host.health()
+            transaction['phase'] = 'committed'
+            atomic_json(self.journal, transaction)
+            self.record('updated', revision=revision, previous=transaction['previous'])
+            self.journal.unlink()
+        except BaseException:
+            self.recover()
+            raise
+
+    def run(self, retry=False):
+        if self.recover():
+            return
+        revision = self.host.latest()
+        if revision == self.host.revision(self.host.root):
+            self.record('up_to_date', revision=revision)
+            return
+        last = read_json(self.status, {})
+        if not retry and last.get('revision') == revision and last.get('state') in ('failed', 'rolled_back', 'blocked'):
+            self.record('blocked', revision=revision, reason='revision_failed_previously; use --retry after repair')
+            return
+        try:
+            self.host.ensure_clean(self.host.root)
+            self.host.active()  # Respect operator-paused services instead of reviving them.
+            if self.host.root.stat().st_dev != self.host.releases.stat().st_dev:
+                raise UpdateError('releases_must_share_the_live_filesystem')
+            free = shutil.disk_usage(self.host.releases).free
+            if free < self.host.config.get('minimumFreeGiB', 12) * 1024 ** 3:
+                raise UpdateError('insufficient_build_space')
+        except UpdateError as error:
+            self.record('deferred', revision=revision, reason=str(error))
+            raise
+        candidate = self.host.releases / ('candidate-' + revision[:12] + '-' + uuid.uuid4().hex[:8])
+        self.record('building', revision=revision, candidate=str(candidate))
+        try:
+            self.host.build(revision, candidate)
+            if self.host.latest() != revision:
+                self.record('superseded', revision=revision)
+                return
+            self.host.ensure_clean(self.host.root)
+            self.host.active()
+            self.activate(candidate, revision)
+        except BaseException as error:
+            if not self.journal.exists() and read_json(self.status, {}).get('state') != 'rolled_back':
+                self.record('failed', revision=revision, reason=error.args[0] if isinstance(error, UpdateError) else type(error).__name__)
+            raise
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', default='/etc/nori-updater.json')
+    parser.add_argument('--retry', action='store_true')
+    args = parser.parse_args()
+    if os.geteuid() != 0:
+        raise UpdateError('controller_requires_root; builds_run_as_service_user')
+    config = validate_config(read_json(args.config))
+    state, releases = Path(config['state']), Path(config['releases'])
+    state.mkdir(mode=0o700, parents=True, exist_ok=True)
+    releases.mkdir(mode=0o755, parents=True, exist_ok=True)
+    # The service's 0077 umask must not prevent the builder from traversing this
+    # root-owned parent. Each candidate and build HOME remains private (0700).
+    os.chmod(releases, 0o755)
+    with open(state / 'update.lock', 'w') as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            print('Another update is already running.'); return
+        host = Host(config)
+        logs = state / 'logs'
+        logs.mkdir(mode=0o700, exist_ok=True)
+        path = logs / (dt.datetime.now(dt.timezone.utc).strftime('%Y%m%d') + '.log')
+        with open(path, 'a') as log:
+            os.chmod(path, 0o600)
+            host.log = log
+            signal.signal(signal.SIGTERM, lambda *_: (_ for _ in ()).throw(UpdateError('update_interrupted')))
+            Updater(host).run(retry=args.retry)
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except BaseException as error:
+        print('Nori update stopped: ' + (str(error) if isinstance(error, UpdateError) else type(error).__name__), file=sys.stderr)
+        sys.exit(1)

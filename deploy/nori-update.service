@@ -1,0 +1,16 @@
+[Unit]
+Description=Build and deploy merged Nori main with health checks and rollback
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+UMask=0077
+ExecStart=/usr/bin/python3 /opt/nori-updater/nori-update.py --config /etc/nori-updater.json
+TimeoutStartSec=1h
+TimeoutStopSec=180
+KillMode=control-group
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

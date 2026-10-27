@@ -1,0 +1,20 @@
+{
+  "repository": "https://github.com/tempest2023/rein-agent.git",
+  "branch": "main",
+  "root": "/home/ubuntu/rein-agent",
+  "releases": "/home/ubuntu/nori-releases",
+  "state": "/var/lib/nori-updater",
+  "user": "ubuntu",
+  "nodeVersion": "24.16.0",
+  "minimumFreeGiB": 12,
+  "healthTimeout": 150,
+  "services": ["nori-router", "nori-web", "nori-slack", "nori-discord"],
+  "preserve": ["runtime", ".env.local", ".env", "secrets", "SECRETs.md", "workspace/USER.md", "workspace/MEMORY.md", "workspace/memory", "workspace/.openclaw"],
+  "routerPort": 3431,
+  "auxiliaryPorts": [3425, 3440],
+  "routerSession": "runtime/oci-public/router-session.json",
+  "gateways": [
+    {"port": 18791, "config": "runtime/openclaw/openclaw.json"},
+    {"port": 18793, "config": "runtime/discord-catalog-prod/openclaw.json"}
+  ]
+}
