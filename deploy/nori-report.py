@@ -82,17 +82,17 @@ def escape(value):
 
 def slack_message(payload):
     repo = 'https://github.com/' + payload['repository']
-    lines = ['✅ *Nori 部署成功*',
-             f'时间：{payload["deployedAt"]}',
-             f'版本：<{repo}/commit/{payload["revision"]}|{payload["revision"][:12]}>',
-             f'<{repo}/compare/{payload["previousRevision"]}...{payload["revision"]}|查看本次完整变更>']
+    lines = ['✅ *Nori deployment successful*',
+             f'Deployed at: {payload["deployedAt"]}',
+             f'Revision: <{repo}/commit/{payload["revision"]}|{payload["revision"][:12]}>',
+             f'<{repo}/compare/{payload["previousRevision"]}...{payload["revision"]}|View all changes in this deployment>']
     for pr in payload['pullRequests'][:30]:
         lines.append(f'• <{repo}/pull/{pr["number"]}|PR #{pr["number"]}> — {escape(pr["title"])}')
     if not payload['pullRequests']:
         lines.extend('• ' + escape(commit['subject']) for commit in payload['commits'][:20])
     if len(payload['pullRequests']) > 30:
-        lines.append('其余 PR 见完整变更及后端部署记录。')
-    lines.append('部署记录：' + payload['deploymentId'])
+        lines.append('See the full diff and deployment record for the remaining PRs.')
+    lines.append('Deployment ID: ' + payload['deploymentId'])
     return '\n'.join(lines)
 
 
