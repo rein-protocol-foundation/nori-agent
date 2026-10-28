@@ -1,6 +1,10 @@
 import { sessionKey, createOwnerQueue } from './scope.mjs';
 import { createTurnControl } from './turn-control.mjs';
 
+// User-editable labels are presentation only; authority is always the native sender ID.
+export const profileLabel = value => typeof value === 'string' && value.length <= 200
+  ? value.replace(/[\u0000-\u001f\u007f]/g, '').trim() || undefined : undefined;
+
 export function createIsolatedReceiver({ policy, config, cfg, runtime, memory, send, signal, turns = createTurnControl(), trace = () => {} }) {
   const queue = createOwnerQueue();
   const seen = new Set();
@@ -45,7 +49,7 @@ export function createIsolatedReceiver({ policy, config, cfg, runtime, memory, s
         channel: owner.platform, accountId: owner.accountId, channelIngress: ingress,
         messageId: event.id, timestamp: event.timestamp,
         from: kind === 'channel' ? `${owner.platform}:channel:${owner.channelId}` : `${owner.platform}:${owner.senderId}`,
-        sender: { id: owner.senderId },
+        sender: { id: owner.senderId, name: profileLabel(event.senderName), username: profileLabel(event.senderUsername) },
         conversation: { kind, id: owner.conversationId, spaceId: owner.spaceId ?? undefined, threadId: owner.threadId, nativeChannelId: owner.channelId },
         route: { agentId: owner.agentId, accountId: owner.accountId, routeSessionKey: key, dispatchSessionKey: key,
           dmScope: 'per-account-channel-peer' },

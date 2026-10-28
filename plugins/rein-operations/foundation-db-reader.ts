@@ -9,6 +9,8 @@ export type FoundationEnvironment = 'dev' | 'prod';
 export type SlackMemberStatus =
   | 'resolved'
   | 'invalid_request'
+  | 'identity_revoked'
+  | 'identity_expired'
   | 'identity_not_linked'
   | 'identity_link_ambiguous'
   | 'identity_link_revoked'
@@ -23,6 +25,8 @@ export interface SlackMemberResolution {
   reason: string;
   /** Canonical contact ID. Non-null only when `status` is `'resolved'`. */
   contactId: string | null;
+  /** Current sender profile from the backend; absent on older backends. Never authorizes an action. */
+  profile?: { name: string | null; email: string | null; joinedAt: string | null } | null;
   /**
    * Which canonical evidence the backend resolved the member from: `'platform_link'` for a
    * canonical verified binding, `'slack_link'` for the retained Slack-specific spelling the

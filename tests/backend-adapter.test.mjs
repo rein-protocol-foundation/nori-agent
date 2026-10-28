@@ -319,3 +319,16 @@ test('the resolved platform and workspace travel with every operation call, and 
   assert.equal(transport.calls[1].input.channelId, 'C0BOARD');
   assert.equal(JSON.stringify(transport.calls[1]).includes('identity_not_linked'), false);
 });
+
+test('self profile strips unknown fields, invalid values, and all data for non-resolved identities', async () => {
+  for (const status of ['resolved', 'identity_revoked', 'identity_expired', 'identity_not_linked']) {
+    const { reader } = readerFor({}, undefined, { ok: true, httpStatus: 200, body: {
+      ok: true, status, contact_id: 'self', is_director: true,
+      profile: { name: 'Synthetic', email: 'member@example.invalid', joinedAt: 'x'.repeat(41), secret: 'CANARY' },
+    } });
+    const member = await reader.resolveSlackMember('U_SELF');
+    assert.ok(!JSON.stringify(member).includes('CANARY'));
+    if (status === 'resolved') assert.deepEqual(member.profile, { name: 'Synthetic', email: 'member@example.invalid', joinedAt: null });
+    else { assert.equal(member.profile, null); assert.equal(member.isDirector, false); }
+  }
+});

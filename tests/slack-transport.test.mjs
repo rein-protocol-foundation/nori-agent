@@ -151,3 +151,18 @@ test('receipt snapshots cannot change sender or text while queued behind metadat
   assert.equal(f.inputs[0].ctxPayload.sender.id,'USYNTHA01');
   assert.equal(f.inputs[0].ctxPayload.message.rawBody,'original');
 });
+
+
+test('sender labels come only from a matching platform profile, and never include email', async () => {
+  const web = fakeWeb();
+  web.users = { info: async ({ user }) => ({ ok: true, user: { id: user, team_id: c.teamId,
+    name: 'synthetic', profile: { display_name: 'Synthetic Member', email: 'private@example.invalid' } } }) };
+  const result = await normalizeSlackEvent(c, body({ username: 'forged' }), web);
+  assert.equal(result.senderName, 'Synthetic Member');
+  assert.equal(result.senderUsername, 'synthetic');
+  assert.ok(!JSON.stringify(result).includes('private@example.invalid'));
+  web.users.info = async () => ({ ok: true, user: { id: 'USYNTHB02', team_id: c.teamId, name: 'other' } });
+  assert.equal((await normalizeSlackEvent(c, body(), web)).senderUsername, undefined);
+  web.users.info = async () => { throw new Error('missing_scope'); };
+  assert.equal((await normalizeSlackEvent(c, body(), web)).senderId, 'USYNTHA01');
+});

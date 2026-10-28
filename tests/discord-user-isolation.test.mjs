@@ -413,3 +413,13 @@ test('startup accepts the host-generated single empty main agent entry',t=>{
   cfg.agents.ownership='explicit';
   assert.throws(()=>assertIsolationRuntime(cfg,c,workspace),/Agent\/account\/binding overrides/);
 });
+
+test('sender labels reach model context without changing routing authority or importing profile email', async t => {
+  const { receive, inputs } = receiverFixture(t);
+  await receive(event(ids.alice, { senderName: 'Alice\nMember', senderUsername: 'alice', email: 'PRIVATE-CANARY' }));
+  await receive(event(ids.bob, { id: '100000000000000011', senderName: 'Alice', senderUsername: 'alice' }));
+  assert.deepEqual(inputs[0].ctxPayload.sender, { id: ids.alice, name: 'AliceMember', username: 'alice' });
+  assert.equal(inputs[1].ctxPayload.sender.id, ids.bob);
+  assert.notEqual(inputs[0].route.sessionKey, inputs[1].route.sessionKey);
+  assert.ok(!JSON.stringify(inputs).includes('PRIVATE-CANARY'));
+});
