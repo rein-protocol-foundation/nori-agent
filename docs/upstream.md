@@ -128,11 +128,48 @@ Rein on the known-good commit, and report the incompatibility instead of editing
 
 ## Automated coverage
 
-`.github/workflows/openclaw.yml` runs on changes to `vendor/openclaw`, `.gitmodules`, `plugins/**`,
-`scripts/**`, `tests/**` and the workspace manifests. It installs and builds upstream on Node
-`24.16.0`, runs `pnpm check` and `pnpm test`, creates the isolated local config, inspects the plugin
-with `--runtime`, and fails if `git -C vendor/openclaw status --porcelain` is non-empty. That last
-step enforces the read-only rule above.
+`.github/workflows/openclaw.yml` selects checks by changed paths. Feature branches run on
+`pull_request`; only `main` also runs on `push`, avoiding two runs for the same feature-branch
+commit. A newer commit cancels the older run. Manual `workflow_dispatch` always selects all suites.
+
+| Change | Checks |
+| --- | --- |
+| Nori business tools, tool-call reply guards, operations manifest or entry point | Nori plugin checks: all Rein Node tests, scaffold validation, offline routing corpus, real OpenClaw loader checks for default, backend-backed and legacy proposal tools |
+| `plugins/rein-router/**` | Plugin checks plus Router/Magpie native probes, offline provider fixtures and Router Console browser checks |
+| `plugins/rein-discord/**`, `plugins/rein-slack/**`, `plugins/rein-isolation/**` | Plugin checks plus native isolation and routing probes, because routing consumes these adapters' ingress contracts |
+| Upstream pin, dependencies, CI setup, shared runtime scripts, native fixtures, or unfamiliar executable paths | All suites |
+| Documentation and brand assets only | Scaffold checks; no OpenClaw installation/build |
+
+Unit-test-only changes run the plugin suite; native fixture and explicitly enabled native-test
+changes retain full integration. Browser tooling has its own existing browser workflow and still
+runs the common plugin tests. Workspace/config changes follow `scripts/ci-scope.mjs`; ambiguous
+paths and unavailable Git diff history fall back to all suites. The selector tests cover mixed
+changes, deletions, renames, PR merge bases and failure propagation.
+
+Plugin checks use the real pinned SDK, not a stub. Upstream dependencies and build outputs are
+cached separately. Build reuse requires the exact upstream commit, Node version, OS/architecture,
+lockfiles and setup action; there is no fallback to another revision. Only build outputs
+(root/package `dist`, the runtime overlay and untracked upstream-declared generated assets) are cached, never runtime profiles, credentials or member data. Restored freshness
+stamp times are refreshed through the upstream helper without changing their producer identity.
+A cold cache still requires a full upstream build. Native suites start after plugin checks and can reuse that build;
+routing and isolation then run in parallel. All runtime jobs check that upstream remains unchanged.
+
+The existing `OpenClaw integration / integration` check remains as an always-running result gate.
+It fails if change detection fails or any selected suite fails, is cancelled or is unexpectedly
+skipped. Documentation-only changes report success after explicitly skipping runtime suites, so
+branch protection does not wait for a path-filtered workflow that never started. Keep this aggregate
+check required; individual conditional suites need not be required separately. See
+[GitHub's required-check guidance](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks).
+
+To reproduce the common plugin checks after preparing the pinned runtime:
+
+```sh
+pnpm check
+pnpm test
+pnpm eval:subscriptions
+pnpm verify:plugin
+pnpm verify:proposal-tools
+```
 
 See [setup](setup.md) for the full local bootstrap and [architecture](architecture.md) for why the
 boundary sits here.
