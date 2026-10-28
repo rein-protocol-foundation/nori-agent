@@ -205,10 +205,8 @@ class Host:
         self.command([node, 'scripts/magpie-dependency.mjs', '--check'], user=True, cwd=destination, env=env)
         if (destination / 'config/agent-browser.lock.json').exists():
             self.command([node, 'scripts/agent-browser-dependency.mjs'], user=True, cwd=destination, env=env, timeout=300)
-        self.command([node, 'scripts/check.mjs'], user=True, cwd=destination, env=env)
-        tests = sorted(str(p.relative_to(destination)) for p in (destination / 'tests').glob('*.test.mjs'))
-        self.command([node, '--test', '--test-concurrency=4', *tests], user=True, cwd=destination, env=env)
-        self.command([node, 'scripts/verify-plugin.mjs'], user=True, cwd=destination, env=env)
+        # PR/CI owns test execution. Deployment only prepares artifacts and checks
+        # service readiness after switching; it never runs the test suite here.
         self.ensure_clean(destination)
         self.rebase_shims(destination)
 
@@ -395,11 +393,68 @@ class Updater:
             raise
 
 
+def drain_events(updater, directory):
+    """Coalesce durable webhook deliveries; never contact GitHub with no work.
+
+    Parent directories are root-owned. The HTTP service can create pending files
+    but cannot change receipts. Payload contents never become privileged inputs:
+    the controller only builds its administrator-configured repository/branch.
+    """
+    directory = Path(directory)
+    pending, received = directory / 'pending', directory / 'received'
+    for path in (directory, pending, received):
+        if not path.is_absolute() or path.resolve() != path or not path.is_dir():
+            raise UpdateError('invalid_event_directory')
+        if os.geteuid() == 0 and path.stat().st_uid != 0:
+            raise UpdateError('event_directories_must_be_root_owned')
+    updater.recover()  # Also runs at boot, even when no event is pending.
+    while True:
+        batch = []
+        for path in sorted(pending.glob('*.json')):
+            try:
+                valid = str(uuid.UUID(path.stem)) == path.stem
+            except ValueError:
+                valid = False
+            if not valid or path.is_symlink() or not path.is_file():
+                raise UpdateError('invalid_event_filename')
+            if (received / path.name).exists():
+                path.unlink()  # Crash after receipt but before pending removal.
+            else:
+                batch.append(path)
+        if not batch:
+            return
+        before = read_json(updater.status, {})
+        try:
+            updater.run()
+        except Exception:
+            result = read_json(updater.status, {})
+            if (updater.journal.exists() or result == before or
+                    result.get('state') not in ('failed', 'rolled_back', 'blocked')):
+                # Network/preflight/recovery failures retain pending work. systemd
+                # retries this job; there is no periodic check when the queue is empty.
+                raise
+        result = read_json(updater.status, {})
+        if result.get('state') == 'superseded':
+            continue  # A merge during the build should deploy the newer main next.
+        for path in batch:
+            atomic_json(received / path.name, {'delivery': path.stem, 'at': timestamp(),
+                                             'outcome': result.get('state'), 'revision': result.get('revision')})
+            path.unlink()
+        descriptor = os.open(pending, os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', default='/etc/nori-updater.json')
     parser.add_argument('--retry', action='store_true')
+    parser.add_argument('--drain-events', action='store_true')
     args = parser.parse_args()
+    if args.retry and args.drain_events:
+        parser.error('--retry is a manual operation; do not combine with --drain-events')
     if os.geteuid() != 0:
         raise UpdateError('controller_requires_root; builds_run_as_service_user')
     config = validate_config(read_json(args.config))
@@ -411,7 +466,7 @@ def main():
     os.chmod(releases, 0o755)
     with open(state / 'update.lock', 'w') as lock:
         try:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            fcntl.flock(lock, fcntl.LOCK_EX | (0 if args.drain_events else fcntl.LOCK_NB))
         except BlockingIOError:
             print('Another update is already running.'); return
         host = Host(config)
@@ -422,7 +477,11 @@ def main():
             os.chmod(path, 0o600)
             host.log = log
             signal.signal(signal.SIGTERM, lambda *_: (_ for _ in ()).throw(UpdateError('update_interrupted')))
-            Updater(host).run(retry=args.retry)
+            updater = Updater(host)
+            if args.drain_events:
+                drain_events(updater, config['eventDirectory'])
+            else:
+                updater.run(retry=args.retry)
 
 
 if __name__ == '__main__':

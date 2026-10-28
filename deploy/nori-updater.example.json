@@ -4,6 +4,7 @@
   "root": "/home/ubuntu/rein-agent",
   "releases": "/home/ubuntu/nori-releases",
   "state": "/var/lib/nori-updater",
+  "eventDirectory": "/var/lib/nori-webhook",
   "user": "ubuntu",
   "nodeVersion": "24.16.0",
   "minimumFreeGiB": 12,

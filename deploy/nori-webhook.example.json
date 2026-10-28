@@ -1,0 +1,8 @@
+{
+  "repository": "tempest2023/rein-agent",
+  "branch": "main",
+  "port": 3450,
+  "path": "/hooks/github",
+  "secretFile": "/etc/nori-webhook.secret",
+  "eventDirectory": "/var/lib/nori-webhook"
+}
