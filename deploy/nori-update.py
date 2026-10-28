@@ -26,6 +26,10 @@ class UpdateError(Exception):
     pass
 
 
+class SourceFetchError(UpdateError):
+    """Source acquisition failed before the candidate could be compiled."""
+
+
 def atomic_json(path, value):
     path = Path(path)
     temporary = path.with_suffix('.tmp')
@@ -176,6 +180,14 @@ class Host:
     def git(self, root, *args):
         return self.command(['git', '-C', root, *args], user=True, capture=True)
 
+    def fetch_source(self, args, timeout):
+        try:
+            return self.command(args, user=True, timeout=timeout)
+        except (UpdateError, subprocess.TimeoutExpired) as error:
+            # Transport/remote configuration failures do not prove that this
+            # revision is defective. Keep its delivery pending for retry.
+            raise SourceFetchError('source_fetch_unavailable') from error
+
     def revision(self, root):
         return self.git(root, 'rev-parse', 'HEAD')
 
@@ -204,19 +216,19 @@ class Host:
         home = self.releases / 'build-home'
         home.mkdir(mode=0o700, exist_ok=True)
         os.chown(home, self.uid, self.gid)
-        self.command(['git', 'clone', '--depth=1', '--single-branch', '--branch', self.config.get('branch', 'main'), self.config['repository'], destination], user=True, timeout=300)
+        self.fetch_source(['git', 'clone', '--depth=1', '--single-branch', '--branch', self.config.get('branch', 'main'), self.config['repository'], destination], timeout=300)
         if self.revision(destination) != revision:
-            self.git(destination, 'fetch', '--depth=1', 'origin', revision)
+            self.fetch_source(['git', '-C', destination, 'fetch', '--depth=1', 'origin', revision], timeout=300)
         self.git(destination, 'checkout', '--detach', revision)
         # Reuse only upstream source objects, never its running build output.
         old_pin = self.git(self.root, 'rev-parse', 'HEAD:vendor/openclaw')
         new_pin = self.git(destination, 'rev-parse', 'HEAD:vendor/openclaw')
         if old_pin == new_pin:
-            self.command(['git', '-c', 'protocol.file.allow=always', '-c', f'submodule.vendor/openclaw.url={self.root}/vendor/openclaw', '-C', destination, 'submodule', 'update', '--init'], user=True, timeout=300)
+            self.fetch_source(['git', '-c', 'protocol.file.allow=always', '-c', f'submodule.vendor/openclaw.url={self.root}/vendor/openclaw', '-C', destination, 'submodule', 'update', '--init'], timeout=300)
             self.git(destination / 'vendor/openclaw', 'remote', 'set-url', 'origin', 'https://github.com/openclaw/openclaw.git')
             self.git(destination, 'submodule', 'sync')
         else:
-            self.command(['git', '-C', destination, 'submodule', 'update', '--init', '--recursive', '--depth=1'], user=True, timeout=600)
+            self.fetch_source(['git', '-C', destination, 'submodule', 'update', '--init', '--recursive', '--depth=1'], timeout=600)
         package = read_json(destination / 'package.json')
         manager = package.get('packageManager', '')
         if not re.fullmatch(r'pnpm@\d+\.\d+\.\d+', manager):
@@ -438,6 +450,9 @@ class Updater:
         self.record('building', revision=revision, candidate=str(candidate))
         try:
             self.host.build(revision, candidate)
+        except SourceFetchError as error:
+            self.record('deferred', revision=revision, candidate=str(candidate), reason=str(error))
+            raise
         except BaseException as error:
             self.record('failed', revision=revision, reason=error.args[0] if isinstance(error, UpdateError) else type(error).__name__)
             raise

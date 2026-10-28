@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 source = Path(__file__).resolve().parents[2] / 'deploy/nori-update.py'
 spec = importlib.util.spec_from_file_location('nori_updater', source)
@@ -224,6 +224,36 @@ class UpdaterTests(unittest.TestCase):
         for change in ({'user': 'root'}, {'preserve': ['../private']}, {'state': str(self.host.root / 'runtime')}, {'services': ['ssh']}):
             with self.subTest(change=change), self.assertRaises(module.UpdateError):
                 module.validate_config(dict(example, **change))
+
+
+class SourceFetchTests(unittest.TestCase):
+    def test_clone_revision_fetch_and_both_submodule_paths_are_retryable(self):
+        for operation in ('clone', 'fetch', 'submodule-local', 'submodule-remote'):
+            with self.subTest(operation=operation), tempfile.TemporaryDirectory() as directory:
+                host = object.__new__(module.Host)
+                host.root = Path(directory) / 'live'
+                host.releases = Path(directory)
+                host.uid, host.gid = os.getuid(), os.getgid()
+                host.config = {'repository': 'https://github.com/fixture/repo', 'branch': 'main'}
+                host.revision = Mock(return_value='other' if operation == 'fetch' else 'new')
+                host.git = Mock(side_effect=lambda root, *args: 'different' if operation == 'submodule-remote' and root != host.root else 'same')
+                def command(args, **kwargs):
+                    target = operation.split('-')[0]
+                    if target in args:
+                        raise module.UpdateError('command_failed:git:128')
+                host.command = Mock(side_effect=command)
+                with self.assertRaises(module.SourceFetchError):
+                    host.build('new', Path(directory) / 'candidate')
+
+    def test_fetch_timeout_is_retryable_but_local_checkout_error_is_not(self):
+        host = object.__new__(module.Host)
+        host.command = Mock(side_effect=module.subprocess.TimeoutExpired('git', 300))
+        with self.assertRaises(module.SourceFetchError):
+            host.fetch_source(['git', 'clone'], timeout=300)
+        host.command = Mock(side_effect=module.UpdateError('checkout_failed'))
+        with self.assertRaises(module.UpdateError) as error:
+            host.git(Path('/fixture'), 'checkout', '--detach', 'revision')
+        self.assertNotIsInstance(error.exception, module.SourceFetchError)
 
 
 if __name__ == '__main__':

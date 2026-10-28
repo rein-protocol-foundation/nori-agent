@@ -38,6 +38,8 @@ GitHub Webhook 主动推送事件，服务器常驻 `nori-webhook.service` 接�
 已持久化事件遇到网络或部署前置条件失败时，保留队列，由 systemd 每 60 秒重试该任务；
 队列为空时没有这些重试，也没有 GitHub 轮询。
 构建成功后的版本查询若暂时失败，同样保留事件重试，不会将该提交标记为失败或要求 `--retry`。
+候选源码的 clone、精确版本 fetch 和子模块获取失败（包括超时）也记录为 `deferred`，
+保留事件重试；源码可用后的实际编译失败仍按失败版本处理。远端权限或配置错误同样需修复后才会成功。
 GitHub 在请求到达服务器前发生投递失败时[不会自动重投](https://docs.github.com/en/webhooks/using-webhooks/handling-failed-webhook-deliveries)；服务器恢复后，管理员应在仓库的 Webhook
 Recent Deliveries 中重投失败事件。此方案不另加定时补偿轮询。
 健康检查不调用模型或发送聊天消息，不能替代真实渠道、模型或浏览器 UI 验收。

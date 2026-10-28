@@ -142,6 +142,24 @@ class WebhookTests(unittest.TestCase):
         self.assertFalse(list((self.events / 'pending').glob('*.json')))
         self.assertEqual(updater.read_json(next((self.events / 'received').glob('*.json')))['outcome'], 'updated')
 
+    def test_source_fetch_failure_retains_delivery_until_same_revision_can_build(self):
+        self.queue()
+        host, task = self.host()
+        host.latest_values = ['new', 'new', 'new']
+        with patch.object(host, 'build', side_effect=updater.SourceFetchError('source_fetch_unavailable')):
+            with self.assertRaises(updater.SourceFetchError):
+                updater.drain_events(task, self.events)
+        self.assertEqual(updater.read_json(task.status)['state'], 'deferred')
+        self.assertEqual(host.revision(host.root), 'old')
+        self.assertNotIn('stop', host.events)
+        self.assertEqual(len(list((self.events / 'pending').glob('*.json'))), 1)
+        self.assertFalse(list((self.events / 'received').glob('*.json')))
+        updater.drain_events(task, self.events)
+        self.assertEqual(host.revision(host.root), 'new')
+        self.assertFalse(list((self.events / 'pending').glob('*.json')))
+        receipt = updater.read_json(next((self.events / 'received').glob('*.json')))
+        self.assertEqual(receipt['outcome'], 'updated')
+
     def test_crash_after_receipt_before_unlink_does_not_rebuild(self):
         self.queue()
         event = next((self.events / 'pending').glob('*.json'))
