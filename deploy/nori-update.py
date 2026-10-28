@@ -63,6 +63,42 @@ def durable_rename(source, destination):
             os.close(descriptor)
 
 
+def gateway_probe_request(root, gateway):
+    settings = read_json(Path(root) / gateway['config'])
+    auth = settings['gateway']['auth']
+    mode = auth.get('mode') or ('password' if auth.get('password') else 'token')
+    headers = {'Content-Type': 'application/json'}
+    if mode == 'trusted-proxy':
+        proxy = auth.get('trustedProxy', {})
+        supplied = gateway.get('trustedProxyHeaders', {})
+        if not isinstance(supplied, dict):
+            raise UpdateError('invalid_trusted_proxy_probe_headers')
+        forwarded = {}
+        for name, value in supplied.items():
+            if (not isinstance(name, str) or not re.fullmatch(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+", name) or
+                    not isinstance(value, str) or not value.strip() or '\r' in value or '\n' in value):
+                raise UpdateError('invalid_trusted_proxy_probe_headers')
+            forwarded[name.lower()] = value.strip()
+        user_header = str(proxy.get('userHeader', '')).lower()
+        required = [user_header, 'x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto',
+                    *[name.lower() for name in proxy.get('requiredHeaders', [])]]
+        if proxy.get('allowLoopback') is not True or any(not forwarded.get(name) for name in required):
+            raise UpdateError('trusted_proxy_probe_configuration_missing')
+        allowed = proxy.get('allowUsers', [])
+        if allowed and forwarded[user_header] not in allowed:
+            raise UpdateError('trusted_proxy_probe_user_not_allowed')
+        headers.update(forwarded)
+    elif mode in ('password', 'token'):
+        credential = auth.get(mode)
+        if not isinstance(credential, str) or not credential:
+            raise UpdateError('gateway_probe_credential_missing')
+        headers['Authorization'] = 'Bearer ' + credential
+    else:
+        raise UpdateError('unsupported_gateway_probe_auth_mode')
+    return urllib.request.Request(f'http://127.0.0.1:{gateway["port"]}/tools/invoke',
+                                  data=b'{"tool":"rein_status","args":{}}', headers=headers)
+
+
 def validate_config(config):
     for key in ('root', 'releases', 'state'):
         value = Path(config[key])
@@ -262,6 +298,9 @@ class Host:
             self.command(['cp', '-a', source, target])
 
     def health(self):
+        # Fail unsupported/missing auth configuration immediately. The same
+        # authenticated probes run before cutover and after restart/rollback.
+        requests = [gateway_probe_request(self.root, gateway) for gateway in self.config['gateways']]
         deadline = time.monotonic() + self.config.get('healthTimeout', 150)
         while time.monotonic() < deadline:
             try:
@@ -272,13 +311,7 @@ class Host:
                     status = json.load(response)
                 if status.get('error') or not status.get('lastSync'):
                     raise UpdateError('router_not_ready')
-                for gateway in self.config['gateways']:
-                    settings = read_json(self.root / gateway['config'])
-                    auth = settings['gateway']['auth']
-                    token = auth.get('password') or auth.get('token')
-                    if not token:
-                        raise UpdateError('gateway_probe_credential_missing')
-                    request = urllib.request.Request(f'http://127.0.0.1:{gateway["port"]}/tools/invoke', data=b'{"tool":"rein_status","args":{}}', headers={'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'})
+                for request in requests:
                     with urllib.request.urlopen(request, timeout=5) as response:
                         result = json.load(response)
                     if result.get('ok') is not True or not result.get('result'):
@@ -369,6 +402,7 @@ class Updater:
         try:
             self.host.ensure_clean(self.host.root)
             self.host.active()  # Respect operator-paused services instead of reviving them.
+            self.host.health()  # Prove probe/auth compatibility before building or stopping anything.
             if self.host.root.stat().st_dev != self.host.releases.stat().st_dev:
                 raise UpdateError('releases_must_share_the_live_filesystem')
             free = shutil.disk_usage(self.host.releases).free
@@ -381,11 +415,23 @@ class Updater:
         self.record('building', revision=revision, candidate=str(candidate))
         try:
             self.host.build(revision, candidate)
+        except BaseException as error:
+            self.record('failed', revision=revision, reason=error.args[0] if isinstance(error, UpdateError) else type(error).__name__)
+            raise
+        try:
             if self.host.latest() != revision:
                 self.record('superseded', revision=revision)
                 return
             self.host.ensure_clean(self.host.root)
             self.host.active()
+            self.host.health()
+        except Exception as error:
+            # A valid build is not defective when GitHub or the still-running
+            # deployment is temporarily unavailable. Keep its event retryable.
+            self.record('deferred', revision=revision, candidate=str(candidate),
+                        reason=error.args[0] if isinstance(error, UpdateError) else type(error).__name__)
+            raise
+        try:
             self.activate(candidate, revision)
         except BaseException as error:
             if not self.journal.exists() and read_json(self.status, {}).get('state') != 'rolled_back':

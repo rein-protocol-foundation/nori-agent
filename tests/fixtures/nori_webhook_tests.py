@@ -126,6 +126,22 @@ class WebhookTests(unittest.TestCase):
         updater.drain_events(task, self.events)
         self.assertEqual(host.revision(host.root), 'new')
 
+    def test_post_build_network_failure_keeps_event_and_retries_same_revision(self):
+        self.queue()
+        host, task = self.host()
+        with patch.object(host, 'latest', side_effect=['new', updater.UpdateError('network_failed')]):
+            with self.assertRaises(updater.UpdateError):
+                updater.drain_events(task, self.events)
+        self.assertEqual(host.events.count('build'), 1)
+        self.assertNotIn('stop', host.events)
+        self.assertEqual(updater.read_json(task.status)['state'], 'deferred')
+        self.assertEqual(len(list((self.events / 'pending').glob('*.json'))), 1)
+        self.assertFalse(list((self.events / 'received').glob('*.json')))
+        updater.drain_events(task, self.events)  # No --retry and no new main commit.
+        self.assertEqual(host.revision(host.root), 'new')
+        self.assertFalse(list((self.events / 'pending').glob('*.json')))
+        self.assertEqual(updater.read_json(next((self.events / 'received').glob('*.json')))['outcome'], 'updated')
+
     def test_crash_after_receipt_before_unlink_does_not_rebuild(self):
         self.queue()
         event = next((self.events / 'pending').glob('*.json'))

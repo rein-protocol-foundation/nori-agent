@@ -19,10 +19,10 @@ GitHub Webhook 主动推送事件，服务器常驻 `nori-webhook.service` 接�
    控制器以 root 管理服务和目录，构建命令以普通服务用户运行。
    队列串行处理；同一批事件合并为一次更新。构建期间若 main 前进，丢弃过时构建，立即处理最新 main。
    控制器始终使用管理员配置的仓库和分支，不执行 Webhook 中的命令或任意提交路径。
-4. 检查工作树干净、服务正常运行、磁盘至少有 12 GiB 空间。
+4. 检查工作树干净、服务正常运行、磁盘至少有 12 GiB 空间，并在构建前验证当前实例的健康探针及认证配置。
    在独立候选目录克隆 main 的精确提交及锁定 OpenClaw 子模块，安装 Node/pnpm 和锁定依赖，编译 OpenClaw。
    Magpie 锁文件不变时复制并校验现有二进制，变化时重新构建；准备锁定 agent-browser。
-5. 构建成功后再停止渠道网关、网页和 Router，确认端口释放，复制私有状态。
+5. 构建成功后重新确认 main 版本、工作树和当前实例健康状态，再停止渠道网关、网页和 Router，确认端口释放，复制私有状态。
    将旧部署移动到备份，再将候选部署移动到原固定路径，依次重启服务。
    不使用 `current` 符号链接，因为现有私有存储拒绝符号链接路径。
 6. 检查 systemd 服务、Router 同步，以及两个网关的只读 `rein_status`。
@@ -34,6 +34,7 @@ GitHub Webhook 主动推送事件，服务器常驻 `nori-webhook.service` 接�
 
 已持久化事件遇到网络或部署前置条件失败时，保留队列，由 systemd 每 60 秒重试该任务；
 队列为空时没有这些重试，也没有 GitHub 轮询。
+构建成功后的版本查询若暂时失败，同样保留事件重试，不会将该提交标记为失败或要求 `--retry`。
 GitHub 在请求到达服务器前发生投递失败时[不会自动重投](https://docs.github.com/en/webhooks/using-webhooks/handling-failed-webhook-deliveries)；服务器恢复后，管理员应在仓库的 Webhook
 Recent Deliveries 中重投失败事件。此方案不另加定时补偿轮询。
 健康检查不调用模型或发送聊天消息，不能替代真实渠道、模型或浏览器 UI 验收。
@@ -82,7 +83,13 @@ sudo systemctl enable --now nori-webhook.service nori-update.path nori-update.se
 修改部署路径、服务名、Router 会话路径、网关端口/配置以匹配主机。
 `auxiliaryPorts` 列出停服时必须释放的 Magpie 和网页端口。
 如修改 `eventDirectory`，同步调整接收器配置、`.path` 单元和接收器 `ReadWritePaths`。
-网关探针从私有配置读取密码/token，不输出到日志。
+网关探针遵循 `gateway.auth.mode`：password/token 模式只读取对应凭据；trusted-proxy 模式
+使用更新器各 gateway 的 `trustedProxyHeaders`，不要求密码/token。header 名称与身份必须匹配
+原生 `userHeader`、`requiredHeaders`、`allowUsers`；示例中的 user/hostname 要改成管理入口的实际配置。
+必须配置 `x-forwarded-for`、`x-forwarded-host`、`x-forwarded-proto`，并允许回环代理来源。
+`192.0.2.1` 是本机探针专用的文档示例客户端地址，不向该地址发起连接；上游拒绝回环 forwarded client IP。
+探针始终连接 `127.0.0.1`，网关仍须明确配置回环 `trustedProxies`、`allowLoopback` 和对应身份的 scope。
+不会修改网关信任规则，也不输出凭据。配置不兼容时在停服前延后部署。
 控制器固定安装在 `/opt/nori-updater`，不会随应用版本自动替换；更新部署控制器需重新安装。
 服务文件、Caddy、DNS 和密钥轮换也不随应用部署自动变更。
 

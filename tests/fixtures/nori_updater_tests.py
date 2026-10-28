@@ -7,6 +7,7 @@ from pathlib import Path
 import shutil
 import tempfile
 import unittest
+from unittest.mock import patch
 
 source = Path(__file__).resolve().parents[2] / 'deploy/nori-update.py'
 spec = importlib.util.spec_from_file_location('nori_updater', source)
@@ -159,6 +160,15 @@ class UpdaterTests(unittest.TestCase):
         with self.assertRaises(module.UpdateError):
             self.updater.run()
         self.assertNotIn('build', self.host.events)
+        self.assertEqual(module.read_json(self.updater.status)['state'], 'deferred')
+
+    def test_incompatible_probe_defers_before_build_or_stop(self):
+        with patch.object(self.host, 'health', side_effect=module.UpdateError('trusted_proxy_probe_configuration_missing')):
+            with self.assertRaises(module.UpdateError):
+                self.updater.run()
+        self.assertNotIn('build', self.host.events)
+        self.assertNotIn('stop', self.host.events)
+        self.assertFalse(self.updater.journal.exists())
         self.assertEqual(module.read_json(self.updater.status)['state'], 'deferred')
 
     def test_operator_changed_release_is_not_overwritten_during_recovery(self):

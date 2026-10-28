@@ -15,7 +15,13 @@
   "auxiliaryPorts": [3425, 3440],
   "routerSession": "runtime/oci-public/router-session.json",
   "gateways": [
-    {"port": 18791, "config": "runtime/openclaw/openclaw.json"},
-    {"port": 18793, "config": "runtime/discord-catalog-prod/openclaw.json"}
+    {"port": 18791, "config": "runtime/openclaw/openclaw.json", "trustedProxyHeaders": {
+      "x-nori-user": "nori-owner", "x-forwarded-host": "dashboard.example.org",
+      "x-forwarded-proto": "https", "x-forwarded-for": "192.0.2.1"
+    }},
+    {"port": 18793, "config": "runtime/discord-catalog-prod/openclaw.json", "trustedProxyHeaders": {
+      "x-nori-user": "nori-owner", "x-forwarded-host": "dashboard.example.org",
+      "x-forwarded-proto": "https", "x-forwarded-for": "192.0.2.1"
+    }}
   ]
 }
