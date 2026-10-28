@@ -27,6 +27,9 @@ GitHub Webhook 主动推送事件，服务器常驻 `nori-webhook.service` 接�
    不使用 `current` 符号链接，因为现有私有存储拒绝符号链接路径。
 6. 检查 systemd 服务、Router 同步，以及两个网关的只读 `rein_status`。
    默认 150 秒内未就绪，自动恢复旧代码及停服时的私有状态并重启。
+7. 若配置 `reporting`，健康检查成功后将部署 UUID、时间及新旧 SHA 写入持久报告队列。
+   独立的 `nori-report.service` 查询 GitHub 变更和关联 PR，先写 Foundation 后端，
+   再发 Slack，并将消息时间戳回写同一条部署记录。失败或回滚不会生成成功报告。
 
 **编译失败时旧版本一直在线，不发生切换；切换后的启动失败才需要恢复旧目录。**
 失败提交阻止重复部署，直到有新提交或管理员显式重试。失败事件也有结果回执，避免反复编译失败版本。
@@ -133,3 +136,56 @@ sudo python3 /opt/nori-updater/nori-update.py --config /etc/nori-updater.json --
 开发机和 CI 的合成测试覆盖签名、事件筛选、重复投递、持久队列、合并并发、空闲零查询、
 网络失败保留事件、构建失败不停服、状态保留、启动回滚和中断恢复。
 本功能来自操作者提出的事件驱动部署需求，不增加业务工具或渠道权限。
+
+## 部署记录与 Slack 通知
+
+Foundation 后端需部署 `POST /api/agent/deployments` 和 `rein_deployments` 迁移。
+后端按环境使用 `dev_rein_deployments` / `prod_rein_deployments`，表启用 RLS，
+不向匿名用户和普通登录用户授权。单独注册只有 `deployment.write` 的服务调用者，
+allowlist 限制为部署频道所属 Slack workspace 和 channel；不要复用 Agent 的治理凭据。
+
+在 `/etc/nori-updater.json` 增加（所有 ID 均替换为实际值）：
+
+```json
+{
+  "reporting": {
+    "backendUrl": "https://rein-protocol.org",
+    "callerId": "nori-deployment-oci",
+    "workspaceId": "T_REPLACE",
+    "channelId": "C_REPLACE",
+    "credentialsFile": "/etc/nori-report.credentials.json"
+  }
+}
+```
+
+`credentialsFile` 必须由 root 持有、权限 0600，JSON 包含 `backendCredential`、
+`slackBotToken`，可选 `githubToken` 用于私有仓库或提高 API 配额。
+机器人需要 `chat:write` 并加入部署频道。服务器仅持有后端服务凭据，不持有 Supabase 密钥。
+凭据不得提交或写入日志；轮换 Slack token 时同步更新此文件。
+
+```sh
+sudo install -d -m 700 /var/lib/nori-updater/reports /var/lib/nori-updater/reported
+sudo install -m 755 deploy/nori-report.py /opt/nori-updater/
+sudo install -m 644 deploy/nori-report.service deploy/nori-report.path /etc/systemd/system/
+# 同时安装本版本 nori-update.py；正在部署时先等待其完成。
+sudo systemctl daemon-reload
+sudo systemctl enable --now nori-report.path nori-report.service
+```
+
+后端记录部署时间、主机、提交范围、PR 编号/标题/正文摘要、提交摘要和 Slack 回执。
+GitHub PR 关联来自 API，支持 squash、merge 和 rebase；直接提交也保留在 commits 中。
+一次部署最多支持 1,000 个提交和 100 个 PR，超限保留队列并要求人工处理。
+Slack 展示 PR 标题与链接及完整 diff 链接；正文摘要保存于后端。
+
+上报使用独立锁，不会重新构建、重启或回滚应用。网络错误保留队列，systemd 每 60 秒重试；
+GitHub 查询进度也持久化，避免 API 限流后从头重查。空队列不会查询 GitHub。
+重复后端请求按部署 UUID 去重，冲突内容返回 409；成功后将本地文件移至 `reported/`。
+Slack 回执已落盘时重试不会重复发送；使用稳定的 `client_msg_id` 降低发送结果不明时的重复风险，
+但 Slack 接收后、响应/本地落盘前发生中断仍可能产生重复消息，不能保证跨系统严格 exactly-once。
+通过部署 UUID 可识别这种重复；数据库部署记录仍唯一。
+
+```sh
+sudo journalctl -u nori-report.service -n 30 --no-pager
+sudo ls /var/lib/nori-updater/reports /var/lib/nori-updater/reported
+sudo systemctl restart nori-report.service
+```

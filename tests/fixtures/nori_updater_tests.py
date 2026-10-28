@@ -69,6 +69,43 @@ class FakeHost:
 
 
 class UpdaterTests(unittest.TestCase):
+    def test_report_write_recovery_keeps_successful_deployment_committed(self):
+        self.host.config['reporting'] = True
+        real = self.updater.queue_report
+        calls = []
+        def fail_once(transaction):
+            calls.append(transaction)
+            if len(calls) == 1:
+                raise OSError('temporary report write failure')
+            return real(transaction)
+        with patch.object(self.updater, 'queue_report', side_effect=fail_once):
+            self.updater.run()
+        self.assertEqual(module.read_json(self.updater.status)['state'], 'updated')
+        self.assertEqual(self.host.revision(self.host.root), 'new')
+        self.assertEqual(len(list((self.host.state / 'reports').glob('*.json'))), 1)
+        self.assertEqual(self.host.events.count('stop'), 1)
+
+    def test_success_reports_once_and_recovery_does_not_duplicate_receipts(self):
+        self.host.config['reporting'] = True
+        self.updater.run()
+        path = next((self.host.state / 'reports').glob('*.json'))
+        event = module.read_json(path)
+        self.assertEqual(event['revision'], 'new')
+        self.assertEqual(event['previousRevision'], 'old')
+        self.assertIn('deployedAt', event)
+        done = self.host.state / 'reported'
+        done.mkdir()
+        path.rename(done / path.name)
+        self.updater.queue_report({**event, 'target': event['revision']})
+        self.assertFalse(path.exists())
+
+    def test_rollback_never_queues_success_report(self):
+        self.host.config['reporting'] = True
+        self.host.new_health_failure = True
+        with self.assertRaises(module.UpdateError):
+            self.updater.run()
+        self.assertFalse((self.host.state / 'reports').exists())
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

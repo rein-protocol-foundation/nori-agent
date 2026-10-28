@@ -333,11 +333,27 @@ class Updater:
         atomic_json(self.status, value)
         print(json.dumps(value), flush=True)
 
+    def queue_report(self, transaction):
+        if not self.host.config.get('reporting'):
+            return
+        directory = self.host.state / 'reports'
+        directory.mkdir(mode=0o700, exist_ok=True)
+        # The ID and timestamp live in the commit journal before this write.
+        # Recovery can repeat it without creating another deployment record.
+        path = directory / (transaction['deploymentId'] + '.json')
+        if not path.exists() and not (self.host.state / 'reported' / path.name).exists():
+            atomic_json(path, {'deploymentId': transaction['deploymentId'],
+                              'revision': transaction['target'],
+                              'previousRevision': transaction['previousRevision'],
+                              'deployedAt': transaction['deployedAt']})
+
     def recover(self):
         transaction = read_json(self.journal)
         if not transaction:
             return False
         if transaction['phase'] == 'committed':
+            if 'deploymentId' in transaction:
+                self.queue_report(transaction)
             self.record('updated', revision=transaction['target'])
             self.journal.unlink()
             return True
@@ -367,7 +383,7 @@ class Updater:
 
     def activate(self, candidate, revision):
         ident = candidate.name
-        transaction = {'phase': 'prepared', 'target': revision, 'previousRevision': self.host.revision(self.host.root),
+        transaction = {'phase': 'prepared', 'deploymentId': str(uuid.uuid4()), 'target': revision, 'previousRevision': self.host.revision(self.host.root),
                        'candidate': str(candidate), 'previous': str(self.host.releases / ('previous-' + ident)),
                        'failed': str(self.host.releases / ('failed-' + ident))}
         atomic_json(self.journal, transaction)
@@ -381,10 +397,17 @@ class Updater:
             self.host.start()
             self.host.health()
             transaction['phase'] = 'committed'
+            transaction['deployedAt'] = timestamp()
             atomic_json(self.journal, transaction)
+            self.queue_report(transaction)
             self.record('updated', revision=revision, previous=transaction['previous'])
             self.journal.unlink()
         except BaseException:
+            if read_json(self.journal, {}).get('phase') == 'committed':
+                # A reporting/status write after a healthy commit must never
+                # relabel the deployed release as failed or roll it back.
+                self.recover()
+                return
             self.recover()
             raise
 
