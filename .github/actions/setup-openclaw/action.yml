@@ -1,0 +1,66 @@
+name: Prepare pinned OpenClaw
+description: Install locked dependencies and reuse build outputs only for the exact upstream pin.
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '24.16.0'
+    - uses: pnpm/action-setup@v4
+    - name: Read upstream build identity
+      id: identity
+      shell: bash
+      run: echo "revision=$(git -C vendor/openclaw rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+    - name: Locate pnpm store
+      id: store
+      shell: bash
+      run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+    - uses: actions/cache@v4
+      with:
+        path: ${{ steps.store.outputs.path }}
+        key: pnpm-store-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package.json', 'pnpm-lock.yaml', 'vendor/openclaw/pnpm-lock.yaml') }}
+    - name: Install upstream dependencies
+      shell: bash
+      working-directory: vendor/openclaw
+      run: pnpm install --frozen-lockfile
+    - name: List upstream generated assets
+      id: assets
+      shell: bash
+      working-directory: vendor/openclaw
+      run: |
+        node --import ./scripts/tsx.mjs --input-type=module <<'JS'
+        import fs from 'node:fs';
+        import { execFileSync } from 'node:child_process';
+        import { listGeneratedExtensionAssetSources } from './scripts/lib/static-extension-assets.mts';
+        const tracked = new Set(execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8' }).split('\0'));
+        const paths = listGeneratedExtensionAssetSources({ rootDir: process.cwd() }).filter(path => !tracked.has(path));
+        fs.appendFileSync(process.env.GITHUB_OUTPUT, 'paths<<GENERATED_ASSETS\n' + paths.map(path => 'vendor/openclaw/' + path).join('\n') + '\nGENERATED_ASSETS\n');
+        JS
+    - name: Restore pinned upstream build
+      id: build
+      uses: actions/cache@v4
+      with:
+        # No restore-keys: never load artifacts from another SDK revision or toolchain.
+        key: openclaw-build-v1-${{ runner.os }}-${{ runner.arch }}-node24.16.0-${{ steps.identity.outputs.revision }}-${{ hashFiles('package.json', 'pnpm-lock.yaml', 'vendor/openclaw/pnpm-lock.yaml', '.github/actions/setup-openclaw/action.yml') }}
+        path: |
+          vendor/openclaw/dist
+          vendor/openclaw/packages/*/dist
+          vendor/openclaw/dist-runtime
+          ${{ steps.assets.outputs.paths }}
+    - name: Build pinned upstream on cache miss
+      if: steps.build.outputs.cache-hit != 'true'
+      shell: bash
+      working-directory: vendor/openclaw
+      run: pnpm build
+    - name: Refresh restored build freshness metadata
+      if: steps.build.outputs.cache-hit == 'true'
+      shell: bash
+      working-directory: vendor/openclaw
+      run: |
+        node --import ./scripts/tsx.mjs --input-type=module <<'JS'
+        import { refreshLocalBuildStampTimes } from './scripts/lib/local-build-metadata.mts';
+        refreshLocalBuildStampTimes();
+        JS
+    - name: Install Rein workspace dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
