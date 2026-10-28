@@ -40,7 +40,7 @@ def request(url, headers=None, payload=None):
         return json.load(response)
 
 
-def metadata(event, repository, github_headers, checkpoint=lambda: None):
+def metadata(event, repository, github_headers, checkpoint=lambda: None, branch='main'):
     base = f'https://api.github.com/repos/{repository}'
     cache = event.setdefault('metadata', {'pages': {}, 'associations': {}})
     commits, prs = [], {}
@@ -59,13 +59,15 @@ def metadata(event, repository, github_headers, checkpoint=lambda: None):
             break
     # GitHub associations support squash, merge and rebase; commit-message
     # conventions cannot reliably identify the PR. Cache progress across limits.
+    included = {commit['sha'] for commit in commits}
     for commit in commits:
         sha = commit['sha']
         if sha not in cache['associations']:
             result = request(f'{base}/commits/{sha}/pulls?per_page=100', github_headers)
             cache['associations'][sha] = [
                 {'number': pr['number'], 'title': pr['title'][:512], 'summary': (pr.get('body') or '')[:2000]}
-                for pr in result if pr.get('merged_at')]
+                for pr in result if pr.get('merged_at') and
+                pr.get('merge_commit_sha') in included and pr.get('base', {}).get('ref') == branch]
             checkpoint()
         for pr in cache['associations'][sha]:
             prs[pr['number']] = pr
@@ -102,7 +104,7 @@ def deliver(path, config, credentials):
         github_headers = {'Accept': 'application/vnd.github+json'}
         if credentials.get('githubToken'):
             github_headers['Authorization'] = 'Bearer ' + credentials['githubToken']
-        commits, prs = metadata(event, repository, github_headers, lambda: save(path, event))
+        commits, prs = metadata(event, repository, github_headers, lambda: save(path, event), config.get('branch', 'main'))
         event['payload'] = {key: event[key] for key in ('deploymentId', 'revision', 'previousRevision', 'deployedAt')}
         event['payload'].update(repository=repository, environment='production',
                                 host=reporting.get('host', socket.gethostname()),

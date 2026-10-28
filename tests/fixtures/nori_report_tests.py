@@ -57,10 +57,14 @@ class ReportTests(unittest.TestCase):
             {'total_commits': 2, 'commits': [
                 {'sha': 'a'*40, 'commit': {'message': 'Add reporting (#22)'}},
                 {'sha': 'b'*40, 'commit': {'message': 'Direct fix'}}]},
-            [{'number': 22, 'merged_at': '2026-10-28', 'title': 'Add reporting', 'body': 'Adds Slack notifications'}],
+            [{'number': 22, 'merged_at': '2026-10-28', 'merge_commit_sha': 'a'*40,
+              'base': {'ref': 'main'}, 'title': 'Add reporting', 'body': 'Adds Slack notifications'},
+             {'number': 23, 'merged_at': '2026-10-29', 'merge_commit_sha': 'c'*40,
+              'base': {'ref': 'main'}, 'title': 'Later merge containing this commit', 'body': 'Not deployed'}],
             [],
         ]):
             commits, prs = report.metadata(self.payload, 'owner/repo', {})
         self.assertEqual(len(commits), 2)
         self.assertEqual(prs[0]['number'], 22)
         self.assertEqual(prs[0]['summary'], 'Adds Slack notifications')
+        self.assertEqual(len(prs), 1)
