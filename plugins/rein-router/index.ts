@@ -3,6 +3,7 @@ import { createRouter, assertRuntimeConfig, bindRouterLifecycle, PROVIDER_ID } f
 import { validateRouterConfig } from './policy.mjs';
 import { createManagedGateway } from './managed-gateway.mjs';
 import { bindManagedService, managedServiceScope, managedServiceRegistry } from './service-bridge.mjs';
+import { createFoundationAdminAuthorizer, FOUNDATION_ADMIN_TIMEOUT_MS } from './foundation-admin.ts';
 
 export default definePluginEntry({
   id: 'rein-router', name: 'Rein Subscription Router',
@@ -16,7 +17,11 @@ export default definePluginEntry({
       manager: createManagedGateway({ gateway: config.gateway, routes: config.routes,
         allowPaidUsage: config.allowPaidUsage }),
     }) : undefined;
-    const router = createRouter({ config, decisions: api.runtime.decisions, gatewayReady: gateway?.isReady });
+    const operations = api.config.plugins?.entries?.['rein-operations'];
+    const authorizeAdmin = createFoundationAdminAuthorizer({
+      config: operations?.enabled === true ? operations.config?.foundationDb : undefined,
+    });
+    const router = createRouter({ config, decisions: api.runtime.decisions, gatewayReady: gateway?.isReady, authorizeAdmin });
     if (!router.config.enabled) return;
     assertRuntimeConfig(router.config, api.config);
     bindRouterLifecycle(router, { events: api.runtime.events, lifecycle: api.lifecycle });
@@ -29,7 +34,7 @@ export default definePluginEntry({
       envVars: [router.config.gateway.apiKeyEnvVar], wrapStreamFn: router.wrapStreamFn,
       wrapSimpleCompletionStreamFn: ctx => router.wrapStreamFn({ ...ctx, simpleCompletion: true }) });
     api.on('before_model_resolve', router.beforeModelResolve,
-      { priority: 100, timeoutMs: router.config.decision.timeoutMs + (config.gateway.managed?.mode === 'console' ? 2000 : 1000) });
+      { priority: 100, timeoutMs: router.config.decision.timeoutMs + FOUNDATION_ADMIN_TIMEOUT_MS + (config.gateway.managed?.mode === 'console' ? 2000 : 1000) });
     api.on('before_agent_run', router.beforeAgentRun, { priority: 100 });
     api.on('llm_output', router.llmOutput);
     api.registerTool({ contextVersion: 2, create(ctx) {

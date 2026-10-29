@@ -51,6 +51,7 @@ export default definePluginEntry({
             { marker: 'CASE_SLACK_SMALL', senderId: alice, text: 'Explain this one-line code example.' },
             { marker: 'CASE_SLACK_MANUAL', senderId: alice, text: 'Explain a transaction.', manual: 'openai' },
             { marker: 'CASE_SLACK_PREMIUM', senderId: alice, text: 'Implement a concurrent queue with crash recovery and functional tests.', manual: 'claude' },
+            { marker: 'CASE_SLACK_REVOKED', senderId: alice, text: 'Implement another multi-file plugin with functional tests after my admin grant was revoked.', manual: 'auto' },
           ];
         try {
           for (const [index, item] of cases.entries()) {

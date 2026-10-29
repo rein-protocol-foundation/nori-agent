@@ -71,7 +71,7 @@ export function assertRuntimeConfig(config, host) {
 }
 
 export function createRouter({ config: raw, decisions, clock = () => Date.now(), environment = process.env,
-  fetchImpl = globalThis.fetch, gatewayReady }) {
+  fetchImpl = globalThis.fetch, gatewayReady, authorizeAdmin }) {
   const config = validateRouterConfig(raw);
   const runs = new Map();
   const recent = new Map();
@@ -80,7 +80,21 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
   const restricted = route => route?.access === 'admin-complex-coding';
   const isAdmin = ctx => config.adminSenders.some(sender => sender.channel === (ctx.channel ?? ctx.messageProvider) &&
     sender.accountId === ctx.accountId && sender.senderId === ctx.senderId);
-  const requester = ctx => JSON.stringify([ctx.agentId, ctx.sessionKey, ctx.channel ?? ctx.messageProvider, ctx.accountId, ctx.senderId]);
+  const requester = ctx => JSON.stringify([ctx.agentId, ctx.sessionKey, ctx.sessionId, ctx.channel ?? ctx.messageProvider,
+    ctx.accountId, ctx.senderId, ctx.chatId, ctx.channelContext?.chat?.id, ctx.channelContext?.sender?.id,
+    ctx.inputProvenance?.kind, ctx.trigger]);
+  async function verifiedAdmin(ctx) {
+    if (!isAdmin(ctx)) return false;
+    if (!config.routes.some(restricted)) return true;
+    if (typeof authorizeAdmin !== 'function') return false;
+    let timer;
+    try {
+      return await Promise.race([
+        Promise.resolve().then(() => authorizeAdmin(ctx)).then(value => value === true).catch(() => false),
+        new Promise(resolve => { timer = setTimeout(() => resolve(false), 3000); }),
+      ]);
+    } finally { clearTimeout(timer); }
+  }
   const remember = (ctx, entry) => {
     const key = scopeKey(ctx);
     if (key) {
@@ -177,7 +191,7 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
         return;
       }
       const channel = ctx.channel ?? ctx.messageProvider;
-      const admin = isAdmin(ctx);
+      const admin = await verifiedAdmin(ctx);
       const candidates = config.routes.filter(route => admin || !restricted(route));
       let outcome;
       let reason;

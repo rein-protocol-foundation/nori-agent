@@ -132,6 +132,8 @@ export function createConsoleSync({ root, native, gatewayBaseUrl = 'http://127.0
     const host = parseHost(await readPrivate(root, configPath, '{}', { publicFile: true }));
     const agentTargets = [...new Set([...(host.agents?.list ?? []).map(a => a.id), ...Object.keys(host.agents?.entries ?? {})])];
     return { settings: structuredClone(state), agentTargets, catalog, recommendations: recommendPolicy(catalog), lastSync, error: lastError,
+      administratorAuthority: { source: 'foundation', configured: host.plugins?.entries?.['rein-operations']?.enabled === true &&
+        host.plugins.entries['rein-operations'].config?.foundationDb?.enabled === true },
       jevKeyConfigured: validJevKey(secret.jevApiKey),
       configPath, openclawModel: 'rein-magpie/auto' };
   }

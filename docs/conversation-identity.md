@@ -30,6 +30,14 @@ promotion or Discord join time. Multiple email identities produce null rather th
 Deleted/missing contacts or failed profile reads produce null. No database migration is needed.
 Older backends remain compatible but return no profile.
 
+The identity endpoint also returns `is_administrator`, based on the website's
+current administrator policy for the freshly bound canonical email. This field
+is consumed privately by the restricted model router, independently of the
+community/Contributor/Director roles shown by the tool. `adminSenders` is an
+additional account allowlist, not a substitute for this backend check. Unbound
+accounts must complete the existing binding flow; model routing never creates
+an identity link or grants an administrator role.
+
 Deploy the companion backend source in `rein-foundation-community-discovery`, then reload the
 Rein plugin/workspace policy in each relevant gateway. In every native channel tool allowlist,
 include `rein_member_status` alongside binding/catalog tools. `rein_status` describes implemented
