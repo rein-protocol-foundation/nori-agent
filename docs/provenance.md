@@ -1,6 +1,6 @@
 # Source provenance
 
-Initialized 2026-09-22 from the local ReinProtocolFoundation workspace (`BeneficenceProtocol`). Source remote: https://github.com/tempest2023/ReinProtocolFoundation. Source HEAD at capture: `117d0a43f6a5732cfa75bd6ef4d2ada24ac7bf9e`.
+Initialized 2026-09-22 from the local ReinProtocolFoundation workspace (`BeneficenceProtocol`). Source remote at capture: `tempest2023/ReinProtocolFoundation` (now https://github.com/rein-protocol-foundation/ReinProtocolFoundation). Source HEAD at capture: `117d0a43f6a5732cfa75bd6ef4d2ada24ac7bf9e`.
 
 The PRDs and PROJECT.md are byte-for-byte working-tree snapshots, not a claim they were committed at that HEAD. SHA-256 fingerprints are recorded in source-hashes.json. The source README is preserved as foundation-implementation-snapshot.md.
 

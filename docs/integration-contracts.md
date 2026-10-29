@@ -47,7 +47,7 @@ service owns the schema and the credential, and the Agent reaches the data only 
 operations above. Development and production share one project with isolated `dev_*` and `prod_*`
 table sets, and the backend selects the environment; nothing in the Agent defaults it.
 
-The slice's migrations live in the sibling Foundation repository `tempest2023/ReinProtocolFoundation`,
+The slice's migrations live in the sibling Foundation repository `rein-protocol-foundation/ReinProtocolFoundation`,
 which carries them on its PR #13 branch (PR #13, open). The current PR head is `78281fa`
 ("Recover Remote-Only Case 7 Same-Day Fixture Migration", 2026-09-28); the rename commit
 `08542ad09932a4cefb62f230a9bdcf9fd4d32dfe` ("Complete Rein governance catalog rename through
@@ -154,7 +154,7 @@ Required contract properties:
 pool from stored proposals of the named vote type; `rein_poll_vote` accepts `approvedProposalIds`
 only, an empty list is the abstention, and the backend freezes the candidate list and both limits
 at insert time. The local migrations are the source of that enforcement. They are reviewed and
-committed in the sibling Foundation repository (`tempest2023/ReinProtocolFoundation`) and applied to
+committed in the sibling Foundation repository (`rein-protocol-foundation/ReinProtocolFoundation`) and applied to
 the linked `BeneficenceProtocol` project's `dev_*` set, but no registered tool has exercised the
 backend end to end: the enforcement described above is proven by local tests only, and nothing here
 is a live end-to-end result. The concrete per-type cap and approval-budget values remain unapproved

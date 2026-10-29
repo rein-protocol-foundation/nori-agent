@@ -197,7 +197,7 @@ login recovery. See [browser setup and verification](docs/agent-browser.md). Cre
 are enrolled locally; existing public-channel permissions are not expanded.
 
 ```sh
-git clone --recurse-submodules https://github.com/tempest2023/rein-agent.git
+git clone --recurse-submodules https://github.com/rein-protocol-foundation/nori-agent.git rein-agent
 cd rein-agent
 npm run toolchain:pnpm -- install                                     # Rein workspace packages only
 npm run toolchain:pnpm -- --dir vendor/openclaw install --frozen-lockfile
