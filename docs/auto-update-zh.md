@@ -26,6 +26,7 @@ GitHub Webhook 主动推送事件，服务器常驻 `nori-webhook.service` 接�
    将旧部署移动到备份，再将候选部署移动到原固定路径，依次重启服务。
    不使用 `current` 符号链接，因为现有私有存储拒绝符号链接路径。
 6. 检查 systemd 服务、Router 同步，以及两个网关的只读 `rein_status`。
+   每个健康探针显式指定 `gateways[].agentId`（默认 `main`），因此新增开发 Agent 不会造成会话归属歧义。
    默认 150 秒内未就绪，自动恢复旧代码及停服时的私有状态并重启。
 7. 若配置 `reporting`，健康检查成功后将部署 UUID、时间及新旧 SHA 写入持久报告队列。
    独立的 `nori-report.service` 查询 GitHub 变更和关联 PR，先写 Foundation 后端，
