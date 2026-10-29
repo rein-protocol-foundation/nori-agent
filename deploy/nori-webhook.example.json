@@ -1,5 +1,5 @@
 {
-  "repository": "tempest2023/rein-agent",
+  "repository": "rein-protocol-foundation/nori-agent",
   "branch": "main",
   "port": 3450,
   "path": "/hooks/github",
