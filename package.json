@@ -1,5 +1,10 @@
 {
   "name": "rein-agent",
+  "description": "AI agent for NGO, nonprofit and public-benefit organization operations: daily decisions, financial resource coordination, people management and community maintenance.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rein-protocol-foundation/nori-agent.git"
+  },
   "version": "0.1.0",
   "private": true,
   "type": "module",

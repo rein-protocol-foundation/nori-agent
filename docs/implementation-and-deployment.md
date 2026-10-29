@@ -1,4 +1,4 @@
-# Rein Agent development, verification and deployment record
+# Nori-Agent development, verification and deployment record
 
 English | [简体中文](implementation-and-deployment-zh.md)
 
@@ -28,7 +28,7 @@ below describe the current connection configuration.
 
 ## Delivery boundary
 
-Rein Agent continues to use official OpenClaw source as its runtime. Business code belongs only in
+Nori-Agent continues to use official OpenClaw source as its runtime. Business code belongs only in
 `plugins/rein-operations/`. This delivery is a **repeatably verifiable local business core and
 development rehearsal**, not an NGO production system connected to real members and funds.
 
@@ -354,8 +354,8 @@ into the Agent.
 1. Obtain the repository and official runtime:
 
    ```sh
-   git clone --recurse-submodules https://github.com/rein-protocol-foundation/nori-agent.git rein-agent
-   cd rein-agent
+   git clone --recurse-submodules https://github.com/rein-protocol-foundation/nori-agent.git
+   cd nori-agent
    node --version # Requires >=24.16.0 <25 or >=26.1.0; commands use the local toolchain
    npm run toolchain:pnpm -- --version # 12.4.2
    npm run toolchain:pnpm -- exec node -v # Expected v24.16.x

@@ -1,4 +1,4 @@
-# Rein Agent 开发、验证与部署记录
+# Nori-Agent 开发、验证与部署记录
 
 [English](implementation-and-deployment.md) | 简体中文
 
@@ -20,7 +20,7 @@ Nori 默认连接 `https://rein-protocol.org`。`REIN_BACKEND_URL` 的优先级�
 
 ## 交付边界（历史记录）
 
-Rein Agent 继续以官方 OpenClaw 源码作为运行时，业务代码只放在 `plugins/rein-operations/`。本次交付是**可重复验证的本地业务核心与开发演练**，不是已接入真实成员和资金的 NGO 生产系统。
+Nori-Agent 继续以官方 OpenClaw 源码作为运行时，业务代码只放在 `plugins/rein-operations/`。本次交付是**可重复验证的本地业务核心与开发演练**，不是已接入真实成员和资金的 NGO 生产系统。
 
 **当前形态（2026-09-30 起）：跨频道后端架构。** 当前实现**不限于单一 Slack 工作区**：`foundationDb.workspaces` 按平台登记（可同时包含 Slack 与 Discord），Agent 依据宿主可信上下文里的 `messageChannel` 与原生频道 ID 选出恰好一个工作区，因此一个部署可以服务多个平台而不串号；界面仍是 Slack 优先，Discord 只作为同一机制的第二个平台。成员、董事与可用资金仍以**组织自有数据库**为准，但**Agent 不再接触它**：所有治理读、写、身份解析与身份绑定都经由一个已认证的**后端服务 API**（见下段与部署手册）。**已有的是接口契约**——`docs/integration-contracts.md` 的端点、操作名与结果形状，以及插件内对应的传输与适配模块都已就位；**尚未有的是实机部署**——没有连接任何真实后端、Slack 或 Discord 工作区，因此整套后端路径在生产上未经验证。
 
@@ -119,8 +119,8 @@ v0.1 方向已落地 14 个工具，且**只在显式 `foundationDb` 配置块�
 1. 获取仓库和官方运行时：
 
    ```sh
-   git clone --recurse-submodules https://github.com/rein-protocol-foundation/nori-agent.git rein-agent
-   cd rein-agent
+   git clone --recurse-submodules https://github.com/rein-protocol-foundation/nori-agent.git
+   cd nori-agent
    node --version # 环境需要 >=24.16.0 <25 或 >=26.1.0；命令本身交由本地工具链执行
    npm run toolchain:pnpm -- --version # 12.4.2
    npm run toolchain:pnpm -- exec node -v # 期望 v24.16.x

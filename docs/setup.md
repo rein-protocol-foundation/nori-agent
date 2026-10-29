@@ -129,8 +129,8 @@ export PATH="$PWD/.toolchain/node_modules/.bin:$PATH"   # optional; makes plain 
 ## 1. Clone with the runtime source
 
 ```sh
-git clone --recurse-submodules https://github.com/rein-protocol-foundation/nori-agent.git rein-agent
-cd rein-agent
+git clone --recurse-submodules https://github.com/rein-protocol-foundation/nori-agent.git
+cd nori-agent
 ```
 
 If the repository is already cloned without submodules, run
@@ -443,7 +443,7 @@ confirmation.
    scaffold and the plugin boundary only.
 2. Read the PRD and resolve the launch prerequisites in [decisions](decisions.md) with authorized
    owners.
-3. Implement identity, policy, durable records, governance and outbox services as Rein-owned
+3. Implement identity, policy, durable records, governance and outbox services as Nori-Agent-owned
    plugins with audited tool contracts. `config/operations.example.json` is a design input, not
    runtime enforcement.
 4. Configure exactly one chat platform, its channel scopes and its credentials outside git. Wire

@@ -1,4 +1,4 @@
-# Rein Agent v0.1 十个 Slack 演练案例
+# Nori-Agent v0.1 十个 Slack 演练案例
 
 这些案例对应**已确认的 v0.1 纵向切片**：Slack 身份解析（后端验证绑定） → Contributor 提案 → Board 只投赞成票的批准投票与结果 → 只读资金快照。范围与延后项见[决策登记册](decisions.md)，逐项证据见 [AC01–AC20 验收矩阵](p0-acceptance-matrix.md)。
 

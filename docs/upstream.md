@@ -1,6 +1,6 @@
 # Updating OpenClaw
 
-Rein Agent does not fork OpenClaw. The official source is vendored as a git submodule at
+Nori-Agent does not fork OpenClaw. The official source is vendored as a git submodule at
 `vendor/openclaw`, pinned to one reviewed commit. Rein behaviour lives in `plugins/`, so upgrading consists of reviewing the new pin, rebuilding the runtime, and checking plugin compatibility.
 
 Read the pin from the repository instead of trusting a number in a document:

@@ -1,4 +1,4 @@
-# Rein Operations — local OpenClaw plugin
+# Nori-Agent Operations — local OpenClaw plugin
 
 The native plugin is separate from `vendor/openclaw` and imports only the public `openclaw/plugin-sdk/plugin-entry` seam. `rein_status` reports the development state. `rein_simulate_proposal` checks synthetic fields without granting approval; `rein_simulate_vote` runs a synthetic round with explicitly supplied rules and ballots. An explicitly configured, single-platform proposal bridge can additionally register `rein_proposal_create`, `rein_proposal_revise`, `rein_proposal_confirm` and `rein_proposal_submit`. It takes the account from OpenClaw's trusted v2 tool context and writes to a local proposal ledger. No registrar, payment, Board-vote or external publication tool is enabled. Real platform and registry adapters remain pending.
 
@@ -62,6 +62,6 @@ Manifest: `openclaw.plugin.json`. Runtime entry: `index.ts`. Artwork: `assets/ic
 
 The local `openclaw` development link uses this repository's pinned host; the peer dependency deliberately does not promise compatibility with untested future versions. Update it after compatibility verification. Plugin APIs are experimental.
 
-New business tools belong here or in additional Rein-owned packages, never in upstream `src/` or `extensions/`. Use deterministic authorization and durable records, optional tools for side effects, and names prefixed `rein_`. A prompt, manifest declaration or user-supplied actor ID is not an authorization check. See [deployment and ten test cases](../../docs/implementation-and-deployment-zh.md).
+New business tools belong here or in additional Nori-Agent-owned packages, never in upstream `src/` or `extensions/`. Use deterministic authorization and durable records, optional tools for side effects, and names prefixed `rein_`. A prompt, manifest declaration or user-supplied actor ID is not an authorization check. See [deployment and ten test cases](../../docs/implementation-and-deployment-zh.md).
 
 See [setup](../../docs/setup.md) and [updating OpenClaw](../../docs/upstream.md).

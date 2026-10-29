@@ -158,7 +158,7 @@ failed readiness check or child-process exit fails closed; runtime startup perfo
 download or automatic restart. An externally managed gateway remains available by omitting
 `gateway.managed`.
 
-OpenClaw prepares separate plugin instances for model runs. A Rein-owned process registry lets
+OpenClaw prepares separate plugin instances for model runs. A Nori-Agent-owned process registry lets
 those instances observe the actual service owner's readiness, scoped to the plugin source, host
 state directory and complete normalized router policy. Only service startup publishes ownership;
 prepared hooks cannot start or adopt a gateway. Shutdown fences readiness before cleanup, and

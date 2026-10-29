@@ -6,7 +6,7 @@ import { bindManagedService, managedServiceScope, managedServiceRegistry } from 
 import { createFoundationAdminAuthorizer, FOUNDATION_ADMIN_TIMEOUT_MS } from './foundation-admin.ts';
 
 export default definePluginEntry({
-  id: 'rein-router', name: 'Rein Subscription Router',
+  id: 'rein-router', name: 'Nori-Agent Subscription Router',
   description: 'Opt-in Magpie subscription routes and bounded Jev decisions.',
   register(api) {
     const config = validateRouterConfig(api.pluginConfig);

@@ -11,7 +11,7 @@ Confirmed by the user on 2026-09-24 for the early Web3 DAO period:
 
 | ID | Confirmed decision |
 | --- | --- |
-| D01 | OpenClaw is the Agent runtime. It is vendored as a pinned, read-only git submodule at `vendor/openclaw`, and Rein behaviour lives in Rein-owned plugin packages under `plugins/`. |
+| D01 | OpenClaw is the Agent runtime. It is vendored as a pinned, read-only git submodule at `vendor/openclaw`, and Rein behaviour lives in Nori-Agent-owned plugin packages under `plugins/`. |
 | D02 | P0 uses Slack as its single chat platform; members mention the Agent in Slack conversations. A second platform (for example Discord) stays a later phase. |
 | D03 | During the early Web3 DAO period, members, directors and available funds stay in the organization's own database (the Foundation site's Supabase project, with isolated `dev_*` and `prod_*` table sets). The Agent reaches that data only through one authenticated backend service and holds no database credential of its own. A Slack account acts only after a canonical verified link to a community record. |
 | D04 | P0 Board voting is **approve-only**. Every member on the frozen eligible list holds one equal weight and may record explicit approvals; there is no reject choice, and `abstain` means casting no approvals. The candidate with the highest approval count wins. A round in which every ballot abstains produces no winner. |
@@ -207,7 +207,7 @@ the voting window length; channel and space mapping; and who may see an individu
   `vendor/openclaw` submodule pointer and updated only through the reviewed flow in
   [upstream](upstream.md). Read the live commit with `git ls-files -s vendor/openclaw` or
   `git ls-tree HEAD vendor/openclaw`; do not restate a commit hash in documents that can drift.
-- Rein behaviour belongs in Rein-owned plugin packages under `plugins/`. No Rein commit edits
+- Rein behaviour belongs in Nori-Agent-owned plugin packages under `plugins/`. No Rein commit edits
   `vendor/openclaw/src/` or `vendor/openclaw/extensions/`; `.github/workflows/openclaw.yml` fails
   when tracked upstream files change.
 - `rein_status` reports that live automation is disabled. `rein_simulate_proposal` and

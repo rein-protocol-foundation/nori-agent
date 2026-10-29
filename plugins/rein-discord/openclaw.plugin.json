@@ -1,10 +1,10 @@
 {
   "id": "rein-discord",
-  "name": "Rein Isolated Discord",
+  "name": "Nori-Agent Isolated Discord",
   "categories": ["channels"],
-  "description": "Rein-owned dedicated Discord onboarding transport; disables the bundled Discord transport and isolates native users and audiences before session access.",
+  "description": "Nori-Agent-owned dedicated Discord onboarding transport; disables the bundled Discord transport and isolates native users and audiences before session access.",
   "channels": ["discord"],
-  "channelConfigs": { "discord": { "label": "Rein Isolated Discord", "description": "Dedicated per-member onboarding; native Discord transport must be disabled.", "schema": { "type": "object", "properties": { "enabled": { "type": "boolean" } }, "additionalProperties": false } } },
+  "channelConfigs": { "discord": { "label": "Nori-Agent Isolated Discord", "description": "Dedicated per-member onboarding; native Discord transport must be disabled.", "schema": { "type": "object", "properties": { "enabled": { "type": "boolean" } }, "additionalProperties": false } } },
   "activation": { "onStartup": true },
   "contracts": { "tools": ["rein_memory_read", "rein_memory_remember", "rein_memory_forget"] },
   "configSchema": {

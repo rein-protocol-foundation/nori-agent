@@ -2,7 +2,7 @@
 
 This matrix preserves the PRD's AC01–AC20 **historical acceptance evidence**. Current configuration
 and the 19 backend tools are documented in [setup](setup.md#optional-enable-backend-backed-tools);
-older direct-database tool counts and test results below are not current deployment instructions. “Core tested” means synthetic inputs exercised deterministic Rein-owned modules. It does not mean the real chat, member registry, website or finance provider has passed. A production result requires the provider evidence in the last column. The ten synthetic Slack
+older direct-database tool counts and test results below are not current deployment instructions. “Core tested” means synthetic inputs exercised deterministic Nori-Agent-owned modules. It does not mean the real chat, member registry, website or finance provider has passed. A production result requires the provider evidence in the last column. The ten synthetic Slack
 rehearsal cases and their final verdicts are in the [v0.1 governance acceptance record](governance-acceptance-2026-09-28.md).
 
 ## v0.1 slice versus deferred work

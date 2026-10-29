@@ -192,7 +192,7 @@ export function buildOpenClawFragment(raw, pluginPath) {
   if (typeof pluginPath !== 'string' || !isAbsolute(pluginPath) ||
       /[\p{Cc}\p{Cf}\p{Cs}]/u.test(pluginPath)) invalid('pluginPath');
   const models = [
-    { id: 'auto', name: 'Rein dynamic router', reasoning: config.routes.some(candidate => candidate.effort !== 'off'),
+    { id: 'auto', name: 'Nori-Agent dynamic router', reasoning: config.routes.some(candidate => candidate.effort !== 'off'),
       input: ['text'], contextWindow: Math.min(...config.routes.map(candidate => candidate.contextWindow)),
       maxTokens: Math.min(...config.routes.map(candidate => candidate.maxTokens)) },
     ...config.routes.map(candidate => ({ id: candidate.id, name: `${candidate.provider}: ${candidate.gatewayModel}`,

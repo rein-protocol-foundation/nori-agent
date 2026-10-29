@@ -1,6 +1,6 @@
 {
   "id": "rein-operations",
-  "name": "Rein Operations",
+  "name": "Nori-Agent Operations",
   "description": "Foundation operations, verified identity linking, member-only published resource/event queries and explicitly configured governance tools.",
   "categories": [
     "other"
