@@ -1,5 +1,5 @@
 {
-  "repository": "https://github.com/tempest2023/rein-agent.git",
+  "repository": "https://github.com/rein-protocol-foundation/nori-agent.git",
   "branch": "main",
   "root": "/home/ubuntu/rein-agent",
   "releases": "/home/ubuntu/nori-releases",
