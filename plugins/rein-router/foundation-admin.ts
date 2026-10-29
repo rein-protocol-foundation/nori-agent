@@ -12,7 +12,7 @@ export function createFoundationAdminAuthorizer({ config, env = process.env, tra
   env?: Record<string, string | undefined>;
   transport?: BackendTransport;
   now?: () => number;
-}) {
+}, accepts: (member: Record<string, unknown>) => boolean = member => member.is_administrator === true) {
   let resolved: ReturnType<typeof parseBackendConfig>;
   let backend: BackendTransport;
   try {
@@ -50,7 +50,13 @@ export function createFoundationAdminAuthorizer({ config, env = process.env, tra
       if (!result.ok) return false;
       const member = result.body as Record<string, unknown>;
       return member.ok === true && member.status === 'resolved' && typeof member.contact_id === 'string' &&
-        Boolean(member.contact_id) && member.is_administrator === true;
+        Boolean(member.contact_id) && accepts(member);
     } catch { return false; }
   };
+}
+
+/** Current Contributor/Director roles qualify only after the independent channel gate passes. */
+export function createFoundationDeveloperAuthorizer(options: Parameters<typeof createFoundationAdminAuthorizer>[0]) {
+  return createFoundationAdminAuthorizer(options, member => member.is_administrator === true ||
+    member.is_active_contributor === true || member.is_director === true);
 }

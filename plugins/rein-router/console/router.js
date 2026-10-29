@@ -8,7 +8,7 @@ magpie.plugin('rein-router', ctx => {
     <section class="rein-section"><div class="rein-section-head"><div><h2>1. Provider 与模型</h2><p>直接来自 Magpie。新增或移除模型后，每 5 秒自动同步。</p></div><button type="button" class="text" id="rein-providers">管理 Providers ↗</button></div><div id="rein-catalog"></div></section>
     <section class="rein-section"><div class="rein-section-head"><div><h2>2. 任务路由与思考强度</h2><p>选择适合的模型；推荐值只是起点，可按实际效果调整。</p></div><button type="button" class="text" id="rein-recommend">使用推荐策略</button></div><div id="rein-policy"></div></section>
     <section class="rein-section"><div class="rein-section-head"><div><h2>3. Dynamic Router</h2><p>Jev 判断任务类型、复杂度及是否需要上下文，再选择模型与思考强度。</p></div></div><div id="rein-dynamic"></div></section>
-    <details class="rein-advanced"><summary>回退顺序与管理员编码任务</summary><div id="rein-fallbacks"></div><label class="rein-field">管理员账号白名单（每行 channel/accountId/senderId）<textarea id="rein-admins" rows="3" placeholder="discord/default/YOUR_USER_ID"></textarea></label><p>受限模型还要求账号已绑定 Rein 账户，且后端确认当前管理员权限。白名单不授予管理员身份或工具权限。</p></details>
+    <details class="rein-advanced"><summary>开发频道、邀请管理员与回退顺序</summary><div id="rein-fallbacks"></div><label class="rein-field">邀请管理员（每行 channel/accountId/senderId）<textarea id="rein-admins" rows="3" placeholder="discord/default/YOUR_USER_ID"></textarea></label><p>开发频道只接受这些管理员的邀请；成员还须绑定 Rein 账户，并拥有当前 Contributor、Director 或管理员角色。</p><label class="rein-field">私有开发频道（每行 accountId/workspaceId/channelId/agentId）<textarea id="rein-dev-channels" rows="3" placeholder="default/T_WORKSPACE/C_CHANNEL/nori-development"></textarea></label><p>开发 Agent 必须配置独立沙箱。退出频道、角色撤销或核验失败后，开发模型和工具均不可用。</p></details>
     <footer class="rein-save"><div><strong>连接到现有 OpenClaw</strong><p>保存后自动合并配置。首次连接后启动或重启 OpenClaw，后续目录变更自动更新。</p></div><div class="rein-actions"><button type="button" id="rein-pause" class="text" hidden>暂停路由</button><button type="button" id="rein-save" class="text primary">保存并连接 OpenClaw</button></div></footer>
     <p class="rein-footnote">OpenClaw 就是你的 harness，无需连接 Magpie 的 Agents。手动选模型时使用 /model；自动模式使用 /model auto。</p></div>`,
     mount() {
@@ -90,12 +90,12 @@ magpie.plugin('rein-router', ctx => {
       const fundingMenu = ctx.ui.menu([{ v: 'subscription', name: '订阅额度' }, { v: 'coding-plan', name: 'Coding Plan' }, { v: 'pay-as-you-go', name: 'API 按量付费' }],
         funding.mode, '计费来源', v => { funding.mode = v; funding.confirmed = false; changed(); render(); });
       card.append(ctx.ui.row('计费来源', '仅设置调用边界，账号和模型继续在 Providers 管理。', fundingMenu));
-      card.append(ctx.ui.row('使用范围', '受限模型要求：账号白名单、后端当前管理员权限、复杂开发分类。每个新任务重新验证；手动选择与自动回退也遵守。',
-        ctx.ui.menu([{ v: 'all', name: '普通任务可用' }, { v: 'admin-complex-coding', name: '仅限指定管理员的复杂开发任务' }],
+      card.append(ctx.ui.row('使用范围', '开发频道模式要求：指定私有频道、当前成员、管理员邀请、后端有效角色和复杂开发分类。每个新任务重新验证。',
+        ctx.ui.menu([{ v: 'all', name: '普通任务可用' }, { v: 'development-complex-coding', name: '仅限授权开发频道的复杂开发任务' }, { v: 'admin-complex-coding', name: '旧版：仅限指定管理员' }],
           funding.access ?? 'all', '使用范围', v => { funding.access = v; changed(); })));
-      if (funding.access === 'admin-complex-coding') card.append(el('p', state.administratorAuthority?.configured ? '' : 'rein-error',
+      if (['admin-complex-coding', 'development-complex-coding'].includes(funding.access)) card.append(el('p', state.administratorAuthority?.configured ? '' : 'rein-error',
         state.administratorAuthority?.configured
-          ? '身份来源：Rein Protocol 后端。未绑定、无管理员权限或查询失败时，自动路由使用普通模型；手动选择受限模型会被拒绝。'
+          ? '身份来源：Rein Protocol 后端。开发频道还核验 Slack 成员与邀请来源。未绑定、无有效角色或查询失败均不放行。'
           : '尚未配置 Foundation 身份后端，受限模型不会放行。请先完成 rein-operations 的 foundationDb 配置和账号绑定。'));
       card.append(ctx.ui.row('已确认此 Provider 的额度与额外用量设置', '新增模型继承此 Provider 的边界；新增 Provider 默认不启用。',
         ctx.ui.toggle(funding.confirmed, '确认 ' + models[0].provider + ' 计费设置', v => { funding.confirmed = v; changed(); })));
@@ -105,6 +105,8 @@ magpie.plugin('rein-router', ctx => {
     renderPolicy(); renderDynamic(); renderFallbacks();
     $r('#rein-admins').value = (settings.adminSenders ?? []).map(a => [a.channel,a.accountId,a.senderId].join('/')).join('\n');
     $r('#rein-admins').oninput = changed;
+    $r('#rein-dev-channels').value = (settings.developmentChannels ?? []).map(c => [c.accountId,c.workspaceId,c.channelId,c.agentId].join('/')).join('\n');
+    $r('#rein-dev-channels').oninput = changed;
     $r('#rein-save').onclick = save;
     $r('#rein-pause').hidden = !settings.enabled;
     $r('#rein-pause').onclick = async () => {
@@ -195,6 +197,12 @@ magpie.plugin('rein-router', ctx => {
     try {
       const admins = $r('#rein-admins').value.trim();
       settings.adminSenders = admins ? admins.split('\n').map(line => { const [channel,accountId,senderId] = line.trim().split('/'); return { channel,accountId,senderId }; }) : [];
+      const development = $r('#rein-dev-channels').value.trim();
+      settings.developmentChannels = development ? development.split('\n').map(line => {
+        const [accountId,workspaceId,channelId,agentId] = line.trim().split('/');
+        const previous = settings.developmentChannels?.find(c => c.accountId === accountId && c.channelId === channelId);
+        return { accountId,workspaceId,channelId,agentId,botTokenEnvVar: previous?.botTokenEnvVar ?? 'SLACK_BOT_TOKEN' };
+      }) : [];
       settings.policy = policy; settings.enabled = true;
       const key = jevDraft;
       state = await api('settings', { settings, ...(key ? { jevApiKey: key } : {}) });

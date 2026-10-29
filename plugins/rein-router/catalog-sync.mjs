@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { buildOpenClawFragment } from './policy.mjs';
+import { buildOpenClawFragment, isRestrictedRoute } from './policy.mjs';
 
 const modelId = /^[A-Za-z0-9][A-Za-z0-9._-]*\/[A-Za-z0-9][A-Za-z0-9._/-]{0,255}$/;
 const efforts = ['off', 'low', 'medium', 'high'];
@@ -59,10 +59,10 @@ export function compileCatalog({ catalog, settings, gateway, pluginPath }) {
       (['subscription', 'coding-plan'].includes(f.mode) || (paid && f.mode === 'pay-as-you-go'));
   });
   if (!eligible.length) throw new Error('router_no_eligible_models');
-  const unrestricted = eligible.filter(m => funding[m.providerId].access !== 'admin-complex-coding');
+  const unrestricted = eligible.filter(m => !isRestrictedRoute(funding[m.providerId]));
   const policy = { ...recommendPolicy(unrestricted), ...settings.policy };
-  const routes = eligible.map(m => makeRoute(m, catalogRouteId(m.id), funding[m.providerId].access === 'admin-complex-coding' && m.efforts.includes('high') ? 'high' : m.efforts.includes('medium') ? 'medium' : m.efforts[0],
-    funding[m.providerId].access === 'admin-complex-coding'
+  const routes = eligible.map(m => makeRoute(m, catalogRouteId(m.id), isRestrictedRoute(funding[m.providerId]) && m.efforts.includes('high') ? 'high' : m.efforts.includes('medium') ? 'medium' : m.efforts[0],
+    isRestrictedRoute(funding[m.providerId])
       ? 'Restricted complex development. Prefer the named code route; select another model only for unusually demanding architecture, debugging or code review that needs its stronger capabilities.'
       : 'Manually selectable model; choose only when suitable for this task.'));
   for (const [role, purpose] of Object.entries(roles)) {
@@ -72,7 +72,7 @@ export function compileCatalog({ catalog, settings, gateway, pluginPath }) {
     if (!model) throw new Error(`router_policy_model_missing_${role}`);
     if (!model.efforts.includes(selected.effort)) throw new Error(`router_policy_effort_invalid_${role}`);
     if (role === 'general' && !['medium', 'high'].includes(selected.effort)) throw new Error('router_capable_default_required');
-    if (role !== 'code' && funding[model.providerId].access === 'admin-complex-coding') throw new Error('router_restricted_policy');
+    if (role !== 'code' && isRestrictedRoute(funding[model.providerId])) throw new Error('router_restricted_policy');
     if (role !== 'code' && funding[model.providerId].mode === 'coding-plan') throw new Error('router_coding_plan_scope');
     routes.push(makeRoute(model, role, selected.effort, purpose));
   }
@@ -80,7 +80,7 @@ export function compileCatalog({ catalog, settings, gateway, pluginPath }) {
   const fallbackRoutes = settings.fallbacks ?? [];
   if (!Array.isArray(fallbackRoutes) || fallbackRoutes.some(r => !Object.hasOwn(roles, r))) throw new Error('router_fallback_invalid');
   const raw = { enabled: true, gateway, routes, defaultRoute: 'general', fallbackRoutes,
-    allowPaidUsage: paid, channels: ['discord', 'slack'], adminSenders: settings.adminSenders ?? [],
+    allowPaidUsage: paid, channels: ['discord', 'slack'], adminSenders: settings.adminSenders ?? [], developmentChannels: settings.developmentChannels ?? [],
     decision: { allowPaidJev: settings.dynamic === true, minProbability: settings.minProbability ?? 0.8 } };
   const fragment = buildOpenClawFragment(raw, pluginPath);
   if (settings.dynamic) {

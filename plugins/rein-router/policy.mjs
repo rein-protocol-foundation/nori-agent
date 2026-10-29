@@ -8,6 +8,8 @@ const GATEWAY_MODEL = /^[A-Za-z0-9][A-Za-z0-9._-]*\/[A-Za-z0-9][A-Za-z0-9._/-]{0
 const CHANNELS = ['discord', 'slack'];
 const EFFORTS = ['off', 'low', 'medium', 'high'];
 const BILLING_MODES = ['subscription', 'coding-plan', 'pay-as-you-go'];
+export const ROUTE_ACCESS = ['all', 'admin-complex-coding', 'development-complex-coding'];
+export const isRestrictedRoute = route => ['admin-complex-coding', 'development-complex-coding'].includes(route?.access);
 
 export const isGatewayCredentialEnvironmentName = value => typeof value === 'string' && ENV_NAME.test(value) && !RESERVED_ENV.test(value);
 
@@ -102,7 +104,7 @@ function route(raw, index) {
   return { id, provider: text(raw.provider, `${field}.provider`, 128), gatewayModel,
     billingSource: text(raw.billingSource, `${field}.billingSource`, 512),
     billingMode: oneOf(raw.billingMode, `${field}.billingMode`, BILLING_MODES),
-    ...(raw.access === undefined ? {} : { access: oneOf(raw.access, `${field}.access`, ['all', 'admin-complex-coding']) }),
+    ...(raw.access === undefined ? {} : { access: oneOf(raw.access, `${field}.access`, ROUTE_ACCESS) }),
     billingVerified: boolean(raw.billingVerified, `${field}.billingVerified`, false),
     purpose: text(raw.purpose, `${field}.purpose`, 1024),
     effort: oneOf(raw.effort, `${field}.effort`, EFFORTS), contextWindow,
@@ -120,7 +122,7 @@ function freeze(value) {
 /** Validate operator configuration without resolving secrets or contacting services. */
 export function validateRouterConfig(raw = {}) {
   object(raw, 'config', ['enabled', 'gateway', 'routes', 'defaultRoute', 'fallbackRoutes',
-    'allowPaidUsage', 'channels', 'adminSenders', 'decision']);
+    'allowPaidUsage', 'channels', 'adminSenders', 'developmentChannels', 'decision']);
   const enabled = boolean(raw.enabled, 'enabled', false);
   const allowPaidUsage = boolean(raw.allowPaidUsage, 'allowPaidUsage', false);
   const normalizedGateway = raw.gateway === undefined ? null : gateway(raw.gateway);
@@ -137,10 +139,10 @@ export function validateRouterConfig(raw = {}) {
   }
   const defaultRoute = raw.defaultRoute === undefined ? null : routeId(raw.defaultRoute, 'defaultRoute');
   if (defaultRoute !== null && !ids.has(defaultRoute)) invalid('defaultRoute', 'router_config_unknown_route');
-  if (routes.find(r => r.id === defaultRoute)?.access === 'admin-complex-coding')
+  if (isRestrictedRoute(routes.find(r => r.id === defaultRoute)))
     invalid('defaultRoute', 'router_restricted_default');
   // Aliases of one upstream model cannot offer a less restrictive path.
-  for (const candidate of routes) if (candidate.access === 'admin-complex-coding' &&
+  for (const candidate of routes) if (isRestrictedRoute(candidate) &&
       routes.some(r => r.gatewayModel === candidate.gatewayModel && r.access !== candidate.access))
     invalid('routes', 'router_restricted_alias');
   const fallbackRoutes = array(raw.fallbackRoutes, 'fallbackRoutes', 64, []).map((id, index) => {
@@ -160,6 +162,21 @@ export function validateRouterConfig(raw = {}) {
       senderId: text(sender.senderId, `${field}.senderId`, 256) };
   });
   if (new Set(adminSenders.map(sender => JSON.stringify(sender))).size !== adminSenders.length) invalid('adminSenders');
+  const developmentChannels = array(raw.developmentChannels, 'developmentChannels', 16, []).map((entry, index) => {
+    const field = `developmentChannels[${index}]`;
+    object(entry, field, ['accountId', 'workspaceId', 'channelId', 'agentId', 'botTokenEnvVar']);
+    const result = { accountId: text(entry.accountId, `${field}.accountId`, 128),
+      workspaceId: text(entry.workspaceId, `${field}.workspaceId`, 32),
+      channelId: text(entry.channelId, `${field}.channelId`, 32),
+      agentId: text(entry.agentId, `${field}.agentId`, 128),
+      botTokenEnvVar: text(entry.botTokenEnvVar ?? 'SLACK_BOT_TOKEN', `${field}.botTokenEnvVar`, 128) };
+    if (!/^T[A-Z0-9]{5,31}$/.test(result.workspaceId) || !/^[CG][A-Z0-9]{5,31}$/.test(result.channelId) ||
+        !/^[a-z][a-z0-9_-]*$/.test(result.agentId) || result.agentId === 'main' ||
+        !isGatewayCredentialEnvironmentName(result.botTokenEnvVar)) invalid(field);
+    return result;
+  });
+  if (new Set(developmentChannels.map(entry => `${entry.accountId}/${entry.channelId}`)).size !== developmentChannels.length)
+    invalid('developmentChannels');
   const decisionRaw = raw.decision === undefined ? {} : raw.decision;
   object(decisionRaw, 'decision', ['timeoutMs', 'minProbability', 'maxPromptChars', 'allowPaidJev']);
   const minProbability = decisionRaw.minProbability === undefined ? 0.8 : decisionRaw.minProbability;
@@ -176,7 +193,7 @@ export function validateRouterConfig(raw = {}) {
   if (enabled && defaultRoute === null) invalid('defaultRoute');
   if (enabled && channels.length === 0) invalid('channels');
   return freeze({ enabled, gateway: normalizedGateway ?? undefined, routes, defaultRoute: defaultRoute ?? undefined, fallbackRoutes,
-    allowPaidUsage, channels, adminSenders, decision });
+    allowPaidUsage, channels, adminSenders, developmentChannels, decision });
 }
 
 function enabledConfig(config) {
