@@ -282,7 +282,7 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
     beforeAgentRun(_event, ctx) {
       const run = runs.get(ctx.runId);
       if (developmentAgent(ctx) && (!run?.developer || run.requester !== requester(ctx)))
-        return { ...block('rein_router_development_authorization_required'), message: 'Development access requires an administrator invitation to this private channel and a linked Rein Contributor, Director or administrator identity. Complete identity binding in an ordinary Nori channel first.' };
+        return { ...block('rein_router_development_authorization_required'), message: 'Development access requires current membership in this configured private channel and a linked Rein identity with an active Contributor or Director role. Complete identity binding in an ordinary Nori channel first.' };
       if (ctx.modelProviderId !== PROVIDER_ID && !runs.has(ctx.runId)) return;
       if (runs.get(ctx.runId)?.gatewayUnavailable) return block('rein_router_gateway_unavailable');
       if (config.gateway.managed && config.gateway.managed.mode !== 'console' && !gatewayReady?.()) return block('rein_router_gateway_unavailable');
@@ -314,7 +314,7 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
         ctx.requester?.channel === source.channel && ctx.requester?.accountId === source.accountId &&
         ctx.requester?.senderId === source.senderId;
       if (!same || !await verifiedDeveloper(source))
-        return { block: true, blockReason: 'Development tools require current private-channel membership, an administrator invitation and a linked Contributor, Director or administrator identity.' };
+        return { block: true, blockReason: 'Development tools require current membership in the configured private channel and a linked Rein identity with an active Contributor or Director role.' };
     },
     async llmOutput(event, ctx) {
       if (event.provider !== PROVIDER_ID || !routeById(event.model)) return;

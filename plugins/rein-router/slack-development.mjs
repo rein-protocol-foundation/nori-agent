@@ -1,4 +1,4 @@
-/** Private development channels are operator-selected; only administrator invitations grant access. */
+/** Development access requires current membership in an operator-selected private channel and a live Rein role. */
 export const DEVELOPMENT_AUTH_TIMEOUT_MS = 8000;
 const nativeId = value => typeof value === 'string' && /^[A-Z][A-Z0-9]{5,31}$/.test(value);
 const runField = value => typeof value === 'string' && value.length > 0 && value.length <= 1024;
@@ -22,9 +22,6 @@ export function createSlackDevelopmentAuthorizer({ config, authorizeFoundation, 
     if (!selected || typeof authorizeFoundation !== 'function') return false;
     const token = env[selected.botTokenEnvVar];
     if (typeof token !== 'string' || !/^xoxb-[A-Za-z0-9-]+$/.test(token)) return false;
-    const inviters = new Set(config.adminSenders.filter(sender => sender.channel === 'slack' &&
-      sender.accountId === selected.accountId).map(sender => sender.senderId));
-    if (!inviters.size) return false;
     const signal = AbortSignal.timeout(DEVELOPMENT_AUTH_TIMEOUT_MS - 100);
     async function api(method, params = {}) {
       const response = await fetchImpl(`https://slack.com/api/${method}`, {
@@ -62,25 +59,7 @@ export function createSlackDevelopmentAuthorizer({ config, authorizeFoundation, 
         seen.add(cursor);
       }
       if (!member) return false;
-      // Operator-configured administrators still need current membership in the selected channel.
-      if (inviters.has(ctx.senderId)) return await authorizeFoundation(ctx) === true;
-      cursor = ''; seen.clear();
-      for (let page = 0; page < 10; page++) {
-        const body = await api('conversations.history', { channel: selected.channelId, limit: '100', ...(cursor ? { cursor } : {}) });
-        if (!Array.isArray(body.messages)) return false;
-        // Slack's newest membership event wins. A rejoin cannot reuse an older administrator invite.
-        for (const message of body.messages) {
-          if (message.user !== ctx.senderId) continue;
-          if (['channel_leave', 'group_leave'].includes(message.subtype)) return false;
-          if (['channel_join', 'group_join'].includes(message.subtype))
-            return message.type === 'message' && inviters.has(message.inviter) && await authorizeFoundation(ctx) === true;
-        }
-        cursor = body.response_metadata?.next_cursor ?? '';
-        if (!cursor || !body.has_more || seen.has(cursor)) break;
-        seen.add(cursor);
-      }
-      // Deleted/expired invitation evidence, rate limits and unavailable Slack never grant access.
-      return false;
+      return await authorizeFoundation(ctx) === true;
     } catch { return false; }
   };
 }

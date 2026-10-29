@@ -6,38 +6,41 @@ import { buildOpenClawFragment, validateRouterConfig } from '../plugins/rein-rou
 const entry = { accountId:'default',workspaceId:'TFIXTURE1',channelId:'CFIXTURE1',agentId:'nori-development',botTokenEnvVar:'SLACK_TEST_TOKEN' };
 const context = { runId:'r1',agentId:entry.agentId,sessionKey:'agent:nori-development:slack:fixture',sessionId:'s1',channel:'slack',accountId:'default',senderId:'UMEMBER1',chatId:entry.channelId,trigger:'user',modelProviderId:'rein-magpie',modelId:'auto' };
 const route = (id, access='all') => ({ id,effort:'high',provider:'fixture',gatewayModel:`fixture/${id}`,billingSource:'fixture',billingMode:'subscription',billingVerified:true,purpose:'Coding',contextWindow:32768,maxTokens:1024,access });
-const config = { enabled:true,gateway:{baseUrl:'http://127.0.0.1:3425/v1',apiKeyEnvVar:'TEST_KEY'},routes:[route('standard'),route('premium','development-complex-coding')],defaultRoute:'standard',fallbackRoutes:[],decision:{allowPaidJev:true},adminSenders:[{channel:'slack',accountId:'default',senderId:'UADMIN01'}],developmentChannels:[entry] };
+const config = { enabled:true,gateway:{baseUrl:'http://127.0.0.1:3425/v1',apiKeyEnvVar:'TEST_KEY'},routes:[route('standard'),route('premium','development-complex-coding')],defaultRoute:'standard',fallbackRoutes:[],decision:{allowPaidJev:true},adminSenders:[],developmentChannels:[entry] };
 const goodChannel = { id:entry.channelId,context_team_id:entry.workspaceId,is_private:true,is_member:true,is_archived:false,is_im:false,is_mpim:false };
 function authorization(overrides={}, foundation=async()=>true) {
   const calls=[];
-  const payloads={ 'auth.test':{team_id:entry.workspaceId,user_id:'UBOT0001',bot_id:'BBOT0001'},'conversations.info':{channel:goodChannel},'conversations.members':{members:['UMEMBER1','UADMIN01']},'conversations.history':{messages:[{type:'message',subtype:'channel_join',user:'UMEMBER1',inviter:'UADMIN01'}]},...overrides };
+  const payloads={ 'auth.test':{team_id:entry.workspaceId,user_id:'UBOT0001',bot_id:'BBOT0001'},'conversations.info':{channel:goodChannel},'conversations.members':{members:['UMEMBER1','UADMIN01']},...overrides };
   const check=createSlackDevelopmentAuthorizer({config,env:{SLACK_TEST_TOKEN:'xoxb-fixture-token'},authorizeFoundation:foundation,fetchImpl:async(url,opts)=>{
     const method=url.split('/').at(-1);calls.push(method);assert.equal(opts.redirect,'error');
+    assert.notEqual(method,'conversations.history','membership authorization must not inspect invitation history');
     const value=typeof payloads[method]==='function'?await payloads[method](new URLSearchParams(opts.body)):payloads[method];
     return Response.json({ok:true,...value});
   }});
   return {check,calls};
 }
-test('private channel, live member and authentic administrator invitation all precede Foundation authority',async()=>{
+test('configured private channel membership and Foundation authority suffice without an administrator list or invitation history',async()=>{
   let backend=0;const {check,calls}=authorization({},async()=>{backend++;return true;});
-  assert.equal(await check(context),true);assert.equal(await check(context),true);assert.equal(backend,2);assert.equal(calls.length,8);
+  assert.equal(await check(context),true);assert.equal(await check(context),true);assert.equal(backend,2);assert.equal(calls.length,6);
   assert.equal(await check({...context,senderId:'UADMIN01'}),true);assert.equal(backend,3);
 });
-test('channel, membership, latest invitation and current backend denial fail closed',async()=>{
+test('channel, membership and current backend denial fail closed',async()=>{
   for(const overrides of [
     {'auth.test':{team_id:'TOTHER01',user_id:'UBOT0001',bot_id:'BBOT0001'}},
     ...[{is_private:false},{is_shared:true},{is_archived:true},{context_team_id:'TOTHER01'}].map(delta=>({'conversations.info':{channel:{...goodChannel,...delta}}})),
     {'conversations.members':{members:['UADMIN01']}},
-    {'conversations.history':{messages:[]}},
-    {'conversations.history':{messages:[{type:'message',subtype:'channel_join',user:'UMEMBER1',inviter:'UMEMBER2'},{type:'message',subtype:'channel_join',user:'UMEMBER1',inviter:'UADMIN01'}]}},
-    {'conversations.history':{messages:[{type:'message',subtype:'channel_leave',user:'UMEMBER1'}]}},
-    {'conversations.history':{messages:[{type:'message',text:'<@UADMIN01> invited me',user:'UMEMBER1'}]}},
     {'conversations.members':{ok:false,error:'ratelimited'}},
   ]){let backend=0;assert.equal(await authorization(overrides,async()=>{backend++;return true;}).check(context),false);assert.equal(backend,0);}
   for(const foundation of [async()=>false,async()=>{throw Error('unavailable');}])assert.equal(await authorization({},foundation).check(context),false);
 });
-test('paginated membership and invitations are supported without accepting repeated cursors',async()=>{
-  const paged=authorization({'conversations.members':p=>p.get('cursor')?{members:['UMEMBER1']}:{members:['UADMIN01'],response_metadata:{next_cursor:'members2'}},'conversations.history':p=>p.get('cursor')?{messages:[{type:'message',subtype:'channel_join',user:'UMEMBER1',inviter:'UADMIN01'}]}:{messages:[],has_more:true,response_metadata:{next_cursor:'history2'}}});
+test('leaving the configured channel revokes access on the next check',async()=>{
+  let joined=true,backend=0;
+  const {check}=authorization({'conversations.members':()=>({members:joined?['UMEMBER1']:[]})},async()=>{backend++;return true;});
+  assert.equal(await check(context),true);
+  joined=false;assert.equal(await check(context),false);assert.equal(backend,1);
+});
+test('paginated membership is supported without accepting repeated cursors',async()=>{
+  const paged=authorization({'conversations.members':p=>p.get('cursor')?{members:['UMEMBER1']}:{members:['UADMIN01'],response_metadata:{next_cursor:'members2'}}});
   assert.equal(await paged.check(context),true);
   const repeated=authorization({'conversations.members':{members:[],response_metadata:{next_cursor:'same'}}});assert.equal(await repeated.check(context),false);assert.equal(repeated.calls.length,4);
 });
