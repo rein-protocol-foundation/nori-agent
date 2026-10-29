@@ -99,8 +99,12 @@ def gateway_probe_request(root, gateway):
         headers['Authorization'] = 'Bearer ' + credential
     else:
         raise UpdateError('unsupported_gateway_probe_auth_mode')
+    agent_id = gateway.get('agentId', 'main')
+    if not isinstance(agent_id, str) or not re.fullmatch(r'[a-z][a-z0-9_-]{0,63}', agent_id):
+        raise UpdateError('invalid_gateway_probe_agent')
+    body = json.dumps({'tool': 'rein_status', 'args': {}, 'agentId': agent_id}).encode()
     return urllib.request.Request(f'http://127.0.0.1:{gateway["port"]}/tools/invoke',
-                                  data=b'{"tool":"rein_status","args":{}}', headers=headers)
+                                  data=body, headers=headers)
 
 
 def validate_config(config):

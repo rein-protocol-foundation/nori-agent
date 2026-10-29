@@ -14,6 +14,7 @@ class GatewayProbeTests(unittest.TestCase):
         root = Path(self.temp.name).resolve()
         self.requests = []
         self.expected = {}
+        self.agent_id = 'main'
         fixture = self
 
         class Gateway(BaseHTTPRequestHandler):
@@ -30,7 +31,7 @@ class GatewayProbeTests(unittest.TestCase):
             def do_POST(self):
                 fixture.requests.append(self.path)
                 body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
-                valid = (self.path == '/tools/invoke' and body == {'tool': 'rein_status', 'args': {}} and
+                valid = (self.path == '/tools/invoke' and body == {'tool': 'rein_status', 'args': {}, 'agentId': fixture.agent_id} and
                          all(self.headers.get(name) == value for name, value in fixture.expected.items()))
                 self.respond(200 if valid else 403, {'ok': valid, 'result': {'status': 'ready'} if valid else None})
 
@@ -71,6 +72,21 @@ class GatewayProbeTests(unittest.TestCase):
                 self.configure({'mode': mode, 'token': 'fixture-token', 'password': 'fixture-password'})
                 self.expected = {'Authorization': 'Bearer fixture-' + mode, 'X-Nori-User': None}
                 self.host.health()
+
+    def test_multi_agent_health_probe_has_an_explicit_configurable_owner(self):
+        self.configure({'mode': 'token', 'token': 'fixture-token'})
+        self.expected = {'Authorization': 'Bearer fixture-token'}
+        self.agent_id = 'operations'
+        self.host.config['gateways'][0]['agentId'] = self.agent_id
+        self.host.health()
+        self.assertIn('/tools/invoke', self.requests)
+
+    def test_invalid_health_owner_fails_before_http(self):
+        self.configure({'mode': 'token', 'token': 'fixture-token'})
+        self.host.config['gateways'][0]['agentId'] = '../other'
+        with self.assertRaisesRegex(module.UpdateError, 'invalid_gateway_probe_agent'):
+            self.host.health()
+        self.assertEqual(self.requests, [])
 
     def test_missing_proxy_configuration_fails_before_any_http_probe(self):
         self.configure({'mode': 'trusted-proxy', 'trustedProxy': {
