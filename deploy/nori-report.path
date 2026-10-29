@@ -2,7 +2,9 @@
 Description=Watch durable Nori deployment reports
 
 [Path]
-DirectoryNotEmpty=/var/lib/nori-updater/reports
+# Atomic writes can leave .tmp files after an interruption. Only committed
+# queue entries are actionable by nori-report.py.
+PathExistsGlob=/var/lib/nori-updater/reports/*.json
 Unit=nori-report.service
 
 [Install]
