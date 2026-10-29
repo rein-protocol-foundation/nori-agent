@@ -27,7 +27,7 @@ export default definePluginEntry({
     }
     api.registerProvider({ id: PROVIDER_ID, label: 'Magpie subscriptions', auth: [],
       envVars: [router.config.gateway.apiKeyEnvVar], wrapStreamFn: router.wrapStreamFn,
-      wrapSimpleCompletionStreamFn: router.wrapStreamFn });
+      wrapSimpleCompletionStreamFn: ctx => router.wrapStreamFn({ ...ctx, simpleCompletion: true }) });
     api.on('before_model_resolve', router.beforeModelResolve,
       { priority: 100, timeoutMs: router.config.decision.timeoutMs + (config.gateway.managed?.mode === 'console' ? 2000 : 1000) });
     api.on('before_agent_run', router.beforeAgentRun, { priority: 100 });

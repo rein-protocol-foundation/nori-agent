@@ -315,3 +315,26 @@ test('a paused or unavailable Console gateway blocks the run before spending on 
   assert.equal(await router.beforeModelResolve({prompt:'A simple question'},ctx),undefined);
   assert.equal(router.beforeAgentRun({}, {...ctx,modelId:'general'}).reason,'rein_router_gateway_unavailable');assert.equal(decisions,0);
 });
+
+
+test('provider access restrictions cover raw model aliases and survive catalog refresh', async t => {
+  const f = await fixture(t);
+  f.raw.providers.push({ id: 'premium', name: 'Synthetic premium', ready: true, models: [
+    { id: 'pro', on: true, efforts: ['medium','high'], context: 65536, output: 8192 },
+  ] });
+  const s = { ...settings(), dynamic: true, allowPaidUsage: true,
+    funding: { ...settings().funding, premium: { mode: 'pay-as-you-go', confirmed: true, access: 'admin-complex-coding' } },
+    policy: { code: { model: 'premium/pro', effort: 'high' } },
+    adminSenders: [{ channel: 'slack', accountId: 'default', senderId: 'synthetic-admin' }] };
+  assert.deepEqual(validateConsoleSettings(s), s);
+  await f.sync.save(s, 'synthetic-jev-key');
+  let host = JSON.parse(await readFile(f.hostPath, 'utf8'));
+  let routes = host.plugins.entries['rein-router'].config.routes;
+  assert.ok(routes.filter(r => r.gatewayModel === 'premium/pro').every(r => r.access === 'admin-complex-coding' && r.effort === 'high'));
+  assert.ok(routes.find(r => r.id === 'general').gatewayModel.startsWith('test/'));
+  await assert.rejects(f.sync.save({ ...s, policy: { ...s.policy, general: s.policy.code } }), /restricted_policy/);
+  await f.sync.save(s);
+  f.raw.providers[0].models = f.raw.providers[0].models.filter(m => m.id !== 'pro');
+  await assert.rejects(f.sync.refresh(), /capable_default_required/);
+  assert.equal(f.keys[0].off, true, 'restricted premium must never replace a missing everyday default');
+});

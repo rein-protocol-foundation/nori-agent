@@ -92,7 +92,7 @@ function gateway(raw) {
 function route(raw, index) {
   const field = `routes[${index}]`;
   object(raw, field, ['id', 'provider', 'gatewayModel', 'billingSource', 'billingMode',
-    'billingVerified', 'purpose', 'effort', 'contextWindow', 'maxTokens']);
+    'billingVerified', 'purpose', 'effort', 'contextWindow', 'maxTokens', 'access']);
   const id = routeId(raw.id, `${field}.id`);
   const gatewayModel = text(raw.gatewayModel, `${field}.gatewayModel`, 320);
   if (!GATEWAY_MODEL.test(gatewayModel) || /^group\//i.test(gatewayModel) ||
@@ -102,6 +102,7 @@ function route(raw, index) {
   return { id, provider: text(raw.provider, `${field}.provider`, 128), gatewayModel,
     billingSource: text(raw.billingSource, `${field}.billingSource`, 512),
     billingMode: oneOf(raw.billingMode, `${field}.billingMode`, BILLING_MODES),
+    ...(raw.access === undefined ? {} : { access: oneOf(raw.access, `${field}.access`, ['all', 'admin-complex-coding']) }),
     billingVerified: boolean(raw.billingVerified, `${field}.billingVerified`, false),
     purpose: text(raw.purpose, `${field}.purpose`, 1024),
     effort: oneOf(raw.effort, `${field}.effort`, EFFORTS), contextWindow,
@@ -136,6 +137,12 @@ export function validateRouterConfig(raw = {}) {
   }
   const defaultRoute = raw.defaultRoute === undefined ? null : routeId(raw.defaultRoute, 'defaultRoute');
   if (defaultRoute !== null && !ids.has(defaultRoute)) invalid('defaultRoute', 'router_config_unknown_route');
+  if (routes.find(r => r.id === defaultRoute)?.access === 'admin-complex-coding')
+    invalid('defaultRoute', 'router_restricted_default');
+  // Aliases of one upstream model cannot offer a less restrictive path.
+  for (const candidate of routes) if (candidate.access === 'admin-complex-coding' &&
+      routes.some(r => r.gatewayModel === candidate.gatewayModel && r.access !== candidate.access))
+    invalid('routes', 'router_restricted_alias');
   const fallbackRoutes = array(raw.fallbackRoutes, 'fallbackRoutes', 64, []).map((id, index) => {
     routeId(id, `fallbackRoutes[${index}]`);
     if (!ids.has(id)) invalid(`fallbackRoutes[${index}]`, 'router_config_unknown_route');

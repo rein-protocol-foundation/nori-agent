@@ -28,8 +28,9 @@ export function validateConsoleSettings(s) {
     throw new Error('router_settings_invalid');
   for (const k of ['enabled','dynamic','allowPaidUsage']) if (s[k] !== undefined && typeof s[k] !== 'boolean') throw new Error('router_settings_invalid');
   if (s.funding && (!object(s.funding) || Object.entries(s.funding).some(([id,v]) =>
-    !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(id) || !object(v) || Object.keys(v).some(k => !['mode','confirmed'].includes(k)) ||
-    !['subscription','coding-plan','pay-as-you-go'].includes(v.mode) || typeof v.confirmed !== 'boolean'))) throw new Error('router_funding_invalid');
+    !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(id) || !object(v) || Object.keys(v).some(k => !['mode','confirmed','access'].includes(k)) ||
+    !['subscription','coding-plan','pay-as-you-go'].includes(v.mode) || typeof v.confirmed !== 'boolean' ||
+    (v.access !== undefined && !['all','admin-complex-coding'].includes(v.access))))) throw new Error('router_funding_invalid');
   if (s.policy && (!object(s.policy) || Object.entries(s.policy).some(([role,v]) =>
     !['general','quick','research','code'].includes(role) || !object(v) || Object.keys(v).some(k => !['model','effort'].includes(k)) ||
     typeof v.model !== 'string' || v.model.length > 320 || !['off','low','medium','high'].includes(v.effort)))) throw new Error('router_policy_invalid');
@@ -109,7 +110,7 @@ export function createConsoleSync({ root, native, gatewayBaseUrl = 'http://127.0
       if (repair) {
         const eligible = catalog.filter(m => !m.hasFallback && state.funding?.[m.providerId]?.confirmed &&
           (state.funding[m.providerId].mode !== 'pay-as-you-go' || state.allowPaidUsage));
-        const recommendations = recommendPolicy(eligible.filter(m => state.funding[m.providerId].mode !== 'coding-plan'));
+        const recommendations = recommendPolicy(eligible.filter(m => state.funding[m.providerId].mode !== 'coding-plan' && state.funding[m.providerId].access !== 'admin-complex-coding'));
         const nextPolicy = { ...state.policy };
         for (const [role, choice] of Object.entries(nextPolicy)) {
           const current = eligible.find(m => m.id === choice.model);

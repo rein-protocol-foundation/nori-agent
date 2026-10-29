@@ -752,3 +752,21 @@ configuration UI has been stopped, and the working OpenClaw profile remains inac
 Test account exhaustion through mocks first. Live verification needs an authorized account,
 upstream spend controls and redacted retained evidence. Keep all six live criteria pending until
 that evidence exists; partial provider success does not meet all-four-provider acceptance.
+
+
+### Restrict API providers to administrator development
+
+The Router Console's per-provider **Usage scope** can be set to
+`admin-complex-coding`, independently of the billing mode. Use this for API-funded
+models reserved for substantial development by operators in `adminSenders`, while
+keeping ordinary routes on existing subscription or API-credit providers.
+
+The restriction propagates to every model alias from that provider. The default,
+quick and research policies must stay unrestricted. The runtime requires the
+host-supplied channel/account/sender tuple and confident Jev answers for both a
+coding task and complex development. Unknown classifications use the unrestricted
+default; manual restricted selections fail closed without the same evidence.
+Fallbacks cannot expand this authorization. Each grant belongs to the current run
+and requester, and auxiliary simple completions are denied. This is model-spending
+control, not Shell, repository or GitHub authorization. API promotional credits
+remain `pay-as-you-go`; these declarations do not enforce the provider's balance.

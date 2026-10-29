@@ -27,7 +27,8 @@ const server = createServer(async (req, res) => {
   }
   if (req.url === '/v1/systemone') {
     decisions.push(request);
-    const coding = /CASE_SLACK_(CODE|CLAIM|ACCOUNT)/.test(request.state.currentRequest);
+    const coding = /CASE_SLACK_(CODE|CLAIM|ACCOUNT|SMALL|PREMIUM)/.test(request.state.currentRequest);
+    const complex = coding && !request.state.currentRequest.includes('CASE_SLACK_SMALL');
     const choice = (criteria, selected) => ({ type: 'choice', choice: selected, confidence: 0.99,
       probabilities: Object.fromEntries(Object.keys(criteria).map(key => [key, key === selected ? 0.99 : 0.01 / (Object.keys(criteria).length - 1)])) });
     res.writeHead(200, { 'content-type': 'application/json' });
@@ -35,6 +36,7 @@ const server = createServer(async (req, res) => {
       route: choice(request.questions.route.criteria, 'google'),
       task: choice(request.questions.task.criteria, coding ? 'coding' : 'simple'),
       contextIndependent: { type: 'noul', noul: 0.99 },
+      complexDevelopment: { type: 'noul', noul: complex ? 0.99 : 0.01 },
     }, usage: { input_tokens: 25, output_tokens: 0 } }));
     return;
   }
@@ -67,9 +69,10 @@ writeFileSync(join(pluginDir, 'openclaw.plugin.json'), JSON.stringify({ id: 'rei
   configSchema: { type: 'object', properties: {}, additionalProperties: false } }));
 writeFileSync(join(pluginDir, 'package.json'), JSON.stringify({ name: '@rein-protocol/slack-subscription-probe-fixture', version: '0.1.0', type: 'module', openclaw: { extensions: ['./index.ts'] } }));
 symlinkSync(join(root, 'plugins/rein-router/node_modules'), join(pluginDir, 'node_modules'));
-const router = { enabled: true, gateway: { baseUrl: `http://127.0.0.1:${port}/v1`, apiKeyEnvVar: 'REIN_SLACK_PROBE_GATEWAY_KEY' },
+const router = { enabled: true, allowPaidUsage: true, gateway: { baseUrl: `http://127.0.0.1:${port}/v1`, apiKeyEnvVar: 'REIN_SLACK_PROBE_GATEWAY_KEY', subscriptionOnly: false },
   routes: ['openai', 'claude', 'google'].map(id => ({ id, provider: `Synthetic ${id}`, gatewayModel: `fixture/${id}`,
-    billingSource: 'synthetic allowance fixture', billingMode: 'subscription', billingVerified: true,
+    billingSource: 'synthetic allowance fixture', billingMode: id === 'claude' ? 'pay-as-you-go' : 'subscription', billingVerified: true,
+    ...(id === 'claude' ? { access: 'admin-complex-coding' } : {}),
     purpose: id === 'google' ? 'Economical self-contained queries' : 'Capable research and coding',
     effort: id === 'google' ? 'off' : id === 'claude' ? 'high' : 'medium', contextWindow: 32768, maxTokens: 512 })),
   defaultRoute: 'openai', fallbackRoutes: [], channels: ['slack'],
@@ -115,8 +118,10 @@ try {
     CASE_SLACK_CODE: ['fixture/claude:high', true, 'default', 'U0000000001'],
     CASE_SLACK_CLAIM: ['fixture/openai:medium', false, 'default', 'U0000000002'],
     CASE_SLACK_ACCOUNT: ['fixture/openai:medium', false, 'secondary', 'U0000000001'],
-    CASE_SLACK_MANUAL: ['fixture/openai:medium', null, 'default', 'U0000000001'] };
-  assert.equal(decisions.length, 4, 'Manual native session selection must bypass Jev');
+    CASE_SLACK_MANUAL: ['fixture/openai:medium', null, 'default', 'U0000000001'],
+    CASE_SLACK_SMALL: ['fixture/openai:medium', true, 'default', 'U0000000001'],
+    CASE_SLACK_PREMIUM: ['fixture/claude:high', true, 'default', 'U0000000001'] };
+  assert.equal(decisions.length, 6, 'Only unrestricted manual selections bypass Jev');
   const toolContexts = [];
   for (const [marker, [model, administrator, accountId, senderId]] of Object.entries(expected)) {
     const calls = requests.filter(request => markerFor(request) === marker);
@@ -139,10 +144,10 @@ try {
     else { assert.ok(decision); assert.equal(decision.state.channel, 'slack'); assert.equal(decision.state.administrator, administrator); }
     assert.ok(evidence.sent.some(entry => entry.marker === marker && entry.text === `OK ${marker}`), `${marker} final reply missing`);
   }
-  assert.equal(toolContexts.length, 5, 'Every Slack case must execute its native tool once');
+  assert.equal(toolContexts.length, 7, 'Every Slack case must execute its native tool once');
   assert.equal(new Set(toolContexts.map(entry => entry.sessionKey)).size, 3, 'Native sender and account scopes must stay separate');
   assert.ok(requests.every(request => /^fixture\/(google|claude|openai):(none|medium|high)$/.test(request.model)), 'Unknown model or sentinel escaped');
-  console.log('Native synthetic Slack subscription probe passed: trusted sender/account/channel ingress, local TypeSafe decisions, scoped administrator effort, manual model pin, separate sessions and native tool round trips. No Slack accounts or live providers contacted.');
+  console.log('Native synthetic Slack subscription probe passed: trusted sender/account/channel ingress, local TypeSafe decisions, administrator complex-development access, simple coding exclusion, restricted manual classification, manual model pin, separate sessions and native tool round trips. No Slack accounts or live providers contacted.');
 } finally {
   if (child) { stop('SIGTERM'); await Promise.race([new Promise(resolve => child.once('exit', resolve)), new Promise(resolve => setTimeout(resolve, 5000))]); stop('SIGKILL'); }
   server.closeAllConnections(); await new Promise(resolve => server.close(resolve));
