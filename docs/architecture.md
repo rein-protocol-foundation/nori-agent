@@ -1,7 +1,7 @@
 # Architecture
 
-OpenClaw is the agent runtime. This repository vendors its official source and adds Rein Protocol
-Foundation behaviour as plugins, so the runtime can be updated without carrying a fork.
+OpenClaw is the agent runtime. This repository vendors its official source and adds Nori-Agent NGO/NPO operations
+capabilities as plugins, so the runtime can be updated without carrying a fork.
 
 ## How OpenClaw is included
 
@@ -23,13 +23,13 @@ a global `~/.openclaw` profile; `scripts/openclaw.mjs` points the upstream CLI a
 
 ## Extension boundary
 
-The rule is plugin-first: Rein code lives in Rein-owned packages under `plugins/`, never in
+The rule is plugin-first: Rein code lives in Nori-Agent-owned packages under `plugins/`, never in
 `vendor/openclaw/src/` or `vendor/openclaw/extensions/`.
 
 ```mermaid
 flowchart LR
   Chat[Slack: P0 platform confirmed] --> Gateway[OpenClaw gateway, vendored and pinned]
-  Gateway --> Plugin[plugins/rein-operations: Rein-owned]
+  Gateway --> Plugin[plugins/rein-operations: Nori-Agent-owned]
   Plugin --> Domain[Deterministic local operations modules]
   Domain --> Records[Local rehearsal ledger; production store pending]
   Domain --> Outbox[Local intent ledger and injected outbox runner]
@@ -192,7 +192,7 @@ The activity core implements guarded local transitions for these dimensions. Cro
 | Path | Role |
 | --- | --- |
 | `vendor/openclaw` | Upstream runtime source; read-only, pinned by submodule pointer |
-| `plugins/rein-operations` | Rein-owned plugin package and its manifest |
+| `plugins/rein-operations` | Nori-Agent-owned plugin package and its manifest |
 | `workspace/` | Agent workspace template consumed by the runtime |
 | `scripts/` | Local bootstrap, CLI wrapper and upstream update helper |
 | `tests/` | Node test runner checks for the plugin and the update script |

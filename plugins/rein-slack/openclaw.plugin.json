@@ -1,6 +1,6 @@
 {
   "id": "rein-slack",
-  "name": "Rein Isolated Slack",
+  "name": "Nori-Agent Isolated Slack",
   "categories": [
     "channels"
   ],
@@ -10,7 +10,7 @@
   ],
   "channelConfigs": {
     "slack": {
-      "label": "Rein Isolated Slack",
+      "label": "Nori-Agent Isolated Slack",
       "description": "Disable bundled Slack and configure the Rein adapter.",
       "schema": {
         "type": "object",

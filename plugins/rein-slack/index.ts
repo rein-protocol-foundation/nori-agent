@@ -25,7 +25,7 @@ export function registerReinSlack(api: OpenClawPluginApi, transport: SlackTransp
     api.registerTool({ contextVersion: 2, create: createMemoryToolFactory(config, getMemory, turns) }, { names: MEMORY_TOOLS });
     api.registerChannel({
       id: 'slack',
-      meta: { id: 'slack', label: 'Rein Isolated Slack', selectionLabel: 'Rein Isolated Slack',
+      meta: { id: 'slack', label: 'Nori-Agent Isolated Slack', selectionLabel: 'Nori-Agent Isolated Slack',
         docsPath: '/channels/slack', blurb: 'Per-sender community operations' },
       capabilities: { chatTypes: ['direct', 'channel'], media: false, nativeCommands: false },
       configSchema: buildJsonChannelConfigSchema({ type: 'object', properties: { enabled: { type: 'boolean' } }, additionalProperties: false }),
@@ -47,7 +47,7 @@ export function registerReinSlack(api: OpenClawPluginApi, transport: SlackTransp
 
 export default definePluginEntry({
   id: 'rein-slack',
-  name: 'Rein Isolated Slack',
+  name: 'Nori-Agent Isolated Slack',
   description: 'Dedicated operations ingress with per-sender, per-audience sessions and memory.',
   register: registerReinSlack,
 });

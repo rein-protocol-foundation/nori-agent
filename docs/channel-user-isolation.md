@@ -1,6 +1,6 @@
 # Shared chat isolation core
 
-Discord and Slack share `@rein-protocol/isolation-core`, a Rein-owned library under
+Discord and Slack share `@rein-protocol/isolation-core`, a Nori-Agent-owned library under
 `plugins/rein-isolation`. It contains no channel SDK or Foundation client. Channels authenticate native
 transport events, validate their identifiers and audience, then hand a trusted normalized event to
 one shared receiver. The library owns scope hashing, per-owner queues, model dispatch boundaries,

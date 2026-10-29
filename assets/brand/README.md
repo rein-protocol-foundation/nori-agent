@@ -1,6 +1,6 @@
 # Nori · Official Avatar
 
-**Nori** 是 Agent 的正式名称。正式头像文件为 [workspace/avatars/rein-agent.png](../../workspace/avatars/rein-agent.png)，1254 × 1254 PNG，与获选原图完全一致，未经裁切、缩放或重新生成。
+**Nori-Agent** 是项目与产品的正式名称，**Nori** 是对话名称。正式头像文件为 [workspace/avatars/rein-agent.png](../../workspace/avatars/rein-agent.png)，1254 × 1254 PNG，与获选原图完全一致，未经裁切、缩放或重新生成。
 
 <img src="../../workspace/avatars/rein-agent.png" alt="Nori official avatar" width="256" height="256">
 
