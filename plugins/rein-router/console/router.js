@@ -8,7 +8,7 @@ magpie.plugin('rein-router', ctx => {
     <section class="rein-section"><div class="rein-section-head"><div><h2>1. Provider 与模型</h2><p>直接来自 Magpie。新增或移除模型后，每 5 秒自动同步。</p></div><button type="button" class="text" id="rein-providers">管理 Providers ↗</button></div><div id="rein-catalog"></div></section>
     <section class="rein-section"><div class="rein-section-head"><div><h2>2. 任务路由与思考强度</h2><p>选择适合的模型；推荐值只是起点，可按实际效果调整。</p></div><button type="button" class="text" id="rein-recommend">使用推荐策略</button></div><div id="rein-policy"></div></section>
     <section class="rein-section"><div class="rein-section-head"><div><h2>3. Dynamic Router</h2><p>Jev 判断任务类型、复杂度及是否需要上下文，再选择模型与思考强度。</p></div></div><div id="rein-dynamic"></div></section>
-    <details class="rein-advanced"><summary>开发频道、邀请管理员与回退顺序</summary><div id="rein-fallbacks"></div><label class="rein-field">邀请管理员（每行 channel/accountId/senderId）<textarea id="rein-admins" rows="3" placeholder="discord/default/YOUR_USER_ID"></textarea></label><p>开发频道只接受这些管理员的邀请；成员还须绑定 Rein 账户，并拥有当前 Contributor、Director 或管理员角色。</p><label class="rein-field">私有开发频道（每行 accountId/workspaceId/channelId/agentId）<textarea id="rein-dev-channels" rows="3" placeholder="default/T_WORKSPACE/C_CHANNEL/nori-development"></textarea></label><p>开发 Agent 必须配置独立沙箱。退出频道、角色撤销或核验失败后，开发模型和工具均不可用。</p></details>
+    <details class="rein-advanced"><summary>开发频道与回退顺序</summary><div id="rein-fallbacks"></div><label class="rein-field">旧版管理员模式名单（每行 channel/accountId/senderId）<textarea id="rein-admins" rows="3" placeholder="discord/default/YOUR_USER_ID"></textarea></label><p>此名单仅用于旧版管理员模式，不影响开发频道授权。开发频道成员须绑定 Rein 账户，并拥有当前有效的 Contributor 或 Director 角色。</p><label class="rein-field">私有开发频道（每行 accountId/workspaceId/channelId/agentId）<textarea id="rein-dev-channels" rows="3" placeholder="default/T_WORKSPACE/C_CHANNEL/nori-development"></textarea></label><p>开发 Agent 必须配置独立沙箱。退出频道、角色撤销或核验失败后，开发模型和工具均不可用。</p></details>
     <footer class="rein-save"><div><strong>连接到现有 OpenClaw</strong><p>保存后自动合并配置。首次连接后启动或重启 OpenClaw，后续目录变更自动更新。</p></div><div class="rein-actions"><button type="button" id="rein-pause" class="text" hidden>暂停路由</button><button type="button" id="rein-save" class="text primary">保存并连接 OpenClaw</button></div></footer>
     <p class="rein-footnote">OpenClaw 就是你的 harness，无需连接 Magpie 的 Agents。手动选模型时使用 /model；自动模式使用 /model auto。</p></div>`,
     mount() {
@@ -31,13 +31,13 @@ magpie.plugin('rein-router', ctx => {
   const el = ctx.ui.el;
   const roleNames = { general: ['默认 / 需要上下文', '分类不确定、对话关联和多步骤任务'],
     quick: ['简单日常问答', '独立问题，无需历史上下文，优先节省 token'],
-    research: ['检索与网页总结', '需要工具、资料检索与综合分析'], code: ['编码与复杂开发', '开发、调试、代码评审；管理员任务使用高强度'] };
+    research: ['检索与网页总结', '需要工具、资料检索与综合分析'], code: ['编码与复杂开发', '开发、调试、代码评审；授权开发任务使用高强度'] };
   const messages = {
     router_catalog_empty: '还没有可用模型，请先在 Providers 添加并启用模型。',
     router_no_eligible_models: '请选择 Provider 的计费来源并确认额度设置。',
     router_capable_default_required: '默认策略需要支持 medium 或 high 的模型。请在 Providers 启用合适的模型，并确认计费设置后重新保存。',
     router_jev_key_required: '启用 Dynamic Router 前，请在此页面或项目私有配置文件中保存 Jev API Key；不使用 shell 环境变量。',
-    router_restricted_policy: '仅限管理员复杂开发的 Provider 不能用于默认、简单问答或检索策略。',
+    router_restricted_policy: '受限复杂开发的 Provider 不能用于默认、简单问答或检索策略。',
     router_restricted_default: '默认策略必须允许日常任务使用。',
     router_coding_plan_scope: 'Coding Plan 仅用于编码路由；请为通用任务选择其他 Provider。',
     router_catalog_limit: '可用模型过多。请在 Magpie 缩小暴露给 OpenClaw 的模型目录（最多 60 个）。',
@@ -90,12 +90,12 @@ magpie.plugin('rein-router', ctx => {
       const fundingMenu = ctx.ui.menu([{ v: 'subscription', name: '订阅额度' }, { v: 'coding-plan', name: 'Coding Plan' }, { v: 'pay-as-you-go', name: 'API 按量付费' }],
         funding.mode, '计费来源', v => { funding.mode = v; funding.confirmed = false; changed(); render(); });
       card.append(ctx.ui.row('计费来源', '仅设置调用边界，账号和模型继续在 Providers 管理。', fundingMenu));
-      card.append(ctx.ui.row('使用范围', '开发频道模式要求：指定私有频道、当前成员、管理员邀请、后端有效角色和复杂开发分类。每个新任务重新验证。',
+      card.append(ctx.ui.row('使用范围', '开发频道授权要求：配置频道的当前成员，以及已绑定 Rein 的有效 Contributor／Director。受限模型另要求复杂开发分类；每次任务和工具调用重新核验权限。',
         ctx.ui.menu([{ v: 'all', name: '普通任务可用' }, { v: 'development-complex-coding', name: '仅限授权开发频道的复杂开发任务' }, { v: 'admin-complex-coding', name: '旧版：仅限指定管理员' }],
           funding.access ?? 'all', '使用范围', v => { funding.access = v; changed(); })));
       if (['admin-complex-coding', 'development-complex-coding'].includes(funding.access)) card.append(el('p', state.administratorAuthority?.configured ? '' : 'rein-error',
         state.administratorAuthority?.configured
-          ? '身份来源：Rein Protocol 后端。开发频道还核验 Slack 成员与邀请来源。未绑定、无有效角色或查询失败均不放行。'
+          ? '身份来源：Rein Protocol 后端。开发频道核验当前 Slack 成员身份及 Contributor／Director 角色。未绑定、无有效角色或查询失败均不放行。'
           : '尚未配置 Foundation 身份后端，受限模型不会放行。请先完成 rein-operations 的 foundationDb 配置和账号绑定。'));
       card.append(ctx.ui.row('已确认此 Provider 的额度与额外用量设置', '新增模型继承此 Provider 的边界；新增 Provider 默认不启用。',
         ctx.ui.toggle(funding.confirmed, '确认 ' + models[0].provider + ' 计费设置', v => { funding.confirmed = v; changed(); })));

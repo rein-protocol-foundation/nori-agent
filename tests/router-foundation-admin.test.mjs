@@ -65,16 +65,18 @@ test('only explicit current backend administrator authority is accepted', async 
   }
 });
 
-test('development authority accepts only resolved current Contributor, Director or administrator roles', async () => {
+test('development authority accepts only resolved current Contributor or Director roles', async () => {
   const { createFoundationDeveloperAuthorizer } = await import('../plugins/rein-router/foundation-admin.ts');
   let body;
   const check=createFoundationDeveloperAuthorizer({config,env,transport:{relayIngress:async()=>success({ok:true,assertion:'fixture'}),resolveIdentity:async()=>success(body)}});
-  for(const role of ['is_active_contributor','is_director','is_administrator']){
+  for(const role of ['is_active_contributor','is_director']){
     body=member({is_administrator:false,[role]:true});assert.equal(await check(context),true);
     body[role]=false;assert.equal(await check(context),false);
     body[role]='true';assert.equal(await check(context),false);
     body[role]=true;body.status='identity_revoked';assert.equal(await check(context),false);
   }
+  body=member({is_administrator:true});assert.equal(await check(context),false);
+  body=member({is_administrator:true,is_director:true});assert.equal(await check(context),true);
 });
 
 test('normal production identity latency above 1.25 seconds still permits fresh role checks', async t => {

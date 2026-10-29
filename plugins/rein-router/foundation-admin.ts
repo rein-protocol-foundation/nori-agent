@@ -59,6 +59,5 @@ export function createFoundationAdminAuthorizer({ config, env = process.env, tra
 
 /** Current Contributor/Director roles qualify only after the independent channel gate passes. */
 export function createFoundationDeveloperAuthorizer(options: Parameters<typeof createFoundationAdminAuthorizer>[0]) {
-  return createFoundationAdminAuthorizer(options, member => member.is_administrator === true ||
-    member.is_active_contributor === true || member.is_director === true);
+  return createFoundationAdminAuthorizer(options, member => member.is_active_contributor === true || member.is_director === true);
 }

@@ -1,23 +1,22 @@
 # Private Slack development channel
 
-The `development-complex-coding` route policy requires all of:
+Development access requires two conditions:
 
-- A native user request in an explicitly configured private, unshared Slack channel, routed to its dedicated agent.
-- Current Slack membership and a genuine Slack join event naming an operator-configured invitation administrator. Configured administrators must also be current members.
-- A linked Rein identity with a current active Contributor, Director or administrator role, resolved through the Foundation signed-ingress API.
-- Confident complex-development classification for premium models. Routine terminal work uses ordinary configured models.
+1. The requester is a current member of the private Slack channel configured in Router, using its native channel route and dedicated agent.
+2. The requester has a linked Rein identity with a current active Contributor or Director role, resolved through the Foundation signed-ingress API. Administrators qualify through their Director role; an administrator flag alone does not grant development access.
 
-Membership alone never grants access. Prompt text, manual model selection and fallback routes cannot override these checks. Each task is checked again; every tool invocation rechecks current Slack membership and backend authority. No role or membership cache is used. API errors and missing invitation evidence deny access. If Slack history retention removes the join event, an administrator must remove and re-invite that member.
+Invitation history and the legacy administrator list are not authorization inputs. Each task is checked again; every tool invocation rechecks current Slack membership and backend authority. No role or membership cache is used. API errors deny access. Slack history retention does not affect authorization.
+
+The `development-complex-coding` model policy additionally requires confident complex-development classification. Routine terminal work uses ordinary configured models. Prompt text, manual model selection and fallback routes cannot override the access or model restrictions.
 
 ## Configuration
 
-In Magpie → Dynamic Router, select the authorized development-channel access policy for every OpenAI provider alias. Advanced settings list invitation administrators as `slack/accountId/userId` and development channels as `accountId/workspaceId/channelId/agentId`.
+In Magpie → Dynamic Router, select the authorized development-channel access policy for every OpenAI provider alias. Advanced settings list development channels as `accountId/workspaceId/channelId/agentId`. The administrator list only applies to legacy `admin-complex-coding` routes.
 
 An example plugin configuration fragment:
 
 ```json
 {
-  "adminSenders": [{ "channel": "slack", "accountId": "default", "senderId": "UADMIN01" }],
   "developmentChannels": [{
     "accountId": "default", "workspaceId": "TWORK001", "channelId": "CDEVEL01",
     "agentId": "nori-development", "botTokenEnvVar": "SLACK_BOT_TOKEN"
@@ -29,9 +28,9 @@ The channel must also be included in the native Slack allowlist, Foundation `wor
 
 Create the agent before enabling the development-channel configuration. It must explicitly use `sandbox.mode: "all"`, a supported sandbox backend, and `tools.elevated.enabled: false`; the plugin rejects missing isolation. Restrict its available tools to development tools. Keep credentials, production working directories and administrative privileges outside that environment. An SSH backend requires a dedicated unprivileged account, a verified host key and a separate seed workspace; see the pinned [OpenClaw SSH backend documentation](../vendor/openclaw/docs/gateway/sandboxing/ssh-backend.md).
 
-Users must complete Rein identity binding through an ordinary Nori channel before using the development channel, because the development agent rejects unbound requests. The invitation administrator's Slack account is not automatically a Foundation administrator.
+Users must complete Rein identity binding through an ordinary Nori channel before using the development channel, because the development agent rejects unbound requests. Slack workspace administration alone does not establish a Rein Director role.
 
-Slack's native restriction on who can invite to private channels requires an eligible Enterprise plan ([Slack documentation](https://slack.com/help/articles/29661601203603-Limit-channel-invitations-in-an-Enterprise-organization)). On other plans members may still invite through Slack's UI; Nori rejects invitations from accounts outside the configured administrator list. The backend role requirement also remains mandatory.
+Slack channel membership is managed through Slack. Nori checks current membership and the linked Rein role regardless of who invited the member.
 
 ## Validation
 
