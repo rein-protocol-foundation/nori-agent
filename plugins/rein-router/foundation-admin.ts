@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { parseBackendConfig, resolveTrustedWorkspace } from '../rein-operations/backend-config.ts';
 import { createBackendTransport, type BackendTransport } from '../rein-operations/backend-transport.ts';
 
@@ -38,7 +38,9 @@ export function createFoundationAdminAuthorizer({ config, env = process.env, tra
         (ctx.chatId !== undefined && ctx.chatId !== channel)) return false;
     const identity = resolveTrustedWorkspace(resolved!, { messageChannel: platform, nativeChannelId: channel });
     if (!identity) return false;
-    const eventId = createHash('sha256').update(JSON.stringify(['router-admin', ctx.runId, ctx.agentId,
+    // Each authorization check mints a fresh assertion. The backend rejects replayed event IDs,
+    // including a second tool check inside the same run. Never reuse a previous role result.
+    const eventId = createHash('sha256').update(JSON.stringify(['router-authority', randomUUID(), ctx.runId, ctx.agentId,
       ctx.sessionKey, ctx.accountId, platform, identity.workspaceId, channel, sender])).digest('hex');
     try {
       const ingress = await backend.relayIngress({ platform, workspace_id: identity.workspaceId,

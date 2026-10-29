@@ -21,7 +21,9 @@ test('Foundation admin proof is derived from trusted native ingress and checked 
   assert.equal(await check(context), true);
   assert.equal(await check({ ...context, runId: 'run-two' }), true);
   assert.equal(await check({ ...context, runId: 'run-three', inputProvenance: undefined }), true);
-  assert.equal(calls.length, 3);
+  assert.equal(await check(context), true);
+  assert.equal(calls.length, 4);
+  assert.equal(new Set(calls.map(call => call.event_id)).size, 4, 'Repeated tool checks in one run must not replay an assertion event');
   assert.notEqual(calls[0].event_id, calls[1].event_id);
   assert.deepEqual(Object.keys(calls[0]).sort(), ['channel_id','event_id','event_ts','platform','platform_user_id','workspace_id']);
   assert.equal(calls[0].platform_user_id, 'U_ALICE');
