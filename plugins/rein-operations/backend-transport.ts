@@ -120,6 +120,7 @@ export function createBackendTransport(config: BackendTransportConfig): BackendT
           authorization: `Bearer ${credential}`,
         },
         body: JSON.stringify(body ?? {}),
+        redirect: 'error',
         signal: AbortSignal.timeout(timeoutMs),
       });
     } catch {

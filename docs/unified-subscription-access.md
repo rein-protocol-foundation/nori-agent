@@ -763,8 +763,18 @@ keeping ordinary routes on existing subscription or API-credit providers.
 
 The restriction propagates to every model alias from that provider. The default,
 quick and research policies must stay unrestricted. The runtime requires the
-host-supplied channel/account/sender tuple and confident Jev answers for both a
-coding task and complex development. Unknown classifications use the unrestricted
+host-supplied channel/account/sender tuple, a fresh Foundation administrator check,
+and confident Jev answers for both a coding task and complex development. The
+`adminSenders` list narrows eligible accounts; it does not establish organizational
+authority. The plugin reuses enabled `rein-operations.foundationDb` configuration,
+relays only the native sender and enrolled conversation to `/api/ingress/relay`,
+then presents its private assertion to `/api/identity/resolve`. Only a resolved
+canonical contact with `is_administrator: true` qualifies. Member and Director
+roles do not confer this permission. No profile email, credential or proof reaches
+Jev or the model. Missing bindings, unavailable/old backends, unenrolled channels,
+internal or cross-session inputs and lookup timeouts fail closed. Each new task
+queries current authority; a previous task's successful check is not cached.
+Unknown classifications use the unrestricted
 default; manual restricted selections fail closed without the same evidence.
 Fallbacks cannot expand this authorization. Each grant belongs to the current run
 and requester, and auxiliary simple completions are denied. This is model-spending

@@ -16,6 +16,7 @@ const answer = (id = 'flash', extra = {}) => ({ status: 'ok', result: { answers:
   task: { type: 'choice', choice: 'simple', probabilities: { simple: 0.95 } },
   contextIndependent: { type: 'boolean', probabilityTrue: 0.96 }, ...extra } } });
 const router = (c = config(), evaluate = async () => answer()) => createRouter({ config: c, decisions: { evaluate },
+  authorizeAdmin: async () => true, // Synthetic backend authority, independently exercised below.
   environment: { REIN_TEST_GATEWAY_KEY: 'sk-magpie-key-synthetic-local-probe-00000000' } });
 const fixtureStream = final => ({ async *[Symbol.asyncIterator]() { yield { type: 'done', message: final }; }, result: async () => final });
 const lifecycle = (runId = 'r1', extra = {}) => ({ runId, stream: 'lifecycle', data: { phase: 'error' }, ...extra });
@@ -470,4 +471,28 @@ test('restricted defaults, less-restricted aliases and auxiliary completions fai
   const r = router(restrictedConfig());
   const wrapped = r.wrapStreamFn({ simpleCompletion: true, streamFn: () => assert.fail('must not invoke') });
   assert.throws(() => wrapped({ id: 'premium', provider: 'rein-magpie', baseUrl: r.config.gateway.baseUrl, api: 'openai-completions' }, {}, {}), /admin_complex_coding_required/);
+});
+
+test('configured sender alone cannot authorize a premium call; backend failure and revocation fail closed', async () => {
+  for (const authorizeAdmin of [undefined, async () => false, async () => 'true', async () => { throw new Error('PRIVATE_CANARY'); }]) {
+    const r = createRouter({ config: restrictedConfig(), authorizeAdmin, decisions: { evaluate: async () => complexCoding() } });
+    assert.equal((await r.beforeModelResolve({ prompt: 'Implement a plugin' }, ctx())).modelOverride, 'standard');
+    assert.equal(r.beforeAgentRun({}, ctx({ modelId: 'premium' })).outcome, 'block');
+  }
+  let allowed = true;
+  const r = createRouter({ config: restrictedConfig(), authorizeAdmin: async () => allowed, decisions: { evaluate: async () => complexCoding() } });
+  assert.equal((await r.beforeModelResolve({ prompt: 'Implement a plugin' }, ctx())).modelOverride, 'premium');
+  allowed = false;
+  assert.equal((await r.beforeModelResolve({ prompt: 'Continue development' }, ctx({ runId: 'r2' }))).modelOverride, 'standard');
+  assert.equal(r.beforeAgentRun({}, ctx({ runId: 'r2', modelId: 'premium' })).outcome, 'block');
+});
+
+test('a backend lookup completing after the routing deadline cannot grant late access', async () => {
+  let finish;
+  const r = createRouter({ config: restrictedConfig(), authorizeAdmin: () => new Promise(resolve => { finish = resolve; }),
+    decisions: { evaluate: async () => complexCoding() } });
+  assert.equal((await r.beforeModelResolve({ prompt: 'Implement a plugin' }, ctx())).modelOverride, 'standard');
+  finish(true);
+  await Promise.resolve();
+  assert.equal(r.beforeAgentRun({}, ctx({ modelId: 'premium' })).outcome, 'block');
 });
