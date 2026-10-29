@@ -83,7 +83,7 @@ Do not seed fabricated courses, events, people, projects, or member records. Pub
 
 ## Brand and production
 
-- Repository: https://github.com/rein-protocol-foundation/ReinProtocolFoundation
+- Repository: https://github.com/tempest2023/ReinProtocolFoundation
 - Planned production hostname (release pending approval): https://rein-protocol-foundation.vercel.app
 - Current production: https://beneficence-protocol.vercel.app
 - Brand assets and usage: [public/brand](./public/brand/README.md)
