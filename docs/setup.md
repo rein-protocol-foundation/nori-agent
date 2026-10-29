@@ -129,7 +129,7 @@ export PATH="$PWD/.toolchain/node_modules/.bin:$PATH"   # optional; makes plain 
 ## 1. Clone with the runtime source
 
 ```sh
-git clone --recurse-submodules https://github.com/tempest2023/rein-agent.git
+git clone --recurse-submodules https://github.com/rein-protocol-foundation/nori-agent.git rein-agent
 cd rein-agent
 ```
 

@@ -128,7 +128,7 @@ npm run toolchain:pnpm -- exec node --version
 ## 快速开始
 
 ```sh
-git clone --recurse-submodules https://github.com/tempest2023/rein-agent.git
+git clone --recurse-submodules https://github.com/rein-protocol-foundation/nori-agent.git rein-agent
 cd rein-agent
 npm run toolchain:pnpm -- install                                        # 仅安装 Rein workspace 包
 npm run toolchain:pnpm -- --dir vendor/openclaw install --frozen-lockfile

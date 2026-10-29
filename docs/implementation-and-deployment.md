@@ -354,7 +354,7 @@ into the Agent.
 1. Obtain the repository and official runtime:
 
    ```sh
-   git clone --recurse-submodules https://github.com/tempest2023/rein-agent.git
+   git clone --recurse-submodules https://github.com/rein-protocol-foundation/nori-agent.git rein-agent
    cd rein-agent
    node --version # Requires >=24.16.0 <25 or >=26.1.0; commands use the local toolchain
    npm run toolchain:pnpm -- --version # 12.4.2

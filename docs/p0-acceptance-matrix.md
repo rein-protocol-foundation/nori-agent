@@ -83,7 +83,7 @@ Agent obtains backend-signed proofs from trusted host context; the backend resol
 bindings. No profile-email lookup or email scope is required. See [setup](setup.md#optional-enable-backend-backed-tools).
 The following migration and PR details are historical. Two
 migrations are **tracked in the sibling Foundation repository**
-(`tempest2023/ReinProtocolFoundation`) on its PR #13 branch (PR #13, open). Its current PR head is
+(`rein-protocol-foundation/ReinProtocolFoundation`) on its PR #13 branch (PR #13, open). Its current PR head is
 `78281fa` ("Recover Remote-Only Case 7 Same-Day Fixture Migration", 2026-09-28); the rename commit
 `08542ad09932a4cefb62f230a9bdcf9fd4d32dfe` ("Complete Rein governance catalog rename through
 triggers, constraints, and indexes") and the earlier clock commit

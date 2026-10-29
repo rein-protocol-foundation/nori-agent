@@ -119,7 +119,7 @@ v0.1 方向已落地 14 个工具，且**只在显式 `foundationDb` 配置块�
 1. 获取仓库和官方运行时：
 
    ```sh
-   git clone --recurse-submodules https://github.com/tempest2023/rein-agent.git
+   git clone --recurse-submodules https://github.com/rein-protocol-foundation/nori-agent.git rein-agent
    cd rein-agent
    node --version # 环境需要 >=24.16.0 <25 或 >=26.1.0；命令本身交由本地工具链执行
    npm run toolchain:pnpm -- --version # 12.4.2

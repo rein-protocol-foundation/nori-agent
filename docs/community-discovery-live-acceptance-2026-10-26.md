@@ -23,7 +23,7 @@ The production Discord profile uses a dedicated caller with catalog-read and ide
 Slack retains its existing development profile. No production governance scope was granted.
 
 The backend environment loader is delivered separately in
-[Agent PR #13](https://github.com/tempest2023/rein-agent/pull/13). This follow-up records the
+[Agent PR #13](https://github.com/rein-protocol-foundation/nori-agent/pull/13). This follow-up records the
 acceptance and updates discovery guidance only. Channel allowlists, the dedicated caller and
 the separate profile's model-key loading remain local deployment configuration; merging these
 documents does not install or activate that configuration.
