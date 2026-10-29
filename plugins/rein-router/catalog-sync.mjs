@@ -59,9 +59,12 @@ export function compileCatalog({ catalog, settings, gateway, pluginPath }) {
       (['subscription', 'coding-plan'].includes(f.mode) || (paid && f.mode === 'pay-as-you-go'));
   });
   if (!eligible.length) throw new Error('router_no_eligible_models');
-  const policy = { ...recommendPolicy(eligible), ...settings.policy };
-  const routes = eligible.map(m => makeRoute(m, catalogRouteId(m.id), m.efforts.includes('medium') ? 'medium' : m.efforts[0],
-    'Manually selectable model; choose only when suitable for this task.'));
+  const unrestricted = eligible.filter(m => funding[m.providerId].access !== 'admin-complex-coding');
+  const policy = { ...recommendPolicy(unrestricted), ...settings.policy };
+  const routes = eligible.map(m => makeRoute(m, catalogRouteId(m.id), funding[m.providerId].access === 'admin-complex-coding' && m.efforts.includes('high') ? 'high' : m.efforts.includes('medium') ? 'medium' : m.efforts[0],
+    funding[m.providerId].access === 'admin-complex-coding'
+      ? 'Restricted complex development. Prefer the named code route; select another model only for unusually demanding architecture, debugging or code review that needs its stronger capabilities.'
+      : 'Manually selectable model; choose only when suitable for this task.'));
   for (const [role, purpose] of Object.entries(roles)) {
     const selected = policy[role];
     if (role === 'general' && !selected) throw new Error('router_capable_default_required');
@@ -69,6 +72,7 @@ export function compileCatalog({ catalog, settings, gateway, pluginPath }) {
     if (!model) throw new Error(`router_policy_model_missing_${role}`);
     if (!model.efforts.includes(selected.effort)) throw new Error(`router_policy_effort_invalid_${role}`);
     if (role === 'general' && !['medium', 'high'].includes(selected.effort)) throw new Error('router_capable_default_required');
+    if (role !== 'code' && funding[model.providerId].access === 'admin-complex-coding') throw new Error('router_restricted_policy');
     if (role !== 'code' && funding[model.providerId].mode === 'coding-plan') throw new Error('router_coding_plan_scope');
     routes.push(makeRoute(model, role, selected.effort, purpose));
   }
@@ -91,6 +95,7 @@ export function compileCatalog({ catalog, settings, gateway, pluginPath }) {
     const mode = funding[m.providerId].mode;
     return { id, provider: m.provider, gatewayModel: m.id, billingMode: mode,
       billingSource: `${m.provider}: ${mode}`, billingVerified: true, effort, purpose,
+      ...(funding[m.providerId].access ? { access: funding[m.providerId].access } : {}),
       contextWindow: m.contextWindow, maxTokens: m.maxTokens };
   }
 }

@@ -37,6 +37,8 @@ magpie.plugin('rein-router', ctx => {
     router_no_eligible_models: '请选择 Provider 的计费来源并确认额度设置。',
     router_capable_default_required: '默认策略需要支持 medium 或 high 的模型。请在 Providers 启用合适的模型，并确认计费设置后重新保存。',
     router_jev_key_required: '启用 Dynamic Router 前，请在此页面或项目私有配置文件中保存 Jev API Key；不使用 shell 环境变量。',
+    router_restricted_policy: '仅限管理员复杂开发的 Provider 不能用于默认、简单问答或检索策略。',
+    router_restricted_default: '默认策略必须允许日常任务使用。',
     router_coding_plan_scope: 'Coding Plan 仅用于编码路由；请为通用任务选择其他 Provider。',
     router_catalog_limit: '可用模型过多。请在 Magpie 缩小暴露给 OpenClaw 的模型目录（最多 60 个）。',
     router_config_changed_retry: 'OpenClaw 配置刚刚发生变化，请重新保存。',
@@ -88,6 +90,9 @@ magpie.plugin('rein-router', ctx => {
       const fundingMenu = ctx.ui.menu([{ v: 'subscription', name: '订阅额度' }, { v: 'coding-plan', name: 'Coding Plan' }, { v: 'pay-as-you-go', name: 'API 按量付费' }],
         funding.mode, '计费来源', v => { funding.mode = v; funding.confirmed = false; changed(); render(); });
       card.append(ctx.ui.row('计费来源', '仅设置调用边界，账号和模型继续在 Providers 管理。', fundingMenu));
+      card.append(ctx.ui.row('使用范围', '限制会应用到此 Provider 的所有模型。手动选择与自动回退也不能绕过；分类不确定时使用默认策略。',
+        ctx.ui.menu([{ v: 'all', name: '普通任务可用' }, { v: 'admin-complex-coding', name: '仅限指定管理员的复杂开发任务' }],
+          funding.access ?? 'all', '使用范围', v => { funding.access = v; changed(); })));
       card.append(ctx.ui.row('已确认此 Provider 的额度与额外用量设置', '新增模型继承此 Provider 的边界；新增 Provider 默认不启用。',
         ctx.ui.toggle(funding.confirmed, '确认 ' + models[0].provider + ' 计费设置', v => { funding.confirmed = v; changed(); })));
       if (models.some(m => m.hasFallback)) card.append(el('p', 'rein-error', '此 Provider 配有内部回退，请在 Providers 移除回退后再用于 OpenClaw。回退顺序在下方统一配置。'));
