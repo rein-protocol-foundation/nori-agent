@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { parseBackendConfig, resolveTrustedWorkspace } from '../rein-operations/backend-config.ts';
 import { createBackendTransport, type BackendTransport } from '../rein-operations/backend-transport.ts';
 
@@ -12,7 +12,7 @@ export function createFoundationAdminAuthorizer({ config, env = process.env, tra
   env?: Record<string, string | undefined>;
   transport?: BackendTransport;
   now?: () => number;
-}) {
+}, accepts: (member: Record<string, unknown>) => boolean = member => member.is_administrator === true) {
   let resolved: ReturnType<typeof parseBackendConfig>;
   let backend: BackendTransport;
   try {
@@ -38,7 +38,9 @@ export function createFoundationAdminAuthorizer({ config, env = process.env, tra
         (ctx.chatId !== undefined && ctx.chatId !== channel)) return false;
     const identity = resolveTrustedWorkspace(resolved!, { messageChannel: platform, nativeChannelId: channel });
     if (!identity) return false;
-    const eventId = createHash('sha256').update(JSON.stringify(['router-admin', ctx.runId, ctx.agentId,
+    // Each authorization check mints a fresh assertion. The backend rejects replayed event IDs,
+    // including a second tool check inside the same run. Never reuse a previous role result.
+    const eventId = createHash('sha256').update(JSON.stringify(['router-authority', randomUUID(), ctx.runId, ctx.agentId,
       ctx.sessionKey, ctx.accountId, platform, identity.workspaceId, channel, sender])).digest('hex');
     try {
       const ingress = await backend.relayIngress({ platform, workspace_id: identity.workspaceId,
@@ -50,7 +52,13 @@ export function createFoundationAdminAuthorizer({ config, env = process.env, tra
       if (!result.ok) return false;
       const member = result.body as Record<string, unknown>;
       return member.ok === true && member.status === 'resolved' && typeof member.contact_id === 'string' &&
-        Boolean(member.contact_id) && member.is_administrator === true;
+        Boolean(member.contact_id) && accepts(member);
     } catch { return false; }
   };
+}
+
+/** Current Contributor/Director roles qualify only after the independent channel gate passes. */
+export function createFoundationDeveloperAuthorizer(options: Parameters<typeof createFoundationAdminAuthorizer>[0]) {
+  return createFoundationAdminAuthorizer(options, member => member.is_administrator === true ||
+    member.is_active_contributor === true || member.is_director === true);
 }
