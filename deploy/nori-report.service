@@ -1,0 +1,21 @@
+[Unit]
+Description=Report successful Nori deployments to Foundation and Slack
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+User=root
+UMask=0077
+ExecStart=/usr/bin/python3 /opt/nori-updater/nori-report.py --config /etc/nori-updater.json
+Restart=on-failure
+RestartSec=60
+TimeoutStartSec=10min
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/nori-updater
+
+[Install]
+WantedBy=multi-user.target

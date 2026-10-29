@@ -1,0 +1,14 @@
+dashboard.example.org {
+    encode zstd gzip
+    handle /hooks/github {
+        reverse_proxy 127.0.0.1:3450
+    }
+    handle {
+        reverse_proxy 127.0.0.1:3440 {
+            header_up X-Nori-Client-IP {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+            header_up -X-Nori-User
+            header_up -X-OpenClaw-Scopes
+        }
+    }
+}

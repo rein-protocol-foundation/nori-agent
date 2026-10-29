@@ -1,0 +1,9 @@
+[Unit]
+Description=Trigger Nori updates when a signed merge webhook is queued
+
+[Path]
+PathExistsGlob=/var/lib/nori-webhook/pending/*.json
+Unit=nori-update.service
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,22 @@
+[Unit]
+Description=Receive authenticated GitHub merge events for Nori
+After=network.target
+
+[Service]
+User=nori-webhook
+Group=nori-webhook
+ExecStart=/usr/bin/python3 /opt/nori-updater/nori-webhook.py --config /etc/nori-webhook.json
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/nori-webhook/pending
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+MemoryMax=128M
+
+[Install]
+WantedBy=multi-user.target

@@ -30,6 +30,42 @@ async function vacantPort() {
   return port;
 }
 
+function rejectTunnel(_request, socket) {
+  // CONNECT hands the socket to us, outside HTTP server error handling. A
+  // client can reset it after the deliberate 403; that is expected rejection,
+  // not a Magpie failure. Keep other transport errors visible to the test.
+  socket.on('error', error => { if (error.code !== 'ECONNRESET') throw error; });
+  socket.end('HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n');
+}
+
+test('denied CONNECT handles a client reset after the 403 response', { timeout: 5000 }, async () => {
+  const proxy = createServer();
+  proxy.on('connect', rejectTunnel);
+  let client;
+  try {
+    const port = await listen(proxy);
+    const closed = new Promise(resolve => {
+      proxy.once('connect', (_request, socket) => socket.once('close', resolve));
+    });
+    await new Promise((resolve, reject) => {
+      client = createConnection({ host: '127.0.0.1', port }, () => {
+        client.write('CONNECT example.invalid:443 HTTP/1.1\r\nHost: example.invalid\r\n\r\n');
+      });
+      client.once('error', reject);
+      client.once('data', data => {
+        try { assert.match(data.toString(), /^HTTP\/1\.1 403 Forbidden\r\n/); }
+        catch (error) { reject(error); return; }
+        client.resetAndDestroy();
+        resolve();
+      });
+    });
+    await closed;
+  } finally {
+    client?.destroy();
+    if (proxy.listening) await new Promise(resolve => proxy.close(resolve));
+  }
+});
+
 async function listening(port) {
   return new Promise(resolve => {
     const socket = createConnection({ host: '127.0.0.1', port });
@@ -99,7 +135,7 @@ test('native Magpie UI launcher disables updates, bootstraps its private cookie 
       });
       const upstreamPort = await listen(upstreamServer);
       denyProxy = createServer((request, reply) => { request.resume(); reply.writeHead(403); reply.end(); });
-      denyProxy.on('connect', (_request, socket) => socket.end('HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n'));
+      denyProxy.on('connect', rejectTunnel);
       const proxy = `http://127.0.0.1:${await listen(denyProxy)}`;
       gatewayPort = await vacantPort();
       const gatewayBaseUrl = `http://127.0.0.1:${gatewayPort}/v1`;

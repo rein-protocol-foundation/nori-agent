@@ -1,0 +1,27 @@
+{
+  "repository": "https://github.com/tempest2023/rein-agent.git",
+  "branch": "main",
+  "root": "/home/ubuntu/rein-agent",
+  "releases": "/home/ubuntu/nori-releases",
+  "state": "/var/lib/nori-updater",
+  "eventDirectory": "/var/lib/nori-webhook",
+  "user": "ubuntu",
+  "nodeVersion": "24.16.0",
+  "minimumFreeGiB": 12,
+  "healthTimeout": 150,
+  "services": ["nori-router", "nori-web", "nori-slack", "nori-discord"],
+  "preserve": ["runtime", ".env.local", ".env", "secrets", "SECRETs.md", "workspace/USER.md", "workspace/MEMORY.md", "workspace/memory", "workspace/.openclaw"],
+  "routerPort": 3431,
+  "auxiliaryPorts": [3425, 3440],
+  "routerSession": "runtime/oci-public/router-session.json",
+  "gateways": [
+    {"port": 18791, "config": "runtime/openclaw/openclaw.json", "trustedProxyHeaders": {
+      "x-nori-user": "nori-owner", "x-forwarded-host": "dashboard.example.org",
+      "x-forwarded-proto": "https", "x-forwarded-for": "192.0.2.1"
+    }},
+    {"port": 18793, "config": "runtime/discord-catalog-prod/openclaw.json", "trustedProxyHeaders": {
+      "x-nori-user": "nori-owner", "x-forwarded-host": "dashboard.example.org",
+      "x-forwarded-proto": "https", "x-forwarded-for": "192.0.2.1"
+    }}
+  ]
+}
