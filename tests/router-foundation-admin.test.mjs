@@ -76,3 +76,18 @@ test('development authority accepts only resolved current Contributor, Director 
     body[role]=true;body.status='identity_revoked';assert.equal(await check(context),false);
   }
 });
+
+test('normal production identity latency above 1.25 seconds still permits fresh role checks', async t => {
+  const { createServer } = await import('node:http');
+  const { createFoundationDeveloperAuthorizer } = await import('../plugins/rein-router/foundation-admin.ts');
+  const server=createServer(async(req,res)=>{
+    for await(const _chunk of req) { /* Drain the synthetic request. */ }
+    if(req.url==='/api/identity/resolve')await new Promise(resolve=>setTimeout(resolve,1500));
+    res.writeHead(200,{'content-type':'application/json'});
+    res.end(JSON.stringify(req.url==='/api/ingress/relay'?{ok:true,assertion:'synthetic-latency-proof'}:member({is_administrator:false,is_active_contributor:true})));
+  });
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  t.after(()=>{server.closeAllConnections();server.close();});
+  const check=createFoundationDeveloperAuthorizer({config,env:{...env,TEST_BACKEND_URL:`http://127.0.0.1:${server.address().port}`}});
+  assert.equal(await check(context),true);
+});

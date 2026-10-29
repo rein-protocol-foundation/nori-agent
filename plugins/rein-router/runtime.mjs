@@ -102,7 +102,7 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
     try {
       return await Promise.race([
         Promise.resolve().then(() => authorizeAdmin(ctx)).then(value => value === true).catch(() => false),
-        new Promise(resolve => { timer = setTimeout(() => resolve(false), 3000); }),
+        new Promise(resolve => { timer = setTimeout(() => resolve(false), 6500); }),
       ]);
     } finally { clearTimeout(timer); }
   }

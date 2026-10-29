@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { parseBackendConfig, resolveTrustedWorkspace } from '../rein-operations/backend-config.ts';
 import { createBackendTransport, type BackendTransport } from '../rein-operations/backend-transport.ts';
 
-export const FOUNDATION_ADMIN_TIMEOUT_MS = 3000;
+export const FOUNDATION_ADMIN_TIMEOUT_MS = 6500;
 const nativeId = (value: unknown): value is string => typeof value === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(value);
 const runField = (value: unknown): value is string => typeof value === 'string' && value.length > 0 && value.length <= 1024;
 
@@ -19,7 +19,7 @@ export function createFoundationAdminAuthorizer({ config, env = process.env, tra
     resolved = parseBackendConfig({ config, env, error: () => { throw new Error('router_identity_config_invalid'); } });
     if (!resolved) return async () => false;
     backend = transport ?? createBackendTransport({ baseUrl: resolved.baseUrl, callerId: resolved.callerId,
-      credential: resolved.credential, timeoutMs: 1250 });
+      credential: resolved.credential, timeoutMs: 3000 });
   } catch { return async () => false; }
   return async (ctx: any): Promise<boolean> => {
     const platform = ctx?.channel ?? ctx?.messageProvider;
