@@ -1,277 +1,142 @@
-# Rein Agent
+# Nori-Agent
 
-[Nori 管理首页与多实例入口](docs/dashboard-zh.md) — 原生 OpenClaw / Magpie 导航、部署与升级兼容性。
+**AI-powered operations for NGOs, nonprofits, and public-benefit organizations.**
 
-[Nori 远程自动更新](docs/auto-update-zh.md) — GitHub 合并事件触发构建、重启与失败回滚，无定时轮询。
+[![Scaffold checks](https://github.com/rein-protocol-foundation/nori-agent/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/rein-protocol-foundation/nori-agent/actions/workflows/check.yml)
+[![Status: in development](https://img.shields.io/badge/status-in_development-d97706?style=flat)](#current-status)
+[![Built on OpenClaw](https://img.shields.io/badge/built_on-OpenClaw-2563eb?style=flat)](https://github.com/openclaw/openclaw)
+[![Local Node.js toolchain: 24.16.0](https://img.shields.io/badge/Node.js-24.16.0-5fa04e?style=flat&logo=nodedotjs&logoColor=white)](#quick-start)
+[![pnpm 12.4.2](https://img.shields.io/badge/pnpm-12.4.2-f69220?style=flat&logo=pnpm&logoColor=white)](package.json)
+[![Dashboard: admins only](https://img.shields.io/badge/dashboard-admins_only-475569?style=flat)](https://nori.rein-protocol.org/)
 
-<img src="workspace/avatars/rein-agent.png" alt="Nori official avatar" width="192" height="192">
+[简体中文](README-zh.md) · [GitHub](https://github.com/rein-protocol-foundation/nori-agent) · [Nori Dashboard](https://nori.rein-protocol.org/)
 
-[中文说明](README-zh.md)
+<img src="workspace/avatars/rein-agent.png" alt="Nori, the Nori-Agent mascot" width="160" height="160">
 
-[Model Router & Dynamic Router: 中文快速上手](docs/model-router-quickstart-zh.md) — installation,
-screenshots, one-time Magpie provider setup, automatic OpenClaw model sync and Jev routing.
-Start the integrated UI with `npm run toolchain:pnpm -- run router:ui`.
+Nori helps organizations coordinate people, resources, decisions, and community work around their mission. The goal is to handle most routine operations within each organization's policies, giving people more time for public-benefit work and decisions that need human judgment.
 
-Rein Protocol Foundation's operations agent: an administrator, secretary, and online facilitator.
+Built on **OpenClaw** by **Rein Protocol Foundation**, the agent goes by **Nori** in conversation. The Foundation provides the initial implementation context; each organization supplies its own mission, roles, policies, and integrations.
 
-Rein Agent helps members turn activity ideas into real-world action. It receives proposals,
-organizes materials, facilitates Board funding decisions, coordinates preparation, collects
-outcomes, and supports publishing—so organizational leaders can focus on decisions that truly
-require their attention.
+> **Nori Dashboard is restricted to organization administrators.** Access requires authorized management credentials.
 
-**Status: local business-core development; development rehearsals only.** The official OpenClaw
-source is included as a git submodule pinned to a reviewed commit. The Rein-owned plugin exposes a read-only
-status tool and synthetic proposal/vote simulation tools. Four proposal tools are available only after
-an operator explicitly configures one platform, approved native channels and local storage.
-Deterministic business modules plus a local ledger support development rehearsals.
+[Capabilities](#capabilities) · [Current status](#current-status) · [Quick start](#quick-start) · [Documentation](#documentation) · [Contributing](#contributing)
 
-The confirmed P0 slice is one Slack vertical: link a Slack account to a community record through a
-verified binding, submit a simple Contributor proposal, run a simple Board vote whose result the
-Agent records, and read a funds snapshot. The Agent holds no database credential and performs no
-database work: every governance read and write, identity resolution and identity binding goes
-through one authenticated Foundation backend API, and the Agent never resolves identity from a
-profile email. Earlier synthetic rehearsal cases ran through a real Slack provider (a test
-workspace, with synthetic test identities) and against the linked `dev_*` schema with synthetic
-rows; what has not happened is production use: no real member registry, no `prod_*` business-table
-write, and no production deployment.
-Nineteen backend-backed tools talk to that backend API — the reads
-`rein_member_status`, `rein_funds`, `rein_poll_candidates` and `rein_vote_type_resolve`, the
-read-only field collector `rein_proposal_collect`, the writes `rein_governance_proposal_submit`,
-`rein_poll_open`, `rein_poll_vote` and `rein_poll_result`, and the post-result feedback tools
-`rein_proposal_comment_suggest`, `rein_revision_approve` and `rein_revision_apply`; three identity
-binding tools (`rein_identity_bind_start`, `rein_identity_bind_status`, `rein_identity_bind_complete`);
-and four community query tools (`rein_resources_search`, `rein_resource_get`, `rein_events_search`,
-`rein_event_get`). They register
-**only** when an explicit `foundationDb` config block enables them, and enabling it hides the
-simulators and the legacy proposal tools. The block names the backend by environment variable
-(`backendApiBaseUrlEnvVar`, `agentCallerIdEnvVar`, `agentCredentialEnvVar`) together with
-the `workspaces` list with each workspace's platform, workspace ID and native channel IDs,
-`proposalChannelIds`, `boardChannelIds` and the optional `voteTypeAliases`. Writes also require
-`proposalConfirmationKeyEnvVar`; top-level `platform` is optional. Use the
-[current setup example](docs/setup.md#optional-enable-backend-backed-tools). The backend signs a
-private proof bound to the platform, workspace, user, channel and event plus the calling Agent; the
-Agent presents that proof on every call, never as a tool argument, a tool result or a status field,
-and no tool accepts a model-supplied actor.
+## Capabilities
 
-The governance interface names are `rein_member_status`, `rein_funds`, `rein_poll_candidates`,
-`rein_vote_type_resolve`, `rein_governance_proposal_submit`, `rein_poll_open`, `rein_poll_vote`,
-`rein_poll_result`, `rein_proposal_collect`, `rein_proposal_comment_suggest`, `rein_revision_approve`
-and `rein_revision_apply`; the config block is `foundationDb`. The Agent never addresses a table
-directly, only backend operations; the backend owns the schema, whose tables are
-`<env>_rein_vote_types`, `<env>_rein_proposals`, `<env>_rein_polls`, `<env>_rein_ballots` and
-`<env>_rein_proposal_revisions`; and the RPCs are `<env>_rein_finalize_poll` and
-`<env>_rein_approve_revision`. These are the v0.1 initial-release names; earlier development builds
-used stage-prefixed tool names, a stage-named config block and stage-prefixed tables and RPCs. The
-upgrade is a committed forward migration, `20260927110000_rein_governance_names.sql`, ordered after
-the committed `20260927103000` migration in the sibling Foundation repository. Both migrations are
-now **applied** to the linked project (project ref `ksgyfyysnojqrwfuyqwe`) as of 2026-09-28. The
-rename migration's transition compatibility views and RPC wrappers were removed by the later applied
-`20260929045543_remove_stage_compatibility_objects.sql`, so the linked schema now answers only on the
-stable `<env>_rein_*` names. Applying a migration is not the same as the Agent using it: code live
-end-to-end verification is still absent.
+Nori-Agent is designed around four areas of organizational work:
 
-Two earlier database migrations for that slice are committed in the sibling Foundation repository and
-applied to the linked `BeneficenceProtocol` project (verified read-only 2026-09-27). Each defines both
-the `dev_*` and `prod_*` objects in one transaction, so the applied schema covers both prefixes. The
-rehearsal evidence shows synthetic rows read and written in the `dev_*` prefix; the `prod_*` prefix
-stayed at zero rows. Nothing here claims production use or deployment.
+| Area | Product goal |
+| --- | --- |
+| Daily operations and decisions | Triage requests, prepare meetings, follow up on tasks, and resolve routine matters under authorized policies. |
+| Financial resource coordination | Assess resource needs, support budget decisions, and track allocations and commitments. |
+| People coordination | Support members, staff, and volunteers through onboarding, responsibilities, and contribution tracking. |
+| Community maintenance | Guide newcomers, help people discover resources and events, and support participation and feedback. |
 
-No production member registry or production data set is connected. Governance rehearsals
-run against a test Slack workspace and the linked `dev_*` schema only; the live governance evidence predates the
-rename, and the current PR head has **no live Slack retest after the rename**. A passed vote is a decision record: payments, reservations and publishing are not enabled,
-and weighted voting, quorum, recusal, competing-budget allocation, activities, reminders, articles and
-oversight remain deferred. See the [implementation and deployment record](docs/implementation-and-deployment.md)
-and the [v0.1 governance acceptance record](docs/governance-acceptance-2026-09-28.md): cases 2-10 are accepted on
-synthetic development evidence, and case 1 was skipped by the owner and is not passed.
+The broader product direction also considers fundraising and donor relations, program delivery, impact evaluation, governance and compliance, protection and participation of people served, and external communications and partnerships. These remain **proposals for discussion**, rather than confirmed first-release commitments. See the [product requirements](docs/PRD-agent-community-operations.md).
 
-Discord onboarding guidance ships in the workspace: optional introductions and peer interaction,
-course discovery, public in-person events and resource contributions. The
-[community discovery tools and skill](docs/community-discovery.md) query the Website's published
-catalog through the authenticated Foundation backend. Each call requires a current Discord/Slack
-Community Member link and the caller's `community.read` scope; permission failures return explicit
-errors without a web/history/directory fallback. The public navigation directory starts unconfigured.
-A separate operator-configured local run tested real Discord conversations and a DEV
-community identity link with thinking enabled: eight cases, all accepted after owner review, with wording improvements and coverage limits retained.
-The [redacted acceptance summary and limitations](docs/discord-onboarding-live-acceptance-2026-10-13.md)
-do not establish production readiness. These workspace files do not enable integrations by themselves.
-See the [flow and acceptance guide](docs/discord-onboarding.md).
+## Current status
 
-Product-case acceptance does not establish multi-user privacy. The
-[session/memory audit](docs/discord-session-privacy-audit-2026-10-13.md) confirms native guild sessions
-are channel-shared in the original profile. An opt-in [Rein Discord adapter](docs/discord-user-isolation.md)
-now implements per-sender/per-audience sessions and scoped persistent notes, with a native pipeline
-probe using synthetic senders. Real two-account acceptance is pending; the original local instance
-remains restricted to its acceptance account. Public course data in that earlier acceptance was operator-supplied.
+**The project has a local business core, development rehearsals, and limited live acceptance evidence. The full product scope is still in development.**
 
-Slack now has an opt-in [isolated adapter](docs/slack-user-isolation.md), stacked on the Discord
-isolation change. Both adapters reuse a [channel-neutral scope/memory/dispatch core](docs/channel-user-isolation.md);
-Slack preserves backend governance checks and separates public/private channels, DMs and threads.
-Native synthetic probes cover both transports; live two-account acceptance remains pending.
+| Component | Available implementation | Current boundary |
+| --- | --- | --- |
+| Proposals and governance | Identity binding, proposal collection and submission, Board voting, result records, and funds snapshots through an authenticated backend. | Requires explicit backend, workspace, and channel configuration. A vote result does not execute a payment. |
+| Community support | Discord onboarding guidance and authenticated resource and event discovery. | Requires configured services and verified community access. Limited live acceptance does not establish general readiness. |
+| Session and memory isolation | Optional Discord and Slack adapters with per-user and audience scopes. | Synthetic pipeline checks exist; live two-account acceptance remains pending. |
+| Model routing | Optional Magpie gateway, manual model selection, and Jev dynamic routing. | Provider access and billing compatibility require operator verification. |
+| Browser tasks | Pinned agent-browser integration with an encrypted credential vault and session reuse. | Runs within operator authorization and existing channel permissions. |
+
+The initial governance workflow is:
+
+**Verified identity → proposal → Board vote → recorded result**, with funds snapshots available to authorized directors.
+
+Real payments, fund reservations, automatic role grants, and the full activity-to-publication workflow are not enabled. The Agent accesses organizational data through the backend API and holds no database credentials.
+
+For dated evidence and outstanding checks, read the [implementation record](docs/implementation-and-deployment.md), [acceptance matrix](docs/p0-acceptance-matrix.md), and [roadmap](docs/roadmap.md).
+
+## Quick start
+
+### 1. Prepare the checkout and toolchain
+
+You need Git with submodule support and npm. The commands below install a local toolchain with Node.js `24.16.0` and pnpm `12.4.2`. Supported Node releases are `>=24.16.0 <25` or `>=26.1.0`.
+
+```sh
+git clone --recurse-submodules https://github.com/rein-protocol-foundation/nori-agent.git
+cd nori-agent
+npm install --prefix .toolchain --no-save --package-lock=false node@24.16.0 pnpm@12.4.2
+```
+
+For an existing checkout without submodules, run `git submodule update --init --recursive` first. The local toolchain is Git-ignored and does not require a global pnpm installation or a `PATH` change.
+
+### 2. Install, build, and initialize
+
+```sh
+npm run toolchain:pnpm -- install
+npm run toolchain:pnpm -- --dir vendor/openclaw install --frozen-lockfile
+npm run toolchain:pnpm -- --dir vendor/openclaw build
+npm run toolchain:pnpm -- run setup:local
+```
+
+Initialization creates a private local configuration at `runtime/openclaw/openclaw.json`, enables `rein-operations`, and binds the gateway to loopback port `18791`. **Chat channels and models remain unconfigured.** Follow the [setup guide](docs/setup.md) to connect services and explicitly enable backend tools.
+
+### 3. Verify and run
+
+```sh
+npm run toolchain:pnpm -- run check
+npm run toolchain:pnpm -- test
+npm run toolchain:pnpm -- run verify:plugin
+npm run toolchain:pnpm -- openclaw gateway run
+```
+
+After the gateway reports ready, check it from a second terminal:
+
+```sh
+npm run toolchain:pnpm -- openclaw gateway health --port 18791
+npm run toolchain:pnpm -- run smoke:gateway
+```
+
+### Optional: model routing
+
+Magpie bootstrap also requires Go. Prepare the pinned gateway, then start the integrated console:
+
+```sh
+npm run toolchain:pnpm -- run magpie:setup
+npm run toolchain:pnpm -- run router:ui
+```
+
+Keep the console running alongside OpenClaw. Configure providers and models in Magpie; the console synchronizes the OpenClaw configuration. See [subscription access and dynamic routing](docs/unified-subscription-access.md) for configuration and verification.
+
+## Documentation
+
+| Read about | Start here |
+| --- | --- |
+| Product scope and priorities | [Product requirements](docs/PRD-agent-community-operations.md) · [Roadmap](docs/roadmap.md) · [Open decisions](docs/decisions.md) |
+| Installation and configuration | [Setup](docs/setup.md) · [Model routing](docs/unified-subscription-access.md) · [Browser automation](docs/agent-browser.md) |
+| Community workflows | [Discord onboarding](docs/discord-onboarding.md) · [Community discovery](docs/community-discovery.md) |
+| Identity and privacy | [Conversation identity](docs/conversation-identity.md) · [Channel isolation](docs/channel-user-isolation.md) |
+| Architecture and integration | [Architecture](docs/architecture.md) · [Integration contracts](docs/integration-contracts.md) · [OpenClaw updates](docs/upstream.md) |
+| Implementation evidence | [Development and deployment](docs/implementation-and-deployment.md) · [Acceptance matrix](docs/p0-acceptance-matrix.md) |
+| Foundation context | [Mission and governance blueprint](PROJECT.md) · [Source provenance](docs/provenance.md) |
 
 ## Repository layout
 
 | Path | Purpose |
 | --- | --- |
-| `vendor/openclaw` | Official OpenClaw source as a git submodule, pinned to one reviewed commit. Upstream-owned; use it, do not edit it. |
-| `plugins/rein-operations` | Rein-owned business modules; three default status/simulation tools, four proposal tools, and nineteen backend-backed tools (twelve governance, three identity binding, four community queries) that register only with explicit platform, workspace, channel and backend configuration. |
-| `plugins/rein-router` | Optional subscription router, pinned project-local Magpie dependency, gateway lifecycle and scoped route status. |
-| `workspace/` | OpenClaw-compatible agent workspace template: identity, policy, avatar and Discord conversation guidance with an initially unconfigured public directory. |
-| `config/operations.example.json` | Proposed business configuration. Not native OpenClaw config, and nothing loads it. |
-| `scripts/` | Local bootstrap, CLI wrapper and upstream update helpers. |
-| `tests/` | Node test runner checks for the plugin boundary and the update script. |
-| `docs/` | PRDs, architecture, decision register, setup and upstream-update runbooks. |
+| `plugins/rein-operations/` | Proposal, governance, identity, and community tools. |
+| `plugins/rein-router/` | Magpie gateway integration and model routing. |
+| `plugins/rein-discord/`, `plugins/rein-slack/`, `plugins/rein-isolation/` | Channel adapters and shared isolation logic. |
+| `workspace/` | Agent identity, operating policies, skills, and avatar. |
+| `config/`, `templates/` | Example configurations and workflow templates. |
+| `scripts/`, `tests/` | Setup, verification, runtime helpers, and tests. |
+| `docs/` | Requirements, guides, decisions, and acceptance records. |
+| `vendor/openclaw/` | Official runtime, pinned as a read-only Git submodule. |
 
-## Plugin-first development rule
-
-An opt-in [Magpie subscription gateway and Jev routing plugin](docs/unified-subscription-access.md)
-adds declared model/effort routes, explicit fallback controls and session-scoped manual selection.
-Magpie is prepared as a pinned project-local headless dependency; the plugin can manage its
-process without a global installation or runtime build. The existing China Bailian Token Plan
-has a matching native Magpie preset. OpenAI's official SIWC route is available through Magpie's
-`chatgpt-api` provider. Provider authentication, plan compatibility and token refresh stay in Magpie;
-Rein configures the gateway routes, model selection, fallback and billing labels.
-Native synthetic probes cover Discord and Slack ingress; an optional probe exercises the pinned
-Magpie gateway with local fixture providers. Its
-[synthetic example](config/subscription-router.example.json) is disabled. Live subscription
-compatibility and billing acceptance remain pending. Nori serves the public using operator-owned
-connections across channels. Claude support is plan-agnostic (including Pro/Max/Team),
-with operator-verified account model access and limits; no Claude account is currently connected. Existing
-profiles are not changed by installing the source.
-
-The existing China Token Plan passed a [live Bailian tool-call round trip](docs/bailian-subscription-acceptance-2026-10-15.md)
-through the production router and managed Magpie gateway, with two capped requests and no Jev or fallback.
-
-An authorized [60-call hosted Jev evaluation](docs/subscription-routing-evaluation-2026-10-15.md)
-selected 21 of 24 proposed economical opportunities with no unsafe economical selections against
-the synthetic labels. Label review, paired answer-quality evaluation and net savings remain pending.
-
-Rein functionality is implemented as Rein-owned plugins under `plugins/`, loaded through the
-documented plugin SDK and manifest. `vendor/openclaw` stays byte-identical to upstream so the
-submodule pointer can move forward with a reviewed fetch and rebuild. No Rein commit may modify
-tracked files in `vendor/openclaw/src/` or `vendor/openclaw/extensions/`, and CI rejects uncommitted changes in the upstream checkout.
-
-`config/operations.example.json` is a design input, not runtime enforcement. Governance parameters
-remain unset, and real operations must not start without explicit authorization.
-
-## Requirements
-
-- Node.js `>=24.16.0 <25` or `>=26.1.0` (Node 26 recommended). This mirrors upstream `engines`.
-- pnpm `12.4.2`, pinned by `packageManager` in `package.json`; the npm entry point below uses a
-  project-local copy, so a global installation or Corepack setup is optional.
-- git with submodule support.
-
-A gitignored local toolchain may already be installed in this working copy and can satisfy both
-without touching your shell `PATH`. It must exist at `.toolchain/`; the commands below fail if that
-directory is missing; prepare it with npm using [setup](docs/setup.md#prerequisites). Run pnpm
-through the pinned local toolchain with `npm run toolchain:pnpm`:
-
-```sh
-npm run toolchain:pnpm -- --version   # expect 12.4.2
-npm run toolchain:pnpm -- exec node -v   # expect v24.16.x
-```
-
-The optional subscription gateway also needs Git and Go for explicit bootstrap:
-
-```sh
-npm run toolchain:pnpm -- run magpie:setup
-npm run toolchain:pnpm -- run magpie -- version
-npm run toolchain:pnpm -- run router:ui
-```
-
-Bootstrap builds the pinned headless binary under `.toolchain/magpie-bin`; protected stores live
-under `runtime/magpie`. Router Console serves Magpie's native Providers UI plus an OpenClaw Router
-page using its native controls. It owns the gateway, synchronizes models and scoped keys, and merges
-OpenClaw configuration automatically. Keep that terminal running alongside OpenClaw.
-
-`magpie:ui` is an alias for the integrated console. `magpie:ui:native` retains the standalone native
-UI for legacy/manual setups, which must be closed before starting an independently OpenClaw-managed
-gateway. Both launchers disable native auto-updates to preserve the pinned binary.
-See the [screenshot walkthrough](docs/model-router-quickstart-zh.md) for setup and use, or the
-[configuration reference](docs/unified-subscription-access.md) for manual deployment details.
-
-## Quick start
-
-Nori can use the pinned official agent-browser CLI and Skill for operator-authorized
-browser tasks, with a local encrypted credential vault, encrypted session reuse and bounded
-login recovery. See [browser setup and verification](docs/agent-browser.md). Credentials
-are enrolled locally; existing public-channel permissions are not expanded.
-
-```sh
-git clone --recurse-submodules https://github.com/rein-protocol-foundation/nori-agent.git rein-agent
-cd rein-agent
-npm run toolchain:pnpm -- install                                     # Rein workspace packages only
-npm run toolchain:pnpm -- --dir vendor/openclaw install --frozen-lockfile
-npm run toolchain:pnpm -- --dir vendor/openclaw build
-npm run toolchain:pnpm -- run setup:local                             # isolated local gateway config
-npm run toolchain:pnpm -- run check
-npm run toolchain:pnpm -- test
-npm run toolchain:pnpm -- run verify:plugin
-npm run toolchain:pnpm -- run verify:proposal-tools
-npm run toolchain:pnpm -- openclaw plugins list --verbose
-npm run toolchain:pnpm -- openclaw plugins inspect rein-operations --runtime --json
-npm run toolchain:pnpm -- openclaw plugins doctor
-npm run toolchain:pnpm -- openclaw gateway run                        # terminal 1; Ctrl-C to stop
-npm run toolchain:pnpm -- openclaw gateway health --port 18791        # terminal 2, after "ready"
-npm run toolchain:pnpm -- run smoke:gateway                           # terminal 2, after "ready"
-```
-
-`npm run toolchain:pnpm -- <args>` forwards everything after `--` to the toolchain pnpm, so
-every command above runs from a default shell without a `PATH` export: `-- install` and
-`-- --dir vendor/openclaw install --frozen-lockfile` reach pnpm directly, while `-- run <script>`,
-`-- test` and `-- openclaw <args>` reach the package scripts and the upstream CLI through the
-toolchain's own Node, so they work even when the ambient `node` is older. With no argument after
-`--`, `toolchain:pnpm` prints pnpm's own help. The inline `npm run <script>` form works too, but it
-uses your ambient Node. If you prefer to put the toolchain on `PATH` instead, prepend its bin
-directory once: `export PATH="$PWD/.toolchain/node_modules/.bin:$PATH"`; after that, plain
-`pnpm run check`, `pnpm test` and `pnpm openclaw ...` replace the wrapped forms.
-
-If the repository is already cloned without submodules, run
-`git submodule update --init --recursive` first. `npm run toolchain:pnpm -- run setup:local` writes an isolated config at
-`runtime/openclaw/openclaw.json` (gitignored, mode 0600) with a generated gateway token, a loopback
-binding on port 18791, the `workspace/` directory and the `rein-operations` plugin enabled.
-Channels and models stay unconfigured. See [setup](docs/setup.md) for the full bootstrap and
-[updating OpenClaw](docs/upstream.md) for the reviewed pin update and rollback.
-
-## Three operating roles
-
-| Role | Responsibilities |
-| --- | --- |
-| Administrator | Verify identity, track activities and permissions, and maintain exception and audit records |
-| Secretary | Organize proposals, agendas, tasks, and outcomes; follow up on missing items; prepare weekly operations summaries |
-| Online facilitator | Present proposals under approved rules, open and close voting, and explain results and next steps |
-
-Rein Agent does not make resource-allocation decisions for the Board, execute real payments, or grant
-organizational roles. People remain responsible for offline activity execution.
-
-## P0 operating loop
-
-Contributor proposal → information confirmation and evaluation → authorized zero-budget fast track /
-Board funding decision → activity space and preparation → human execution → outcome acceptance →
-authorized website publication and settlement record.
-
-Activity, finance, and publication states are tracked independently. A second chat platform,
-social-media image and text publishing, and DAO integration belong to later phases.
-
-## Product and design
-
-- [English PRD](docs/PRD-agent-community-operations.md) · [中文 PRD](docs/PRD-agent-community-operations-zh.md)
-- [Foundation mission and governance blueprint](PROJECT.md)
-- [Source provenance and context](docs/provenance.md)
-- [Architecture and integration boundaries](docs/architecture.md)
-- [Setup and local runtime](docs/setup.md)
-- [Discord onboarding requirements](docs/discord-onboarding.md) · [中文流程、目录与演练](docs/discord-onboarding-zh.md)
-- [Development, verification, deployment and ten Agent rehearsals](docs/implementation-and-deployment.md)
-- [v0.1 governance acceptance record (2026-09-28)](docs/governance-acceptance-2026-09-28.md)
-- [P0 requirement evidence matrix](docs/p0-acceptance-matrix.md)
-- [Provider integration contracts](docs/integration-contracts.md)
-- [Updating OpenClaw](docs/upstream.md)
-- [P0 implementation and acceptance checklist](docs/roadmap.md)
-- [Open decisions](docs/decisions.md)
-- [Nori official avatar](assets/brand/README.md)
+The product name is **Nori-Agent**. Package names retain Rein / ReinProtocol prefixes for compatibility, including the root package `rein-agent` and the `@rein-protocol/*` scope. Existing plugin paths, `rein_*` tools, environment variables, `foundationDb` configuration, and avatar paths remain compatible.
 
 ## Contributing
 
-Product suggestions are not organizational policy. Every implementation must trace back to a PRD
-requirement, user story, or acceptance criterion (`R`, `US`, or `AC`). See the
-[contribution guide](CONTRIBUTING.md). A license has not yet been selected, so no open-source
-license is currently granted.
+Implement Nori functionality through plugins and the documented OpenClaw SDK. Keep `vendor/openclaw` unchanged. Connect each implementation to a PRD requirement, user story, or acceptance criterion, and distinguish proposed behavior from implemented behavior.
+
+Read the [contribution guide](CONTRIBUTING.md) before making changes. Never commit credentials or real organization records. Example policies do not authorize live operations.
+
+**License:** A license has not yet been selected; no open-source license is currently granted.

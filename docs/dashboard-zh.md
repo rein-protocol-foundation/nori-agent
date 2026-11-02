@@ -1,4 +1,8 @@
-# Nori 管理首页与原生控制台
+# Nori Dashboard 与原生控制台
+
+组织管理入口：[https://nori.rein-protocol.org/](https://nori.rein-protocol.org/)。**仅组织管理成员可访问**，普通成员、志愿者和公众不因其成员身份获得管理入口权限。访问需使用组织授权的管理凭据。
+
+项目仓库：[rein-protocol-foundation/nori-agent](https://github.com/rein-protocol-foundation/nori-agent)。下文说明管理入口实现和自托管配置。
 
 首页 `/apps` 只有 OpenClaw 与 Magpie 两个主卡片。OpenClaw 卡片列出部署配置中的所有实例，
 默认示例为 Slack 和 Discord；每个入口打开对应实例的原生 Control UI。`/dashboard?instance=discord`
@@ -23,7 +27,7 @@ Provider 管理继续使用原生 Magpie 页。
 入口使用一个共享管理身份，适合单一受信任管理者；不提供多租户授权。
 
 - `scripts/dashboard-server.mjs`：密钥登录、30 天持久会话、实例导航、HTTP / WebSocket 代理。
-- `scripts/dashboard-pages.mjs` 与 `web/dashboard/`：Rein 首页。
+- `scripts/dashboard-pages.mjs` 与 `web/dashboard/`：Nori Dashboard 首页。
 - `scripts/dashboard-router.mjs`：Console 启动时通过 `onReady` 回调保存内部凭据，不打印到日志。
 - `scripts/router-console.mjs` 与 `plugins/rein-router/console/`：Magpie 原生页面扩展及启动加载状态。
 

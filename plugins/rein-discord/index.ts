@@ -26,7 +26,7 @@ export function registerReinDiscord(api: OpenClawPluginApi, transport: DiscordTr
     api.registerTool({ contextVersion: 2, create: createMemoryToolFactory(config, getMemory, turns) }, { names: MEMORY_TOOLS });
     api.registerChannel({
       id: 'discord',
-      meta: { id: 'discord', label: 'Rein Isolated Discord', selectionLabel: 'Rein Isolated Discord',
+      meta: { id: 'discord', label: 'Nori-Agent Isolated Discord', selectionLabel: 'Nori-Agent Isolated Discord',
         docsPath: '/channels/discord', blurb: 'Per-sender community onboarding' },
       capabilities: { chatTypes: ['direct', 'channel'], media: false, nativeCommands: false },
       configSchema: buildJsonChannelConfigSchema({ type: 'object', properties: { enabled: { type: 'boolean' } }, additionalProperties: false }),
@@ -50,7 +50,7 @@ export function registerReinDiscord(api: OpenClawPluginApi, transport: DiscordTr
 
 export default definePluginEntry({
   id: 'rein-discord',
-  name: 'Rein Isolated Discord',
+  name: 'Nori-Agent Isolated Discord',
   description: 'Dedicated onboarding ingress with per-sender, per-audience sessions and memory.',
   register: registerReinDiscord,
 });

@@ -5,7 +5,7 @@ Local Gateway/model rehearsal; full behavioral acceptance **not passed**.
 
 ## 结论
 
-Rein Agent 已在本地启动，真实模型完成了中英文对话；这次不是静态文档检查。
+Nori-Agent 已在本地启动，真实模型完成了中英文对话；这次不是静态文档检查。
 这次没有真实 Discord 账号、原生消息事件或后台 link 状态，不能作为真实 onboarding 验收。
 部分多轮回复没有接住最新需求，推荐与解释仍出现编造或过度简化，均须在真实环境重测。
 用户随后明确：Discord 首次发消息需要 link，参与用例应使用后台已确认绑定的测试账号。

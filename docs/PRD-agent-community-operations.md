@@ -1,22 +1,49 @@
-# Rein Protocol Community Operations Automation PRD
+# Nori-Agent NGO/NPO Operations PRD
 
 [Chinese version](./PRD-agent-community-operations-zh.md)
 
-> Product: OpenClaw-based community operations Agent\
+> Product: Nori-Agent — OpenClaw-based NGO/NPO operations agent\
 > Version: v0.1 · Product requirements draft\
-> Date: 2026-09-22\
+> Original draft: 2026-09-22 · Product positioning updated: 2026-10-28\
 > Status: OpenClaw, Slack as the P0 platform, a database-backed member/director/funds source, an approve-only Board vote, and per-type candidate caps with per-type approval budgets are confirmed. The strict P0 v0.1 slice is §2.3. Everything else, including the numerical defaults in this document, remains a product recommendation, not approved or live.\
 > Audience: Organization founders, Board members, product and design teams, community operators, developers, and testers.
 
+**Nori-Agent** is an AI agent designed for NGOs, nonprofit organizations (NPOs), and public-benefit organizations. Its goal is to handle most organizational operations within each organization's authorized policies, so people can focus on mission, oversight, and work that needs human judgment.
+
+The product covers four areas: routine operational decisions and follow-up; financial resource planning and coordination; member, staff, and volunteer coordination; and community onboarding, engagement, and maintenance. These describe the product direction, not a claim that every capability is implemented. Current governance, proposal and community workflows are the first delivery slice; payments and autonomous personnel decisions are not enabled.
+
+Beyond these four areas, the product scope should also consider **fundraising and donor relations; program and service delivery; mission and impact evaluation; governance and compliance coordination; participation and protection of people served; and communications and partnerships**. The intended lifecycle connects needs assessment, resource mobilisation, delivery, outcome evaluation and improvement in service of the organization's mission. These extensions are proposals for discussion, not confirmed P0 delivery commitments.
+
+Developed by Rein Protocol Foundation on OpenClaw, Nori-Agent uses **Nori** as its conversational name. The Foundation is the initial implementation context; other organizations supply their own mission, roles, policies, and integrations.
+
 ## 1. Product Positioning and Background
 
-Rein Protocol intends to delegate most routine organizational work to Agents. People should primarily focus on organizational direction and resource allocation, executing in-person events, and handling exceptions beyond the Agent's authority or capabilities.
+The initial Rein Protocol Foundation implementation intends to delegate most routine organizational work to Agents. People should primarily focus on organizational direction and resource allocation, executing in-person events, and handling exceptions beyond the Agent's authority or capabilities.
 
-This product is a persistent community operations assistant in Slack, the confirmed P0 platform. Slack serves the core circle, meaning core board members and core contributors, and internal governance (Board voting, fund review and event review) happens there. General participants are served by a later, separate Discord scope limited to onboarding, free-resource navigation and participation paths (C16). Members use natural language to propose events, receive assessments, vote, prepare activities, submit results for review, and share outcomes. The public website supports event discovery, registration, outcome reporting, and organizational transparency. The administration interface supports policy configuration, exception handling, and operational oversight.
+The initial Foundation implementation is a persistent community operations assistant in Slack, the confirmed P0 platform. Slack serves the core circle, meaning core board members and core contributors, and internal governance (Board voting, fund review and event review) happens there. General participants are served by a later, separate Discord scope limited to onboarding, free-resource navigation and participation paths (C16). Members use natural language to propose events, receive assessments, vote, prepare activities, submit results for review, and share outcomes. The public website supports event discovery, registration, outcome reporting, and organizational transparency. The administration interface supports policy configuration, exception handling, and operational oversight.
 
 The product should turn a member's willingness to organize an event into an executed activity with recorded outcomes and reusable lessons. It should reduce the time founders spend following up in chat, organizing information, arranging votes, requesting reports, and publishing articles.
 
-Events and content must serve the organization's existing mission: advancing AI Agents that benefit human society; promoting AI education, research, ethics, safety, and governance discussions; and supporting open learning communities and public-benefit activities. Event counts and reach cannot substitute for mission contribution.
+Each deployment must serve its own organization's mission. For the initial Foundation implementation, that mission is: advancing AI Agents that benefit human society; promoting AI education, research, ethics, safety, and governance discussions; and supporting open learning communities and public-benefit activities. Event counts and reach cannot substitute for mission contribution.
+
+### Proposed product extensions (for discussion)
+
+The original four areas support everyday operations. The following proposals add resource mobilisation, service delivery, mission outcomes and accountability to people served. Priorities and automation authority remain open; these proposals do not change the P0 scope in §2.3.
+
+| Area | Work Nori-Agent could support | Product boundary to define |
+| --- | --- | --- |
+| Fundraising and donor relations | Funding opportunity discovery, applications, pledges, donation records and funder reporting | Distinguish applying for grants from awarding them; track restricted purposes, commitments and deadlines |
+| Program and service delivery | Needs assessment, service plans, tasks, milestones, supplier and partner coordination, delivery follow-up | Include ongoing services, research, advocacy and grantmaking beyond events; configure by organization type |
+| Mission and impact evaluation | Mission-linked objectives, outcome evidence, feedback, reviews, reports and institutional learning | Distinguish activity outputs from outcomes; never invent or overstate impact when evidence is missing |
+| Governance and compliance coordination | Board agendas and decisions, delegation records, conflicts disclosures, filing deadlines and audit preparation | Configure for organizational rules and applicable jurisdictions, with responsible reviewers and escalation |
+| Participation and protection of people served | Needs gathering, accessible participation, feedback and complaints, service follow-up and referrals | People served are not interchangeable with members or donors; privacy, consent, appeals and sensitive incidents need dedicated workflows |
+| Communications and partnerships | Outcome communications, public inquiries, partnership opportunities, commitments and coordination | Use evidence, respect the wishes of people represented and follow organizational communication authority |
+
+Institutional knowledge, document handover, data permissions, action records and traceability support every area. Members, volunteers, staff, donors, people served and partner organizations can overlap, but must not be reduced to a single role or permission model.
+
+Discussion must establish the first organization segment, the first complete workflow, and which actions are autonomous, reviewed or human-led. Broad positioning does not commit the first release to every sector's needs.
+
+References: the [National Council of Nonprofits operations resources](https://councilofnonprofits.org/running-nonprofit) address organizational operations and accountability; [CHS 2024](https://www.corehumanitarianstandard.org/the-standard) emphasizes participation and accountability to affected people. CHS originates in humanitarian work and is a design reference here, not a universal requirement for all NGOs/NPOs.
 
 ### 1.1 Typical Experience
 
@@ -28,7 +55,7 @@ If the same event requests funding, it enters a periodic selection round. The Ag
 
 ### 1.2 Relationship to Existing Documents and Product
 
-- [PROJECT.md](../PROJECT.md) defines the organizational mission and long-term governance blueprint. This PRD translates its community operations component into product requirements; it does not rewrite the constitution.
+- [PROJECT.md](../PROJECT.md) defines the organizational mission and long-term governance blueprint. This PRD describes the broader product direction and the initial Foundation community operations requirements; it does not rewrite the constitution.
 - [README.md](../README.md) describes the current implementation, in which existing Agent reviews are still started manually by administrators. This PRD describes proposed operations that start automatically and continue within authorized boundaries. It does not imply that existing capabilities are already automated.
 - Phase-one event funding selection uses the organization's own database for members, directors and available funds as an interim governance arrangement, with one equal vote per eligible Board member. Its results must not be represented as an already operational DAO or on-chain governance system.
 - This PRD does not automatically change Contributor admission rules, fundraising launch status, privacy commitments, or payment authority. Necessary changes must be configured separately and clearly communicated to affected users.

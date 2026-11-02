@@ -1,6 +1,6 @@
 {
   "id": "rein-router",
-  "name": "Rein Subscription Router",
+  "name": "Nori-Agent Subscription Router",
   "description": "Opt-in local Magpie gateway routing with explicit billing declarations, manual models, safe fallbacks and optional Jev decisions.",
   "categories": ["models", "agent-orchestration"],
   "enabledByDefault": false,

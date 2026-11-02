@@ -1,6 +1,6 @@
 # Repository development instructions
 
-Rein Agent is developed by Rein Protocol Foundation on OpenClaw. Setup, build and test instructions
+Nori-Agent is an AI agent for NGO, NPO and public-benefit organization operations. It is developed by Rein Protocol Foundation on OpenClaw. Setup, build and test instructions
 live in `README.md` and `docs/`; read those before changing behavior.
 
 ## Repository safety
@@ -12,6 +12,9 @@ live in `README.md` and `docs/`; read those before changing behavior.
 - `vendor/openclaw` is a read-only upstream submodule; never commit Rein code into it.
 
 ## Organization operations context
+
+- Repository: `https://github.com/rein-protocol-foundation/nori-agent`. Product name: Nori-Agent; retain Rein / ReinProtocol package prefixes for compatibility.
+- Nori Dashboard: `https://nori.rein-protocol.org/`; access is restricted to organization administrators.
 
 - Domain `rein-protocol.org`, registered and DNS-managed through Cloudflare.
 - Public website `https://rein-protocol.org`, deployed through the Vercel project

@@ -20,7 +20,7 @@ import { COMMUNITY_TOOL_NAMES, createCommunityToolsRegistration } from "./commun
 // This first tool proves the external-plugin boundary without enabling business actions.
 export default definePluginEntry({
   id: "rein-operations",
-  name: "Rein Operations",
+  name: "Nori-Agent Operations",
   description: "Rein Protocol Foundation operations extension",
   register(api) {
     const proposalConfig = api.pluginConfig?.proposalTools;

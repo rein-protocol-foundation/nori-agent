@@ -95,8 +95,8 @@ export PATH="$PWD/.toolchain/node_modules/.bin:$PATH"   # 可选；让 pnpm 和 
 ## 1. 连同运行时源码克隆仓库
 
 ```sh
-git clone --recurse-submodules https://github.com/rein-protocol-foundation/nori-agent.git rein-agent
-cd rein-agent
+git clone --recurse-submodules https://github.com/rein-protocol-foundation/nori-agent.git
+cd nori-agent
 ```
 
 如果已经克隆但未初始化子模块，请先运行 `git submodule update --init --recursive`。

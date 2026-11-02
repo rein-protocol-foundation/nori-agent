@@ -1,6 +1,6 @@
 # Isolated Discord sessions and member memory
 
-This opt-in Rein-owned adapter replaces the bundled Discord transport in a **dedicated local
+This opt-in Nori-Agent-owned adapter replaces the bundled Discord transport in a **dedicated local
 profile**. It implements the gap found in the [original audit](discord-session-privacy-audit-2026-10-13.md).
 The upstream submodule is unchanged. The existing onboarding test profile is not automatically
 migrated, deployed or expanded to other accounts.

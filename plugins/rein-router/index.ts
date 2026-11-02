@@ -7,7 +7,7 @@ import { createFoundationAdminAuthorizer, createFoundationDeveloperAuthorizer, F
 import { createSlackDevelopmentAuthorizer, DEVELOPMENT_AUTH_TIMEOUT_MS } from './slack-development.mjs';
 
 export default definePluginEntry({
-  id: 'rein-router', name: 'Rein Subscription Router',
+  id: 'rein-router', name: 'Nori-Agent Subscription Router',
   description: 'Opt-in Magpie subscription routes and bounded Jev decisions.',
   register(api) {
     const config = validateRouterConfig(api.pluginConfig);

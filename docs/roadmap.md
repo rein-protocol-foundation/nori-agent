@@ -1,4 +1,8 @@
-# Implementation roadmap
+# Nori-Agent implementation roadmap
+
+The product targets NGO/NPO and public-benefit operations across routine decisions, financial resource coordination, people management and community maintenance. The milestones below are the initial Foundation implementation, not the full product scope. Broader people workflows, policy-bound daily decisions and resource coordination require subsequent requirements and acceptance work.
+
+Further product directions for discussion are fundraising and donor relations, program/service delivery, mission and impact evaluation, governance/compliance coordination, participation and protection of people served, and communications/partnerships. These are not scheduled milestones. Select an initial organization segment and an end-to-end workflow before expanding the delivery plan; define evidence of success and action authority for each. See the [PRD discussion](PRD-agent-community-operations.md#proposed-product-extensions-for-discussion).
 
 The local deterministic cores for proposals, governance and a rehearsal ledger are implemented and tested. The activity, change, oversight and outbox cores are unreachable from the plugin entry and their implementation moved to a follow-up PR. The milestones below remain open as **production acceptance**: trusted identity, chat and website adapters, approved policy, provider receipts and end-to-end pilot evidence are still required. See [implementation and deployment](implementation-and-deployment-zh.md).
 
