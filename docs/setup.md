@@ -387,7 +387,7 @@ The four `*EnvVar` fields name server environment variables; never put credentia
 
 The repository launcher loads these four names from the Git-ignored `.env.local`, while explicit
 process environment values take precedence. Keep that file private (mode `0600`). If neither source
-sets `REIN_BACKEND_URL`, the launcher uses `https://rein-protocol.org`; an explicitly empty value
+sets `REIN_BACKEND_URL`, the launcher uses `https://www.rein-protocol.org`; an explicitly empty value
 fails validation rather than falling back. Custom variable names are supported by the plugin but
 must be supplied in the process environment; `.env.local` loading only covers the four names above.
 After changing credentials or configuration, restart the project gateway.

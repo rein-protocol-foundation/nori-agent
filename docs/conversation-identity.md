@@ -49,3 +49,44 @@ Acceptance after authorized rollout: ask the linked sender who they are in Disco
 verify the actual status tool trace, profile and role fields. Repeat with an unlinked sender,
 a revoked link and an unenrolled channel; all restricted actions must remain refused. Use two
 senders in one room to confirm profile/session separation. Public replies should omit email.
+
+## Production endpoint checks
+
+Use the canonical `https://www.rein-protocol.org` origin for `REIN_BACKEND_URL`.
+The apex host now responds to API POST requests with a 308 redirect. The authenticated
+transport deliberately uses `redirect: 'error'`, so an apex URL fails before identity
+resolution; do not enable automatic credential-bearing redirects. Existing explicit
+launcher overrides must be updated separately from the default.
+
+Check server-level and channel-level tool policies, not just plugin registration. A
+Discord guild `tools.allow` list must include `rein_member_status` for Nori to inspect
+the sender's current verified organizational roles. Reading a catalog is not an identity
+check, and a transport failure does not establish that a member needs to rebind.
+
+### Runtime repair and verification — 2026-10-29
+
+The live Discord gateway's guild allowlist omitted `rein_member_status`, and its
+private launcher explicitly selected the redirecting apex origin. The repair added
+the tool to the existing guild allowlist in both preserved gateway profiles and
+changed the Discord launcher to `https://www.rein-protocol.org`. Protected rollback
+copies were retained, the updater lock was held during configuration changes, and
+only the Discord gateway was restarted. Its readiness probe returned HTTP 200.
+These private runtime files are intentionally untracked; this record documents the
+repair without copying credentials or member records into source control. The
+launcher default in `scripts/backend-env.mjs` now uses the same canonical origin.
+Deploying this default does not replace explicit overrides or repair existing tool
+allowlists: operators must check both as described above.
+
+Two existing QA Bots then sent real Discord messages mentioning Nori. Server
+transcripts confirmed one successful `rein_member_status` call per turn, and the
+replies were read back through the Discord API. Both Bots were unlinked; Nori
+reported that state and rejected a claimed Contributor/Director standing as
+unsupported by the backend. No binding or governance write tool was called.
+Temporary `allowBots: "mentions"` admission was restored to its prior setting after
+testing, and the four test messages were removed. Redacted results are recorded
+here; raw test evidence remains in private, ignored runtime storage.
+
+This verifies the real Bot conversation-to-backend path for unlinked accounts.
+It does not establish a positive linked-role Bot conversation, revoked-account
+acceptance, or cross-user privacy. A separate successful direct invocation of the
+deployed identity tool is not a substitute for those conversation tests.

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseEnv } from 'node:util';
 
-export const DEFAULT_BACKEND_URL = 'https://rein-protocol.org';
+export const DEFAULT_BACKEND_URL = 'https://www.rein-protocol.org';
 
 const BACKEND_KEYS = [
   'REIN_BACKEND_URL',

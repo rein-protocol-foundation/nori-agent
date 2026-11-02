@@ -281,7 +281,7 @@ npm run toolchain:pnpm -- openclaw gateway auth-token --show
 | `REIN_AGENT_CREDENTIAL` | 该 Agent 调用方的凭据，仅授予已批准的 scope。 |
 | `REIN_PROPOSAL_CONFIRMATION_KEY` | 用于提案确认令牌的稳定私有密钥；使用强随机值，例如一次性运行 `openssl rand -base64 48` 生成。轮换会使未完成的确认失效。 |
 
-仓库启动器从被 Git 忽略的 `.env.local` 读取以上四个变量，显式设置的进程环境变量优先。该文件应保持私有（权限 `0600`）。如果两处都未设置 `REIN_BACKEND_URL`，启动器使用 `https://rein-protocol.org`；显式空值会校验失败，不会回退。插件支持自定义变量名，但这些变量必须通过进程环境提供；`.env.local` 自动加载只覆盖上述四个名称。修改凭据或配置后，重启项目网关。
+仓库启动器从被 Git 忽略的 `.env.local` 读取以上四个变量，显式设置的进程环境变量优先。该文件应保持私有（权限 `0600`）。如果两处都未设置 `REIN_BACKEND_URL`，启动器使用 `https://www.rein-protocol.org`；显式空值会校验失败，不会回退。插件支持自定义变量名，但这些变量必须通过进程环境提供；`.env.local` 自动加载只覆盖上述四个名称。修改凭据或配置后，重启项目网关。
 
 合成演练应显式选择隔离后端及在该环境登记的调用方。数据环境由后端部署配置选择；更换 URL 不会迁移 DEV 调用方或授予生产权限。Agent 不接收数据库地址或 service key，线上默认地址也不构成向生产数据写入测试记录的授权。
 

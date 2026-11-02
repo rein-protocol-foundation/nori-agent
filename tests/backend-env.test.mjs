@@ -38,7 +38,7 @@ test('missing local settings use the online backend without inventing credential
   const environment = { REIN_AGENT_CALLER_ID: 'explicit' };
   const result = loadBackendEnvironment({ root, environment });
   assert.deepEqual(result, { ...environment, REIN_BACKEND_URL: DEFAULT_BACKEND_URL });
-  assert.equal(DEFAULT_BACKEND_URL, 'https://rein-protocol.org');
+  assert.equal(DEFAULT_BACKEND_URL, 'https://www.rein-protocol.org');
   assert.equal(result.REIN_AGENT_CREDENTIAL, undefined);
   assert.notEqual(result, environment);
 });
