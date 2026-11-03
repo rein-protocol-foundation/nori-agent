@@ -10,6 +10,12 @@ workspace/.openclaw/
 workspace/MEMORY.md
 workspace/USER.md
 workspace/memory/
+workspace/main/USER.md
+workspace/main/MEMORY.md
+workspace/main/memory/
+workspace/main/.openclaw/
+workspace/main/BOOTSTRAP.md
+workspace/main/.git/
 runtime/
 secrets/
 /SECRETs.md

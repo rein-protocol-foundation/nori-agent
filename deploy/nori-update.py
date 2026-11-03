@@ -345,9 +345,58 @@ class Updater:
         self.status = host.state / 'status.json'
 
     def record(self, state, **values):
+        # Keep the known rollback through building/deferred/up-to-date states.
+        if 'previous' not in values:
+            previous = read_json(self.status, {}).get('previous')
+            if previous:
+                values['previous'] = previous
         value = {'state': state, 'at': timestamp(), **values}
         atomic_json(self.status, value)
         print(json.dumps(value), flush=True)
+
+    def prune_rollbacks(self):
+        """Called under update.lock; never discard unfinished recovery material.
+
+        Retain three previous deployments in addition to the active checkout.
+        Failed/candidate directories can contain unreconciled private state and
+        are deliberately outside this policy.
+        """
+        if self.journal.exists():
+            return
+        deleted, skipped = [], []
+        try:
+            previous = read_json(self.status, {}).get('previous')
+            releases = []
+            for path in self.host.releases.iterdir():
+                if not re.fullmatch(r'previous-candidate-[0-9a-f]{12}-[0-9a-f]{8}', path.name):
+                    continue
+                if path.is_symlink() or not path.is_dir() or path == self.host.root:
+                    continue
+                releases.append(path)
+            releases.sort(key=lambda p: (str(p) == previous, p.stat().st_mtime_ns, p.name), reverse=True)
+            for path in releases[3:]:
+                # Do not descend through mounted data volumes or directory links.
+                mounted = os.path.ismount(path)
+                for directory, dirs, _ in os.walk(path, followlinks=False):
+                    dirs[:] = [d for d in dirs if not (Path(directory) / d).is_symlink()]
+                    if any(os.path.ismount(Path(directory) / d) for d in dirs):
+                        mounted = True
+                        break
+                if mounted:
+                    skipped.append(path.name)
+                    continue
+                shutil.rmtree(path)
+                deleted.append(path.name)
+            result = {'at': timestamp(), 'keep': 3, 'deleted': deleted, 'skipped': skipped}
+        except OSError as error:
+            # Cleanup failure must not roll back or relabel a healthy deployment.
+            result = {'at': timestamp(), 'keep': 3, 'deleted': deleted,
+                      'skipped': skipped, 'error': type(error).__name__}
+        try:
+            atomic_json(self.host.state / 'cleanup.json', result)
+        except OSError:
+            result['recordError'] = 'cleanup_record_unavailable'
+        print(json.dumps({'cleanup': result}), flush=True)
 
     def queue_report(self, transaction):
         if not self.host.config.get('reporting'):
@@ -370,8 +419,9 @@ class Updater:
         if transaction['phase'] == 'committed':
             if 'deploymentId' in transaction:
                 self.queue_report(transaction)
-            self.record('updated', revision=transaction['target'])
+            self.record('updated', revision=transaction['target'], previous=transaction.get('previous'))
             self.journal.unlink()
+            self.prune_rollbacks()
             return True
         for key in ('candidate', 'previous', 'failed'):
             path = Path(transaction[key])
@@ -409,6 +459,8 @@ class Updater:
             transaction['phase'] = 'switching'
             atomic_json(self.journal, transaction)
             durable_rename(self.host.root, transaction['previous'])
+            # A rename retains the checkout's old mtime; stamp backup order explicitly.
+            os.utime(transaction['previous'], None)
             durable_rename(candidate, self.host.root)
             self.host.start()
             self.host.health()
@@ -432,6 +484,9 @@ class Updater:
             return
         revision = self.host.latest()
         if revision == self.host.revision(self.host.root):
+            self.host.active()
+            self.host.health()
+            self.prune_rollbacks()
             self.record('up_to_date', revision=revision)
             return
         last = read_json(self.status, {})
@@ -444,6 +499,7 @@ class Updater:
             self.host.health()  # Prove probe/auth compatibility before building or stopping anything.
             if self.host.root.stat().st_dev != self.host.releases.stat().st_dev:
                 raise UpdateError('releases_must_share_the_live_filesystem')
+            self.prune_rollbacks()
             free = shutil.disk_usage(self.host.releases).free
             if free < self.host.config.get('minimumFreeGiB', 12) * 1024 ** 3:
                 raise UpdateError('insufficient_build_space')
@@ -475,6 +531,7 @@ class Updater:
             raise
         try:
             self.activate(candidate, revision)
+            self.prune_rollbacks()
         except BaseException as error:
             if not self.journal.exists() and read_json(self.status, {}).get('state') != 'rolled_back':
                 self.record('failed', revision=revision, reason=error.args[0] if isinstance(error, UpdateError) else type(error).__name__)
