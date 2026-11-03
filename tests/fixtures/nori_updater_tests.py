@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
@@ -190,7 +191,7 @@ class UpdaterTests(unittest.TestCase):
     def test_unchanged_main_does_not_build_or_restart(self):
         self.host.latest_values = ['old']
         self.updater.run()
-        self.assertEqual(self.host.events, [])
+        self.assertEqual(self.host.events, ['active', 'health:old'])
 
     def test_dirty_checkout_is_preserved_and_defers_update(self):
         self.host.dirty = True
@@ -224,6 +225,127 @@ class UpdaterTests(unittest.TestCase):
         for change in ({'user': 'root'}, {'preserve': ['../private']}, {'state': str(self.host.root / 'runtime')}, {'services': ['ssh']}):
             with self.subTest(change=change), self.assertRaises(module.UpdateError):
                 module.validate_config(dict(example, **change))
+
+
+class WorkspacePreservationTests(unittest.TestCase):
+    def test_main_private_state_survives_without_overwriting_tracked_templates(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root, candidate = (Path(temporary) / name for name in ('live', 'candidate'))
+            for directory in (root, candidate):
+                (directory / 'workspace/main').mkdir(parents=True)
+            subprocess.run(['git', 'init', '-q', str(candidate)], check=True)
+            core = candidate / 'workspace/main/SOUL.md'
+            core.write_text('versioned policy')
+            subprocess.run(['git', '-C', str(candidate), 'add', 'workspace/main/SOUL.md'], check=True)
+            (root / 'workspace/main/SOUL.md').write_text('must not copy the entire workspace')
+            example = module.read_json(source.parent / 'nori-updater.example.json')
+            for name in ('USER.md', 'MEMORY.md', 'BOOTSTRAP.md', 'memory/note.md', '.openclaw/state.json', '.git/config'):
+                path = root / 'workspace/main' / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('synthetic private state')
+            host = module.Host.__new__(module.Host)
+            host.root, host.config = root, example
+            host.command = lambda args: subprocess.run(args, check=True, capture_output=True)
+            host.git = lambda directory, *args: subprocess.check_output(
+                ['git', '-C', str(directory), *args], text=True)
+            host.preserve(candidate)
+            self.assertEqual(core.read_text(), 'versioned policy')
+            for name in ('USER.md', 'MEMORY.md', 'BOOTSTRAP.md', 'memory/note.md', '.openclaw/state.json', '.git/config'):
+                self.assertEqual((candidate / 'workspace/main' / name).read_text(), 'synthetic private state')
+            # A future commit must not turn preserved private state into source.
+            subprocess.run(['git', '-C', str(candidate), 'add', 'workspace/main/USER.md'], check=True)
+            with self.assertRaisesRegex(module.UpdateError, 'preserved_path_became_tracked'):
+                host.preserve(candidate)
+
+
+class RetentionTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.host = FakeHost(Path(self.temp.name))
+        self.updater = module.Updater(self.host)
+        self.backups = []
+        for i in range(6):
+            path = self.host.releases / f'previous-candidate-{i:012x}-{i:08x}'
+            path.mkdir()
+            (path / 'private-state').write_text(f'snapshot-{i}')
+            os.utime(path, (100 + i, 100 + i))
+            self.backups.append(path)
+
+    def test_keeps_three_newest_and_current_private_state(self):
+        self.updater.prune_rollbacks()
+        self.assertEqual([p.exists() for p in self.backups], [False]*3 + [True]*3)
+        self.assertEqual((self.host.root / 'runtime/session').read_text(), 'original-private-state')
+        self.updater.prune_rollbacks()
+        self.assertEqual(module.read_json(self.host.state / 'cleanup.json')['deleted'], [])
+
+    def test_protects_latest_known_rollback_even_with_legacy_mtime(self):
+        module.atomic_json(self.updater.status, {'previous': str(self.backups[0])})
+        self.updater.record('building', revision='new')
+        self.updater.record('deferred', revision='new')
+        self.updater.prune_rollbacks()
+        self.assertEqual([p.exists() for p in self.backups], [True,False,False,False,True,True])
+
+    def test_does_not_touch_pending_transaction_or_unrecognized_material(self):
+        for name in ['candidate-abc', 'failed-candidate-abc', 'build-home', 'previous-manual']:
+            (self.host.releases / name).mkdir()
+        outside = Path(self.temp.name) / 'outside'
+        outside.mkdir()
+        (outside / 'private').write_text('keep')
+        link = self.host.releases / 'previous-candidate-ffffffffffff-ffffffff'
+        link.symlink_to(outside, target_is_directory=True)
+        module.atomic_json(self.updater.journal, {'phase': 'switching'})
+        self.updater.prune_rollbacks()
+        self.assertTrue(all(p.exists() for p in self.backups))
+        self.updater.journal.unlink()
+        self.updater.prune_rollbacks()
+        self.assertTrue(link.is_symlink())
+        self.assertEqual((outside / 'private').read_text(), 'keep')
+        for name in ['candidate-abc', 'failed-candidate-abc', 'build-home', 'previous-manual']:
+            self.assertTrue((self.host.releases / name).is_dir())
+
+    def test_nested_symlink_target_survives_but_mount_is_skipped(self):
+        outside = Path(self.temp.name) / 'outside'
+        outside.mkdir()
+        (outside / 'private').write_text('keep')
+        (self.backups[0] / 'link').symlink_to(outside, target_is_directory=True)
+        mount = self.backups[1] / 'mount'
+        mount.mkdir()
+        # Creating entries changes the parent mtime; restore deployment ordering.
+        for i in [0, 1]:
+            os.utime(self.backups[i], (100 + i, 100 + i))
+        with patch.object(module.os.path, 'ismount', side_effect=lambda p: Path(p) == mount):
+            self.updater.prune_rollbacks()
+        self.assertTrue(self.backups[1].exists())
+        self.assertFalse(self.backups[0].exists())
+        self.assertEqual((outside / 'private').read_text(), 'keep')
+        self.assertEqual(module.read_json(self.host.state / 'cleanup.json')['skipped'], [self.backups[1].name])
+
+    def test_cleanup_failure_does_not_turn_success_into_deployment_failure(self):
+        module.atomic_json(self.updater.status, {'state': 'updated'})
+        with patch.object(module.shutil, 'rmtree', side_effect=PermissionError):
+            self.updater.prune_rollbacks()
+        self.assertEqual(module.read_json(self.updater.status)['state'], 'updated')
+        self.assertEqual(module.read_json(self.host.state / 'cleanup.json')['error'], 'PermissionError')
+
+    def test_pipeline_prunes_before_space_check_and_after_success(self):
+        revision = 'a' * 40
+        self.host.latest_values = [revision, revision]
+        observed = []
+        original = self.updater.prune_rollbacks
+        def prune():
+            observed.append(self.host.revision(self.host.root))
+            original()
+        with patch.object(self.updater, 'prune_rollbacks', side_effect=prune):
+            self.updater.run()
+        self.assertEqual(observed, ['old', revision])
+        self.assertLessEqual(len(list(self.host.releases.glob('previous-candidate-*'))), 3)
+
+    def test_committed_recovery_prunes_only_after_journal_removal(self):
+        module.atomic_json(self.updater.journal, {'phase': 'committed', 'target': 'old'})
+        self.updater.recover()
+        self.assertFalse(self.updater.journal.exists())
+        self.assertEqual(sum(p.exists() for p in self.backups), 3)
 
 
 class SourceFetchTests(unittest.TestCase):
