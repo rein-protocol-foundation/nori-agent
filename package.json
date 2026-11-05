@@ -41,6 +41,7 @@
     "setup:local": "node scripts/init-local.mjs",
     "upstream:update": "node scripts/update-openclaw.mjs",
     "verify:plugin": "node scripts/verify-plugin.mjs",
+    "verify:director-acp": "node scripts/verify-director-acp.mjs",
     "verify:proposal-tools": "node scripts/verify-proposal-tools.mjs",
     "smoke:gateway": "node scripts/smoke-gateway.mjs",
     "verify:slack-isolation": "node scripts/verify-slack-isolation.mjs",

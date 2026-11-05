@@ -1,5 +1,7 @@
 # Private Slack development channel
 
+For the separate Director-only external coding-harness pilot with subagent status reporting, see [Director ACP](director-acp.md). Ordinary development below remains sandboxed and permits Contributors and Directors.
+
 Development access requires two conditions:
 
 1. The requester is a current member of the private Slack channel configured in Router, using its native channel route and dedicated agent.

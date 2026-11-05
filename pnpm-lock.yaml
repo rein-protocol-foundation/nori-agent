@@ -166,6 +166,12 @@ importers:
 
   .: {}
 
+  plugins/rein-acp:
+    devDependencies:
+      openclaw:
+        specifier: link:../../vendor/openclaw
+        version: link:../../vendor/openclaw
+
   plugins/rein-discord:
     dependencies:
       '@rein-protocol/isolation-core':
