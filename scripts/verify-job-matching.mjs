@@ -1,4 +1,4 @@
-// Verify native skill discovery in an isolated local profile. No gateway or account is started.
+// Verify ordinary workspace discovery in a temporary local profile. No gateway or account is started.
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, copyFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -10,7 +10,7 @@ requireSource();
 const dir = mkdtempSync(join(tmpdir(), 'nori-job-discovery-'));
 try {
   const workspace = join(dir, 'workspace');
-  for (const name of ['rein-community-discovery', 'nori-job-matching']) {
+  for (const name of ['nori-job-matching']) {
     const target = join(workspace, 'skills', name);
     mkdirSync(target, { recursive: true });
     copyFileSync(join(root, 'workspace/skills', name, 'SKILL.md'), join(target, 'SKILL.md'));

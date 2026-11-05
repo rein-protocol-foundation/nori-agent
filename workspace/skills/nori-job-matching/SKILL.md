@@ -5,6 +5,9 @@ description: Search current public job opportunities, starting with 80,000 Hours
 
 # Match people with current job opportunities
 
+Use this skill in Nori's ordinary workspace. It is not installed in the isolated Discord/Slack
+workspaces and does not require the Rein channel or isolation plugins.
+
 Help the user choose plausible roles and a useful next step. Use their priorities, not the
 job board's ranking as a substitute for fit. Respond in the user's language, preserving exact
 job titles for searching. This skill supports research and recommendations; it does not itself
@@ -51,9 +54,9 @@ If the board renders only navigation/filters without job records, search indexed
 employers' career sites instead; do not repeatedly fetch the same shell. If search is unavailable,
 follow public employer links from readable sources or links supplied by the user. If page reading
 is unavailable, return search hits only as unverified leads. If neither is available, state the limit.
-Only in an operator environment that actually exposes browser execution and the `nori-browser`
-skill may you use that browser fallback. Isolated Discord/Slack profiles expose web tools, not
-browser execution; do not ask to enable exec or read a missing sibling skill to complete a search.
+Only in an environment that actually exposes authorized browser execution and the `nori-browser`
+skill may you use that browser fallback. Otherwise continue with public web tools; do not ask to
+enable exec or read a missing sibling skill to complete a search.
 Do not borrow operator credentials for a member search.
 Search results are leads, not proof that a vacancy remains open. Never fabricate an API or bypass
 access restrictions. If tools are unavailable, explain that live verification could not be done

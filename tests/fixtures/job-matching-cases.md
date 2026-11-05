@@ -83,6 +83,5 @@ lead, with no claim of an active vacancy or guaranteed sponsorship. Pass.
 
 The source observations above came from live public web reads during this change. The decisions
 were manually rehearsed by the implementing assistant, not an independent model evaluation or
-a production Discord/Slack conversation. `tests/job-matching-skill.test.mjs` separately executes
-three automated integration cases for staging/tool confinement, rejected filesystem escapes, and
-legacy compatibility. `scripts/verify-job-matching.mjs` checks real OpenClaw discovery without a model.
+a production conversation. `scripts/verify-job-matching.mjs` checks real OpenClaw discovery in an
+ordinary workspace containing only this skill, without a model or Rein channel/isolation plugins.
