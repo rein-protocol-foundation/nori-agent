@@ -42,7 +42,7 @@ Nori-Agent 围绕四类组织事务设计：
 | --- | --- | --- |
 | 提案与治理 | 通过已认证后端进行身份绑定、提案采集与提交、Board 投票、结果记录和资金快照查询。 | 需要显式配置后端、工作区和频道；投票结果不会执行付款。 |
 | 社区支持 | Discord 入群引导，以及经过身份验证的资源和活动查询。 | 依赖已配置的服务与可信社区身份；有限实机验收不代表普遍可用。 |
-| 会话与记忆隔离 | 可选的 Discord、Slack 接入，支持逐用户及受众范围隔离。 | 已有合成链路验证；真实双账号验收仍待完成。 |
+| 会话与记忆隔离 | 共享基础逻辑和历史合成探针；保留 Slack adapter 以维持依赖兼容。 | Discord 替代接入已撤回；原生群聊仍共享会话。见[重新设计](docs/discord-isolation-redesign-zh.md)。 |
 | 模型路由 | 可选的 Magpie 网关、手动选模和 Jev 动态路由。 | 供应商访问权限与计费兼容性需要操作者核验。 |
 | 浏览器任务 | 固定版本的 agent-browser 集成，支持加密凭证库与会话复用。 | 在操作者授权和现有频道权限范围内运行。 |
 
@@ -125,7 +125,7 @@ npm run toolchain:pnpm -- run router:ui
 | --- | --- |
 | `plugins/rein-operations/` | 提案、治理、身份与社区工具。 |
 | `plugins/rein-router/` | Magpie 网关集成与模型路由。 |
-| `plugins/rein-discord/`、`plugins/rein-slack/`、`plugins/rein-isolation/` | 聊天平台接入与共享隔离逻辑。 |
+| `plugins/rein-discord/`、`plugins/rein-slack/`、`plugins/rein-isolation/` | 已撤回的 Discord 入口与回归辅助代码、保留的 Slack adapter，以及共享隔离基础逻辑。 |
 | `workspace/` | Agent 身份、运营策略、技能与头像。 |
 | `config/`、`templates/` | 示例配置与工作流模板。 |
 | `scripts/`、`tests/` | 初始化、验证、运行辅助脚本与测试。 |

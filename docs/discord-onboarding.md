@@ -1,5 +1,9 @@
 # Discord onboarding: a first meaningful contribution
 
+> The former Discord isolation replacement is withdrawn. Native guild sessions remain shared;
+> see the [current withdrawal and redesign](discord-isolation-redesign.md). Historical acceptance
+> records below do not establish the replacement's compatibility.
+
 [中文流程、目录格式与演练](discord-onboarding-zh.md)
 
 This refinement traces to PRD R01, R03, R25, US01 and US02, within C16 / D12. The source PRDs
@@ -150,9 +154,9 @@ autonomous web search. Native guild sessions remain channel-shared; per-user roo
 member memory are not implemented. The local test instance is temporarily restricted to its original
 acceptance account. Product-case acceptance is not multi-user privacy acceptance.
 
-An opt-in [isolated Rein adapter](discord-user-isolation.md) now implements per-sender/per-audience
-sessions and persistent notes in a dedicated profile. It has synthetic native-pipeline verification;
-real two-account acceptance and migration of the original instance are still pending.
+The former [isolated Rein adapter](discord-user-isolation.md) is withdrawn. Its synthetic boundary
+checks did not establish native feature or memory compatibility. Production was restored to native
+Discord; a compatible isolation replacement and real two-account acceptance remain pending.
 
 Measure time to a meaningful first action, where members get stuck, optional skips and voluntary
 return participation. Keep learning, public interaction, registration and resource submissions

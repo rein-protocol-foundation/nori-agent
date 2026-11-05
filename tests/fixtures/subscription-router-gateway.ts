@@ -1,6 +1,7 @@
-// Synthetic ingress only; exercises the real host, router and isolated adapter.
+// Synthetic ingress only; exercises the real host/router with historical isolation fixtures.
 import { writeFileSync } from 'node:fs';
-import production, { registerReinDiscord } from '../../plugins/rein-discord/index.ts';
+import production from '../../plugins/rein-discord/index.ts';
+import { registerLegacyDiscordFixture } from './register-legacy-discord.mjs';
 import { createIsolatedReceiver } from '../../plugins/rein-discord/inbound.mjs';
 
 export default {
@@ -10,7 +11,7 @@ export default {
       if (property !== 'registerChannel') return Reflect.get(target, property);
       return channel => target.registerChannel({ ...channel, config: { ...channel.config, isConfigured: () => true } });
     } });
-    registerReinDiscord(testApi, async ({ config, cfg, runtime, memory, turns, sessionStore, signal }) => {
+    registerLegacyDiscordFixture(testApi, async ({ config, cfg, runtime, memory, turns, sessionStore, signal }) => {
       const sent = [];
       const receive = createIsolatedReceiver({ config, cfg, runtime, memory, turns, sessionStore, signal,
         send: async (...args) => { sent.push(args); } });

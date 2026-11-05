@@ -29,7 +29,7 @@ export function validateIsolationConfig(c) {
 }
 export function assertSlackRuntime(cfg,c,workspaceDir) {
   validateIsolationConfig(c);
-  assertIsolatedRuntime(cfg,c,workspaceDir,{platform:'slack',publicTools:CHANNEL_TOOLS,publicSkills:['rein-community-discovery']});
+  assertIsolatedRuntime(cfg,c,workspaceDir,{platform:'slack',publicTools:CHANNEL_TOOLS});
   // Business permissions stay in the existing backend. Ensure its native channel
   // enrollment cannot name another workspace under this authenticated bot.
   const backend=cfg.plugins?.entries?.['rein-operations']?.config?.foundationDb;
