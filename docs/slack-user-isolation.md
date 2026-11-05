@@ -65,9 +65,12 @@ tools remain on the explicitly enrolled organizational channels.
 2. Create a dedicated public reference workspace with reviewed AGENTS.md, SOUL.md, IDENTITY.md,
    TOOLS.md, HEARTBEAT.md, public USER.md and/or community-directory.json. Do not copy personal memory,
    runtime records, private ballots/funds or credentials. Disable bootstrap creation and native recall.
-   For catalog discovery, also copy `workspace/skills/rein-community-discovery/SKILL.md` to
-   `skills/rein-community-discovery/SKILL.md` inside that workspace. Only this approved skill's
-   single regular file is permitted; extra skills, scripts, symlinks and hardlinks fail startup.
+   Install general skills under `skills/<name>/SKILL.md` in the configured workspace using the
+   repository's `workspace/skills/` packages. References, scripts and other regular resources are
+   supported without adapter allowlist edits. All contents must be public, operator-reviewed skill
+   resources, not personal/runtime data. Symlinks, hardlinks and special files fail startup recursively.
+   Installing a script does not execute it or grant exec/browser/backend permissions. Existing
+   workspaces containing only the discovery skill remain valid; no data/config migration is required.
 3. Adapt [the Slack example](../config/slack-isolated.example.json). All native IDs are synthetic
    placeholders. Set real app/workspace/bot and channel IDs, declare each channel's audience, use a
    private memory path, and supply both tokens only through the named environment variables.

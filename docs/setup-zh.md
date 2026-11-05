@@ -12,7 +12,8 @@
 普通 workspace 使用原生技能发现，新增技能不应修改频道 adapter 的白名单。工具、依赖和调用者
 授权检查仍然生效；个人资料和运行时记忆不能放进共享技能资源。使用受支持 Node 工具链运行
 `node scripts/verify-workspace-skills.mjs`，可在禁用插件时验证全部仓库技能和新增模拟技能的发现。
-保留的旧 Slack 隔离 adapter 仍限制专用 workspace，尚不支持此通用加载约定，详见
+Slack adapter 同样支持任意名称的技能目录及引用／脚本，不再修改技能名白名单；
+现有工具权限和私人记忆边界仍然生效。详见
 [重新设计要求](discord-isolation-redesign-zh.md#通用-workspace-skills)。
 
 ## Discord 多成员隐私

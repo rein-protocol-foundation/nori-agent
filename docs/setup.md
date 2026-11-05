@@ -35,8 +35,8 @@ adding a skill does not require channel-adapter allowlist edits. Existing tool, 
 caller authorization checks still apply. Do not put personal profiles or runtime memory in skill
 resources. Run `node scripts/verify-workspace-skills.mjs` with the supported Node toolchain to
 check native discovery of all repository skills and a new synthetic skill without plugins.
-The retained legacy Slack isolation adapter still restricts its dedicated workspace; it does not
-support this general loading contract yet. See the [replacement requirements](discord-isolation-redesign.md#general-workspace-skills).
+The Slack adapter also accepts general skill directories, references and scripts without name
+allowlist edits; its existing tool permissions and private-memory boundaries still apply. See the [replacement requirements](discord-isolation-redesign.md#general-workspace-skills).
 
 ## Prerequisites
 

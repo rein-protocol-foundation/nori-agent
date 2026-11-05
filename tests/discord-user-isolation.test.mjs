@@ -179,14 +179,14 @@ test('startup requires closed native recall, no bindings, confined tools and pub
     assert.throws(()=>assertIsolationRuntime(modified,c,workspace));
   mkdirSync(join(workspace,'memory'));assert.throws(()=>assertIsolationRuntime(cfg,c,workspace),/public reference/);
 });
-test('only the reviewed discovery skill may be staged in a confined public workspace',t=>{
+test('workspace skills accept resources while rejecting links',t=>{
   const {c,dir}=fixture(t);const workspace=join(dir,'public');mkdirSync(workspace);
   const cfg=baseRuntime(c);const skill=join(workspace,'skills','rein-community-discovery');
   mkdirSync(skill,{recursive:true});writeFileSync(join(skill,'SKILL.md'),'public instructions');
   assert.doesNotThrow(()=>assertIsolationRuntime(cfg,c,workspace));
-  writeFileSync(join(skill,'private.json'),'private');
-  assert.throws(()=>assertIsolationRuntime(cfg,c,workspace),/public reference/);
-  rmSync(join(skill,'private.json'));rmSync(join(skill,'SKILL.md'));
+  writeFileSync(join(skill,'reference.json'),'public fixture');
+  assert.doesNotThrow(()=>assertIsolationRuntime(cfg,c,workspace));
+  rmSync(join(skill,'reference.json'));rmSync(join(skill,'SKILL.md'));
   const privateFile=join(dir,'private.txt');writeFileSync(privateFile,'private');
   symlinkSync(privateFile,join(skill,'SKILL.md'));
   assert.throws(()=>assertIsolationRuntime(cfg,c,workspace),/public reference/);

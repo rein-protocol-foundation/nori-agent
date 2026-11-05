@@ -98,11 +98,20 @@ outputs and memory are not shared skill resources.
 
 The existing `rein-community-discovery`, `nori-browser`, and `agent-browser` already live there.
 PR #38's current job-matching skill also targets this directory without adapter changes. This PR
-restores ordinary native Discord workspace loading but retains the old Slack guard and historical
-Discord fixture guard, which still allow only `rein-community-discovery`. Those guards are a legacy
-compatibility limitation, not the policy for new general skills. Do not claim Slack-wide compatibility
-or relax its file guard without a replacement boundary for private files and tool execution.
+restores ordinary native Discord workspace loading and removes the skill-name/single-file restriction
+from the shared guard used by Slack and historical Discord fixtures. Slack retains its transport,
+session keys, backend authority, tool policy, reset/forget behavior and memory paths/schema. No
+runtime state is migrated, deleted or rewritten. Installed skill trees may include references and
+scripts; directories and single-link regular files are accepted, while symlinks, hardlinks and special
+files are refused recursively. Skill installation is trusted operator work: this structural check
+cannot detect secrets copied into an otherwise ordinary file. Keep personal/runtime data outside
+shared skills. Adding a skill grants no execution tool or new backend capability.
 
+Dependency review: both adapters call the shared runtime guard; synthetic routing probes reuse the
+historical Discord entry. Neither scope keys nor memory storage depend on skill names. Native Slack
+pipeline coverage now stages all repository skills plus a new skill with a reference and script,
+and reads its reference through the native read tool alongside existing identity/catalog/Board,
+thread, DM and memory checks. These are synthetic local checks, not a live rollout.
 Before another isolation rollout, verify all workspace skills and a newly added skill (including
 references/scripts) through native discovery with isolation on and off, without adapter edits.
 Verify authorized use separately from discovery, and prove private state stays inaccessible.

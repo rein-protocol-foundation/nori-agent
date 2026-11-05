@@ -73,7 +73,7 @@ test('Foundation enrollment cannot silently attach another workspace or channel'
     if(workspaceId===c.teamId)assert.doesNotThrow(()=>assertSlackRuntime(cfg,c,workspace));else assert.throws(()=>assertSlackRuntime(cfg,c,workspace),/Foundation enrollment/);
   }
 });
-test('Slack example accepts catalog tools and only the approved discovery skill',t=>{
+test('Slack accepts general workspace skills and resources without changing authority',t=>{
   const {c,dir}=fixture(t);const workspace=join(dir,'public');mkdirSync(workspace);
   const cfg=JSON.parse(readFileSync(new URL('../config/slack-isolated.example.json',import.meta.url)));
   cfg.agents.defaults.workspace=workspace;
@@ -83,7 +83,16 @@ test('Slack example accepts catalog tools and only the approved discovery skill'
   assert.doesNotThrow(()=>assertSlackRuntime(cfg,c,workspace));
   const extra=join(workspace,'skills','unapproved');mkdirSync(extra);
   assert.throws(()=>assertSlackRuntime(cfg,c,workspace),/public reference/);rmSync(extra,{recursive:true});
-  writeFileSync(join(skill,'script.mjs'),'');assert.throws(()=>assertSlackRuntime(cfg,c,workspace),/public reference/);
+  writeFileSync(join(skill,'script.mjs'),'throw new Error("must not execute")');assert.doesNotThrow(()=>assertSlackRuntime(cfg,c,workspace));
+  mkdirSync(join(extra,'references'),{recursive:true});
+  writeFileSync(join(extra,'SKILL.md'),'synthetic new skill');
+  writeFileSync(join(extra,'references','guide.md'),'public reference');
+  assert.doesNotThrow(()=>assertSlackRuntime(cfg,c,workspace));
+  assert.throws(()=>assertSlackRuntime({...cfg,tools:{...cfg.tools,allow:[...cfg.tools.allow,'exec']}},c,workspace),/tool allowlist/);
+  const nested=join(extra,'references','escape');
+  symlinkSync(dir,nested);assert.throws(()=>assertSlackRuntime(cfg,c,workspace),/public reference/);rmSync(nested);
+  linkSync(c.memoryPath,nested);assert.throws(()=>assertSlackRuntime(cfg,c,workspace),/public reference/);rmSync(nested);
+  rmSync(extra,{recursive:true});
   rmSync(join(skill,'script.mjs'));rmSync(join(skill,'SKILL.md'));
   const privateFile=join(dir,'private.txt');writeFileSync(privateFile,'private');
   symlinkSync(privateFile,join(skill,'SKILL.md'));assert.throws(()=>assertSlackRuntime(cfg,c,workspace),/public reference/);
