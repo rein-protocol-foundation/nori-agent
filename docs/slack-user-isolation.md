@@ -1,5 +1,10 @@
 # Slack per-user sessions and memory
 
+> Status 2026-11-04: the Discord replacement is withdrawn. This Slack implementation is retained
+> to avoid breaking its separate dependencies; no Slack runtime change is made by that withdrawal.
+> Its transport/memory tradeoffs require compatibility review before any new deployment. See the
+> [dependency review and replacement requirements](discord-isolation-redesign.md).
+
 The opt-in `rein-slack` plugin replaces bundled Slack transport in a dedicated profile. It is stacked
 on the Discord isolation PR and uses the same [shared isolation core](channel-user-isolation.md).
 It supports plain user messages and mentions in approved public/private channels, their threads and

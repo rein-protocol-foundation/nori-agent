@@ -12,16 +12,15 @@ tools described below register only when an operator explicitly enables them.
 Before using a local profile for multiple community members, read the
 [session and memory audit](discord-session-privacy-audit-2026-10-13.md). The pinned runtime shares
 guild conversation context by channel; DM isolation does not change that. Per-member room routing
-and owner-scoped persistent memory are absent from that native profile. The opt-in
-[Rein isolated adapter](discord-user-isolation.md) implements both in a dedicated profile; its native
-pipeline probe uses synthetic senders, and real two-account acceptance remains pending.
+and owner-scoped persistent memory are absent from that native profile. The former
+[Rein isolated adapter](discord-user-isolation.md) is withdrawn and refuses registration. Follow the
+[replacement design and acceptance gates](discord-isolation-redesign.md); no replacement is ready.
 
-The [privacy config fragment](../config/discord-privacy.example.json) confines filesystem/session
-tools and disables shared memory recall/flush. Merge reviewed fields into a local config; it is not
-a standalone config or a complete per-user isolation solution. It does not enable DMs. Public
-workspaces must use the [shared USER template](../templates/community-user.example.md), never an
-operator's private USER.md, memory directory or runtime state. Stage only approved public policies
-inside the confined workspace instead of permitting arbitrary parent-directory reads.
+The [privacy config fragment](../config/discord-privacy.example.json) is a historical diagnostic
+mitigation, not a recommended migration or a complete isolation solution. It disables shared recall
+and memory flush and changes file/session access; do not apply these product changes as a substitute
+for owner-scoped memory. Do not copy operator-private USER/MEMORY files into shared community context.
+Any resource-root changes require an inventory of supported skill/file/backend access first.
 
 `npm run toolchain:pnpm -- run audit:discord-privacy -- <config-path>` prints selected policy facts
 without credentials. It intentionally exits nonzero for channel-shared guild routing, including after
@@ -333,9 +332,10 @@ local work does not touch a global `~/.openclaw` profile.
 ## Optional: enable backend-backed tools
 
 Use an approved chat transport and a Foundation backend. Slack can use Socket Mode with bot and
-app-level tokens; multi-member deployments should follow the [Slack isolation guide](slack-user-isolation.md)
-or [Discord isolation guide](discord-user-isolation.md). Add the chosen transport's exact plugin ID
-and load path where required; do not run the bundled and isolated adapters for the same account.
+app-level tokens. Keep native Discord: its former replacement is [withdrawn](discord-user-isolation.md),
+and native guild sessions remain shared. The retained [Slack adapter](slack-user-isolation.md) has
+separate compatibility limits and is not an automatic multi-member migration. Configure approved
+transport plugin IDs and paths explicitly; do not run two transports for the same account.
 
 Merge the following object under `plugins.entries.rein-operations.config` in
 `runtime/openclaw/openclaw.json`, preserving other plugin configuration. Replace every

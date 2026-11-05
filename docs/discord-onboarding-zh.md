@@ -1,5 +1,8 @@
 # Discord onboarding：从进群到第一次参与
 
+> 原 Discord 隔离替代接入已撤回；原生群聊仍共享 session。参阅[撤回与重新设计](discord-isolation-redesign-zh.md)。
+> 下文历史验收记录不能证明替代 adapter 的原生兼容性。
+
 [English requirements](discord-onboarding.md)
 
 对应 R01、R03、R25、US01、US02；遵守 C16 / D12 的一般参与者与治理边界。
@@ -152,8 +155,8 @@ Nori 应直接找入门资源，而不是请对方先填城市、身份或申请
 目录，不是数据库检索或自主找课的验收证据。当前原生公共频道 session 按频道共享，逐用户
 session 与长期记忆尚未实现；本地实例已临时收紧为原验收账号使用，不代表多人隐私验收通过。
 
-后续新增可选的 [Rein 隔离接入](discord-user-isolation.md)，在独立配置中实现逐发送者／公私受众
-session 与持久记忆，并通过模拟双用户的原生链路验证；原实例迁移和真实双账号验收仍待进行。
+原 [Rein 隔离接入](discord-user-isolation.md)已撤回；其合成边界测试不能证明原生功能和记忆体验兼容。
+生产已恢复原生 Discord，兼容的隔离替代实现和真实双账号验收仍待完成。
 
 | 场景 | 输入／条件 | 应有结果 |
 | --- | --- | --- |

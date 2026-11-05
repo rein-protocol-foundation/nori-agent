@@ -166,6 +166,15 @@ the voting window length; channel and space mapping; and who may see an individu
 
 ## Recorded technical decisions
 
+- **2026-11-04: withdraw the Discord transport-replacement isolation rollout.** Restore native
+  channel behavior and retain PR #36; do not delete or merge native/isolated histories. Remove the
+  production Discord connection path, preserve shared Slack/router dependencies and historical
+  regression primitives, and require a native-compatible optional ownership/memory extension with
+  provenance-aware automatic capture. The extension-point feasibility and real-account acceptance
+  gates remain open. See the [decision and design](discord-isolation-redesign.md)
+  ([中文](discord-isolation-redesign-zh.md)).
+
+
 - **Naming and the rename migration.** A pre-launch review asked for the stage-based naming to be
   removed from tools, tables, config and skills. The plugin and configuration now use the stable
   v0.1 names: the twelve tools `rein_member_status`, `rein_funds`, `rein_poll_candidates`,

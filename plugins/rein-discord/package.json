@@ -10,13 +10,11 @@
     "memory-tools.mjs",
     "turn-control.mjs",
     "inbound.mjs",
-    "gateway.mjs",
     "reply-chunks.mjs",
     "openclaw.plugin.json",
     "model-selection.mjs"
   ],
   "dependencies": {
-    "discord.js": "14.27.0",
     "typebox": "1.3.30",
     "@rein-protocol/isolation-core": "workspace:*"
   },

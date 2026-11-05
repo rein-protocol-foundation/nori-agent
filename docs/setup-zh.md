@@ -8,9 +8,12 @@
 
 ## Discord 多成员隐私
 
-在将本地配置用于多名社区成员之前，请先阅读[会话与记忆审计](discord-session-privacy-audit-2026-10-13.md)。所固定的原生运行时按频道共享服务器内的对话上下文；私信隔离不会改变这一点。该原生配置缺少按成员划分的会话路由和按所有者隔离的持久记忆。可选的 [Rein 隔离适配器](discord-user-isolation.md)在专用配置中实现了这两项能力；其原生处理链路探针使用合成发送者，真实双账号验收仍待完成。
+在将本地配置用于多名社区成员之前，请先阅读[会话与记忆审计](discord-session-privacy-audit-2026-10-13.md)。所固定的原生运行时按频道共享服务器内的对话上下文；私信隔离不会改变这一点。该原生配置缺少按成员划分的会话路由和按所有者隔离的持久记忆。
+原 [Rein 隔离适配器](discord-user-isolation.md)已撤回，并拒绝注册。请参阅[新方案与验收要求](discord-isolation-redesign-zh.md)，目前尚无可上线的替代实现。
 
-[隐私配置片段](../config/discord-privacy.example.json)限制文件系统与会话工具，并禁用共享记忆的召回与写回。请审阅后将相关字段合并到本地配置；它既不是独立配置，也不是完整的逐用户隔离方案，不会开启私信。公共工作区必须使用[共享 USER 模板](../templates/community-user.example.md)，不能使用操作员私有的 `USER.md`、记忆目录或运行时状态。仅将已批准的公共政策放入受限工作区，不要允许任意读取父目录。
+[隐私配置片段](../config/discord-privacy.example.json)仅作为历史诊断缓解材料，不是推荐迁移或完整隔离方案。
+它关闭共享召回／自动写回并改变文件及会话访问，不能用这些功能变化代替按用户隔离的记忆服务。
+不要将操作员私人 USER/MEMORY 文件复制到共享社区上下文。改变资源目录前，必须核对技能、文件和后台访问清单。
 
 `npm run toolchain:pnpm -- run audit:discord-privacy -- <config-path>` 会输出选定的政策信息，不含凭据。只要服务器会话仍按频道共享，它就会按设计以非零状态退出，即使已经应用上述片段也是如此。完成上游构建后，`npm run toolchain:pnpm -- run probe:discord-routing` 可使用合成标识符复现原生路由行为；这不等于真实用户验收。
 
@@ -238,7 +241,7 @@ npm run toolchain:pnpm -- openclaw gateway auth-token --show
 
 ## 可选：启用后端业务工具
 
-使用已批准的聊天传输与 Foundation 后端。Slack 可使用 Socket Mode，提供 bot token 和 app-level token；多成员部署应参照 [Slack 隔离指南](slack-user-isolation.md)或 [Discord 隔离指南](discord-user-isolation.md)。按所选适配器加入准确的插件 ID 和必要的加载路径；不要为同一账号同时运行内置与隔离适配器。
+使用已批准的聊天传输与 Foundation 后端。Slack 可使用 Socket Mode，提供 bot token 和 app-level token。Discord 保留原生接入，其替代 adapter [已撤回](discord-user-isolation.md)，原生群聊仍共享 session。保留的 [Slack adapter](slack-user-isolation.md)有独立兼容性限制，不是自动的多成员迁移方案。显式配置获准传输的插件 ID 与路径，不为同一账号运行两个传输。
 
 将下面的对象合并到 `runtime/openclaw/openclaw.json` 的 `plugins.entries.rein-operations.config` 下，保留其他插件配置。启用前，将全部 `APPROVED_*` 占位符替换为已批准的原生 ID：
 

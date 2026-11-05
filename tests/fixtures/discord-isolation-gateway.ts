@@ -1,7 +1,8 @@
-// Test-only transport. Production registration, active-turn control and the
-// host-bound runtime run unchanged; no Discord or Foundation call is made.
+// Historical synthetic ingress: exercises host runtime and retained isolation primitives.
+// Does not load a production Discord transport or establish production acceptance.
 import { writeFileSync } from 'node:fs';
-import production, { registerReinDiscord } from '../../plugins/rein-discord/index.ts';
+import production from '../../plugins/rein-discord/index.ts';
+import { registerLegacyDiscordFixture } from './register-legacy-discord.mjs';
 import { createIsolatedReceiver } from '../../plugins/rein-discord/inbound.mjs';
 import { resolveOwner } from '../../plugins/rein-discord/isolation.mjs';
 
@@ -14,7 +15,7 @@ export default {
         return channel => target.registerChannel({ ...channel, config: { ...channel.config, isConfigured: () => true } });
       },
     });
-    registerReinDiscord(testApi, async ({config,cfg,runtime,memory,turns,signal}) => {
+    registerLegacyDiscordFixture(testApi, async ({config,cfg,runtime,memory,turns,signal}) => {
       const trace = [];
       const sent = [];
       const receive = createIsolatedReceiver({ config, cfg, runtime, memory, turns, signal,

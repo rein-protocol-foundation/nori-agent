@@ -148,6 +148,8 @@ const pluginDir = join(temp, 'fixture'); mkdirSync(pluginDir);
 const fixture = readFileSync(join(root, 'tests/fixtures/subscription-router-gateway.ts'), 'utf8')
   .replaceAll('../../plugins/rein-discord/', `${join(root, 'plugins/rein-discord')}/`);
 writeFileSync(join(pluginDir, 'index.ts'), fixture);
+writeFileSync(join(pluginDir, 'register-legacy-discord.mjs'), readFileSync(join(root, 'tests/fixtures/register-legacy-discord.mjs'), 'utf8')
+  .replaceAll('../../plugins/rein-discord/', `${join(root, 'plugins/rein-discord')}/`));
 writeFileSync(join(pluginDir, 'openclaw.plugin.json'), readFileSync(join(root, 'plugins/rein-discord/openclaw.plugin.json')));
 writeFileSync(join(pluginDir, 'package.json'), JSON.stringify({ name: '@rein-protocol/subscription-probe-fixture', type: 'module', openclaw: { extensions: ['./index.ts'] } }));
 symlinkSync(join(root, 'plugins/rein-discord/node_modules'), join(pluginDir, 'node_modules'));
