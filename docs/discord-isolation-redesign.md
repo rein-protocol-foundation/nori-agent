@@ -86,6 +86,29 @@ They must not be treated as inherent requirements of user isolation.
    Existing mixed transcripts remain archived unless reliable event ownership supports a reviewed
    migration; never infer ownership from text, display names or a model's guesses.
 
+## General workspace skills
+
+Nori skills belong in `workspace/skills/<name>/SKILL.md`, with their references and scripts in
+that skill directory. They are reusable workspace capabilities, not Discord/Slack adapter assets.
+Adding a skill must not require editing `rein-discord`, `rein-slack`, or `rein-isolation` name
+allowlists, copying it into a channel-specific workspace, or changing session routing. Preserve
+native discovery and normal dependency/enablement checks. Skill availability does not grant tools,
+credentials or backend authority; those remain checked per invocation and audience. Personal inputs,
+outputs and memory are not shared skill resources.
+
+The existing `rein-community-discovery`, `nori-browser`, and `agent-browser` already live there.
+PR #38's current job-matching skill also targets this directory without adapter changes. This PR
+restores ordinary native Discord workspace loading but retains the old Slack guard and historical
+Discord fixture guard, which still allow only `rein-community-discovery`. Those guards are a legacy
+compatibility limitation, not the policy for new general skills. Do not claim Slack-wide compatibility
+or relax its file guard without a replacement boundary for private files and tool execution.
+
+Before another isolation rollout, verify all workspace skills and a newly added skill (including
+references/scripts) through native discovery with isolation on and off, without adapter edits.
+Verify authorized use separately from discovery, and prove private state stays inaccessible.
+`node scripts/verify-workspace-skills.mjs` verifies the ordinary native discovery baseline only;
+it neither starts a channel nor proves isolation or tool execution.
+
 ## Extension-point feasibility gate — not yet passed
 
 The pinned native Discord route resolves the conversation peer through

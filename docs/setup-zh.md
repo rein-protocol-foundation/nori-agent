@@ -6,6 +6,15 @@
 
 本文与英文 [setup.md](setup.md) 同步维护，配置依据当前插件 schema 与启动脚本。Agent 通过已认证的 Foundation 后端 API 工作，不持有数据库凭据，也不通过个人资料邮箱解析身份。历史验收记录见[实施与部署指南](implementation-and-deployment-zh.md)。
 
+## 通用 workspace 技能
+
+可复用 Nori 技能统一放在 `workspace/skills/<name>/SKILL.md`，引用文件与脚本保留在技能目录内。
+普通 workspace 使用原生技能发现，新增技能不应修改频道 adapter 的白名单。工具、依赖和调用者
+授权检查仍然生效；个人资料和运行时记忆不能放进共享技能资源。使用受支持 Node 工具链运行
+`node scripts/verify-workspace-skills.mjs`，可在禁用插件时验证全部仓库技能和新增模拟技能的发现。
+保留的旧 Slack 隔离 adapter 仍限制专用 workspace，尚不支持此通用加载约定，详见
+[重新设计要求](discord-isolation-redesign-zh.md#通用-workspace-skills)。
+
 ## Discord 多成员隐私
 
 在将本地配置用于多名社区成员之前，请先阅读[会话与记忆审计](discord-session-privacy-audit-2026-10-13.md)。所固定的原生运行时按频道共享服务器内的对话上下文；私信隔离不会改变这一点。该原生配置缺少按成员划分的会话路由和按所有者隔离的持久记忆。

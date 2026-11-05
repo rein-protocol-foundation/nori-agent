@@ -60,6 +60,25 @@
    会话或将个人记忆混入共享库。旧混合历史保留归档；只有可靠事件归属支持时才进行经过审阅的迁移，
    不从消息正文、昵称或模型猜测中分配所有者。
 
+## 通用 workspace skills
+
+Nori 的技能统一放在 `workspace/skills/<name>/SKILL.md`，引用文件和脚本放在该技能目录内。
+它们是可复用的 workspace 能力，不属于 Discord／Slack adapter。新增技能不得要求修改
+`rein-discord`、`rein-slack` 或 `rein-isolation` 的技能名白名单、复制到频道专用 workspace，
+或改变会话路由。保留原生技能发现及正常的依赖／启用检查。技能可加载不代表授予工具、凭据或
+后台权限；调用仍按当前用户及受众校验。个人输入、输出和记忆不属于共享技能资源。
+
+现有 `rein-community-discovery`、`nori-browser` 和 `agent-browser` 已位于该目录。
+PR #38 当前版本的求职技能也使用此目录，不修改 adapter。本 PR 恢复普通原生 Discord workspace
+加载，但保留的旧 Slack guard 和历史 Discord fixture guard 仍仅接受 `rein-community-discovery`。
+这是旧实现的兼容性限制，不是新增通用技能应遵循的政策。尚不能声称所有 Slack 技能兼容；
+在私人文件和工具执行边界替代方案完成前，不直接放宽旧文件检查。
+
+新隔离方案上线前，必须验证所有 workspace 技能及一个新技能（含引用文件／脚本）在隔离开关前后
+均经原生机制发现，且不修改 adapter。获授权的实际使用需另行验证，同时证明私人状态不可访问。
+`node scripts/verify-workspace-skills.mjs` 只验证普通 workspace 的原生发现基线，不启动频道，
+不证明用户隔离或工具执行。
+
 ## 扩展点可行性验证：尚未通过
 
 固定版本的[原生 Discord 路由](../vendor/openclaw/extensions/discord/src/monitor/route-resolution.ts)

@@ -27,6 +27,17 @@ without credentials. It intentionally exits nonzero for channel-shared guild rou
 the fragment is applied. `npm run toolchain:pnpm -- run probe:discord-routing` reproduces the native
 routing behavior with synthetic identifiers after upstream is built; it is not real-user acceptance.
 
+## General workspace skills
+
+Install reusable Nori skills under `workspace/skills/<name>/SKILL.md`, keeping references and
+scripts in that directory. Use the configured ordinary workspace and native skill discovery;
+adding a skill does not require channel-adapter allowlist edits. Existing tool, dependency and
+caller authorization checks still apply. Do not put personal profiles or runtime memory in skill
+resources. Run `node scripts/verify-workspace-skills.mjs` with the supported Node toolchain to
+check native discovery of all repository skills and a new synthetic skill without plugins.
+The retained legacy Slack isolation adapter still restricts its dedicated workspace; it does not
+support this general loading contract yet. See the [replacement requirements](discord-isolation-redesign.md#general-workspace-skills).
+
 ## Prerequisites
 
 - Node.js `>=24.16.0 <25` or `>=26.1.0` (Node 26 recommended). This mirrors upstream `engines`; the
