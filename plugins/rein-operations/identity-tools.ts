@@ -174,12 +174,12 @@ export function createIdentityToolsRegistration(options: IdentityToolsOptions): 
     const complete = {
       name: 'rein_identity_bind_complete',
       description:
-        'Finish binding the current chat account to a community record with the short code the person carried back from the website. The code is the only argument; there is no email, contact or user id argument, and the acting account comes only from the host context.',
+        'Finish binding the current chat account to a community record with the binding code delivered to the person by email (or displayed by a legacy confirmation page). The code is the only argument; there is no email, contact or user id argument, and the acting account comes only from the host context.',
       parameters: Type.Object(
         {
           bindingCode: Type.String({
             maxLength: MAX_BINDING_CODE_LENGTH,
-            description: 'The short code the website displayed to the person.',
+            description: 'The one-time binding code from the Rein account-linking email, or a legacy confirmation page.',
           }),
         },
         { additionalProperties: false },
@@ -244,7 +244,7 @@ export function createIdentityToolsRegistration(options: IdentityToolsOptions): 
     const status = {
       name: 'rein_identity_bind_status',
       description:
-        'Check the authoritative backend state of a binding session previously started for the current chat account. Use this after the person returns from the website without a binding code. The session id is the only argument; the backend binds it to the current platform account and never returns an email address.',
+        'Check the authoritative backend state of a binding session previously started for the current chat account. Use this after the person requests an emailed binding code, or when completion fails and registration may be required. The session id is the only argument; the backend binds it to the current platform account and never returns an email address.',
       parameters: Type.Object(
         {
           sessionId: Type.String({

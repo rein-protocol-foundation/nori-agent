@@ -50,8 +50,11 @@ soonest-first. Do not claim to have searched every result when more pages remain
   a verified Community Member link. Stop discovery; use the existing binding tools to offer the
   real verification entry, then retry only after binding succeeds. Do not ask for email in chat.
   In Chinese, explicitly say “本次查询失败”, not “没查到”; the latter implies an empty catalog.
-  The person verifies their email on the website and only returns the website's final platform
-  binding code to this chat. Never ask them to post the email's verification code in the channel.
+  The person enters their registered email once on the website, then returns the one-time
+  binding code from the Rein account-linking email to Nori using this same chat account.
+  Do not ask them to reopen a confirmation webpage or enter their email again. Accept a
+  legacy webpage binding code too. Never request unrelated email/login verification codes.
+  If completion fails, check the original binding session status before giving registration guidance.
 - `permission_denied`: say this lookup failed for lack of permission. Do not retry using another
   account, channel, environment or data source.
 - `unavailable` or another failure: say this lookup failed and the source/identity could not be
