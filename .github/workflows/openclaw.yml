@@ -45,6 +45,8 @@ jobs:
         run: |
           pnpm verify:plugin
           pnpm verify:proposal-tools
+      - name: Verify Director ACP delegation and task status with local fixtures
+        run: pnpm verify:director-acp
       - name: Confirm upstream tracked files remain unchanged
         if: always()
         run: test -z "$(git -C vendor/openclaw status --porcelain)"

@@ -113,6 +113,7 @@ npm run toolchain:pnpm -- run router:ui
 | 产品范围与需求 | [产品需求文档](docs/PRD-agent-community-operations-zh.md) |
 | 安装与配置 | [安装指南](docs/setup-zh.md) · [模型路由](docs/model-router-quickstart-zh.md) |
 | 管理入口 | [Dashboard 与多实例配置](docs/dashboard-zh.md) |
+| Director ACP 编程 | [Slack 委派、子任务状态和结果回报](docs/director-acp.md) |
 | 社区流程 | [Discord 入群引导](docs/discord-onboarding-zh.md) · [对话用例](docs/discord-onboarding-use-cases-zh.md) |
 | 开发与验收 | [开发与部署记录](docs/implementation-and-deployment-zh.md) · [Agent 演练案例](docs/agent-test-cases-zh.md) |
 | 自动部署 | [合并事件触发更新与回滚](docs/auto-update-zh.md) |
