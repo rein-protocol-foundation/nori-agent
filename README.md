@@ -112,6 +112,7 @@ Keep the console running alongside OpenClaw. Configure providers and models in M
 | --- | --- |
 | Product scope and priorities | [Product requirements](docs/PRD-agent-community-operations.md) · [Roadmap](docs/roadmap.md) · [Open decisions](docs/decisions.md) |
 | Installation and configuration | [Setup](docs/setup.md) · [Model routing](docs/unified-subscription-access.md) · [Browser automation](docs/agent-browser.md) |
+| Director ACP coding | [Private Slack delegation, subagent status and completion reports](docs/director-acp.md) |
 | Community workflows | [Discord onboarding](docs/discord-onboarding.md) · [Community discovery](docs/community-discovery.md) |
 | Identity and privacy | [Conversation identity](docs/conversation-identity.md) · [Channel isolation](docs/channel-user-isolation.md) |
 | Architecture and integration | [Architecture](docs/architecture.md) · [Integration contracts](docs/integration-contracts.md) · [OpenClaw updates](docs/upstream.md) |

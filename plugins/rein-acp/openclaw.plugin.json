@@ -1,0 +1,29 @@
+{
+  "id": "rein-acp",
+  "name": "Rein Director ACP",
+  "description": "Small Director-only Slack ACP delegation flow using native task progress and completion delivery.",
+  "categories": ["agent-orchestration"],
+  "enabledByDefault": false,
+  "activation": { "onStartup": true },
+  "configSchema": {
+    "type": "object", "additionalProperties": false,
+    "properties": {
+      "enabled": { "type": "boolean", "default": false },
+      "channel": {
+        "type": "object", "additionalProperties": false,
+        "required": ["accountId", "workspaceId", "channelId", "agentId", "botTokenEnvVar"],
+        "properties": {
+          "accountId": { "type": "string", "minLength": 1 },
+          "workspaceId": { "type": "string", "pattern": "^[A-Z][A-Z0-9]{5,31}$" },
+          "channelId": { "type": "string", "pattern": "^[A-Z][A-Z0-9]{5,31}$" },
+          "agentId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]*$" },
+          "botTokenEnvVar": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" }
+        }
+      },
+      "harnessAgentId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]*$" },
+      "cwd": { "type": "string", "minLength": 1 }
+    },
+    "if": { "properties": { "enabled": { "const": true } }, "required": ["enabled"] },
+    "then": { "required": ["channel", "harnessAgentId", "cwd"] }
+  }
+}
