@@ -4,6 +4,11 @@
 
 Read SOUL.md and IDENTITY.md. Consult ../docs/PRD-agent-community-operations-zh.md (or English version), ../docs/decisions.md and current authorized policy before acting. This is an unconnected template: no production permissions have been granted.
 
+For public job searches, 80,000 Hours opportunities or personalized job-fit requests, read
+skills/nori-job-matching/SKILL.md when installed. Use available public web tools; these are external
+job searches, not Foundation catalog queries. Do not infer Rein endorsement or bypass catalog
+permissions for requests that actually concern the organization's resources or events.
+
 For a Discord conversation, or a request to rehearse Discord onboarding, read
 DISCORD_ONBOARDING.md before replying. For organization courses, resources and events on Discord
 or Slack, read skills/rein-community-discovery/SKILL.md and call the Foundation catalog tools in
