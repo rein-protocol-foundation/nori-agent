@@ -37,7 +37,7 @@ export function validateIsolationConfig(config) {
 
 export function assertIsolationRuntime(cfg, config, workspaceDir) {
   validateIsolationConfig(config);
-  assertIsolatedRuntime(cfg,config,workspaceDir,{platform:'discord',publicTools:isolatedToolsForAudience(cfg,'public'),publicReferences:['DISCORD_ONBOARDING.md'],publicSkills:['rein-community-discovery']});
+  assertIsolatedRuntime(cfg,config,workspaceDir,{platform:'discord',publicTools:isolatedToolsForAudience(cfg,'public'),publicReferences:['DISCORD_ONBOARDING.md']});
 }
 
 // Only the authenticated transport supplies these fields. Message text, display

@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { discordAccountPolicies, effectiveDiscordDmScopes } from './discord-dm-scopes.mjs';
-import { assertIsolationRuntime } from '../plugins/rein-discord/isolation.mjs';
 
 // Audit the pinned runtime's configuration; this is not a security certification.
 // In this pin groupScope supports only per-group/main. dmScope never adds a
@@ -12,14 +11,13 @@ export function inspectDiscordPrivacy(config) {
   const enabled = Boolean(discord) && discord.enabled !== false;
   const adapter = config.plugins?.entries?.['rein-discord'];
   const requestedAdapter = enabled && adapter?.enabled === true;
-  let isolatedAdapterConfigured = false;
-  if (requestedAdapter) {
-    try { assertIsolationRuntime(config, adapter.config, config.agents?.defaults?.workspace); isolatedAdapterConfigured = true; }
-    catch { /* Findings never include private filesystem paths/config values. */ }
-  }
-  const effectiveDmScopes = !enabled ? [] : isolatedAdapterConfigured
-    ? adapter.config.dmAllowFrom.length > 0 ? ['per-account-channel-peer'] : []
-    : effectiveDiscordDmScopes(config);
+  if (requestedAdapter) return {
+    enabled, routingImplementation: 'withdrawn-adapter', isolatedAdapterConfigured: false,
+    groupSessionIncludesSender: false, perUserPersistentMemoryImplemented: false,
+    findings: [{ code: 'isolation_adapter_withdrawn', severity: 'critical',
+      detail: 'rein-discord is withdrawn and refuses registration. Restore a reviewed native Discord profile; native guild sessions remain channel-shared. See docs/discord-isolation-redesign.md.' }],
+  };
+  const effectiveDmScopes = !enabled ? [] : effectiveDiscordDmScopes(config);
   const dmEnabled = enabled && effectiveDmScopes.length > 0;
   const roomsEnabled = enabled && discordAccountPolicies(discord).some(([,policy]) => policy.groupPolicy !== 'disabled');
   const dmScope = config.session?.dmScope ?? 'main';
@@ -42,13 +40,9 @@ export function inspectDiscordPrivacy(config) {
   });
   const recall = recallPolicies.some(policy => policy.enabled);
   const findings = [];
-  if (requestedAdapter && !isolatedAdapterConfigured) findings.push({ code: 'isolation_profile_invalid', severity: 'critical',
-    detail: 'The Rein adapter profile fails its startup privacy guard. Do not start it or fall back to native Discord routing.' });
-  if (isolatedAdapterConfigured) findings.push({ code: 'adapter_runtime_unverified', severity: 'warning',
-    detail: 'Configuration selects the Rein owner/audience-scoped adapter. This audit does not prove the plugin loaded or real Discord account isolation; run the native pipeline probe and live acceptance.' });
-  if (roomsEnabled && !isolatedAdapterConfigured) findings.push({ code: 'guild_session_shared', severity: 'critical',
+  if (roomsEnabled) findings.push({ code: 'guild_session_shared', severity: 'critical',
     detail: 'Guild conversations use a channel/group key without sender ID. Per-user public-channel sessions are not implemented by dmScope.' });
-  if (dmEnabled && effectiveDmScopes.includes('main') && !isolatedAdapterConfigured) findings.push({ code: 'dm_session_shared', severity: 'critical',
+  if (dmEnabled && effectiveDmScopes.includes('main')) findings.push({ code: 'dm_session_shared', severity: 'critical',
     detail: 'An enabled Discord DM route uses a shared main session after applying matching binding overrides and precedence.' });
   if (enabled && config.tools?.fs?.workspaceOnly !== true) findings.push({ code: 'filesystem_unconfined', severity: 'warning',
     detail: 'Filesystem confinement is not explicitly enabled; an available read tool can reach files outside the shared workspace.' });
@@ -62,8 +56,8 @@ export function inspectDiscordPrivacy(config) {
     findings.push({ code: 'agent_recall_override', severity: 'warning', detail: 'An agent explicitly enables private cross-conversation recall.' });
   }
   return { enabled, dmEnabled, roomsEnabled, dmScope, effectiveDmScopes, groupScope,
-    routingImplementation: isolatedAdapterConfigured ? 'rein-isolated-v1' : 'native-or-invalid-profile', isolatedAdapterConfigured,
-    groupSessionIncludesSender: isolatedAdapterConfigured, perUserPersistentMemoryImplemented: isolatedAdapterConfigured,
+    routingImplementation: 'native-or-invalid-profile', isolatedAdapterConfigured: false,
+    groupSessionIncludesSender: false, perUserPersistentMemoryImplemented: false,
     safeguards: { filesystemWorkspaceOnly: config.tools?.fs?.workspaceOnly === true,
       sessionToolsSelfOnly: config.tools?.sessions?.visibility === 'self',
       privateRecallExplicitlyDisabled: recallPolicies.every(policy => policy.explicit === false),

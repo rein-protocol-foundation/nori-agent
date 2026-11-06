@@ -10,7 +10,7 @@
   "minimumFreeGiB": 12,
   "healthTimeout": 150,
   "services": ["nori-router", "nori-web", "nori-slack", "nori-discord"],
-  "preserve": ["runtime", ".env.local", ".env", "secrets", "SECRETs.md", "workspace/USER.md", "workspace/MEMORY.md", "workspace/memory", "workspace/.openclaw", "workspace/main/USER.md", "workspace/main/MEMORY.md", "workspace/main/memory", "workspace/main/.openclaw", "workspace/main/BOOTSTRAP.md", "workspace/main/.git"],
+  "preserve": ["runtime", ".env.local", ".env", "secrets", "SECRETs.md", "workspace/USER.md", "workspace/MEMORY.md", "workspace/memory", "workspace/state", "workspace/.openclaw", "workspace/main/USER.md", "workspace/main/MEMORY.md", "workspace/main/memory", "workspace/main/.openclaw", "workspace/main/BOOTSTRAP.md", "workspace/main/.git"],
   "routerPort": 3431,
   "auxiliaryPorts": [3425, 3440],
   "routerSession": "runtime/oci-public/router-session.json",

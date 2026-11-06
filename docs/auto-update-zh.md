@@ -45,6 +45,9 @@ GitHub 在请求到达服务器前发生投递失败时[不会自动重投](http
 Recent Deliveries 中重投失败事件。此方案不另加定时补偿轮询。
 健康检查不调用模型或发送聊天消息，不能替代真实渠道、模型或浏览器 UI 验收。
 
+运行时生成的 `workspace/state/`（包括 sessions）应加入 `preserve`，同时由 `.gitignore` 排除。
+已有主机需更新 `/etc/nori-updater.json`；应用部署不会自动更新该配置。不得提交或删除其中的运行记录。
+
 ## 安装与迁移
 
 先按 [setup](setup.md) 准备正常运行的实例。依赖 Linux/systemd、Python 3、Git、npm、Go、`runuser`。

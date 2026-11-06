@@ -1,5 +1,9 @@
 # Shared chat isolation core
 
+> Status 2026-11-04: the Discord production replacement is withdrawn. This page describes
+> retained historical primitives and the Slack dependency, not an approved rollout architecture.
+> See the [replacement requirements](discord-isolation-redesign.md).
+
 Discord and Slack share `@rein-protocol/isolation-core`, a Nori-Agent-owned library under
 `plugins/rein-isolation`. It contains no channel SDK or Foundation client. Channels authenticate native
 transport events, validate their identifiers and audience, then hand a trusted normalized event to

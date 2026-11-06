@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { createServer as createSocketServer } from 'node:net';
 import { spawn } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, symlinkSync, existsSync, rmSync } from 'node:fs';
+import { mkdtempSync, cpSync, mkdirSync, readFileSync, writeFileSync, symlinkSync, existsSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { root, upstream, environment, requireSource } from './runtime-env.mjs';
@@ -16,7 +16,7 @@ const proofs=new Map();
 const catalogId='10000000-0000-4000-8000-000000000001';
 const catalogAt='2030-01-01T00:00:00Z';
 const discoveryCases={
-  CASE_DISCOVERY_SKILL:'read',
+  CASE_DISCOVERY_SKILL:'read', CASE_GENERAL_SKILL:'read',
   CASE_RESOURCE_SEARCH:'rein_resources_search',CASE_RESOURCE_GET:'rein_resource_get',
   CASE_EVENT_SEARCH:'rein_events_search',CASE_EVENT_GET:'rein_event_get',
   CASE_DISCOVERY_DENIED:'rein_resources_search',
@@ -54,7 +54,7 @@ const server = createServer(async (req,res) => {
   const marker=JSON.stringify(request.messages[userIndex]?.content).match(/CASE_[A-Z0-9_]+/)?.[0];
   const toolResult=request.messages.slice(userIndex+1).some(m=>m.role==='tool');
   const tool=discoveryCases[marker]??(['CASE_A1','CASE_DM','CASE_THREAD_A'].includes(marker)?'rein_memory_remember':['CASE_PRIVATE','CASE_BOARD_B'].includes(marker)?'rein_funds':marker==='CASE_TOOL_FORGET'?'rein_memory_forget':'rein_memory_read');
-  const args=tool==='read'?{path:'skills/rein-community-discovery/SKILL.md'}:tool==='rein_memory_remember'?{name:'canary',value:marker==='CASE_A1'?'ALICE_PUBLIC_MEMORY_6382':marker==='CASE_DM'?'ALICE_PRIVATE_MEMORY_9921':'ALICE_THREAD_MEMORY_8821'}:tool==='rein_funds'?{currency:'USD'}:tool.endsWith('_get')?{id:catalogId}:{};
+  const args=tool==='read'?{path:marker==='CASE_GENERAL_SKILL'?'skills/nori-general-fixture/references/guide.md':'skills/rein-community-discovery/SKILL.md'}:tool==='rein_memory_remember'?{name:'canary',value:marker==='CASE_A1'?'ALICE_PUBLIC_MEMORY_6382':marker==='CASE_DM'?'ALICE_PRIVATE_MEMORY_9921':'ALICE_THREAD_MEMORY_8821'}:tool==='rein_funds'?{currency:'USD'}:tool.endsWith('_get')?{id:catalogId}:{};
   const delta=toolResult ? {role:'assistant',content:marker==='CASE_TOOL_FORGET'?'STALE_FORGOTTEN_OUTPUT_CANARY':'OK'} : {role:'assistant',tool_calls:[{index:0,id:`call_${marker}`,type:'function',function:{name:'tool_call',arguments:JSON.stringify({id:tool,args})}}]};
   res.writeHead(200, {'content-type':'text/event-stream'});
   const completion={id:'privacy-probe',object:'chat.completion.chunk',created:1,model:'canary',choices:[{index:0,delta,finish_reason:null}]};
@@ -70,8 +70,12 @@ await new Promise(r=>reservation.listen(0,'127.0.0.1',r));
 const gatewayPort=reservation.address().port;
 await new Promise(r=>reservation.close(r));
 const publicDir=join(temp,'public');mkdirSync(publicDir);
-const skillDir=join(publicDir,'skills','rein-community-discovery');mkdirSync(skillDir,{recursive:true});
-writeFileSync(join(skillDir,'SKILL.md'),readFileSync(join(root,'workspace/skills/rein-community-discovery/SKILL.md')));
+cpSync(join(root,'workspace/skills'),join(publicDir,'skills'),{recursive:true});
+const general=join(publicDir,'skills','nori-general-fixture');
+mkdirSync(join(general,'references'),{recursive:true});mkdirSync(join(general,'scripts'));
+writeFileSync(join(general,'SKILL.md'),'---\nname: nori-general-fixture\ndescription: Synthetic shared skill.\n---\nRead references/guide.md.\n');
+writeFileSync(join(general,'references/guide.md'),'GENERAL_SKILL_RESOURCE_CANARY');
+writeFileSync(join(general,'scripts/example.mjs'),'throw new Error("Discovery must not execute scripts");');
 const pluginDir=join(temp,'plugin');mkdirSync(pluginDir);
 const fixture=readFileSync(join(root,'tests/fixtures/slack-isolation-gateway.ts'),'utf8').replaceAll('../../plugins/rein-slack/',`${join(root,'plugins/rein-slack')}/`);
 writeFileSync(join(pluginDir,'index.ts'),fixture);
@@ -103,7 +107,7 @@ try {
   assert.ok(!evidence.error,evidence.error);
   assert.deepEqual(serverErrors,[]);
   assert.equal(evidence.privateMemorySaved,true,'DM tool must really persist a private note before testing its exclusion from public requests');
-  assert.equal(requests.length,41,`Expected forty-one real provider requests; forget must not continue the old model loop:\n${output.slice(-10000)}`);
+  assert.equal(requests.length,43,`Expected forty-three real provider requests; forget must not continue the old model loop:\n${output.slice(-10000)}`);
   const requestsFor=marker=>requests.filter(r=>{
     const user=r.messages.findLast(m=>m.role==='user' && /CASE_[A-Z0-9_]+/.test(JSON.stringify(m.content)));
     return JSON.stringify(user?.content).match(/CASE_[A-Z0-9_]+/)?.[0]===marker;
@@ -176,12 +180,13 @@ try {
   assert.match(toolOutputFor('CASE_EVENT_GET'),/"status"\s*:\s*"not_found"/);
   assert.ok(toolOutputFor('CASE_DISCOVERY_DENIED').includes('community_member_required'));
   assert.ok(!inputWithTools('CASE_DISCOVERY_DENIED').includes('SYNTHETIC_CATALOG_COURSE'),'unlinked sender must not receive another member\'s catalog results');
+  assert.ok(toolOutputFor('CASE_GENERAL_SKILL').includes('GENERAL_SKILL_RESOURCE_CANARY'),'native Slack read must load a new skill reference without adapter edits');
   assert.ok(toolOutputFor('CASE_DISCOVERY_SKILL').includes('Loading this skill does not authorize a query.'),'native read must load the approved discovery skill');
   assert.notEqual(evidence.trace[0].sessionKey,evidence.trace[1].sessionKey);
   assert.equal(evidence.trace[0].sessionKey,evidence.trace[5].sessionKey);
-  assert.equal(evidence.acks.length,23);
+  assert.equal(evidence.acks.length,24);
   assert.ok(evidence.sent.some(reply=>reply.thread_ts==='1800000001.000001'));
-  console.log('Native Slack probe passed: 41 actual model requests, two synthetic users, public/private channels, DM, threads, scoped memory, atomic forget, Foundation actor/Board checks and all four catalog tools with an unlinked-member refusal. Discovery skill read successfully. No real Slack or Foundation connection.');
+  console.log('Native Slack probe passed: actual model requests, two synthetic users, public/private channels, DM, threads, scoped memory, atomic forget, Foundation actor/Board checks and all four catalog tools with an unlinked-member refusal. Discovery skill and new general skill resource read successfully. No real Slack or Foundation connection.');
 } catch(error) {
   if(process.env.REIN_ISOLATION_KEEP_EVIDENCE==='1') {
     writeFileSync(join(temp,'gateway.log'),output);writeFileSync(join(temp,'requests.json'),JSON.stringify(requests,null,2));writeFileSync(join(temp,'backend.json'),JSON.stringify(backendCalls,null,2));console.error(`Synthetic probe evidence retained at ${temp}`);

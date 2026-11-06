@@ -200,8 +200,9 @@ The activity core implements guarded local transitions for these dimensions. Cro
 
 ## Shared chat isolation
 
-The opt-in Discord and Slack transports delegate per-user scope, memory, queue and dispatch control
-to `plugins/rein-isolation`. Native authentication, visibility, ID validation and reply mechanics stay
-in the adapters; Foundation identity and governance remain backend-owned. See the
-[shared contract and Feishu extension guide](channel-user-isolation.md). Profiles are currently
-dedicated per bot/platform; no cross-platform identity link implicitly merges private sessions.
+The Discord transport replacement is withdrawn; its plugin entry refuses registration. The shared
+`plugins/rein-isolation` primitives remain for Slack and historical synthetic regression tests.
+Foundation identity and governance remain backend-owned. See the
+[withdrawal/dependency review and native-compatible design](discord-isolation-redesign.md) and the
+[historical shared contract](channel-user-isolation.md). Native Discord guild sessions remain shared;
+retaining a tested hashing or notes primitive does not establish a production isolation solution.

@@ -10,6 +10,7 @@ workspace/.openclaw/
 workspace/MEMORY.md
 workspace/USER.md
 workspace/memory/
+workspace/state/
 workspace/main/USER.md
 workspace/main/MEMORY.md
 workspace/main/memory/

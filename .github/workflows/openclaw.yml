@@ -45,6 +45,7 @@ jobs:
         run: |
           pnpm verify:plugin
           pnpm verify:proposal-tools
+          node scripts/verify-workspace-skills.mjs
       - name: Verify Director ACP delegation and task status with local fixtures
         run: pnpm verify:director-acp
       - name: Confirm upstream tracked files remain unchanged
@@ -139,7 +140,7 @@ jobs:
           submodules: recursive
       - uses: ./.github/actions/setup-openclaw
       - run: pnpm setup:local
-      - name: Verify isolated Discord and Slack native pipelines
+      - name: Verify historical Discord isolation fixture and Slack native pipeline
         run: |
           pnpm verify:discord-isolation
           pnpm verify:slack-isolation
