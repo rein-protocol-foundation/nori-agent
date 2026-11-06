@@ -28,6 +28,7 @@ export default {...production,register(api) {
       {...base,text:'CASE_AFTER_TOOL_FORGET Check my notes.'},
       {...base,text:'!forget'},
       {...base,text:'CASE_A4 Check forgotten notes.'},
+      {...base,text:'CASE_GENERAL_SKILL Read the new general skill reference.'},
       {...base,text:'CASE_DISCOVERY_SKILL Read the community discovery skill.'},
       {...base,text:'CASE_RESOURCE_SEARCH Find an organization course.'},
       {...base,thread_ts:'1800000001.000003',text:'CASE_RESOURCE_GET Recheck the course details.'},

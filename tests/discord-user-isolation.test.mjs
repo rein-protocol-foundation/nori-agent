@@ -161,15 +161,16 @@ test('approved guild can admit new native members without sharing their sessions
   const newcomer=resolveOwner(open,event('100000000000000099'));
   assert.ok(newcomer);assert.notEqual(newcomer.key,a.key);
 });
-test('audit recognizes guarded adapter selection but retains runtime verification warning',t=>{
+test('audit rejects even a historically valid withdrawn adapter profile',t=>{
   const {c,dir}=fixture(t);const workspace=join(dir,'public');mkdirSync(workspace);
   const cfg=baseRuntime(c);cfg.agents.defaults.workspace=workspace;cfg.channels={discord:{enabled:true}};
   cfg.plugins.entries['rein-discord']={enabled:true,config:c};
   const audit=inspectDiscordPrivacy(cfg);
-  assert.equal(audit.isolatedAdapterConfigured,true);assert.equal(audit.groupSessionIncludesSender,true);
-  assert.deepEqual(audit.findings.map(f=>f.code),['adapter_runtime_unverified']);
+  assert.equal(audit.isolatedAdapterConfigured,false);assert.equal(audit.groupSessionIncludesSender,false);
+  assert.equal(audit.routingImplementation,'withdrawn-adapter');
+  assert.deepEqual(audit.findings.map(f=>f.code),['isolation_adapter_withdrawn']);
   cfg.tools.alsoAllow=['exec'];
-  assert.ok(inspectDiscordPrivacy(cfg).findings.some(f=>f.code==='isolation_profile_invalid'));
+  assert.ok(inspectDiscordPrivacy(cfg).findings.some(f=>f.code==='isolation_adapter_withdrawn'));
 });
 test('startup requires closed native recall, no bindings, confined tools and public workspace',t=>{
   const {c,dir}=fixture(t);const workspace=join(dir,'public');mkdirSync(workspace);
@@ -178,14 +179,14 @@ test('startup requires closed native recall, no bindings, confined tools and pub
     assert.throws(()=>assertIsolationRuntime(modified,c,workspace));
   mkdirSync(join(workspace,'memory'));assert.throws(()=>assertIsolationRuntime(cfg,c,workspace),/public reference/);
 });
-test('only the reviewed discovery skill may be staged in a confined public workspace',t=>{
+test('workspace skills accept resources while rejecting links',t=>{
   const {c,dir}=fixture(t);const workspace=join(dir,'public');mkdirSync(workspace);
   const cfg=baseRuntime(c);const skill=join(workspace,'skills','rein-community-discovery');
   mkdirSync(skill,{recursive:true});writeFileSync(join(skill,'SKILL.md'),'public instructions');
   assert.doesNotThrow(()=>assertIsolationRuntime(cfg,c,workspace));
-  writeFileSync(join(skill,'private.json'),'private');
-  assert.throws(()=>assertIsolationRuntime(cfg,c,workspace),/public reference/);
-  rmSync(join(skill,'private.json'));rmSync(join(skill,'SKILL.md'));
+  writeFileSync(join(skill,'reference.json'),'public fixture');
+  assert.doesNotThrow(()=>assertIsolationRuntime(cfg,c,workspace));
+  rmSync(join(skill,'reference.json'));rmSync(join(skill,'SKILL.md'));
   const privateFile=join(dir,'private.txt');writeFileSync(privateFile,'private');
   symlinkSync(privateFile,join(skill,'SKILL.md'));
   assert.throws(()=>assertIsolationRuntime(cfg,c,workspace),/public reference/);
@@ -328,7 +329,7 @@ test('failed model-driven forget suppresses old context and sends a failure ackn
   } finally { control.close(); }
 });
 
-test('startup and auditor reject canonical per-agent overrides before any model dispatch',t=>{
+test('historical startup rejects per-agent overrides and auditor rejects the withdrawn profile',t=>{
   const {c,dir}=fixture(t);const workspace=join(dir,'public');mkdirSync(workspace);
   const cfg=baseRuntime(c);cfg.agents.defaults.workspace=workspace;cfg.channels={discord:{enabled:true}};
   cfg.plugins.entries['rein-discord']={enabled:true,config:c};
@@ -338,7 +339,7 @@ test('startup and auditor reject canonical per-agent overrides before any model 
     const modified={...cfg,agents:{...cfg.agents,entries}};
     assert.throws(()=>assertIsolationRuntime(modified,c,workspace),/Agent\/account\/binding overrides/);
     assert.equal(inspectDiscordPrivacy(modified).isolatedAdapterConfigured,false);
-    assert.ok(inspectDiscordPrivacy(modified).findings.some(f=>f.code==='isolation_profile_invalid'));
+    assert.ok(inspectDiscordPrivacy(modified).findings.some(f=>f.code==='isolation_adapter_withdrawn'));
   }
 });
 test('memory database rejects hard links without changing the linked public file',t=>{

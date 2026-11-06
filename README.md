@@ -42,7 +42,7 @@ The broader product direction also considers fundraising and donor relations, pr
 | --- | --- | --- |
 | Proposals and governance | Identity binding, proposal collection and submission, Board voting, result records, and funds snapshots through an authenticated backend. | Requires explicit backend, workspace, and channel configuration. A vote result does not execute a payment. |
 | Community support | Discord onboarding guidance and authenticated resource and event discovery. | Requires configured services and verified community access. Limited live acceptance does not establish general readiness. |
-| Session and memory isolation | Optional Discord and Slack adapters with per-user and audience scopes. | Synthetic pipeline checks exist; live two-account acceptance remains pending. |
+| Session and memory isolation | Shared primitives and historical synthetic probes; Slack adapter retained for compatibility. | Discord replacement withdrawn; native guild sessions remain shared. See the [replacement design](docs/discord-isolation-redesign.md). |
 | Model routing | Optional Magpie gateway, manual model selection, and Jev dynamic routing. | Provider access and billing compatibility require operator verification. |
 | Browser tasks | Pinned agent-browser integration with an encrypted credential vault and session reuse. | Runs within operator authorization and existing channel permissions. |
 
@@ -112,6 +112,7 @@ Keep the console running alongside OpenClaw. Configure providers and models in M
 | --- | --- |
 | Product scope and priorities | [Product requirements](docs/PRD-agent-community-operations.md) · [Roadmap](docs/roadmap.md) · [Open decisions](docs/decisions.md) |
 | Installation and configuration | [Setup](docs/setup.md) · [Model routing](docs/unified-subscription-access.md) · [Browser automation](docs/agent-browser.md) |
+| Director ACP coding | [Private Slack delegation, subagent status and completion reports](docs/director-acp.md) |
 | Community workflows | [Discord onboarding](docs/discord-onboarding.md) · [Community discovery](docs/community-discovery.md) |
 | Identity and privacy | [Conversation identity](docs/conversation-identity.md) · [Channel isolation](docs/channel-user-isolation.md) |
 | Architecture and integration | [Architecture](docs/architecture.md) · [Integration contracts](docs/integration-contracts.md) · [OpenClaw updates](docs/upstream.md) |
@@ -124,7 +125,7 @@ Keep the console running alongside OpenClaw. Configure providers and models in M
 | --- | --- |
 | `plugins/rein-operations/` | Proposal, governance, identity, and community tools. |
 | `plugins/rein-router/` | Magpie gateway integration and model routing. |
-| `plugins/rein-discord/`, `plugins/rein-slack/`, `plugins/rein-isolation/` | Channel adapters and shared isolation logic. |
+| `plugins/rein-discord/`, `plugins/rein-slack/`, `plugins/rein-isolation/` | Withdrawn Discord entry and regression helpers, retained Slack adapter, and shared isolation primitives. |
 | `workspace/` | Agent identity, operating policies, skills, and avatar. |
 | `config/`, `templates/` | Example configurations and workflow templates. |
 | `scripts/`, `tests/` | Setup, verification, runtime helpers, and tests. |

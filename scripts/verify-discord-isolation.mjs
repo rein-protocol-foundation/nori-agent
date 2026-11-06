@@ -36,6 +36,8 @@ const publicDir=join(temp,'public');mkdirSync(publicDir);
 const pluginDir=join(temp,'plugin');mkdirSync(pluginDir);
 const fixture=readFileSync(join(root,'tests/fixtures/discord-isolation-gateway.ts'),'utf8').replaceAll('../../plugins/rein-discord/',`${join(root,'plugins/rein-discord')}/`);
 writeFileSync(join(pluginDir,'index.ts'),fixture);
+writeFileSync(join(pluginDir, 'register-legacy-discord.mjs'), readFileSync(join(root, 'tests/fixtures/register-legacy-discord.mjs'), 'utf8')
+  .replaceAll('../../plugins/rein-discord/', `${join(root, 'plugins/rein-discord')}/`));
 writeFileSync(join(pluginDir,'openclaw.plugin.json'),readFileSync(join(root,'plugins/rein-discord/openclaw.plugin.json')));
 writeFileSync(join(pluginDir,'package.json'),JSON.stringify({name:'@rein-protocol/privacy-test-fixture',type:'module',openclaw:{extensions:['./index.ts']}}));
 symlinkSync(join(root,'plugins/rein-discord/node_modules'),join(pluginDir,'node_modules'));
@@ -87,7 +89,7 @@ try {
   assert.notEqual(evidence.trace[0].sessionKey,evidence.trace[1].sessionKey);
   assert.equal(evidence.trace[0].sessionKey,evidence.trace[3].sessionKey);
   assert.notEqual(evidence.trace[0].sessionKey,evidence.trace[5].sessionKey);
-  console.log('Native Gateway/provider probe passed: two synthetic users, separate DM, seventeen model requests with real memory tools; forget aborts before model continuation and sends only a host acknowledgement. No real Discord accounts or backend calls.');
+  console.log('Historical isolation fixture probe passed (not a production Discord adapter): two synthetic users, separate DM, seventeen model requests with real memory tools; forget aborts before model continuation and sends only a host acknowledgement. No real Discord accounts or backend calls.');
 } catch(error) {
   if(process.env.REIN_ISOLATION_KEEP_EVIDENCE==='1') {
     writeFileSync(join(temp,'gateway.log'),output);writeFileSync(join(temp,'requests.json'),JSON.stringify(requests,null,2));console.error(`Synthetic probe evidence retained at ${temp}`);

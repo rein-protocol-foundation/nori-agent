@@ -61,3 +61,8 @@ export function createFoundationAdminAuthorizer({ config, env = process.env, tra
 export function createFoundationDeveloperAuthorizer(options: Parameters<typeof createFoundationAdminAuthorizer>[0]) {
   return createFoundationAdminAuthorizer(options, member => member.is_active_contributor === true || member.is_director === true);
 }
+
+/** ACP delegation is restricted to a current, linked Director. */
+export function createFoundationDirectorAuthorizer(options: Parameters<typeof createFoundationAdminAuthorizer>[0]) {
+  return createFoundationAdminAuthorizer(options, member => member.is_director === true);
+}
