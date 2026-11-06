@@ -6,29 +6,34 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
 source = Path(__file__).resolve().parents[2] / 'deploy/nori-update.py'
+sys.path.insert(0, str(source.parent))
 spec = importlib.util.spec_from_file_location('nori_updater', source)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
+OLD_REVISION = 'a' * 40
+NEW_REVISION = 'b' * 40
+NEWER_REVISION = 'c' * 40
 
 class FakeHost:
     def __init__(self, base):
         self.root, self.state, self.releases = (base / p for p in ('live', 'state', 'releases'))
         for path in (self.root, self.state, self.releases):
             path.mkdir()
-        (self.root / 'revision').write_text('old')
+        (self.root / 'revision').write_text(OLD_REVISION)
         (self.root / 'runtime').mkdir()
         (self.root / 'runtime/session').write_text('original-private-state')
         self.events = []
         self.config = {'minimumFreeGiB': 0}
         self.build_failure = False
         self.new_health_failure = False
-        self.latest_values = ['new', 'new']
+        self.latest_values = [NEW_REVISION, NEW_REVISION]
         self.dirty = False
 
     def latest(self):
@@ -64,7 +69,7 @@ class FakeHost:
     def health(self):
         revision = self.revision(self.root)
         self.events.append('health:' + revision)
-        if revision == 'new' and self.new_health_failure:
+        if revision == NEW_REVISION and self.new_health_failure:
             (self.root / 'runtime/session').write_text('new-version-state')
             raise module.UpdateError('health_check_timeout')
 
@@ -82,7 +87,7 @@ class UpdaterTests(unittest.TestCase):
         with patch.object(self.updater, 'queue_report', side_effect=fail_once):
             self.updater.run()
         self.assertEqual(module.read_json(self.updater.status)['state'], 'updated')
-        self.assertEqual(self.host.revision(self.host.root), 'new')
+        self.assertEqual(self.host.revision(self.host.root), NEW_REVISION)
         self.assertEqual(len(list((self.host.state / 'reports').glob('*.json'))), 1)
         self.assertEqual(self.host.events.count('stop'), 1)
 
@@ -91,8 +96,8 @@ class UpdaterTests(unittest.TestCase):
         self.updater.run()
         path = next((self.host.state / 'reports').glob('*.json'))
         event = module.read_json(path)
-        self.assertEqual(event['revision'], 'new')
-        self.assertEqual(event['previousRevision'], 'old')
+        self.assertEqual(event['revision'], NEW_REVISION)
+        self.assertEqual(event['previousRevision'], OLD_REVISION)
         self.assertIn('deployedAt', event)
         done = self.host.state / 'reported'
         done.mkdir()
@@ -121,9 +126,9 @@ class UpdaterTests(unittest.TestCase):
         with self.assertRaises(module.UpdateError):
             self.updater.run()
         self.assertNotIn('stop', self.host.events)
-        self.assertEqual(self.host.revision(self.host.root), 'old')
+        self.assertEqual(self.host.revision(self.host.root), OLD_REVISION)
         self.assertEqual(module.read_json(self.updater.status)['state'], 'failed')
-        self.host.latest_values = ['new']
+        self.host.latest_values = [NEW_REVISION]
         self.updater.run()
         self.assertEqual(self.host.events.count('build'), 1)
 
@@ -131,28 +136,28 @@ class UpdaterTests(unittest.TestCase):
         self.updater.run()
         self.assertLess(self.host.events.index('build'), self.host.events.index('stop'))
         self.assertLess(self.host.events.index('stop'), self.host.events.index('preserve'))
-        self.assertEqual(self.host.revision(self.host.root), 'new')
+        self.assertEqual(self.host.revision(self.host.root), NEW_REVISION)
         self.assertEqual((self.host.root / 'runtime/session').read_text(), 'original-private-state')
         previous = next(self.host.releases.glob('previous-*'))
-        self.assertEqual(self.host.revision(previous), 'old')
+        self.assertEqual(self.host.revision(previous), OLD_REVISION)
         self.assertFalse(self.updater.journal.exists())
 
     def test_health_failure_restores_old_code_and_private_state_and_keeps_failed_state(self):
         self.host.new_health_failure = True
         with self.assertRaises(module.UpdateError):
             self.updater.run()
-        self.assertEqual(self.host.revision(self.host.root), 'old')
+        self.assertEqual(self.host.revision(self.host.root), OLD_REVISION)
         self.assertEqual((self.host.root / 'runtime/session').read_text(), 'original-private-state')
         failed = next(self.host.releases.glob('failed-*'))
         self.assertEqual((failed / 'runtime/session').read_text(), 'new-version-state')
         self.assertEqual(module.read_json(self.updater.status)['state'], 'rolled_back')
-        self.assertIn('health:old', self.host.events)
+        self.assertIn('health:' + OLD_REVISION, self.host.events)
 
     def transaction(self):
         candidate, previous, failed = (self.host.releases / name for name in ('candidate-test', 'previous-test', 'failed-test'))
         candidate.mkdir()
-        (candidate / 'revision').write_text('new')
-        record = {'phase': 'switching', 'target': 'new', 'previousRevision': 'old', 'candidate': str(candidate), 'previous': str(previous), 'failed': str(failed)}
+        (candidate / 'revision').write_text(NEW_REVISION)
+        record = {'phase': 'switching', 'target': NEW_REVISION, 'previousRevision': OLD_REVISION, 'candidate': str(candidate), 'previous': str(previous), 'failed': str(failed)}
         module.atomic_json(self.updater.journal, record)
         return candidate, previous, failed
 
@@ -160,7 +165,7 @@ class UpdaterTests(unittest.TestCase):
         _, previous, _ = self.transaction()
         os.rename(self.host.root, previous)
         self.assertTrue(self.updater.recover())
-        self.assertEqual(self.host.revision(self.host.root), 'old')
+        self.assertEqual(self.host.revision(self.host.root), OLD_REVISION)
         self.assertFalse(self.updater.journal.exists())
 
     def test_recovers_interruption_after_new_directory_is_installed(self):
@@ -168,8 +173,8 @@ class UpdaterTests(unittest.TestCase):
         os.rename(self.host.root, previous)
         os.rename(candidate, self.host.root)
         self.assertTrue(self.updater.recover())
-        self.assertEqual(self.host.revision(self.host.root), 'old')
-        self.assertEqual(self.host.revision(failed), 'new')
+        self.assertEqual(self.host.revision(self.host.root), OLD_REVISION)
+        self.assertEqual(self.host.revision(failed), NEW_REVISION)
 
     def test_committed_transaction_is_not_rolled_back_after_interruption(self):
         candidate, previous, _ = self.transaction()
@@ -180,18 +185,18 @@ class UpdaterTests(unittest.TestCase):
         module.atomic_json(self.updater.journal, record)
         self.updater.recover()
         self.assertNotIn('stop', self.host.events)
-        self.assertEqual(self.host.revision(self.host.root), 'new')
+        self.assertEqual(self.host.revision(self.host.root), NEW_REVISION)
 
     def test_newer_main_supersedes_build_without_stopping_services(self):
-        self.host.latest_values = ['new', 'newer']
+        self.host.latest_values = [NEW_REVISION, NEWER_REVISION]
         self.updater.run()
         self.assertNotIn('stop', self.host.events)
         self.assertEqual(module.read_json(self.updater.status)['state'], 'superseded')
 
     def test_unchanged_main_does_not_build_or_restart(self):
-        self.host.latest_values = ['old']
+        self.host.latest_values = [OLD_REVISION]
         self.updater.run()
-        self.assertEqual(self.host.events, ['active', 'health:old'])
+        self.assertEqual(self.host.events, ['active', 'health:' + OLD_REVISION])
 
     def test_dirty_checkout_is_preserved_and_defers_update(self):
         self.host.dirty = True
@@ -281,8 +286,8 @@ class RetentionTests(unittest.TestCase):
 
     def test_protects_latest_known_rollback_even_with_legacy_mtime(self):
         module.atomic_json(self.updater.status, {'previous': str(self.backups[0])})
-        self.updater.record('building', revision='new')
-        self.updater.record('deferred', revision='new')
+        self.updater.record('building', revision=NEW_REVISION)
+        self.updater.record('deferred', revision=NEW_REVISION)
         self.updater.prune_rollbacks()
         self.assertEqual([p.exists() for p in self.backups], [True,False,False,False,True,True])
 
@@ -329,43 +334,43 @@ class RetentionTests(unittest.TestCase):
         self.assertEqual(module.read_json(self.host.state / 'cleanup.json')['error'], 'PermissionError')
 
     def test_pipeline_prunes_before_space_check_and_after_success(self):
-        revision = 'a' * 40
+        revision = 'd' * 40
         self.host.latest_values = [revision, revision]
         observed = []
         original = self.updater.prune_rollbacks
-        def prune():
+        def prune(**kwargs):
             observed.append(self.host.revision(self.host.root))
-            original()
+            original(**kwargs)
         with patch.object(self.updater, 'prune_rollbacks', side_effect=prune):
             self.updater.run()
-        self.assertEqual(observed, ['old', revision])
+        self.assertEqual(observed, [OLD_REVISION, revision])
         self.assertLessEqual(len(list(self.host.releases.glob('previous-candidate-*'))), 3)
 
     def test_committed_recovery_prunes_only_after_journal_removal(self):
-        module.atomic_json(self.updater.journal, {'phase': 'committed', 'target': 'old'})
+        module.atomic_json(self.updater.journal, {'phase': 'committed', 'target': OLD_REVISION})
         self.updater.recover()
         self.assertFalse(self.updater.journal.exists())
         self.assertEqual(sum(p.exists() for p in self.backups), 3)
 
 
 class SourceFetchTests(unittest.TestCase):
-    def test_clone_revision_fetch_and_both_submodule_paths_are_retryable(self):
-        for operation in ('clone', 'fetch', 'submodule-local', 'submodule-remote'):
+    def test_clone_revision_fetch_and_pinned_upstream_fetch_are_retryable(self):
+        for operation in ('clone', 'fetch', 'upstream'):
             with self.subTest(operation=operation), tempfile.TemporaryDirectory() as directory:
                 host = object.__new__(module.Host)
                 host.root = Path(directory) / 'live'
                 host.releases = Path(directory)
                 host.uid, host.gid = os.getuid(), os.getgid()
                 host.config = {'repository': 'https://github.com/fixture/repo', 'branch': 'main'}
-                host.revision = Mock(return_value='other' if operation == 'fetch' else 'new')
-                host.git = Mock(side_effect=lambda root, *args: 'different' if operation == 'submodule-remote' and root != host.root else 'same')
+                host.revision = Mock(return_value='other' if operation == 'fetch' else NEW_REVISION)
+                host.git = Mock(return_value=OLD_REVISION)
                 def command(args, **kwargs):
-                    target = operation.split('-')[0]
+                    target = 'fetch' if operation == 'upstream' else operation
                     if target in args:
                         raise module.UpdateError('command_failed:git:128')
                 host.command = Mock(side_effect=command)
                 with self.assertRaises(module.SourceFetchError):
-                    host.build('new', Path(directory) / 'candidate')
+                    host.build(NEW_REVISION, Path(directory) / 'candidate')
 
     def test_fetch_timeout_is_retryable_but_local_checkout_error_is_not(self):
         host = object.__new__(module.Host)

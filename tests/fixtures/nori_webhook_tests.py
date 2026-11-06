@@ -12,7 +12,7 @@ import threading
 import unittest
 import uuid
 from unittest.mock import patch
-from nori_updater_tests import FakeHost, module as updater
+from nori_updater_tests import FakeHost, module as updater, OLD_REVISION, NEW_REVISION, NEWER_REVISION
 
 source = Path(__file__).resolve().parents[2] / 'deploy/nori-webhook.py'
 spec = importlib.util.spec_from_file_location('nori_webhook', source)
@@ -96,12 +96,12 @@ class WebhookTests(unittest.TestCase):
         original = host.build
         def build(revision, destination):
             original(revision, destination)
-            if revision == 'new':
+            if revision == NEW_REVISION:
                 self.queue()
         host.build = build
-        host.latest_values = ['new', 'newer', 'newer', 'newer']
+        host.latest_values = [NEW_REVISION, NEWER_REVISION, NEWER_REVISION, NEWER_REVISION]
         updater.drain_events(task, self.events)
-        self.assertEqual(host.revision(host.root), 'newer')
+        self.assertEqual(host.revision(host.root), NEWER_REVISION)
         self.assertEqual(host.events.count('stop'), 1)
         self.assertEqual(len(list((self.events / 'received').glob('*.json'))), 2)
 
@@ -111,7 +111,7 @@ class WebhookTests(unittest.TestCase):
         host.build_failure = True
         updater.drain_events(task, self.events)
         self.assertNotIn('stop', host.events)
-        self.assertEqual(host.revision(host.root), 'old')
+        self.assertEqual(host.revision(host.root), OLD_REVISION)
         receipt = updater.read_json(next((self.events / 'received').glob('*.json')))
         self.assertEqual(receipt['outcome'], 'failed')
         self.assertFalse(list((self.events / 'pending').glob('*.json')))
@@ -124,12 +124,12 @@ class WebhookTests(unittest.TestCase):
                 updater.drain_events(task, self.events)
         self.assertEqual(len(list((self.events / 'pending').glob('*.json'))), 1)
         updater.drain_events(task, self.events)
-        self.assertEqual(host.revision(host.root), 'new')
+        self.assertEqual(host.revision(host.root), NEW_REVISION)
 
     def test_post_build_network_failure_keeps_event_and_retries_same_revision(self):
         self.queue()
         host, task = self.host()
-        with patch.object(host, 'latest', side_effect=['new', updater.UpdateError('network_failed')]):
+        with patch.object(host, 'latest', side_effect=[NEW_REVISION, updater.UpdateError('network_failed')]):
             with self.assertRaises(updater.UpdateError):
                 updater.drain_events(task, self.events)
         self.assertEqual(host.events.count('build'), 1)
@@ -138,24 +138,24 @@ class WebhookTests(unittest.TestCase):
         self.assertEqual(len(list((self.events / 'pending').glob('*.json'))), 1)
         self.assertFalse(list((self.events / 'received').glob('*.json')))
         updater.drain_events(task, self.events)  # No --retry and no new main commit.
-        self.assertEqual(host.revision(host.root), 'new')
+        self.assertEqual(host.revision(host.root), NEW_REVISION)
         self.assertFalse(list((self.events / 'pending').glob('*.json')))
         self.assertEqual(updater.read_json(next((self.events / 'received').glob('*.json')))['outcome'], 'updated')
 
     def test_source_fetch_failure_retains_delivery_until_same_revision_can_build(self):
         self.queue()
         host, task = self.host()
-        host.latest_values = ['new', 'new', 'new']
+        host.latest_values = [NEW_REVISION, NEW_REVISION, NEW_REVISION]
         with patch.object(host, 'build', side_effect=updater.SourceFetchError('source_fetch_unavailable')):
             with self.assertRaises(updater.SourceFetchError):
                 updater.drain_events(task, self.events)
         self.assertEqual(updater.read_json(task.status)['state'], 'deferred')
-        self.assertEqual(host.revision(host.root), 'old')
+        self.assertEqual(host.revision(host.root), OLD_REVISION)
         self.assertNotIn('stop', host.events)
         self.assertEqual(len(list((self.events / 'pending').glob('*.json'))), 1)
         self.assertFalse(list((self.events / 'received').glob('*.json')))
         updater.drain_events(task, self.events)
-        self.assertEqual(host.revision(host.root), 'new')
+        self.assertEqual(host.revision(host.root), NEW_REVISION)
         self.assertFalse(list((self.events / 'pending').glob('*.json')))
         receipt = updater.read_json(next((self.events / 'received').glob('*.json')))
         self.assertEqual(receipt['outcome'], 'updated')
