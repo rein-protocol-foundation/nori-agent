@@ -29,6 +29,9 @@ Slack adapter 同样支持任意名称的技能目录及引用／脚本，不再
 
 ## 环境要求
 
+可选的网关遥测接入见 [Axiom 可观测性配置](observability.md)，包含官方 Diagnostics
+OTEL 插件、独立的追踪/日志/指标数据集、各运行配置的凭据位置和验证步骤。
+
 - Node.js `>=24.16.0 <25` 或 `>=26.1.0`，推荐 Node 26。该要求与上游 `engines` 一致；源码运行时不支持 Node 22。
 - pnpm `12.4.2`，由 `packageManager` 固定。下文通过 npm 使用项目内的版本，全局安装或启用 Corepack 均为可选项。
 - 支持子模块的 git。

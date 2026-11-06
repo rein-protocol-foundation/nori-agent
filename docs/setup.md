@@ -40,6 +40,10 @@ allowlist edits; its existing tool permissions and private-memory boundaries sti
 
 ## Prerequisites
 
+For optional gateway telemetry, see [Axiom observability](observability.md). It
+covers the official Diagnostics OTEL plugin, separate trace/log/metric datasets,
+per-profile credentials, and verification.
+
 - Node.js `>=24.16.0 <25` or `>=26.1.0` (Node 26 recommended). This mirrors upstream `engines`; the
   source runtime does not run on Node 22.
 - pnpm `12.4.2`, pinned by `packageManager`. The npm commands below use a project-local copy;
