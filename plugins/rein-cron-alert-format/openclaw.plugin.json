@@ -1,0 +1,11 @@
+{
+  "id": "rein-cron-alert-format",
+  "name": "Nori Cron alert formatting",
+  "activation": { "onStartup": true },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["channelId"],
+    "properties": { "channelId": { "type": "string" } }
+  }
+}

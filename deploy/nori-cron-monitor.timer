@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Nori Cron receipts every minute
+
+[Timer]
+OnBootSec=60
+OnUnitInactiveSec=60
+AccuracySec=5
+Unit=nori-cron-monitor.service
+
+[Install]
+WantedBy=timers.target

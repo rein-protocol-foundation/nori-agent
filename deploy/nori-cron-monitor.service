@@ -1,0 +1,15 @@
+[Unit]
+Description=Independent Nori Cron failure and recovery monitor
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/nori-updater/nori-cron-monitor.py --config /etc/nori-cron-monitor.json
+UMask=0077
+TimeoutStartSec=90
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/nori-cron-monitor
