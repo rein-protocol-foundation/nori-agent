@@ -1,0 +1,24 @@
+{
+  "plugins": {
+    "allow": ["diagnostics-otel"],
+    "entries": {
+      "diagnostics-otel": { "enabled": true }
+    }
+  },
+  "diagnostics": {
+    "enabled": true,
+    "otel": {
+      "enabled": true,
+      "endpoint": "https://us-east-1.aws.edge.axiom.co",
+      "protocol": "http/protobuf",
+      "headers": { "Authorization": "Bearer ${AXIOM_API_TOKEN}" },
+      "serviceName": "nori-local",
+      "traces": true,
+      "metrics": true,
+      "logs": true,
+      "captureContent": false,
+      "sampleRate": 1,
+      "flushIntervalMs": 60000
+    }
+  }
+}
