@@ -224,3 +224,7 @@ sudo journalctl -u nori-report.service -n 30 --no-pager
 sudo ls /var/lib/nori-updater/reports /var/lib/nori-updater/reported
 sudo systemctl restart nori-report.service
 ```
+
+## Slack 主机开发权限 / Trusted Slack host access
+
+[权限与部署记录](trusted-slack-host-access-zh.md)说明 Slack 开发权限、自建防误删插件与 Discord 边界。插件运行副本保存在 runtime 中，合并源码不会自动刷新，必须显式更新。

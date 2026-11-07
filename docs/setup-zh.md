@@ -346,3 +346,7 @@ npm run toolchain:pnpm -- openclaw gateway auth-token --show
 可选的 Socket Mode 传输方式见 [Slack 隔离指南](slack-user-isolation.md)和[示例配置](../config/slack-isolated.example.json)。需要禁用内置 Slack 插件、准备公共参考工作区并配置成员私有状态。
 
 `verify:slack-isolation` 使用本机模型／后端服务和合成原生事件，不代表已获准连接真实 Slack 工作区。共享核心重构也保留了原生 `verify:discord-isolation` 回归探针。
+
+## Slack 主机开发权限 / Trusted Slack host access
+
+[权限与部署记录](trusted-slack-host-access-zh.md)说明 Slack 开发权限、自建防误删插件与 Discord 边界。插件运行副本保存在 runtime 中，合并源码不会自动刷新，必须显式更新。

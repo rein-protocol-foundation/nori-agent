@@ -118,6 +118,7 @@ npm run toolchain:pnpm -- run router:ui
 | 开发与验收 | [开发与部署记录](docs/implementation-and-deployment-zh.md) · [Agent 演练案例](docs/agent-test-cases-zh.md) |
 | 自动部署 | [合并事件触发更新与回滚](docs/auto-update-zh.md) |
 | 网关维护 | [Magpie 升级指南](docs/magpie-upgrade-zh.md) |
+| Slack 开发权限 | [主机权限、防误删护栏与 Discord 边界](docs/trusted-slack-host-access-zh.md) |
 
 ## 仓库结构
 
