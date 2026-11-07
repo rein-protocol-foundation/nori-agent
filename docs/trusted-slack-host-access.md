@@ -50,11 +50,13 @@ configuration or conversation data belongs in Git. Local regression verification
 `node --test tests/host-guard.test.mjs`.
 
 Discord continues to use its existing tool allowlist and backend community identity checks.
-The current production Discord profile uses a fixed Qwen model and does not enable rein-router.
+At the initial host-access rollout, Discord used a fixed Qwen model without rein-router.
+A subsequent independent configuration change enabled rein-router and rein-magpie/auto;
+the PR follow-up verified this and preserves it. Model routing is not the permission boundary.
 Do not treat model routing or AGENTS prose alone as filesystem isolation.
 
 
-## Current channel boundaries
+## Channel boundaries
 
 Slack and Discord use separate gateway processes and private configurations (ports 18791
 and 18793). Each disables the other channel. The Slack development channel binds to

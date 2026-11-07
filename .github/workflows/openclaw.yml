@@ -45,6 +45,7 @@ jobs:
         run: |
           pnpm verify:plugin
           pnpm verify:proposal-tools
+          node scripts/verify-host-guard.mjs
           node scripts/verify-workspace-skills.mjs
       - name: Verify Director ACP delegation and task status with local fixtures
         run: pnpm verify:director-acp

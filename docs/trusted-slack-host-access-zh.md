@@ -56,7 +56,9 @@ Discord 私信和原生命令关闭；允许一个服务器、两个频道，其
 rein_status 与 rein_member_status。查询每次校验 Community Member 关联。
 不开放 shell、文件读写、会话委派及治理操作。
 
-当前生产 Discord 使用固定 Qwen 模型，**没有启用 rein-router**。
+首次主机权限调整时，Discord 使用固定 Qwen 模型，未启用 rein-router。
+随后另一次独立配置变更已启用 rein-router 和 rein-magpie/auto；本 PR 跟进核对确认了该状态，
+不会将它恢复为旧模型配置。
 实际权限边界是渠道准入、工具 allowlist 和后端身份检查；不能把 dynamic router 或 AGENTS
 文字描述成安全隔离。两个网关仍共享服务器和工作区路径，并非容器或 OS 账号级隔离。
 
