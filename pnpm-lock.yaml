@@ -172,6 +172,8 @@ importers:
         specifier: link:../../vendor/openclaw
         version: link:../../vendor/openclaw
 
+  plugins/rein-cron-alert-format: {}
+
   plugins/rein-discord:
     dependencies:
       '@rein-protocol/isolation-core':
