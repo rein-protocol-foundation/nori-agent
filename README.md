@@ -118,6 +118,7 @@ Keep the console running alongside OpenClaw. Configure providers and models in M
 | Architecture and integration | [Architecture](docs/architecture.md) · [Integration contracts](docs/integration-contracts.md) · [OpenClaw updates](docs/upstream.md) |
 | Implementation evidence | [Development and deployment](docs/implementation-and-deployment.md) · [Acceptance matrix](docs/p0-acceptance-matrix.md) |
 | Foundation context | [Mission and governance blueprint](PROJECT.md) · [Source provenance](docs/provenance.md) |
+| Trusted Slack development | [Host access, accident guard and Discord boundaries](docs/trusted-slack-host-access.md) |
 
 ## Repository layout
 

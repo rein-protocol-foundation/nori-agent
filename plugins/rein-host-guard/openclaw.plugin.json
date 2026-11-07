@@ -1,0 +1,28 @@
+{
+  "id": "rein-host-guard",
+  "name": "Nori host accident guard",
+  "activation": {
+    "onStartup": true
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "protectedPaths",
+      "defaultCwd"
+    ],
+    "properties": {
+      "protectedPaths": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "minItems": 1
+      },
+      "defaultCwd": {
+        "type": "string"
+      }
+    }
+  },
+  "enabledByDefault": false
+}
