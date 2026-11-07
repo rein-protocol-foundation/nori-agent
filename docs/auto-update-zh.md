@@ -19,10 +19,10 @@ GitHub Webhook 主动推送事件，服务器常驻 `nori-webhook.service` 接�
    控制器以 root 管理服务和目录，构建命令以普通服务用户运行。
    队列串行处理；同一批事件合并为一次更新。构建期间若 main 前进，丢弃过时构建，立即处理最新 main。
    控制器始终使用管理员配置的仓库和分支，不执行 Webhook 中的命令或任意提交路径。
-4. 检查工作树干净、服务正常运行、磁盘至少有 12 GiB 空间，并在构建前验证当前实例的健康探针及认证配置。
-   在独立候选目录克隆 main 的精确提交及锁定 OpenClaw 子模块，安装 Node/pnpm 和锁定依赖，编译 OpenClaw。
+4. 检查工作树干净、服务正常运行、磁盘满足动态构建预算（至少 12 GiB），并在构建前验证当前实例的健康探针及认证配置。
+   在独立候选目录克隆 main 的精确提交及锁定 OpenClaw 子模块，校验并复用相同 OpenClaw 提交和工具链的构建；首次或校验不匹配时安装依赖并编译。
    Magpie 锁文件不变时复制并校验现有二进制，变化时重新构建；准备锁定 agent-browser。
-5. 构建成功后重新确认 main 版本、工作树和当前实例健康状态，再停止渠道网关、网页和 Router，确认端口释放，复制私有状态。
+5. 构建成功后重新确认 main 版本、工作树和当前实例健康状态，确认私有状态复制量加运行余量仍有空间，再停止渠道网关、网页和 Router，确认端口释放，复制私有状态。
    将旧部署移动到备份，再将候选部署移动到原固定路径，依次重启服务。
    不使用 `current` 符号链接，因为现有私有存储拒绝符号链接路径。
 6. 检查 systemd 服务、Router 同步，以及两个网关的只读 `rein_status`。
@@ -60,6 +60,7 @@ sudo systemctl disable --now nori-update.timer
 id -u nori-webhook >/dev/null 2>&1 || sudo useradd --system --home-dir /var/lib/nori-webhook --shell /usr/sbin/nologin nori-webhook
 sudo install -d -m 755 /opt/nori-updater
 sudo install -m 755 deploy/nori-update.py deploy/nori-webhook.py /opt/nori-updater/
+sudo install -m 644 deploy/nori_storage.py /opt/nori-updater/
 # 父目录和回执必须由 root 持有，接收进程只能写 pending 中的事件。
 sudo install -d -o root -g nori-webhook -m 750 /var/lib/nori-webhook /var/lib/nori-webhook/received
 sudo install -d -o root -g nori-webhook -m 770 /var/lib/nori-webhook/pending
@@ -127,23 +128,38 @@ sudo systemctl enable --now nori-webhook.service nori-update.path nori-update.se
 `/home/ubuntu/nori-releases/previous-*` 保留旧部署和停服时状态。
 `failed-*` 保留启动失败版本及其运行期间状态，不自动合并新旧记录。
 如失败版本在健康检查期间收到消息，需要人工核对。
-自动清理只处理更新器命名的 `previous-candidate-<12位提交号>-<8位随机值>` 目录：
-**当前运行版本之外，最多保留最近 3 个回滚快照**。每次正常部署通过现有实例健康检查后、
-检查构建剩余空间之前执行一次；新版本健康切换和事务提交完成后再执行一次。
-已是最新版本的事件也会在健康检查后清理。进程始终持有 `update.lock`，存在未完成事务时不清理；
-已提交事务的恢复在完成记录、移除事务日志后清理。新备份在切换时记录目录时间，旧备份按目录
-修改时间排序；最近成功部署记录指定的回滚快照优先保留。
+自动清理只处理更新器命名的 `previous-candidate-<12位提交号>-<8位随机值>` 目录。
+默认保留最多 3 份完整回滚；在空间压力或回滚占用超过 16 GiB 时，可减少至至少 2 份。
+最新成功记录指定的回滚优先保留。计量按 inode 去重，不能把多个硬链接目录的 `du` 数值简单相加。
+删除旧代码前，先把 `preserve` 全量归档到 root 私有的 `state/private-archives/`，逐文件校验内容、权限及链接。
+归档失败则保留原目录；归档不自动过期，需单独监测容量并制定备份保留周期。
 
-活动 checkout、`candidate-*`、`failed-*`、`build-home`、未知名称及符号链接不自动删除。
-候选和失败版本可能含未核对的私有状态，须管理员确认后处理。含挂载点的备份跳过；
-快照内符号链接只删除链接本身，不跟随到外部数据。被删除的旧快照包含当时的私有状态，
-此策略不是长期数据备份。需要长期归档的数据应另行保存。
+构建前需要的空间为以下两者较大值：`minimumFreeGiB`（默认 12），以及当前非 Git 部署内容复制量、
+私有状态复制量、`minimumRuntimeFreeGiB`（默认 3）和 `buildCacheGrowthGiB`（默认 2）之和。
+构建后、停服前再次检查私有状态复制量加运行余量，不足时延后并保持当前服务运行。
+新上游版本的构建峰值仍可能更高；这些是保护预算，不是任意未来版本绝不会耗尽磁盘的保证。
+自动清理在构建预检及成功部署后为下一次构建预留空间；无法满足预算时延后，不突破最少回滚数。
 
-清理结果写入 root 私有的 `state/cleanup.json`（删除目录名、跳过项、错误类型），也进入更新器日志。
-权限或文件系统错误不回滚健康版本；可能暂时保留超过 3 个快照，应检查清理记录。
-清理后仍不足 12 GiB 则延后部署，不扩大删除范围。备份含敏感数据，不上传仓库。
-现有服务器需在持有部署锁且无正在切换的事务时重新安装 `/opt/nori-updater/nori-update.py`；
-仅合并应用 PR 不会替换这个独立控制器。下一次部署事件会对历史快照应用保留策略。
+OpenClaw 仅从官方仓库获取锁定 SHA 的 depth=1 内容，不再从生产副本继承全历史对象。
+生产上游仓库不配置默认 remote，父仓库禁用递归 fetch，避免后台工具再次拉取全部分支/标签。
+构建复用要求上游提交、锁文件、Node/pnpm、操作系统/架构/libc 和产物 SHA-256 均匹配。
+包含工具链、workspace node_modules、dist/dist-runtime 和 CI 同样纳管的生成资源；独立复制，
+不以可写硬链接连接运行版和候选版。每次仍安装当前 Nori 依赖、准备 Magpie/browser 并执行启动检查。
+首次安装没有可信产物清单时完整构建；不要把未验证的旧产物直接标记为可信。
+
+仅已登记且尚未复制私有状态的候选允许自动回收（失败、被新版本取代、构建中断）。
+含私有状态、未登记、`failed-*`、`build-home`、未知名称和符号链接保留；挂载点不自动删除。
+进程始终持有 `update.lock`；存在未完成事务时先恢复，不能清除事务日志绕过保护。
+
+清理结果写入 `state/cleanup.json`，最近空间采样写入 `state/space.json`。
+权限、归档或文件系统错误不回滚健康版本，可能暂时保留超过预算的快照。
+控制器及 `nori_storage.py` 必须一同在锁内安装到 `/opt/nori-updater`，保留旧文件以便回退；
+只合并应用 PR 不会替换独立控制器。升级配置时合并新增预算字段，不覆盖私有配置。
+
+可在维护窗口运行 `sudo python3 /opt/nori-updater/nori-update.py --verify-build`：
+构建并校验当前运行 SHA 的独立候选，记录 `state/build-verification.json` 后回收候选。
+此模式不切换、不重启、不发送部署报告，仍消耗构建时间和临时空间，且不替代真实切换验证。
+
 事件回执只保留 Delivery ID、处理时间、结果和提交号。
 
 ## 运维
