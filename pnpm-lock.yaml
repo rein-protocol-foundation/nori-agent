@@ -185,6 +185,12 @@ importers:
         specifier: link:../../vendor/openclaw
         version: link:../../vendor/openclaw
 
+  plugins/rein-host-guard:
+    devDependencies:
+      openclaw:
+        specifier: link:../../vendor/openclaw
+        version: link:../../vendor/openclaw
+
   plugins/rein-isolation:
     dependencies:
       typebox:

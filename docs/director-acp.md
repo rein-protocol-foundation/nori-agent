@@ -1,5 +1,11 @@
 # Director-only ACP coding slice
 
+**Production status (2026-11-06):** the operator has replaced this restricted controller
+policy in the production Slack profile with [trusted host access](trusted-slack-host-access.md).
+The rein-acp policy plugin is disabled there; acpx remains configured. The instructions below
+describe the opt-in restricted slice and its pilot configuration, not current production
+Slack authorization. Re-enabling it requires restoring its matching controller tool policy.
+
 Requirement **R-ACP-01 / AC-ACP-01** (user-confirmed): a Director can delegate a small coding task from Slack, using a flow similar to Slack-directed development, and receive the subagent's status and result. Contributor access to ordinary sandboxed development does not grant ACP access.
 
 The opt-in local plugin is `plugins/rein-acp`. It uses the existing private Slack membership check and signed Foundation identity relay, with the stricter predicate `is_director === true`. An administrator flag, Contributor role, prompt claim or prior Director result is insufficient. Each human turn and each spawn/list/wait/cancel call rechecks current authority. Missing identity, revocation, timeout and backend errors deny access.

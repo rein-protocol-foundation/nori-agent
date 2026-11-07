@@ -499,3 +499,7 @@ Disable bundled Slack, prepare a public reference workspace and configure privat
 `verify:slack-isolation` uses localhost model/backend servers and synthetic native events; it does
 not authorize connecting a real Slack workspace. The shared-core refactor also retains the native
 `verify:discord-isolation` regression probe.
+
+## Slack 主机开发权限 / Trusted Slack host access
+
+[权限与部署记录](trusted-slack-host-access-zh.md)说明 Slack 开发权限、自建防误删插件与 Discord 边界。插件运行副本保存在 runtime 中，合并源码不会自动刷新，必须显式更新。
