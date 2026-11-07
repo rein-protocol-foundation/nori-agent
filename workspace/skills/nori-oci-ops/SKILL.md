@@ -72,15 +72,16 @@ Do not run mutations as an authorization test. Any separately requested mutation
 needs its own existing capability and task authorization.
 
 Keep reusable commands here. Dated upgrades, budget observations and migration
-plans belong in operator memory, not in this skill. On the maintained host, the
-operator memory index is
-`/home/ubuntu/rein-agent/runtime/operations/memory/INDEX.md`. Read it only for an
-authorized operations request whose audience may receive those records; do not
-inject it into public/community startup context. A remembered plan is context,
-not authorization to execute it. Keep live runtime memory out of Git. An explicitly
-authorized historical snapshot may be published separately in repository docs;
-that does not authorize publishing other memory or future updates. Preserve source
-dates, completed actions, pending work and uncertainty when updating records.
+plans belong in operator memory, not in this skill. Retrieve missing historical
+context with native `memory_search`, then use `memory_get` for the relevant source
+and lines. The maintained gateways register the Git-managed OCI operations note
+through `memory.search.extraPaths`; it is separate from private runtime memory.
+Read and report records within the current caller/audience permissions. A remembered
+plan is context, not authorization to execute it. Keep private runtime memory out
+of Git; only explicitly authorized operational records belong in the published note.
+Preserve source dates, completed actions, pending work and uncertainty when updating
+it through the existing Git workflow. If native memory is unavailable, report that
+limitation; a direct file read is not proof that memory retrieval is working.
 
 Never return credentials, instance identity certificates, full instance metadata,
 private configuration, CHAP secrets or raw `--debug` output in a status report.

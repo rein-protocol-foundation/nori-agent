@@ -1,0 +1,9 @@
+{
+  "memory": {
+    "search": {
+      "extraPaths": [
+        "../docs/operations/memory/oci-upgrade-and-migration-2026-11-07.md"
+      ]
+    }
+  }
+}
