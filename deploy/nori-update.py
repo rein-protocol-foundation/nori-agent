@@ -7,9 +7,11 @@ service lifecycle and directory moves; it never imports candidate application co
 import argparse
 import datetime as dt
 import fcntl
+import hashlib
 import json
 import os
 from pathlib import Path
+import platform
 import pwd
 import re
 import shutil
@@ -20,6 +22,12 @@ import sys
 import time
 import urllib.request
 import uuid
+
+from nori_storage import GIB, allocated_bytes, archive_private, copy_bytes, fingerprint, relative_paths, remove_tree
+
+
+OPENCLAW_REPOSITORY = 'https://github.com/openclaw/openclaw.git'
+ARTIFACT_SCHEMA = 1
 
 
 class UpdateError(Exception):
@@ -123,6 +131,15 @@ def validate_config(config):
         raise UpdateError('build_user_must_be_unprivileged')
     if not re.fullmatch(r'\d+\.\d+\.\d+', config['nodeVersion']):
         raise UpdateError('invalid_node_version')
+    for key, default in (('minimumFreeGiB', 12), ('minimumRuntimeFreeGiB', 3),
+                         ('buildCacheGrowthGiB', 2), ('rollbackMaxGiB', 16)):
+        value = config.get(key, default)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0 <= value <= 16384:
+            raise UpdateError('invalid_storage_budget:' + key)
+    minimum, maximum = config.get('minimumRollbackKeep', 2), config.get('rollbackKeep', 3)
+    if (type(minimum) is not int or type(maximum) is not int or
+            not 1 <= minimum <= maximum <= 20):
+        raise UpdateError('invalid_rollback_retention')
     for item in config['preserve']:
         path = Path(item)
         if path.is_absolute() or '..' in path.parts or not path.parts or path.parts[0] in ('.git', '.toolchain', 'node_modules', 'vendor', 'scripts', 'deploy'):
@@ -212,7 +229,7 @@ class Host:
         for service in self.config['services']:
             self.command(['systemctl', 'is-active', '--quiet', service], timeout=30)
 
-    def build(self, revision, destination):
+    def prepare_source(self, revision, destination):
         # Candidate directory is created by the controller, then written only as
         # the service user. Its HOME has no provider accounts or live runtime.
         destination.mkdir(mode=0o700)
@@ -220,32 +237,129 @@ class Host:
         home = self.releases / 'build-home'
         home.mkdir(mode=0o700, exist_ok=True)
         os.chown(home, self.uid, self.gid)
-        self.fetch_source(['git', 'clone', '--depth=1', '--single-branch', '--branch', self.config.get('branch', 'main'), self.config['repository'], destination], timeout=300)
+        self.fetch_source(['git', 'clone', '--depth=1', '--no-tags', '--no-recurse-submodules', '--single-branch', '--branch', self.config.get('branch', 'main'), self.config['repository'], destination], timeout=300)
         if self.revision(destination) != revision:
-            self.fetch_source(['git', '-C', destination, 'fetch', '--depth=1', 'origin', revision], timeout=300)
+            self.fetch_source(['git', '-C', destination, 'fetch', '--depth=1', '--no-tags', '--no-recurse-submodules', 'origin', revision], timeout=300)
         self.git(destination, 'checkout', '--detach', revision)
-        # Reuse only upstream source objects, never its running build output.
-        old_pin = self.git(self.root, 'rev-parse', 'HEAD:vendor/openclaw')
-        new_pin = self.git(destination, 'rev-parse', 'HEAD:vendor/openclaw')
-        if old_pin == new_pin:
-            self.fetch_source(['git', '-c', 'protocol.file.allow=always', '-c', f'submodule.vendor/openclaw.url={self.root}/vendor/openclaw', '-C', destination, 'submodule', 'update', '--init'], timeout=300)
-            self.git(destination / 'vendor/openclaw', 'remote', 'set-url', 'origin', 'https://github.com/openclaw/openclaw.git')
-            self.git(destination, 'submodule', 'sync')
-        else:
-            self.fetch_source(['git', '-C', destination, 'submodule', 'update', '--init', '--recursive', '--depth=1'], timeout=600)
+        self.git(destination, 'config', 'fetch.recurseSubmodules', 'false')
+        pin = self.git(destination, 'rev-parse', 'HEAD:vendor/openclaw')
+        self.fetch_upstream(pin, destination / 'vendor/openclaw')
+        self.git(destination, 'submodule', 'init', '--', 'vendor/openclaw')
+        self.git(destination, 'submodule', 'absorbgitdirs', '--', 'vendor/openclaw')
+
+    def fetch_upstream(self, pin, destination):
+        if not re.fullmatch('[a-f0-9]{40}', pin):
+            raise UpdateError('invalid_upstream_pin')
+        # A local clone copies *all* source packs, even unreachable/tmp packs, and
+        # --depth is ignored for plain paths. Fetch only the pinned commit into a
+        # new repository instead. No default remote is installed: production is
+        # a fixed release, not a checkout for IDE background branch/tag syncing.
+        self.command(['git', 'init', '--quiet', destination], user=True)
+        self.fetch_source(['git', '-C', destination, 'fetch', '--depth=1', '--no-tags',
+                           '--no-recurse-submodules', OPENCLAW_REPOSITORY, pin], timeout=600)
+        self.git(destination, 'checkout', '--detach', pin)
+        self.git(destination, 'config', 'fetch.recurseSubmodules', 'false')
+        self.git(destination, 'config', 'nori.sourceRepository', OPENCLAW_REPOSITORY)
+        if self.revision(destination) != pin or self.git(destination, 'rev-parse', '--is-shallow-repository') != 'true':
+            raise UpdateError('upstream_checkout_not_pinned_and_shallow')
+        if (destination / '.gitmodules').exists():
+            raise UpdateError('upstream_nested_submodules_require_review')
+
+    def artifact_identity(self, destination):
+        package = read_json(destination / 'package.json')
+        upstream = destination / 'vendor/openclaw'
+        return {'schema': ARTIFACT_SCHEMA, 'upstream': self.git(destination, 'rev-parse', 'HEAD:vendor/openclaw'),
+                'node': self.config['nodeVersion'], 'pnpm': package.get('packageManager'),
+                'os': platform.system(), 'machine': platform.machine(), 'libc': list(platform.libc_ver()),
+                'lock': hashlib.sha256((upstream / 'pnpm-lock.yaml').read_bytes()).hexdigest()}
+
+    def artifact_paths(self, destination, node):
+        upstream = destination / 'vendor/openclaw'
+        paths = ['.toolchain/node_modules']
+        # pnpm workspace packages have additional node_modules directories with
+        # relative symlinks. Include them, never just the top-level store.
+        for directory, dirs, _ in os.walk(upstream, followlinks=False):
+            dirs[:] = [d for d in dirs if d != '.git' and not (Path(directory) / d).is_symlink()]
+            if 'node_modules' in dirs:
+                paths.append(str((Path(directory) / 'node_modules').relative_to(destination)))
+                dirs.remove('node_modules')
+        paths += [str(p.relative_to(destination)) for p in
+                  [upstream / 'dist', upstream / 'dist-runtime', *upstream.glob('packages/*/dist')]
+                  if p.is_dir()]
+        # Same generated extension assets used by the repository's CI cache.
+        script = """import {execFileSync} from 'node:child_process';
+import {listGeneratedExtensionAssetSources} from './scripts/lib/static-extension-assets.mts';
+const paths = listGeneratedExtensionAssetSources({rootDir: process.cwd()});
+const tracked = new Set(paths.length ? execFileSync('git',['ls-files','-z','--',...paths],{encoding:'utf8'}).split('\\0') : []);
+console.log(JSON.stringify(paths.filter(p => !tracked.has(p))));"""
+        generated = json.loads(self.command([node, '--import', './scripts/tsx.mjs', '--input-type=module', '-e', script],
+                                            user=True, cwd=upstream, capture=True))
+        paths += ['vendor/openclaw/' + p for p in relative_paths(generated) if (upstream / p).exists()]
+        return relative_paths(paths)
+
+    def artifact_record(self, revision):
+        if not re.fullmatch('[a-f0-9]{40}', revision):
+            raise UpdateError('invalid_artifact_revision')
+        directory = self.state / 'artifacts'
+        directory.mkdir(mode=0o700, exist_ok=True)
+        return directory / (revision + '.json')
+
+    def restore_artifacts(self, destination):
+        identity = self.artifact_identity(destination)
+        try:
+            manifest = read_json(self.artifact_record(self.revision(self.root)), {})
+            paths = relative_paths(manifest.get('paths', []))
+            if (manifest.get('identity') != identity or not paths or
+                    any(not (p == '.toolchain/node_modules' or p.startswith('vendor/openclaw/')) for p in paths) or
+                    any('.git' in Path(p).parts for p in paths) or
+                    not {'.toolchain/node_modules', 'vendor/openclaw/node_modules', 'vendor/openclaw/dist'} <= set(paths)):
+                return False
+            if fingerprint(self.root, paths) != manifest.get('fingerprint'):
+                print(json.dumps({'artifacts': 'miss', 'reason': 'source_changed'}), flush=True)
+                return False
+        except (OSError, ValueError, TypeError, KeyError):
+            return False
+        # Copy, never hardlink mutable build files across running/rollback releases.
+        for name in paths:
+            target = destination / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            os.chown(target.parent, self.uid, self.gid)
+            self.command(['cp', '-a', self.root / name, target], user=True)
+        if fingerprint(destination, paths) != manifest['fingerprint']:
+            raise UpdateError('artifact_copy_verification_failed')
+        self.restored_paths = paths
+        print(json.dumps({'artifacts': 'hit', 'upstream': identity['upstream']}), flush=True)
+        return True
+
+    def seal_artifacts(self, destination, paths=None):
+        paths = paths or self.artifact_paths(destination, destination / '.toolchain/node_modules/node/bin/node')
+        atomic_json(self.artifact_record(self.revision(destination)),
+                    {'identity': self.artifact_identity(destination), 'paths': paths,
+                     'fingerprint': fingerprint(destination, paths), 'at': timestamp()})
+
+    def build(self, revision, destination):
+        self.prepare_source(revision, destination)
         package = read_json(destination / 'package.json')
         manager = package.get('packageManager', '')
         if not re.fullmatch(r'pnpm@\d+\.\d+\.\d+', manager):
             raise UpdateError('unsupported_package_manager')
         env = {'PATH': f'{self.bootstrap}:{self.env["PATH"]}'}
-        self.command(['npm', 'install', '--prefix', destination / '.toolchain', '--no-save', '--package-lock=false', 'node@' + self.config['nodeVersion'], manager], user=True, env=env, timeout=600)
+        reused = self.restore_artifacts(destination)
+        if not reused:
+            self.command(['npm', 'install', '--prefix', destination / '.toolchain', '--no-save', '--package-lock=false', 'node@' + self.config['nodeVersion'], manager], user=True, env=env, timeout=600)
         node = destination / '.toolchain/node_modules/node/bin/node'
         os.chmod(node, 0o755)  # OpenClaw secret exec validation disallows group-writable binaries.
         env['PATH'] = f'{destination}/.toolchain/node_modules/.bin:{self.env["PATH"]}'
         env['NODE_OPTIONS'] = '--max-old-space-size=8192'
         pnpm = [destination / '.toolchain/node_modules/.bin/pnpm']
-        self.command(pnpm + ['--dir', destination / 'vendor/openclaw', 'install', '--frozen-lockfile'], user=True, cwd=destination, env=env)
-        self.command(pnpm + ['--dir', destination / 'vendor/openclaw', 'build'], user=True, cwd=destination, env=env)
+        if not reused:
+            print(json.dumps({'artifacts': 'miss', 'reason': 'identity_or_manifest'}), flush=True)
+            self.command(pnpm + ['--dir', destination / 'vendor/openclaw', 'install', '--frozen-lockfile'], user=True, cwd=destination, env=env)
+            self.command(pnpm + ['--dir', destination / 'vendor/openclaw', 'build'], user=True, cwd=destination, env=env)
+        else:
+            self.command([node, '--import', './scripts/tsx.mjs', '--input-type=module', '-e',
+                          "import {refreshLocalBuildStampTimes} from './scripts/lib/local-build-metadata.mts'; refreshLocalBuildStampTimes();"],
+                         user=True, cwd=destination / 'vendor/openclaw', env=env)
         self.command(pnpm + ['install', '--frozen-lockfile'], user=True, cwd=destination, env=env)
         # Copy a verified native binary only if the lock is byte-for-byte equal;
         # an upstream pin change builds a fresh binary under the candidate root.
@@ -261,6 +375,7 @@ class Host:
         # service readiness after switching; it never runs the test suite here.
         self.ensure_clean(destination)
         self.rebase_shims(destination)
+        self.seal_artifacts(destination, self.restored_paths if reused else None)
 
     def rebase_shims(self, destination):
         # pnpm's generated shell shims contain absolute NODE_PATH entries. Keep
@@ -354,16 +469,75 @@ class Updater:
         atomic_json(self.status, value)
         print(json.dumps(value), flush=True)
 
-    def prune_rollbacks(self):
+    def required_build_bytes(self):
+        preserve = self.host.config.get('preserve', ['runtime'])
+        excluded = {'.git', *[Path(p).parts[0] for p in preserve]}
+        payload = [p.name for p in self.host.root.iterdir() if p.name not in excluded]
+        return max(int(self.host.config.get('minimumFreeGiB', 12) * GIB),
+                   copy_bytes(self.host.root, payload) + copy_bytes(self.host.root, preserve) +
+                   int((self.host.config.get('minimumRuntimeFreeGiB', 3) +
+                        self.host.config.get('buildCacheGrowthGiB', 2)) * GIB))
+
+    def check_space(self, phase, required):
+        free = shutil.disk_usage(self.host.releases).free
+        entry = {'at': timestamp(), 'phase': phase, 'freeBytes': free, 'requiredBytes': required}
+        previous = read_json(self.host.state / 'space.json', {}).get('samples', [])
+        atomic_json(self.host.state / 'space.json', {'samples': [*previous[-15:], entry]})
+        print(json.dumps({'space': entry}), flush=True)
+        if free < required:
+            raise UpdateError('insufficient_build_space' if phase == 'before_build' else 'insufficient_cutover_space')
+        return free
+
+    def candidate_marker(self, candidate):
+        if (candidate.parent != self.host.releases or
+                not re.fullmatch(r'candidate-[0-9a-f]{12}-[0-9a-f]{8}', candidate.name)):
+            raise UpdateError('invalid_managed_candidate')
+        directory = self.host.state / 'candidates'
+        directory.mkdir(mode=0o700, exist_ok=True)
+        return directory / (candidate.name + '.json')
+
+    def discard_candidate(self, candidate):
+        """Only updater-registered, pre-state-copy candidates are disposable."""
+        marker = self.candidate_marker(candidate)
+        if self.journal.exists() or read_json(marker, {}).get('phase') != 'building':
+            return
+        try:
+            if candidate.exists() or candidate.is_symlink():
+                if any((candidate / name).exists() or (candidate / name).is_symlink()
+                       for name in self.host.config.get('preserve', ['runtime'])):
+                    raise UpdateError('candidate_contains_private_state')
+                remove_tree(candidate)
+            marker.unlink(missing_ok=True)
+        except (OSError, ValueError, UpdateError) as error:
+            print(json.dumps({'candidateCleanup': 'retained', 'candidate': candidate.name,
+                              'reason': type(error).__name__}), flush=True)
+
+    def prune_candidates(self):
+        if self.journal.exists():
+            return
+        directory = self.host.state / 'candidates'
+        if directory.exists():
+            for marker in directory.glob('candidate-*.json'):
+                if re.fullmatch(r'candidate-[0-9a-f]{12}-[0-9a-f]{8}\.json', marker.name) and not marker.is_symlink():
+                    candidate = self.host.releases / marker.stem
+                    if not candidate.exists() and not candidate.is_symlink():
+                        marker.unlink()
+                    else:
+                        self.discard_candidate(candidate)
+
+    def prune_rollbacks(self, required_free=0):
         """Called under update.lock; never discard unfinished recovery material.
 
-        Retain three previous deployments in addition to the active checkout.
-        Failed/candidate directories can contain unreconciled private state and
-        are deliberately outside this policy.
+        Retain the newest recovery points even under pressure. Archive and verify
+        private state before retiring any older code/build copy. Failed releases
+        and unregistered candidates may contain unreconciled state and stay intact.
         """
         if self.journal.exists():
             return
-        deleted, skipped = [], []
+        deleted, skipped, archives = [], [], []
+        keep = self.host.config.get('rollbackKeep', 3)
+        minimum = self.host.config.get('minimumRollbackKeep', 2)
+        budget = self.host.config.get('rollbackMaxGiB', 16) * GIB
         try:
             previous = read_json(self.status, {}).get('previous')
             releases = []
@@ -374,23 +548,33 @@ class Updater:
                     continue
                 releases.append(path)
             releases.sort(key=lambda p: (str(p) == previous, p.stat().st_mtime_ns, p.name), reverse=True)
-            for path in releases[3:]:
-                # Do not descend through mounted data volumes or directory links.
-                mounted = os.path.ismount(path)
-                for directory, dirs, _ in os.walk(path, followlinks=False):
-                    dirs[:] = [d for d in dirs if not (Path(directory) / d).is_symlink()]
-                    if any(os.path.ismount(Path(directory) / d) for d in dirs):
-                        mounted = True
-                        break
-                if mounted:
+            remaining = list(releases)
+            for path in reversed(releases[minimum:]):
+                try:
+                    used = allocated_bytes(remaining)
+                except ValueError:
+                    used = 0  # A mounted backup is not measurable/prunable here.
+                if (len(remaining) <= keep and used <= budget and
+                        shutil.disk_usage(self.host.releases).free >= required_free):
+                    break
+                try:
+                    archive = archive_private(path, self.host.config.get('preserve', ['runtime']),
+                                              self.host.state / 'private-archives' / (path.name + '.tar.gz'))
+                    remove_tree(path)
+                except ValueError:
                     skipped.append(path.name)
                     continue
-                shutil.rmtree(path)
+                if archive:
+                    archives.append(archive.name)
                 deleted.append(path.name)
-            result = {'at': timestamp(), 'keep': 3, 'deleted': deleted, 'skipped': skipped}
+                remaining.remove(path)
+            result = {'at': timestamp(), 'keep': keep, 'minimumKeep': minimum,
+                      'budgetBytes': budget, 'requiredFreeBytes': required_free,
+                      'freeBytes': shutil.disk_usage(self.host.releases).free,
+                      'deleted': deleted, 'skipped': skipped, 'privateArchives': archives}
         except OSError as error:
             # Cleanup failure must not roll back or relabel a healthy deployment.
-            result = {'at': timestamp(), 'keep': 3, 'deleted': deleted,
+            result = {'at': timestamp(), 'keep': keep, 'deleted': deleted,
                       'skipped': skipped, 'error': type(error).__name__}
         try:
             atomic_json(self.host.state / 'cleanup.json', result)
@@ -448,6 +632,11 @@ class Updater:
         return True
 
     def activate(self, candidate, revision):
+        # A build can consume most of the preflight allowance. Recheck state-copy
+        # bytes plus the running reserve BEFORE stopping any healthy service.
+        self.check_space('before_cutover', copy_bytes(self.host.root, self.host.config.get('preserve', ['runtime'])) +
+                         int(self.host.config.get('minimumRuntimeFreeGiB', 3) * GIB))
+        atomic_json(self.candidate_marker(candidate), {'phase': 'preserving', 'at': timestamp()})
         ident = candidate.name
         transaction = {'phase': 'prepared', 'deploymentId': str(uuid.uuid4()), 'target': revision, 'previousRevision': self.host.revision(self.host.root),
                        'candidate': str(candidate), 'previous': str(self.host.releases / ('previous-' + ident)),
@@ -482,11 +671,12 @@ class Updater:
     def run(self, retry=False):
         if self.recover():
             return
+        self.prune_candidates()
         revision = self.host.latest()
         if revision == self.host.revision(self.host.root):
             self.host.active()
             self.host.health()
-            self.prune_rollbacks()
+            self.prune_rollbacks(required_free=self.required_build_bytes())
             self.record('up_to_date', revision=revision)
             return
         last = read_json(self.status, {})
@@ -499,26 +689,29 @@ class Updater:
             self.host.health()  # Prove probe/auth compatibility before building or stopping anything.
             if self.host.root.stat().st_dev != self.host.releases.stat().st_dev:
                 raise UpdateError('releases_must_share_the_live_filesystem')
-            self.prune_rollbacks()
-            free = shutil.disk_usage(self.host.releases).free
-            if free < self.host.config.get('minimumFreeGiB', 12) * 1024 ** 3:
-                raise UpdateError('insufficient_build_space')
+            required = self.required_build_bytes()
+            self.prune_rollbacks(required_free=required)
+            self.check_space('before_build', required)
         except UpdateError as error:
             self.record('deferred', revision=revision, reason=str(error))
             raise
         candidate = self.host.releases / ('candidate-' + revision[:12] + '-' + uuid.uuid4().hex[:8])
+        atomic_json(self.candidate_marker(candidate), {'phase': 'building', 'revision': revision, 'at': timestamp()})
         self.record('building', revision=revision, candidate=str(candidate))
         try:
             self.host.build(revision, candidate)
         except SourceFetchError as error:
             self.record('deferred', revision=revision, candidate=str(candidate), reason=str(error))
+            self.discard_candidate(candidate)
             raise
         except BaseException as error:
             self.record('failed', revision=revision, reason=error.args[0] if isinstance(error, UpdateError) else type(error).__name__)
+            self.discard_candidate(candidate)
             raise
         try:
             if self.host.latest() != revision:
                 self.record('superseded', revision=revision)
+                self.discard_candidate(candidate)
                 return
             self.host.ensure_clean(self.host.root)
             self.host.active()
@@ -528,14 +721,56 @@ class Updater:
             # deployment is temporarily unavailable. Keep its event retryable.
             self.record('deferred', revision=revision, candidate=str(candidate),
                         reason=error.args[0] if isinstance(error, UpdateError) else type(error).__name__)
+            self.discard_candidate(candidate)
             raise
         try:
             self.activate(candidate, revision)
-            self.prune_rollbacks()
         except BaseException as error:
             if not self.journal.exists() and read_json(self.status, {}).get('state') != 'rolled_back':
-                self.record('failed', revision=revision, reason=error.args[0] if isinstance(error, UpdateError) else type(error).__name__)
+                space_error = isinstance(error, UpdateError) and str(error) == 'insufficient_cutover_space'
+                self.record('deferred' if space_error else 'failed', revision=revision,
+                            reason=error.args[0] if isinstance(error, UpdateError) else type(error).__name__)
+                self.discard_candidate(candidate)
             raise
+        # Cleanup/accounting failures after a healthy commit must never relabel
+        # or roll back that deployment.
+        try:
+            self.candidate_marker(candidate).unlink(missing_ok=True)
+            self.prune_rollbacks(required_free=self.required_build_bytes())
+        except (OSError, ValueError, UpdateError) as error:
+            print(json.dumps({'storageMaintenanceError': type(error).__name__}), flush=True)
+
+    def verify_build(self):
+        """Build the running revision without switching, restarting or reporting it."""
+        if self.journal.exists():
+            raise UpdateError('unfinished_transaction')
+        self.host.ensure_clean(self.host.root)
+        self.host.active()
+        self.host.health()
+        self.prune_candidates()
+        before = self.check_space('before_build', self.required_build_bytes())
+        revision = self.host.revision(self.host.root)
+        candidate = self.host.releases / ('candidate-' + revision[:12] + '-' + uuid.uuid4().hex[:8])
+        manifest = self.host.artifact_record(revision)
+        original = read_json(manifest)
+        atomic_json(self.candidate_marker(candidate), {'phase': 'building', 'revision': revision, 'at': timestamp()})
+        try:
+            self.host.build(revision, candidate)
+            after = shutil.disk_usage(self.host.releases).free
+            self.host.ensure_clean(candidate)
+            self.host.health()
+            atomic_json(self.host.state / 'build-verification.json',
+                        {'at': timestamp(), 'revision': revision, 'verified': True,
+                         'freeBeforeBytes': before, 'freeAfterBuildBytes': after,
+                         'additionalBytes': max(0, before - after)})
+        finally:
+            # Rehearsing the same SHA must not replace the running release's
+            # artifact digest with a candidate whose freshness stamps differ.
+            if original is None:
+                manifest.unlink(missing_ok=True)
+            else:
+                atomic_json(manifest, original)
+            self.discard_candidate(candidate)
 
 
 def drain_events(updater, directory):
@@ -597,9 +832,10 @@ def main():
     parser.add_argument('--config', default='/etc/nori-updater.json')
     parser.add_argument('--retry', action='store_true')
     parser.add_argument('--drain-events', action='store_true')
+    parser.add_argument('--verify-build', action='store_true', help='Build the running revision, verify and discard it; never cut over')
     args = parser.parse_args()
-    if args.retry and args.drain_events:
-        parser.error('--retry is a manual operation; do not combine with --drain-events')
+    if sum((args.retry, args.drain_events, args.verify_build)) > 1:
+        parser.error('--retry, --drain-events and --verify-build are mutually exclusive')
     if os.geteuid() != 0:
         raise UpdateError('controller_requires_root; builds_run_as_service_user')
     config = validate_config(read_json(args.config))
@@ -623,7 +859,9 @@ def main():
             host.log = log
             signal.signal(signal.SIGTERM, lambda *_: (_ for _ in ()).throw(UpdateError('update_interrupted')))
             updater = Updater(host)
-            if args.drain_events:
+            if args.verify_build:
+                updater.verify_build()
+            elif args.drain_events:
                 drain_events(updater, config['eventDirectory'])
             else:
                 updater.run(retry=args.retry)

@@ -45,7 +45,12 @@ for (const stage of ['readiness', 'initial-sync']) for (const signal of ['SIGINT
       const binary = `#!/usr/bin/env node
 const fs = require('node:fs'), http = require('node:http'), net = require('node:net');
 if (process.argv[2] === 'update') process.exit(0);
-const phase = name => fs.writeFileSync(${JSON.stringify(phaseFile)}, JSON.stringify({name,pid:process.pid}));
+// Group and direct child termination can deliver SIGTERM twice. Publish each
+// phase atomically so the parent never reads the second write's truncated JSON.
+const phase = name => {
+  const target = ${JSON.stringify(phaseFile)}, pending = target + '.tmp';
+  fs.writeFileSync(pending, JSON.stringify({name,pid:process.pid})); fs.renameSync(pending,target);
+};
 const servers = [], mode = ${JSON.stringify(stage)};
 process.on('SIGTERM', () => { phase('cleanup'); setTimeout(() => { for(const s of servers) s.close(); process.exit(0); },450); });
 const gateway = net.createServer(s=>s.end()); servers.push(gateway);
