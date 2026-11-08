@@ -1,3 +1,4 @@
+import { validateScopedPolicies } from './scoped-policy.mjs';
 import { isAbsolute } from 'node:path';
 
 const PROVIDER_ID = 'rein-magpie';
@@ -94,14 +95,15 @@ function gateway(raw) {
 function route(raw, index) {
   const field = `routes[${index}]`;
   object(raw, field, ['id', 'provider', 'gatewayModel', 'billingSource', 'billingMode',
-    'billingVerified', 'purpose', 'effort', 'contextWindow', 'maxTokens', 'access']);
+    'billingVerified', 'purpose', 'effort', 'contextWindow', 'maxTokens', 'access', 'gatewayKeyEnvVar']);
   const id = routeId(raw.id, `${field}.id`);
   const gatewayModel = text(raw.gatewayModel, `${field}.gatewayModel`, 320);
   if (!GATEWAY_MODEL.test(gatewayModel) || /^group\//i.test(gatewayModel) ||
       gatewayModel.includes('//') || gatewayModel.endsWith('/') ||
       gatewayModel.split('/').some(part => part === '.' || part === '..')) invalid(`${field}.gatewayModel`);
+  if (raw.gatewayKeyEnvVar !== undefined && !isGatewayCredentialEnvironmentName(raw.gatewayKeyEnvVar)) invalid(`${field}.gatewayKeyEnvVar`);
   const contextWindow = integer(raw.contextWindow, `${field}.contextWindow`, 1, Number.MAX_SAFE_INTEGER);
-  return { id, provider: text(raw.provider, `${field}.provider`, 128), gatewayModel,
+  return { id, ...(raw.gatewayKeyEnvVar ? { gatewayKeyEnvVar: raw.gatewayKeyEnvVar } : {}), provider: text(raw.provider, `${field}.provider`, 128), gatewayModel,
     billingSource: text(raw.billingSource, `${field}.billingSource`, 512),
     billingMode: oneOf(raw.billingMode, `${field}.billingMode`, BILLING_MODES),
     ...(raw.access === undefined ? {} : { access: oneOf(raw.access, `${field}.access`, ROUTE_ACCESS) }),
@@ -122,7 +124,7 @@ function freeze(value) {
 /** Validate operator configuration without resolving secrets or contacting services. */
 export function validateRouterConfig(raw = {}) {
   object(raw, 'config', ['enabled', 'gateway', 'routes', 'defaultRoute', 'fallbackRoutes',
-    'allowPaidUsage', 'channels', 'adminSenders', 'developmentChannels', 'decision']);
+    'allowPaidUsage', 'channels', 'adminSenders', 'developmentChannels', 'decision', 'scopedPolicies']);
   const enabled = boolean(raw.enabled, 'enabled', false);
   const allowPaidUsage = boolean(raw.allowPaidUsage, 'allowPaidUsage', false);
   const normalizedGateway = raw.gateway === undefined ? null : gateway(raw.gateway);
@@ -192,7 +194,9 @@ export function validateRouterConfig(raw = {}) {
   if (enabled && routes.length === 0) invalid('routes');
   if (enabled && defaultRoute === null) invalid('defaultRoute');
   if (enabled && channels.length === 0) invalid('channels');
-  return freeze({ enabled, gateway: normalizedGateway ?? undefined, routes, defaultRoute: defaultRoute ?? undefined, fallbackRoutes,
+  const scopedPolicies = validateScopedPolicies(raw.scopedPolicies, routes, allowPaidUsage);
+  if (scopedPolicies && fallbackRoutes.length) invalid('fallbackRoutes', 'router_scoped_global_fallback_disallowed');
+  return freeze({ ...(scopedPolicies ? { scopedPolicies } : {}), enabled, gateway: normalizedGateway ?? undefined, routes, defaultRoute: defaultRoute ?? undefined, fallbackRoutes,
     allowPaidUsage, channels, adminSenders, developmentChannels, decision });
 }
 

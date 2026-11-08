@@ -80,3 +80,81 @@ Locally authored files were copied into this checkout; no production credentials
 No production runtime configuration changes accompany this slice. Deploying the opt-in code keeps
 existing services and callers unchanged. Rollback requires the prior application revision; no state
 migration is introduced.
+
+## Slice 2: deterministic scoped provider policy
+
+`rein-router.scopedPolicies` is opt-in. Each agent has exact `allowedRoutes`, a paid-use ceiling,
+output-token and per-model-request deadlines, enrolled native origins, and defaults. Field-level
+preference inheritance is channel override → platform override → agent default. Omitting `fallbacks`
+inherits; `fallbacks: []` forbids fallback. A manual selection is pinned to one allowed route.
+Only authenticated direct user runs are admitted. Missing origins, cross-agent/delegated triggers,
+auxiliary completions and unsupported attachment requests fail closed. This slice does not claim
+native attachment/compaction compatibility or public aggregate/rate/concurrency limits; activation
+remains gated on slice 3. Existing configurations without scoped policies keep legacy behavior.
+
+The origin enrollment maps platform + bot account + native channel ID to a workspace/guild. Duplicate
+or ambiguous mappings are rejected. Channel names and prompt content cannot select this mapping.
+The pinned model hook does not supply a general workspace ID; operators must enroll IDs from verified
+native channel metadata. Live platform acceptance must check that mapping before activation.
+
+Each approved route requires a Magpie managed key restricted to exactly its provider/model ID.
+Before inference, the router checks that key's `/models` catalog is the expected singleton, sends
+`Origin: null` to enforce gateway authentication, and binds every accepted authentication header to
+that key. Console synchronization creates these keys disabled, scopes them, publishes private env
+and host configuration, then enables them; failures revoke managed keys. Removed routes stay revoked.
+Provider-side configured fallbacks are rejected by catalog compilation. The stream wrapper follows
+only the resolved ordered chain on retryable 408/429/5xx failures before output; partial output,
+authentication failures, cancellation and unknown failures do not start another route. Native/global
+fallbacks must be empty for scoped agents, preventing an emergency provider escape.
+
+Jev is not called on the scoped path. Coding-plan and role/classifier-restricted routes are excluded
+until equivalent verified eligibility exists; no new spending is authorized. The authenticated
+administrative console displays allowed routes and resolved agent/platform/channel preferences.
+Scoped policy editing currently uses the existing administrator settings API/private configuration;
+the console projection is read-only. Existing policy saves preserve it.
+
+### Example configuration shape (synthetic IDs; not a deployable profile)
+
+```json
+{
+  "scopedPolicies": {
+    "nori-community": {
+      "allowedRoutes": ["community-primary", "community-backup"],
+      "allowPaidUsage": false,
+      "default": {"primary": "community-primary", "fallbacks": ["community-backup"]},
+      "platforms": {"discord": {"primary": "community-primary"}},
+      "origins": [{"platform": "discord", "accountId": "default", "workspaceId": "GUILD_ID", "channelIds": ["CHANNEL_ID"]}],
+      "channels": [{"platform": "discord", "accountId": "default", "workspaceId": "GUILD_ID", "channelId": "CHANNEL_ID", "fallbacks": []}],
+      "maxOutputTokens": 2048,
+      "requestTimeoutMs": 60000
+    }
+  }
+}
+```
+
+Each referenced route must already be an exact configured, billing-verified route with its own
+`gatewayKeyEnvVar`. Never place key values in this record. Console-backed routes use generated env
+locators and private `runtime/magpie/gateway.env`. Direct configurations need equivalent singleton
+keys provisioned by their authorized operator. Per-agent hard limits do not make shared filesystem,
+sessions or memory safe by themselves.
+
+### Runtime change disposition
+
+Neither slice 1 nor slice 2 enables scoped policies in production or migrates sessions. Purpose:
+ship compatible opt-in primitives while the native ownership gate is unresolved. Impact: application
+code and the authenticated console gain configuration support; existing callers, agents, provider
+choices, workspaces and transport topology remain as configured. Expected behavior after webhook
+deployment is the previous live behavior. Rollback is the preceding application release, with no
+history merge or state conversion. No global M0 acceptance tag is appropriate yet.
+
+### Slice 2 validation (OCI, November 7, 2026 Pacific)
+
+- Targeted scoped/legacy routing checks: 38 passed; console/environment checks: 40 passed.
+- Complete Node suite: 1,267 passed, 2 existing conditional skips, zero failures. Scaffold passed.
+- `scripts/verify-scoped-routing.mjs <pinned-magpie-source>` passed in the isolated OCI validation
+  checkout with actual OpenClaw and Magpie `95e7c6bcc07629897f6703c31eaef477fcee4a13`.
+  Synthetic Slack/main and Discord/nori-community ingress exercised authenticated model hooks,
+  platform and channel precedence, a 503 fallback in the prescribed order, empty fallback failure,
+  no hidden paid upstream calls, maximum output tokens, and operation without Jev.
+- The probe uses fake upstream providers and isolated temporary state; it neither logs into Slack/
+  Discord nor accesses live backend data. This is not live platform or isolation acceptance.

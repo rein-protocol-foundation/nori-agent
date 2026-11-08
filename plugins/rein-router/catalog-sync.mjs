@@ -10,6 +10,7 @@ const roles = {
   code: 'Software development, debugging and code review; administrator coding tasks require high effort.',
 };
 const rank = m => /flash|mini|lite|haiku|small/i.test(m.id) ? 0 : /pro|opus|large|thinking|reason/i.test(m.id) ? 2 : 1;
+export const scopedGatewayKeyEnv = id => `REIN_MAGPIE_ROUTE_${createHash('sha256').update(id).digest('hex').slice(0, 20).toUpperCase()}`;
 export const catalogRouteId = id => `m-${createHash('sha256').update(id).digest('hex').slice(0, 20)}`;
 
 /** Project only model metadata, never provider credentials, headers or account names. */
@@ -79,7 +80,11 @@ export function compileCatalog({ catalog, settings, gateway, pluginPath }) {
   if (routes.length > 64) throw new Error('router_catalog_limit');
   const fallbackRoutes = settings.fallbacks ?? [];
   if (!Array.isArray(fallbackRoutes) || fallbackRoutes.some(r => !Object.hasOwn(roles, r))) throw new Error('router_fallback_invalid');
-  const raw = { enabled: true, gateway, routes, defaultRoute: 'general', fallbackRoutes,
+  if (settings.scopedPolicies) {
+    const selected = new Set(Object.values(settings.scopedPolicies).flatMap(policy => policy.allowedRoutes ?? []));
+    for (const route of routes) if (selected.has(route.id)) route.gatewayKeyEnvVar = scopedGatewayKeyEnv(route.gatewayModel);
+  }
+  const raw = { ...(settings.scopedPolicies ? { scopedPolicies: settings.scopedPolicies } : {}), enabled: true, gateway, routes, defaultRoute: 'general', fallbackRoutes,
     allowPaidUsage: paid, channels: ['discord', 'slack'], adminSenders: settings.adminSenders ?? [], developmentChannels: settings.developmentChannels ?? [],
     decision: { allowPaidJev: settings.dynamic === true, minProbability: settings.minProbability ?? 0.8 } };
   const fragment = buildOpenClawFragment(raw, pluginPath);

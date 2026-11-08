@@ -50,11 +50,203 @@
             "billingSource": { "type": "string", "minLength": 1, "maxLength": 512, "pattern": "^\\S(?:[^\\u0000-\\u001F\\u007F]*\\S)?$" },
             "billingMode": { "enum": ["subscription", "coding-plan", "pay-as-you-go"] },
             "billingVerified": { "type": "boolean", "default": false },
+            "gatewayKeyEnvVar": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,127}$", "description": "Server variable for an exact single-model Magpie key, required for scoped policies." },
             "access": { "enum": ["all", "admin-complex-coding", "development-complex-coding"], "description": "Restricted routes require current authority and confidently classified complex development. Development routes additionally require a configured private Slack channel, current membership and a linked active Contributor or Director role." },
             "purpose": { "type": "string", "minLength": 1, "maxLength": 1024, "pattern": "^\\S(?:[^\\u0000-\\u001F\\u007F]*\\S)?$" },
             "effort": { "enum": ["off", "low", "medium", "high"] },
             "contextWindow": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
             "maxTokens": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }
+          }
+        }
+      },
+      "scopedPolicies": {
+        "type": "object",
+        "minProperties": 1,
+        "maxProperties": 16,
+        "propertyNames": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+        },
+        "additionalProperties": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "allowedRoutes",
+            "allowPaidUsage",
+            "default",
+            "origins",
+            "maxOutputTokens",
+            "requestTimeoutMs"
+          ],
+          "properties": {
+            "allowedRoutes": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 64,
+              "uniqueItems": true,
+              "items": {
+                "$ref": "#/$defs/routeId"
+              }
+            },
+            "allowPaidUsage": {
+              "type": "boolean"
+            },
+            "default": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "primary": {
+                  "$ref": "#/$defs/routeId"
+                },
+                "fallbacks": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "uniqueItems": true,
+                  "items": {
+                    "$ref": "#/$defs/routeId"
+                  }
+                }
+              },
+              "required": [
+                "primary",
+                "fallbacks"
+              ]
+            },
+            "platforms": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "slack": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "primary": {
+                      "$ref": "#/$defs/routeId"
+                    },
+                    "fallbacks": {
+                      "type": "array",
+                      "maxItems": 16,
+                      "uniqueItems": true,
+                      "items": {
+                        "$ref": "#/$defs/routeId"
+                      }
+                    }
+                  }
+                },
+                "discord": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "primary": {
+                      "$ref": "#/$defs/routeId"
+                    },
+                    "fallbacks": {
+                      "type": "array",
+                      "maxItems": 16,
+                      "uniqueItems": true,
+                      "items": {
+                        "$ref": "#/$defs/routeId"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "channels": {
+              "type": "array",
+              "maxItems": 128,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "platform",
+                  "accountId",
+                  "workspaceId",
+                  "channelId"
+                ],
+                "properties": {
+                  "platform": {
+                    "enum": [
+                      "slack",
+                      "discord"
+                    ]
+                  },
+                  "accountId": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+                  },
+                  "workspaceId": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+                  },
+                  "channelId": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+                  },
+                  "primary": {
+                    "$ref": "#/$defs/routeId"
+                  },
+                  "fallbacks": {
+                    "type": "array",
+                    "maxItems": 16,
+                    "uniqueItems": true,
+                    "items": {
+                      "$ref": "#/$defs/routeId"
+                    }
+                  }
+                }
+              }
+            },
+            "origins": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "platform",
+                  "accountId",
+                  "workspaceId",
+                  "channelIds"
+                ],
+                "properties": {
+                  "platform": {
+                    "enum": [
+                      "slack",
+                      "discord"
+                    ]
+                  },
+                  "accountId": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+                  },
+                  "workspaceId": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+                  },
+                  "channelIds": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 64,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+                    }
+                  }
+                }
+              }
+            },
+            "maxOutputTokens": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 32768
+            },
+            "requestTimeoutMs": {
+              "type": "integer",
+              "minimum": 1000,
+              "maximum": 300000
+            }
           }
         }
       },

@@ -1,3 +1,5 @@
+import { resolveScopedPolicy, describeScopedPolicies } from './scoped-policy.mjs';
+import { createScopedFallbackStream } from './scoped-stream.mjs';
 import { validateRouterConfig, selectRoute, describeRoute, isRestrictedRoute } from './policy.mjs';
 import { developmentChannelFor, DEVELOPMENT_AUTH_TIMEOUT_MS } from './slack-development.mjs';
 import { wrapQuotaErrors, normalizeIncludedQuotaError } from './quota.mjs';
@@ -69,6 +71,12 @@ export function assertRuntimeConfig(config, host) {
     throw new Error('rein_router_runtime_invalid: adminSenders require a high effort route');
   if (config.routes.find(route => route.id === config.defaultRoute)?.billingMode === 'coding-plan')
     throw new Error('rein_router_runtime_invalid: general default cannot use a coding-only plan');
+  for (const agentId of Object.keys(config.scopedPolicies ?? {})) {
+    const agent = host.agents?.entries?.[agentId] ?? host.agents?.list?.find(agent => agent.id === agentId);
+    const model = agent?.model ?? defaults;
+    if (!agent || !usesRein(model) || JSON.stringify(model?.fallbacks ?? defaults?.fallbacks) !== '[]')
+      throw new Error('rein_router_runtime_invalid: scoped agent requires explicit empty native fallbacks');
+  }
   for (const entry of config.developmentChannels) {
     const agent = host.agents?.entries?.[entry.agentId] ?? host.agents?.list?.find(agent => agent.id === entry.agentId);
     if (!agent || agent.sandbox?.mode !== 'all' || !['ssh', 'docker', 'podman', 'openshell'].includes(agent.sandbox.backend) ||
@@ -132,6 +140,7 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
     const previous = runs.get(ctx.runId);
     runs.set(ctx.runId, { ...previous, at: clock(), agentId: previous?.agentId ?? ctx.agentId,
       sessionKey: previous?.sessionKey ?? ctx.sessionKey,
+      sessionId: previous?.sessionId ?? ctx.sessionId,
       // Automatic resolution also returns a named route; retain the original choice mode.
       manual: previous?.manual ?? (ctx.modelId !== 'auto'),
       requested: previous?.requested ?? (ctx.modelId !== 'auto' ? ctx.modelId : undefined) });
@@ -194,6 +203,19 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
     async beforeModelResolve(event, ctx) {
       if (ctx.modelProviderId !== PROVIDER_ID) return;
       markRun(ctx);
+      if (config.scopedPolicies?.[ctx.agentId]) {
+        const run = runs.get(ctx.runId);
+        if (!run) return;
+        run.admitted = false;
+        run.scopedPlan = resolveScopedPolicy(config.scopedPolicies, { ...ctx, modelId: run.manual ? ctx.modelId : 'auto' }, { hasAttachments: Boolean(event.attachments?.length) });
+        if (developmentAgent(ctx)) run.developer = await verifiedDeveloper(ctx);
+        run.requester = requester(ctx);
+        if (!run.scopedPlan) return;
+        run.requested = run.scopedPlan.primary;
+        remember(ctx, { selection: run.scopedPlan.manual ? 'scoped-manual' : 'scoped-preferences',
+          effective: run.scopedPlan, configured: describeRoute(config, run.scopedPlan.primary) });
+        return { providerOverride: PROVIDER_ID, modelOverride: run.scopedPlan.primary };
+      }
       const currentRun = runs.get(ctx.runId);
       // Authorization is tied to this host-owned run and requester, never the session's model preference.
       if (currentRun) {
@@ -280,7 +302,19 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
       return { providerOverride: PROVIDER_ID, modelOverride: selected.route.id };
     },
     beforeAgentRun(_event, ctx) {
-      const run = runs.get(ctx.runId);
+      let run = runs.get(ctx.runId);
+      if (config.scopedPolicies?.[ctx.agentId]) {
+        // Locked manual selections can skip model resolution; still require the same ingress proof.
+        if (!run) {
+          markRun(ctx); run = runs.get(ctx.runId);
+          if (run) { run.scopedPlan = resolveScopedPolicy(config.scopedPolicies, ctx); run.requester = requester(ctx); }
+        }
+        if ((developmentAgent(ctx) && !run?.developer) || ctx.modelProviderId !== PROVIDER_ID || !run?.scopedPlan || run.requester !== requester(ctx) ||
+            run.agentId !== ctx.agentId || run.sessionId !== ctx.sessionId || run.sessionKey !== ctx.sessionKey ||
+            ctx.modelId !== run.scopedPlan.primary) return block('rein_router_scoped_route_disallowed');
+        run.admitted = true;
+        return { outcome: 'pass' };
+      }
       if (developmentAgent(ctx) && (!run?.developer || run.requester !== requester(ctx)))
         return { ...block('rein_router_development_authorization_required'), message: 'Development access requires current membership in this configured private channel and a linked Rein identity with an active Contributor or Director role. Complete identity binding in an ordinary Nori channel first.' };
       if (ctx.modelProviderId !== PROVIDER_ID && !runs.has(ctx.runId)) return;
@@ -320,15 +354,15 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
       if (event.provider !== PROVIDER_ID || !routeById(event.model)) return;
       const observationKey = JSON.stringify([ctx.agentId, event.sessionId]);
       const candidateSnapshot = gatewayObservations.get(observationKey);
-      const snapshot = candidateSnapshot?.routeId === event.model ? candidateSnapshot : undefined;
+      const snapshot = candidateSnapshot?.routeId === event.model || config.scopedPolicies?.[ctx.agentId] ? candidateSnapshot : undefined;
       const previous = recent.get(scopeKey(ctx));
-      remember(ctx, { ...previous, configured: describeRoute(config, event.model),
-        observed: { provider: event.provider, model: event.model, gatewayModel: routeById(event.model).gatewayModel,
+      remember(ctx, { ...previous, configured: describeRoute(config, snapshot?.routeId ?? event.model),
+        observed: { provider: event.provider, model: event.model, gatewayModel: routeById(snapshot?.routeId ?? event.model).gatewayModel,
           evidence: 'openclaw-output', upstream: snapshot?.headers ?? null,
           upstreamFailure: snapshot?.failure ?? null,
           upstreamBilling: 'requires-magpie-and-provider-records' } });
       const current = recent.get(scopeKey(ctx));
-      if (!snapshot?.ready || snapshot.routeId !== event.model ||
+      if (!snapshot?.ready || (!config.scopedPolicies?.[ctx.agentId] && snapshot.routeId !== event.model) ||
           ['error', 'aborted'].includes(event.lastAssistant?.stopReason)) return;
       const evidence = await snapshot.read();
       // A late response from an older model call may never overwrite a newer call/session.
@@ -354,11 +388,12 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
         allowPaidUsage: config.allowPaidUsage, allowPaidJev: config.decision.allowPaidJev,
         defaultRoute: config.defaultRoute, fallbackRoutes: config.fallbackRoutes,
         routes: config.routes.map(route => describeRoute(config, route.id)),
+        scopedPolicies: describeScopedPolicies(config.scopedPolicies),
         currentSession, billingEvidence };
     },
     wrapStreamFn({ streamFn, agentId, simpleCompletion = false }) {
       if (typeof streamFn !== 'function') throw new Error('rein_router_transport_unavailable');
-      return (model, context, options) => {
+      const send = (model, context, options, scoped = false) => {
         if (config.gateway.managed && config.gateway.managed.mode !== 'console' && !gatewayReady?.()) throw new Error('rein_router_gateway_unavailable');
         const route = routeById(model.id);
         if (!route || model.provider !== PROVIDER_ID || model.baseUrl !== config.gateway.baseUrl || model.api !== 'openai-completions')
@@ -367,10 +402,11 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
         if (simpleCompletion && restricted(route)) throw new Error('rein_router_admin_complex_coding_required');
         // Managed keys plus Origin:null enforce authentication in Magpie's
         // loopback handler; arbitrary local tokens have no model restrictions.
-        const gatewayKey = environment[config.gateway.apiKeyEnvVar];
+        const gatewayKey = environment[scoped ? route.gatewayKeyEnvVar : config.gateway.apiKeyEnvVar];
         if (typeof gatewayKey !== 'string' || !/^sk-magpie-key-[A-Za-z0-9_-]{16,240}$/.test(gatewayKey))
           throw new Error('rein_router_managed_gateway_key_required');
-        if (options?.apiKey !== undefined && options.apiKey !== gatewayKey)
+        if (options?.apiKey !== undefined && options.apiKey !== gatewayKey &&
+            (!scoped || options.apiKey !== environment[config.gateway.apiKeyEnvVar]))
           throw new Error('rein_router_gateway_credential_mismatch');
         // Magpie's fixed suffix wins over the caller's pre-resolved thinking
         // level, including an off request from the OpenClaw channel pipeline.
@@ -408,6 +444,12 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
             if (!finalPayload || typeof finalPayload !== 'object' || Array.isArray(finalPayload))
               throw new Error('rein_router_payload_invalid');
             finalPayload.model = gatewayModel;
+            if (scoped) {
+              const maximum = Math.min(route.maxTokens, config.scopedPolicies[agentId].maxOutputTokens);
+              for (const key of ['max_tokens', 'max_completion_tokens']) if (finalPayload[key] !== undefined)
+                finalPayload[key] = Math.min(Number.isSafeInteger(finalPayload[key]) && finalPayload[key] > 0 ? finalPayload[key] : maximum, maximum);
+              if (finalPayload.max_tokens === undefined && finalPayload.max_completion_tokens === undefined) finalPayload.max_tokens = maximum;
+            }
             return finalPayload;
           } }), async message => {
             const quota = normalizeIncludedQuotaError(message);
@@ -424,6 +466,45 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
                 gatewayMember: authScope.gatewayMember, reauthenticationRequired: true };
             return normalized;
           });
+      };
+      if (!config.scopedPolicies) return send;
+      return (model, context, options) => {
+        if (!agentId) throw new Error('rein_router_scoped_origin_required');
+        const policy = config.scopedPolicies[agentId];
+        if (!policy) return send(model, context, options);
+        if (simpleCompletion) throw new Error('rein_router_scoped_origin_required');
+        const active = [...runs.values()].filter(run => run.agentId === agentId && run.sessionId === options?.sessionId && run.admitted);
+        if (active.length !== 1 || !active[0].scopedPlan || model.id !== active[0].scopedPlan.primary)
+          throw new Error('rein_router_scoped_origin_required');
+        const run = active[0], plan = run.scopedPlan;
+        const signal = AbortSignal.any([...(options?.signal ? [options.signal] : []), AbortSignal.timeout(plan.requestTimeoutMs)]);
+        const assertCurrent = () => {
+          if (![...runs.values()].includes(run) || !run.admitted || signal.aborted) throw new Error('rein_router_scoped_origin_retired');
+        };
+        return createScopedFallbackStream({ routes: [plan.primary, ...plan.fallbacks], signal, assertCurrent,
+          invoke: async routeId => {
+            assertCurrent();
+            const route = routeById(routeId);
+            const gatewayKey = environment[route.gatewayKeyEnvVar];
+            if (typeof gatewayKey !== 'string' || !/^sk-magpie-key-[A-Za-z0-9_-]{16,240}$/.test(gatewayKey))
+              throw new Error('rein_router_scoped_gateway_key_required');
+            // A singleton key also constrains Magpie provider-side fallback before any upstream call.
+            const response = await fetchImpl(`${config.gateway.baseUrl}/models`, { redirect: 'error', signal,
+              headers: { Authorization: `Bearer ${gatewayKey}`, Origin: 'null' } });
+            if (!response.ok || !response.body) { await response.body?.cancel(); throw new Error('rein_router_scoped_gateway_key_invalid'); }
+            const chunks = []; let size = 0;
+            for await (const chunk of response.body) {
+              size += chunk.length;
+              if (size > 16384) throw new Error('rein_router_scoped_gateway_key_invalid');
+              chunks.push(chunk);
+            }
+            const models = JSON.parse(Buffer.concat(chunks).toString('utf8')).data;
+            if (!Array.isArray(models) || models.length !== 1 || models[0].id !== route.gatewayModel)
+              throw new Error('rein_router_scoped_gateway_key_invalid');
+            assertCurrent();
+            return send({ ...model, id: routeId, maxTokens: route.maxTokens, contextWindow: route.contextWindow }, context,
+              { ...options, signal, maxTokens: Math.min(route.maxTokens, plan.maxOutputTokens, options?.maxTokens ?? Infinity) }, true);
+          } });
       };
     },
   };

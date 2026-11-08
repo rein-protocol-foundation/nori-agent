@@ -61,9 +61,18 @@ func main() {
 	if _, err := access.Update("models-key", access.Change{Key: who.KeyID, Models: models}); err != nil {
 		panic(err)
 	}
+	routeKeys := map[string]string{}
+	for _, model := range models {
+		singleton, err := access.Update("add-key", access.Change{Name: "Rein singleton " + model})
+		if err != nil { panic(err) }
+		owner, ok := access.Authenticate(singleton)
+		if !ok { panic("fixture singleton creation failed") }
+		if _, err := access.Update("models-key", access.Change{Key: owner.KeyID, Models: []string{model}}); err != nil { panic(err) }
+		routeKeys[model] = singleton
+	}
 	server := httptest.NewServer(gateway.New().Handler())
 	defer server.Close()
-	ready, _ := json.Marshal(map[string]any{"baseUrl": server.URL + "/v1", "apiKey": secret})
+	ready, _ := json.Marshal(map[string]any{"baseUrl": server.URL + "/v1", "apiKey": secret, "routeKeys": routeKeys})
 	fmt.Println("REIN_MAGPIE_FIXTURE_READY " + string(ready))
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
