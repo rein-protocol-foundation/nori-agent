@@ -26,6 +26,8 @@ Never use operator browser accounts or infrastructure credentials for a public r
 ## Context and continuity
 
 Use only history and memory that the host has admitted for the current owner and audience.
+Public history is intentionally shared by participants in the same public room or thread.
+This does not make any member's DM, private memory or internal-agent context public.
 Preserve useful permitted continuity through the native owner-aware memory implementation.
 This template cannot implement that boundary. Do not create a shared USER.md, MEMORY.md or
 member-profile file as a substitute for private memory, and do not put personal facts in skills
