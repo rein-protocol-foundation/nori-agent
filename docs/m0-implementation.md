@@ -167,3 +167,16 @@ internal paths. See [the concrete upstream contract and migration plan](m0-nativ
 No native transport replacement, source patch, memory feature removal or live shared-Gateway cutover
 is adopted. The proposal describes the missing early history and owner-aware memory interfaces,
 existing Magpie limit primitives, remaining admission scope and exact acceptance gates.
+
+## Delivered source checkpoints
+
+| Slice | Merged PR / revision | Progress tag | OCI automatic deployment |
+| --- | --- | --- | --- |
+| Backend caller/tool boundary | #49 / `9fa48abb01f7005b250be728dcb9593f781c8089` | `m0-s1-backend-boundary` | Healthy, November 7, 2026 22:28 Pacific |
+| Scoped Magpie policy | #50 / `2073016d07c112067fdd00a04d7c77dbdf0b95e1` | `m0-s2-provider-policy` | Healthy, November 7, 2026 23:01 Pacific |
+
+Both source PRs passed GitHub checks and used the existing merge webhook. Router, web, Slack and
+Discord services were active after deployment. These tags mark delivered opt-in source slices,
+not completed M0 runtime isolation. No live runtime policies, workspaces or historical ownership
+were migrated. The native feasibility proposal remains a draft in PR #51, retargeted from the
+provider branch to main after #50 merged.
