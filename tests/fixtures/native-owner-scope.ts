@@ -19,7 +19,7 @@ const resolveMemoryHostSearchPathConfig = await get('resolveMemoryHostSearchPath
 const filterMemorySearchHitsBySessionVisibility = await get('filterMemorySearchHitsBySessionVisibility', 'session-search-visibility-');
 const cfg = {
   agents: { entries: { main: {}, 'nori-community': {} } },
-  bindings: [{ agentId: 'nori-community', match: { channel: 'discord', accountId: 'default' } }],
+  bindings: ['default', 'second'].map(accountId => ({ agentId: 'nori-community', match: { channel: 'discord', accountId } })),
   session: { dmScope: 'per-account-channel-peer' },
 };
 const route = (userId, direct, room = '100000000000000002', accountId = 'default') => resolveDiscordConversationRoute({
@@ -34,7 +34,6 @@ assert.notEqual(route(userA, false).sessionKey, route(userA, false, '10000000000
 assert.notEqual(route(userA, true).sessionKey, route(userB, true).sessionKey);
 assert.notEqual(route(userA, true).sessionKey, route(userA, false).sessionKey);
 // A second explicitly enrolled bot account must not alias the first one's DM.
-cfg.bindings.push({ agentId: 'nori-community', match: { channel: 'discord', accountId: 'second' } });
 assert.equal(route(userA, true, undefined, 'second').agentId, 'nori-community');
 assert.notEqual(route(userA, true).sessionKey, route(userA, true, undefined, 'second').sessionKey);
 assert.equal(resolveRememberAcrossConversations(cfg, 'nori-community'), false);

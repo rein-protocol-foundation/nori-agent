@@ -323,10 +323,10 @@ the limitation was reproduced, not that private memory passed acceptance.
 
 | Package | Deliverable | Dependency / acceptance |
 | --- | --- | --- |
-| M0-MEM | Narrow upstream owner/audience contract across native capture, index, recall, file reads and deletion; Nori adapter after SDK feasibility | DM A/B and public canaries; useful automatic memory across restart; no native feature removal |
-| M0-RUN | Host-owned shorter per-agent/run deadline | Actual cancellable model/tool run, fallback, settlement/reload races; main timeout retained |
-| M0-COMPAT | Origin-preserving auxiliary inference and media capability routing | Concurrent origins and budgets; native compaction, memory, attachments and actions with Jev disabled |
-| M0-CUTOVER | Shared-Gateway candidate, preserved-state migration and runtime change record | Above packages; then actual two-account CLI tests, one bot consumer, rollback rehearsal and health |
+| [M0-MEM #55](https://github.com/rein-protocol-foundation/nori-agent/issues/55) | Narrow upstream owner/audience contract across native capture, index, recall, file reads and deletion; Nori adapter after SDK feasibility | DM A/B and public canaries; useful automatic memory across restart; no native feature removal |
+| [M0-RUN #54](https://github.com/rein-protocol-foundation/nori-agent/issues/54) | Host-owned shorter per-agent/run deadline | Actual cancellable model/tool run, fallback, settlement/reload races; main timeout retained |
+| [M0-COMPAT #56](https://github.com/rein-protocol-foundation/nori-agent/issues/56) | Origin-preserving auxiliary inference and media capability routing | Concurrent origins and budgets; native compaction, memory, attachments and actions with Jev disabled |
+| [M0-CUTOVER #57](https://github.com/rein-protocol-foundation/nori-agent/issues/57) | Shared-Gateway candidate, preserved-state migration and runtime change record | Above packages; then actual two-account CLI tests, one bot consumer, rollback rehearsal and health |
 
 MEM, RUN and COMPAT are separate extension proposals; implementation must use a public SDK seam
 and a reviewed upstream pin update. CUTOVER depends on their validated behavior and the already
@@ -346,3 +346,14 @@ The future candidate must remove global internal memory roots and attach them on
 authorized internal agents. It must not clear an index or relocate existing memory until ownership,
 backup and rollback are proven. Setting `dmScope` alone also changes native automatic-recall defaults;
 enabling it while losing continuity is not an acceptable substitute for M0-MEM.
+
+### Continuation validation (OCI, November 8, 2026 Pacific)
+
+Fresh isolated checkout: `/home/ubuntu/nori-m0-public-history-validation`, with pinned deployed
+dependencies linked read-only. The revised native ownership/memory diagnostic passed. The fixture
+declares both bot bindings before routing, respecting native immutable-config routing caches.
+The four Community preparation tests and scaffold check passed. The full Node suite passed
+1,281 tests with two existing conditional skips and zero failures. All six native Community
+filesystem/shared-skill CLI scenarios passed again with the updated public-history template.
+These synthetic checks do not
+constitute two-account platform acceptance or native private-memory isolation.
