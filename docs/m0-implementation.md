@@ -246,3 +246,60 @@ whole-run/tool timeout. This gate supplements the history/memory extension propo
   its configuration was updated, including an assertion that the administrative projection retains limits.
   The final full run passed 1,277 tests with two existing skips; scaffold and all 25 console tests pass.
 - Cancellation probe failed as described above; no per-run cancellation capability is claimed.
+
+
+## Slice 3b: Community public workspace preparation
+
+`node scripts/prepare-community-workspace.mjs /absolute/new/candidate-directory` prepares a
+private, non-overwriting staging directory. It creates a `workspace/` public seed and `candidate.json`
+review manifest. The latter is deliberately **not an OpenClaw configuration**, contains
+`activationReady: false`, and must not be passed to the Gateway or used to claim isolation.
+The tool never edits live configuration, bot bindings, existing workspaces, histories or memory.
+The destination's parent must already exist and its path must not contain symlinks.
+
+The seed contains Community-specific AGENTS instructions and copies a fixed, reviewed set of
+canonical public assets: Nori SOUL/IDENTITY/avatar, onboarding guidance, the public channel-copy
+reference, an unconfigured public navigation directory, and the unchanged public origin-story
+attachment. Only the onboarding document's resource links are adapted to the staged layout.
+`candidate.json` records original and staged SHA-256 digests for review. Existing targets, source
+hardlinks/symlinks and oversized source files are refused before writing a new seed. A preparation
+failure leaves no successful manifest; use a fresh target after investigating it.
+
+No runtime state, USER/MEMORY files, private profiles or skill trees are copied. The proposed
+`skills.load.extraDirs` points to the one canonical `workspace/skills` directory. New general skills
+and their reference/script files continue through native discovery without channel-adapter edits or
+skill-name allowlists. Discovery does not grant execution or access to operator credentials. Review
+installed shared skill content separately; a path or hash is not proof that an operator never put
+private content in it. Do not put personal outputs in shared skills.
+
+The manifest records native settings to review: separate workspace, Community display name,
+`tools.fs.workspaceOnly`, disabled elevated access and same-context messaging. It intentionally does
+not output a complete tool policy or enable channels. The final policy must preserve native message
+and attachment behavior and authorized memory operations while denying host, governance, unrestricted
+session discovery and delegation. The actual memory-core flush plan writes `memory/YYYY-MM-DD.md`;
+a generic read-only profile would remove useful capture, and workspace-only writes alone would not
+provide owner/audience isolation. Resolve the upstream memory contract before choosing that policy.
+Global internal memory extraPaths still need relocation to internal agents; an empty override does
+not remove them. Keep existing Slack and development settings unchanged during that review.
+
+### Native feasibility evidence
+
+`scripts/verify-community-workspace.mjs` uses the exact pinned native CLI, a local synthetic model
+endpoint, the staged public seed, private canaries and temporary state. Community's deliberately
+read-only **test** tool policy proves: own public files and existing/new shared skill references are
+readable; another workspace's private file and a symlink escape from a skill reference are refused;
+host execution/writes/session discovery are absent from the model tool surface. The internal agent
+retains its separately configured read/exec surface and can read its own private canary. Each turn
+runs in a fresh CLI process; the canary file remains unchanged. No real account, channel, provider
+credential or member history is used.
+
+The fixture disables memory and background flush solely for hermetic filesystem testing; those are
+not generated production settings. This evidence does not prove memory isolation, media-file access,
+message actions, native transport compatibility or a shared-Gateway rollout. They remain explicit
+activation gates in the manifest and the native-boundary proposal. CI includes this probe alongside
+the existing native Slack/historical Discord checks.
+
+OCI validation on November 8, 2026 Pacific: the six native CLI scenarios above passed. Four staging
+tests cover exact public assets, personal-file exclusion, source/destination escapes and preservation
+of existing targets. The complete Node suite passed 1,281 tests with two existing conditional skips;
+scaffold checks passed. The final native settings and live two-account acceptance remain pending.
