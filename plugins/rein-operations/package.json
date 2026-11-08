@@ -5,6 +5,7 @@
   "type": "module",
   "files": [
     "index.ts",
+    "agent-profiles.mjs",
     "proposals.ts",
     "proposal-store.ts",
     "proposal-tool-bridge.ts",
