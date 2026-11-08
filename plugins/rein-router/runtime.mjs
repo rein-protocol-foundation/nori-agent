@@ -1,5 +1,6 @@
 import { resolveScopedPolicy, describeScopedPolicies } from './scoped-policy.mjs';
 import { createScopedFallbackStream } from './scoped-stream.mjs';
+import { usageIdentity } from './usage-limits.mjs';
 import { validateRouterConfig, selectRoute, describeRoute, isRestrictedRoute } from './policy.mjs';
 import { developmentChannelFor, DEVELOPMENT_AUTH_TIMEOUT_MS } from './slack-development.mjs';
 import { wrapQuotaErrors, normalizeIncludedQuotaError } from './quota.mjs';
@@ -86,8 +87,10 @@ export function assertRuntimeConfig(config, host) {
 }
 
 export function createRouter({ config: raw, decisions, clock = () => Date.now(), environment = process.env,
-  fetchImpl = globalThis.fetch, gatewayReady, authorizeAdmin, authorizeDevelopment }) {
+  fetchImpl = globalThis.fetch, gatewayReady, authorizeAdmin, authorizeDevelopment, usage }) {
   const config = validateRouterConfig(raw);
+  if (config.enabled && Object.values(config.scopedPolicies ?? {}).some(policy => policy.usageLimits) && !usage)
+    throw new Error('rein_router_usage_required');
   const runs = new Map();
   const recent = new Map();
   const gatewayObservations = new Map();
@@ -312,6 +315,16 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
         if ((developmentAgent(ctx) && !run?.developer) || ctx.modelProviderId !== PROVIDER_ID || !run?.scopedPlan || run.requester !== requester(ctx) ||
             run.agentId !== ctx.agentId || run.sessionId !== ctx.sessionId || run.sessionKey !== ctx.sessionKey ||
             ctx.modelId !== run.scopedPlan.primary) return block('rein_router_scoped_route_disallowed');
+        const limits = config.scopedPolicies[ctx.agentId].usageLimits;
+        if (limits) {
+          try {
+            run.usageIdentity = usageIdentity(ctx, run.scopedPlan.workspaceId);
+            usage.admit(run.usageIdentity, limits);
+          } catch {
+            return { outcome: 'block', reason: 'rein_router_usage_limit',
+              message: 'The configured request or usage limit is currently unavailable. Try again later or ask an operator to check the limits.' };
+          }
+        }
         run.admitted = true;
         return { outcome: 'pass' };
       }
@@ -341,6 +354,13 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
       return { outcome: 'pass' };
     },
     async beforeToolCall(_event, ctx) {
+      if (config.scopedPolicies?.[ctx.agentId]?.usageLimits) {
+        const run = runs.get(ctx.runId);
+        try {
+          if (!run?.admitted || !run.usageIdentity || run.sessionKey !== ctx.sessionKey) throw new Error('retired');
+          usage.assertCurrent(run.usageIdentity);
+        } catch { return { block: true, blockReason: 'This request is no longer active or its usage ledger is unavailable.' }; }
+      }
       if (!developmentAgent(ctx)) return;
       const run = runs.get(ctx.runId);
       const source = run?.developmentContext;
@@ -370,11 +390,15 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
       remember(ctx, { ...current, observed: { ...current.observed, upstream: evidence } });
     },
     lifecycleEvent(event) {
+      // A new prepared runtime may receive settlement for a run admitted before reload.
+      // Trust the native execution-settled event, not a time-based lease eviction.
+      let settled = false;
+      try { settled = usage?.settle(event) === true; } catch { /* Keep slots reserved on storage failure. */ }
       const run = runs.get(event?.runId);
       if (!run || event.stream !== 'lifecycle' || !['end', 'error'].includes(event.data?.phase) ||
           event.data.executionSettled !== true ||
           (event.agentId !== undefined && event.agentId !== run.agentId) ||
-          (event.sessionKey !== undefined && event.sessionKey !== run.sessionKey)) return false;
+          (event.sessionKey !== undefined && event.sessionKey !== run.sessionKey)) return settled;
       // Native agent_end is per attempt. The outer fallback owner publishes
       // executionSettled only after it accepts the terminal result or failure.
       runs.delete(event.runId);
@@ -502,6 +526,7 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
             if (!Array.isArray(models) || models.length !== 1 || models[0].id !== route.gatewayModel)
               throw new Error('rein_router_scoped_gateway_key_invalid');
             assertCurrent();
+            if (policy.usageLimits) usage.reserveRequest(run.usageIdentity, policy.usageLimits);
             return send({ ...model, id: routeId, maxTokens: route.maxTokens, contextWindow: route.contextWindow }, context,
               { ...options, signal, maxTokens: Math.min(route.maxTokens, plan.maxOutputTokens, options?.maxTokens ?? Infinity) }, true);
           } });

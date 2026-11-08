@@ -246,6 +246,50 @@
               "type": "integer",
               "minimum": 1000,
               "maximum": 300000
+            },
+            "usageLimits": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "perUserPerMinute",
+                "perConversationPerMinute",
+                "perUserConcurrent",
+                "perConversationConcurrent",
+                "maxConcurrent",
+                "maxGatewayRequestsPerDay"
+              ],
+              "properties": {
+                "perUserPerMinute": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 120
+                },
+                "perConversationPerMinute": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 600
+                },
+                "perUserConcurrent": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 16
+                },
+                "perConversationConcurrent": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 64
+                },
+                "maxConcurrent": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 128
+                },
+                "maxGatewayRequestsPerDay": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 50000
+                }
+              }
             }
           }
         }

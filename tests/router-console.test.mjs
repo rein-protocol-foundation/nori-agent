@@ -348,12 +348,15 @@ test('scoped console publishes singleton model keys, displays inherited policy a
     channels: [{ platform: 'discord', accountId: 'default', workspaceId: 'GUILD', channelId: 'ROOM', fallbacks: [] }],
     origins: [{ platform: 'discord', accountId: 'default', workspaceId: 'GUILD', channelIds: ['ROOM'] }],
     maxOutputTokens: 512, requestTimeoutMs: 30000,
+    usageLimits: { perUserPerMinute: 6, perConversationPerMinute: 12, perUserConcurrent: 1,
+      perConversationConcurrent: 2, maxConcurrent: 4, maxGatewayRequestsPerDay: 1000 },
   } } };
   await f.sync.save(scoped);
   assert.equal(f.keys.length, 3);
   assert.ok(f.keys.slice(1).every(key => key.models.length === 1 && !key.off));
   const view = await f.sync.view();
   assert.equal(view.effectiveScopedPolicies[0].channels[0].primary, 'quick');
+  assert.deepEqual(view.effectiveScopedPolicies[0].usageLimits, scoped.scopedPolicies['nori-community'].usageLimits);
   assert.deepEqual(view.effectiveScopedPolicies[0].channels[0].fallbacks, []);
   assert.ok(!JSON.stringify(view).includes(f.keys[1].secret));
   const env = loadMagpieGatewayEnvironment({ root: f.root, environment: { OPENCLAW_CONFIG_PATH: f.hostPath } });
