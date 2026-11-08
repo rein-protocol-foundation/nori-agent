@@ -158,3 +158,12 @@ history merge or state conversion. No global M0 acceptance tag is appropriate ye
   no hidden paid upstream calls, maximum output tokens, and operation without Jev.
 - The probe uses fake upstream providers and isolated temporary state; it neither logs into Slack/
   Discord nor accesses live backend data. This is not live platform or isolation acceptance.
+
+## Slice 3 feasibility checkpoint
+
+The OCI native ownership probe reproduces distinct DM routing but shared same-room/same-thread keys
+for two senders. It also proves that an empty per-agent memory extraPaths list still inherits global
+internal paths. See [the concrete upstream contract and migration plan](m0-native-boundary-proposal.md).
+No native transport replacement, source patch, memory feature removal or live shared-Gateway cutover
+is adopted. The proposal describes the missing early history and owner-aware memory interfaces,
+existing Magpie limit primitives, remaining admission scope and exact acceptance gates.
