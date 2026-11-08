@@ -19,6 +19,8 @@ test('stages only reviewed public assets and references one shared skill tree wi
   const before = readFileSync(join(root, 'workspace/SOUL.md'));
   const manifest = prepareCommunityWorkspace({ destination });
   assert.equal(manifest.activationReady, false);
+  assert.deepEqual(manifest.conversationPolicy, { publicHistory: 'shared-room-or-thread',
+    dmScope: 'per-account-channel-peer', privateMemory: 'owner-and-audience' });
   assert.deepEqual(readdirSync(destination).sort(), ['candidate.json', 'workspace']);
   assert.equal(statSync(destination).mode & 0o777, 0o700);
   assert.equal(statSync(join(destination, 'candidate.json')).mode & 0o777, 0o600);

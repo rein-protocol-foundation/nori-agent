@@ -1,6 +1,6 @@
 # M0 implementation and acceptance ledger
 
-Requirements: [Super Agent PRD v0.5](super-agent-nori-prd-en.md), sections 2.2, 2.3 and M0.
+Requirements: [Super Agent PRD v0.5.1](super-agent-nori-prd-en.md), sections 2.2, 2.3 and M0.
 Started November 7, 2026 (America/Los_Angeles). M0 is **not accepted** until all gates below pass.
 
 ## Baseline and delivery sequence
@@ -53,12 +53,12 @@ confine native filesystem, session, messaging or delegation tools; those require
 | Distinct actual Slack/Discord agents in one Gateway | Pending |
 | Per-agent callers and runtime governance denial | Slice 1 synthetic OCI checks pass; live activation pending |
 | Real authorized and ineligible community retrieval | Pending |
-| Workspace, host, credential and delegation denials | Pending |
-| Two-account DM/room/thread/audience/private-memory behavior | Pending; native room history is shared, DMs remain disabled |
+| Workspace, host, credential and delegation denials | Slice 3b native filesystem/skill probe passes; final writable memory/media/message policy pending |
+| Two-account DM/room/thread/audience/private-memory behavior | Public room sharing explicitly approved November 8; native DM key separation proven synthetically; private-memory and live two-account acceptance pending |
 | Scoped effective routes and ordered provider failures | Slice 2 actual OpenClaw/Magpie with synthetic ingress passes OCI and CI; live activation pending |
 | Public request/concurrency/output/runtime/usage limits | Slice 3a rate/concurrency/daily request budget passes synthetic OCI and CI checks; whole-run deadline requires upstream support; live activation pending |
 | Normal tasks with Jev disabled; classifier dependency audit | Pending |
-| Native transport compatibility and private ownership feasibility | Pending; see discord-isolation-redesign.md |
+| Native transport compatibility and private ownership feasibility | Private memory, auxiliary inference and whole-run deadline unresolved; strict per-speaker public history no longer required; see m0-native-boundary-proposal.md |
 | Preserved histories/task destinations, single bot consumers and rollback | Pending |
 
 Do not tag M0 complete or consolidate public ingress merely because a unit test, CLI health probe
@@ -168,8 +168,9 @@ The OCI native ownership probe reproduces distinct DM routing but shared same-ro
 for two senders. It also proves that an empty per-agent memory extraPaths list still inherits global
 internal paths. See [the concrete upstream contract and migration plan](m0-native-boundary-proposal.md).
 No native transport replacement, source patch, memory feature removal or live shared-Gateway cutover
-is adopted. The proposal describes the missing early history and owner-aware memory interfaces,
-existing Magpie limit primitives, remaining admission scope and exact acceptance gates.
+is adopted. After the November 8 decision, shared public history is expected. The proposal describes
+the missing private-memory, deadline and auxiliary-inference interfaces, existing Magpie limit
+primitives and exact acceptance gates. Early per-speaker public routing is optional future work.
 
 ## Delivered source checkpoints
 
@@ -178,12 +179,13 @@ existing Magpie limit primitives, remaining admission scope and exact acceptance
 | Backend caller/tool boundary | #49 / `9fa48abb01f7005b250be728dcb9593f781c8089` | `m0-s1-backend-boundary` | Healthy, November 7, 2026 22:28 Pacific |
 | Scoped Magpie policy | #50 / `2073016d07c112067fdd00a04d7c77dbdf0b95e1` | `m0-s2-provider-policy` | Healthy, November 7, 2026 23:01 Pacific |
 | Durable request admission | #52 / `c8af4b5b49f9219fb4783703a1ac8d0380286299` | `m0-s3a-usage-admission` | Healthy, November 7, 2026 23:51 Pacific |
+| Public workspace preparation | #53 / `f2e5f355392e9dec5116a24fc33320bf0703ae7e` | `m0-s3b-community-seed` | Healthy, November 8, 2026 03:13 Pacific |
 
-All three source PRs passed GitHub checks and used the existing merge webhook. Router, web, Slack and
+All four source PRs passed GitHub checks and used the existing merge webhook. Router, web, Slack and
 Discord services were active after deployment. These tags mark delivered opt-in source slices,
 not completed M0 runtime isolation. No live runtime policies, workspaces or historical ownership
-were migrated. The native feasibility proposal remains a draft in PR #51, retargeted from the
-provider branch, then the usage-admission branch, and back to main after #52 merged.
+were migrated. PR #51 records the confirmed public-history decision, updated diagnostic and remaining
+native contracts. Its earlier stack was retargeted to main after the implementation slices merged.
 
 ## Slice 3a: durable public request admission
 
@@ -303,3 +305,44 @@ OCI validation on November 8, 2026 Pacific: the six native CLI scenarios above p
 tests cover exact public assets, personal-file exclusion, source/destination escapes and preservation
 of existing targets. The complete Node suite passed 1,281 tests with two existing conditional skips;
 scaffold checks passed. The final native settings and live two-account acceptance remain pending.
+
+## November 8 continuation: public-room semantics and remaining work
+
+The operator confirmed twice that a public Discord room/thread may share its public history. The
+PRD, Community template, candidate manifest and native diagnostic now use that decision. This removes
+the strict public-speaker routing prerequisite; DM and private-memory requirements remain intact.
+No change to Slack development bindings, historical ownership or backend identity is implied.
+
+The updated native diagnostic also checks a second bot account, DM/public separation, relocation of
+internal extraPaths into `main`, and memory-core's actual workspace-hit authorization. Relocation
+keeps main's internal roots while excluding Community, but the memory filter still accepts a shared
+workspace-memory hit for either DM sender and for the public room. A successful diagnostic means
+the limitation was reproduced, not that private memory passed acceptance.
+
+### Next work packages and dependencies
+
+| Package | Deliverable | Dependency / acceptance |
+| --- | --- | --- |
+| M0-MEM | Narrow upstream owner/audience contract across native capture, index, recall, file reads and deletion; Nori adapter after SDK feasibility | DM A/B and public canaries; useful automatic memory across restart; no native feature removal |
+| M0-RUN | Host-owned shorter per-agent/run deadline | Actual cancellable model/tool run, fallback, settlement/reload races; main timeout retained |
+| M0-COMPAT | Origin-preserving auxiliary inference and media capability routing | Concurrent origins and budgets; native compaction, memory, attachments and actions with Jev disabled |
+| M0-CUTOVER | Shared-Gateway candidate, preserved-state migration and runtime change record | Above packages; then actual two-account CLI tests, one bot consumer, rollback rehearsal and health |
+
+MEM, RUN and COMPAT are separate extension proposals; implementation must use a public SDK seam
+and a reviewed upstream pin update. CUTOVER depends on their validated behavior and the already
+delivered caller/provider/quota/workspace primitives. Keep the existing two instances until then.
+No M0-complete tag is justified by delivering this decision/diagnostic slice.
+
+### Runtime disposition and recovery
+
+Purpose: adopt the approved shared-public-history semantics without weakening private boundaries.
+Impact: source documentation, the staging manifest/template and isolated diagnostics change. Neither
+local nor production runtime configs have been activated or rewritten. Expected current behavior is
+the existing two native services; new staging output declares `activationReady: false` and records
+the intended DM policy. Production histories, memory, bot consumers and provider credentials retain
+their current ownership. Source rollback is the previous release; no state conversion is needed.
+
+The future candidate must remove global internal memory roots and attach them only to explicitly
+authorized internal agents. It must not clear an index or relocate existing memory until ownership,
+backup and rollback are proven. Setting `dmScope` alone also changes native automatic-recall defaults;
+enabling it while losing continuity is not an acceptable substitute for M0-MEM.

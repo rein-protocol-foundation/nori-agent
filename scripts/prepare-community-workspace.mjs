@@ -51,6 +51,7 @@ export function prepareCommunityWorkspace({ destination, sourceRoot = projectRoo
   const manifest = {
     version: 1, activationReady: false,
     purpose: 'Public Community workspace seed and native setting review; not an OpenClaw config.',
+    conversationPolicy: { publicHistory: 'shared-room-or-thread', dmScope: 'per-account-channel-peer', privateMemory: 'owner-and-audience' },
     workspace,
     files: files.map(({ source, target, original, bytes }) => ({ source, target, sourceSha256: hash(original), stagedSha256: hash(bytes) })),
     nativeSettingsToReview: {
@@ -60,7 +61,7 @@ export function prepareCommunityWorkspace({ destination, sourceRoot = projectRoo
       messageCrossContext: { allowWithinProvider: false, allowAcrossProviders: false },
     },
     requiredBeforeActivation: [
-      'Resolve and enforce owner/audience before native history, queue, memory retrieval and writes.',
+      'Use native shared public room/thread history; enforce distinct DM sessions and owner/audience private memory before retrieval and writes.',
       'Preserve automatic private memory; the read-only tool policy used in the feasibility probe is not a production policy.',
       'Finalize and verify Community tools, delegation, media-file reads and message action/destination authority.',
       'Move internal global memory roots into internal agents; an empty Community extraPaths does not subtract global roots.',

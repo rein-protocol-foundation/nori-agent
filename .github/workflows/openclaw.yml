@@ -149,6 +149,8 @@ jobs:
           pnpm verify:slack-isolation
       - name: Verify Community public seed, shared skills and native filesystem boundary
         run: node scripts/verify-community-workspace.mjs
+      - name: Reproduce native shared-room, DM and private-memory boundaries
+        run: node scripts/probe-native-owner-scope.mjs
       - name: Confirm upstream tracked files remain unchanged
         if: always()
         run: test -z "$(git -C vendor/openclaw status --porcelain)"
