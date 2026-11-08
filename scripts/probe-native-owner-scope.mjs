@@ -6,6 +6,11 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { root, upstream, requireSource } from './runtime-env.mjs';
 requireSource();
+const recorded = spawnSync('git', ['ls-tree', 'HEAD', 'vendor/openclaw'], { cwd: root, encoding: 'utf8' });
+const actual = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: upstream, encoding: 'utf8' });
+assert.equal(recorded.status, 0, 'repository pin unavailable');
+assert.equal(actual.status, 0, 'upstream revision unavailable');
+assert.equal(actual.stdout.trim(), recorded.stdout.match(/\b([a-f0-9]{40})\b/)?.[1], 'upstream differs from repository pin');
 const temp = mkdtempSync(join(tmpdir(), 'nori-native-owner-scope-'));
 try {
   const config = join(temp, 'openclaw.json'); writeFileSync(config, '{}');
