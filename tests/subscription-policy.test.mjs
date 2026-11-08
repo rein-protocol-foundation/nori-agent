@@ -301,6 +301,7 @@ test('generated OpenClaw fragment exposes automatic/manual models and only expli
   assert.equal(provider.models[0].maxTokens, 4096);
   assert.deepEqual(fragment.agents.defaults.model, { primary: 'rein-magpie/auto', fallbacks: ['rein-magpie/claude', 'rein-magpie/bailian'] });
   assert.deepEqual(Object.keys(fragment.agents.defaults.models), ['rein-magpie/auto', 'rein-magpie/flash', 'rein-magpie/capable', 'rein-magpie/claude', 'rein-magpie/bailian']);
+  assert.deepEqual(fragment.agents.defaults.modelPolicy, { allow: ['rein-magpie/auto', 'rein-magpie/flash', 'rein-magpie/capable', 'rein-magpie/claude', 'rein-magpie/bailian'] });
   assert.deepEqual(fragment.plugins.allow, ['rein-router']);
   assert.deepEqual(fragment.plugins.load.paths, ['/tmp/rein-router']);
   assert.deepEqual(Object.keys(fragment.plugins.entries), ['rein-router']);

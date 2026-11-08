@@ -5,7 +5,12 @@ import { definePluginEntry } from 'openclaw/plugin-sdk/plugin-entry';
 import { buildJsonChannelConfigSchema } from 'openclaw/plugin-sdk/channel-config-schema';
 
 export default definePluginEntry({ id: 'rein-scoped-probe', name: 'Synthetic M0 routing probe', register(api) {
-  const sent = [], failures = [];
+  const sent = [], failures = [], runErrors = [];
+  const pendingReplies = new Map();
+  api.on('agent_end', (event, ctx) => {
+    if (!event.success) runErrors.push({ agentId: ctx.agentId, error: event.error,
+      assistantErrors: event.messages.filter(message => message?.role === 'assistant' && message.errorMessage).map(message => message.errorMessage) });
+  });
   let finished = 0;
   api.on('before_model_resolve', (_event, ctx) => { appendFileSync(process.env.REIN_SCOPED_CONTEXTS, JSON.stringify(Object.fromEntries(
     ['agentId', 'sessionId', 'channel', 'accountId', 'chatId', 'trigger', 'inputProvenance'].map(key => [key, ctx[key]]))) + '\n'); });
@@ -24,13 +29,13 @@ export default definePluginEntry({ id: 'rein-scoped-probe', name: 'Synthetic M0 
       const cases = platform === 'slack' ? [['C0123456ABC', 'CASE_SLACK']] : [
         ['100000000000000002', 'CASE_COMMUNITY_OVERRIDE'], ['100000000000000004', 'CASE_COMMUNITY_PLATFORM'],
         ['100000000000000004', 'CASE_COMMUNITY_FAILURE'], ['100000000000000002', 'CASE_COMMUNITY_EMPTY'],
-        ['100000000000000002', 'CASE_BUDGET_FIRST', 'nori-budget-probe'],
-        ['100000000000000002', 'CASE_BUDGET_EXHAUSTED', 'nori-budget-probe'],
+        ['100000000000000006', 'CASE_BUDGET_FIRST', 'nori-budget-probe'],
+        ['100000000000000006', 'CASE_BUDGET_EXHAUSTED', 'nori-budget-probe'],
       ];
       try {
         for (const [index, [channelId, text, selectedAgent]] of cases.entries()) {
-          const agentId = selectedAgent ?? defaultAgentId;
-          const sessionKey = `agent:${agentId}:${platform}:channel:${channelId}:${index}`;
+          const { agentId, sessionKey } = runtime.routing.resolveAgentRoute({ cfg, channel: platform, accountId: 'default', peer: { kind: 'channel', id: channelId } });
+          if (agentId !== (selectedAgent ?? defaultAgentId)) throw new Error('fixture_agent_binding_mismatch');
           const messageId = platform === 'slack' ? `${1794000000 + index}.000001` : String(100000000000000010n + BigInt(index));
           const ingress = await runtime.inbound.ingress.resolveStable({ channelId: platform, accountId: 'default', cfg,
             identity: { key: `${platform}-user-id`, entryIdPrefix: `fixture-${platform}-user` },
@@ -50,12 +55,22 @@ export default definePluginEntry({ id: 'rein-scoped-probe', name: 'Synthetic M0 
             toolsAllow: [], replyOptions: { abortSignal: ctx.abortSignal },
             record: { onRecordError: () => { throw new Error('fixture_record_failed'); } },
             delivery: { deliver: async (payload, info) => {
-              if (info.kind === 'final' && payload.text) sent.push({ platform, agentId, channelId, marker: text, text: payload.text });
+              if (info.kind === 'final' && payload.text) {
+                sent.push({ platform, agentId, channelId, marker: text, text: payload.text });
+                pendingReplies.get(text)?.();
+              }
               return { visibleReplySent: info.kind === 'final' && Boolean(payload.text) };
             }, onError: () => { throw new Error('fixture_delivery_failed'); } } });
+          if (!sent.some(reply => reply.marker === text)) {
+            let timer;
+            try { await new Promise((resolve, reject) => {
+              pendingReplies.set(text, resolve);
+              timer = setTimeout(() => reject(new Error(`fixture_reply_not_delivered:${text}`)), 45000);
+            }); } finally { clearTimeout(timer); pendingReplies.delete(text); }
+          }
         }
       } catch (error) { failures.push({ platform, error: String(error) }); }
-      finally { if (++finished === 2) writeFileSync(process.env.REIN_SCOPED_EVIDENCE, JSON.stringify({ sent, failures })); }
+      finally { if (++finished === 2) writeFileSync(process.env.REIN_SCOPED_EVIDENCE, JSON.stringify({ sent, failures, runErrors })); }
       await new Promise(resolve => { if (ctx.abortSignal.aborted) resolve(); else ctx.abortSignal.addEventListener('abort', resolve, { once: true }); });
     } },
   });

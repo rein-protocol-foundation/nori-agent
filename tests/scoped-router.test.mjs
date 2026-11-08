@@ -99,11 +99,20 @@ test('real stream wrapper uses singleton route keys, caps output, and follows on
     assert.equal((await options.onPayload({ model: 'paid/escape', max_tokens: 99999 }, m)).max_tokens, 512);
     return stream(terminal(id === 'b' ? 503 : undefined));
   } });
-  const result = wrapped(model('b'), {}, { sessionId: 'session', apiKey: key('global') });
+  const result = wrapped(model('b'), {}, { sessionId: 'session', apiKey: 'oc-sent-v2.synthetic-opaque.end',
+    headers: { authorization: `Bearer ${key('global')}`, 'x-api-key': key('global'), 'x-goog-api-key': key('global') } });
   assert.equal((await result.result()).stopReason, 'stop');
   const events = []; for await (const event of result) events.push(event.type);
   assert.deepEqual(attempts, ['fixture/b:medium', 'fixture/c:medium']);
   assert.deepEqual(events, ['start', 'done']);
+});
+
+test('a caller credential cannot replace a missing configured singleton key', async () => {
+  const r = fixtureRouter(config(), { environment: { M0_GATEWAY: key('global') } });
+  const selected = await r.beforeModelResolve({ prompt: 'Find resources' }, ctx());
+  r.beforeAgentRun({}, ctx({ modelId: selected.modelOverride }));
+  const wrapped = r.wrapStreamFn({ agentId: 'nori-community', streamFn: () => assert.fail('caller key must not authorize transport') });
+  await assert.rejects(wrapped(model(selected.modelOverride), {}, { sessionId: 'session', apiKey: key('c') }).result());
 });
 
 test('empty fallback and exhausted chains never enter a global or paid route', async () => {

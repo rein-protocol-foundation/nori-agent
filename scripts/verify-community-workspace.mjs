@@ -51,9 +51,9 @@ try {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const configPath = join(temp, 'openclaw.json');
   writeFileSync(configPath, JSON.stringify({
-    agents: { defaults: { workspace: internal, skipBootstrap: true, model: { primary: 'fixture/fixture', fallbacks: [] },
+    agents: { ownership: 'explicit', defaults: { workspace: internal, skipBootstrap: true, model: { primary: 'fixture/fixture', fallbacks: [] },
       timeoutSeconds: 45, compaction: { memoryFlush: { enabled: false } } }, entries: {
-      main: { default: true, tools: { allow: ['read', 'exec'], fs: { workspaceOnly: false } } },
+      main: { tools: { allow: ['read', 'exec'], fs: { workspaceOnly: false } } },
       'nori-community': { workspace, tools: { allow: ['read'], fs: { workspaceOnly: true }, elevated: { enabled: false } } },
     } },
     plugins: { allow: ['openai'], entries: { openai: { enabled: true } } },

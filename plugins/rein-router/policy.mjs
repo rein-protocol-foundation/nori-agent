@@ -227,6 +227,8 @@ export function buildOpenClawFragment(raw, pluginPath) {
     } } },
     agents: { defaults: {
       model: { primary: `${PROVIDER_ID}/auto`, fallbacks: config.fallbackRoutes.map(id => `${PROVIDER_ID}/${id}`) },
+      // Keep route eligibility explicit: newer hosts treat the models map as settings, not an allowlist.
+      modelPolicy: { allow: ['auto', ...config.routes.map(candidate => candidate.id)].map(id => `${PROVIDER_ID}/${id}`) },
       models: Object.fromEntries(['auto', ...config.routes.map(candidate => candidate.id)]
         .map(id => [`${PROVIDER_ID}/${id}`, { alias: id === 'auto' ? 'rein-auto' : `rein-${id}` }])),
     } },
