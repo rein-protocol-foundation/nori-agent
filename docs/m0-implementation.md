@@ -126,7 +126,10 @@ the console projection is read-only. Existing policy saves preserve it.
       "origins": [{"platform": "discord", "accountId": "default", "workspaceId": "GUILD_ID", "channelIds": ["CHANNEL_ID"]}],
       "channels": [{"platform": "discord", "accountId": "default", "workspaceId": "GUILD_ID", "channelId": "CHANNEL_ID", "fallbacks": []}],
       "maxOutputTokens": 2048,
-      "requestTimeoutMs": 60000
+      "requestTimeoutMs": 60000,
+      "usageLimits": {"perUserPerMinute": 6, "perConversationPerMinute": 12,
+        "perUserConcurrent": 1, "perConversationConcurrent": 2, "maxConcurrent": 4,
+        "maxGatewayRequestsPerDay": 1000}
     }
   }
 }
@@ -180,3 +183,65 @@ Discord services were active after deployment. These tags mark delivered opt-in 
 not completed M0 runtime isolation. No live runtime policies, workspaces or historical ownership
 were migrated. The native feasibility proposal remains a draft in PR #51, retargeted from the
 provider branch to main after #50 merged.
+
+## Slice 3a: durable public request admission
+
+Scoped Discord policies now require all six `usageLimits` fields shown above. Slack policies may
+opt in. This tightens the newly introduced scoped configuration only; production still uses the
+legacy unscoped path. Values in the example are illustrative, not an approved production budget.
+
+Admission uses trusted ingress agent/platform/bot-account/workspace/sender/conversation identity.
+Sender rates span rooms within the same enrolled workspace; conversation rates include every sender.
+A private SQLite ledger under `<native-state-dir>/rein-router-usage/admission.sqlite` atomically
+reserves rolling 60-second requests and concurrent runs across independently prepared runtimes and
+processes using that same state directory. Separate state directories do not share a budget.
+The directory is owner-only and the database is mode 0600. Only hashed scope/run identifiers, process
+IDs, timestamps and counters are stored; there is no message, credential or personal profile storage.
+Hashes are pseudonymous accounting identifiers, not an anonymization guarantee.
+
+`maxGatewayRequestsPerDay` is a per-agent UTC-day aggregate across approved routes. Each outbound
+model request, including an explicit fallback and later tool/model iteration, reserves budget before
+transport. A failed request is not refunded. Magpie's internal retries are not separate gateway
+requests; this limit is neither a token nor a currency budget. Native Magpie token/cost accounting
+and provider concurrency/rate settings remain necessary and unchanged.
+
+Native outer `executionSettled` lifecycle events release concurrency. Per-attempt end events and
+elapsed wall time do not: a tool may still be running. After a process dies, the next admission can
+reclaim its slots without refunding requests. A live or reused PID remains conservatively reserved.
+Reopening the database preserves rate/daily counters. A backward wall clock, untrusted file mode or
+unavailable database blocks new scoped work. Finished runs and counters age out after two days;
+a 100,000-run safety ceiling blocks admission instead of allowing unbounded database growth.
+
+Disabling the plugin restores the existing unscoped behavior and retains its ledger. Re-enabling
+within the same process can conservatively retain a slot if settlement happened while disabled;
+a full Gateway restart proves the old process dead and permits reclamation. Do not delete the ledger
+to clear a limit, and preserve the native state directory in deployment/rollback. This slice does not
+change production runtime configuration, migrate workspaces, or accept M0 isolation.
+
+### Runtime deadline remains an upstream gate
+
+An OCI probe on November 7, 2026 Pacific used the actual pinned OpenClaw runtime and a synthetic
+15-second cancellable tool. Calling `api.runtime.gateway.request('sessions.abort', ...)` at a
+one-second deadline was rejected because `rein-router` is neither a bundled nor trusted official
+plugin. The tool completed after 15 seconds with its abort signal unset. A successful method lookup
+or timer is therefore insufficient evidence of cancellation. The attempted implementation was removed.
+
+A narrow upstream extension is required: let `before_agent_run` return a shorter host-enforced
+run deadline (never a longer one), bound to the exact run/agent/session and inherited through provider
+fallback. The host must abort active model and tool signals, preserve native cancellation semantics,
+retain concurrency until execution settles, and never stop a successor or clear unrelated queued work.
+Test reload, retired plugin instances, concurrent sessions, uncooperative tools and settled-run races.
+Do not grant the plugin general operator RPC authority or lower the main agent's global timeout to
+simulate a per-agent deadline. The existing per-model request timeout continues to apply; it is not a
+whole-run/tool timeout. This gate supplements the history/memory extension proposal in draft PR #51.
+
+### Slice 3a validation (OCI, November 7, 2026 Pacific)
+
+- 18 targeted ledger/router tests pass, including six live processes racing for one sender slot,
+  persistence, dead-process recovery, policy validation and budget denial before fallback transport.
+- Actual pinned OpenClaw + Magpie probe passes: sequential native settlement frees concurrency;
+  a one-request budget admits the first turn and blocks the second before any provider request.
+- Full regression initially found one old console fixture without the newly required Discord limits;
+  its configuration was updated, including an assertion that the administrative projection retains limits.
+  The final full run passed 1,277 tests with two existing skips; scaffold and all 25 console tests pass.
+- Cancellation probe failed as described above; no per-run cancellation capability is claimed.

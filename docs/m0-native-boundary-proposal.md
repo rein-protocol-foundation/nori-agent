@@ -47,7 +47,7 @@ instructions / disabled memory / a new workspace as a substitute for owner-aware
 
 ## Proposed narrow upstream contract
 
-Two related host contracts are needed. Names below are proposals, not available API names.
+Three related host contracts are needed. Names below are proposals, not available API names.
 
 ### 1. Native owner resolution before any history operation
 
@@ -85,6 +85,26 @@ storage/query boundary or a supported owner-scoped collection API, with tests co
 paths. A plugin that merely supplies a replacement `memory_search` tool is insufficient if automatic
 recall or flush still uses a shared store.
 
+### 3. Host-enforced per-run execution deadline
+
+The public `api.runtime.gateway.request` surface is limited to bundled or trusted official plugins.
+An actual OCI Gateway test attempted exact run/agent/session cancellation from `rein-router` at one
+second while a synthetic cancellable tool waited 15 seconds. The RPC was rejected; the tool ran its
+full wait and observed no abort. Relevant pinned source: `src/gateway/server-plugins.ts`,
+`dispatchTrustedPluginGatewayMethod`; `src/plugins/hook-types.ts`, `PluginHookBeforeAgentRunResult`
+currently provides pass/block only. The attempted timer/RPC implementation was removed from PR #52.
+
+Allow an admitted `before_agent_run` result to tighten a host-owned execution deadline. The host,
+not the plugin, owns the timer and propagates cancellation through model requests, tool signals,
+fallback and run lifecycle. The result cannot expand permissions, extend an existing deadline,
+change a run ID, cancel a successor, or clear another run's queue. Runtime replacement and plugin
+retirement must preserve the stricter deadline. Uncooperative tools retain concurrency until actual
+settlement, even after the host requests cancellation. Test deadline/settlement races and reload.
+
+Do not grant generic operator RPC access, pretend to be an official plugin, patch vendored internals,
+or reduce all agents' global timeout as a substitute for this scoped contract. Per-model transport
+timeouts and request budgets alone do not meet the PRD's whole-run runtime bound.
+
 ## Runtime plan after feasibility passes
 
 1. Preserve Slack `main`, development agents, private roots, tools and existing authorized workflows.
@@ -117,9 +137,11 @@ Pinned Magpie already provides caller-key `limit`/`moreLimits` with token/cost w
 `95e7c6bcc07629897f6703c31eaef477fcee4a13`. These are useful primitives, but provider/account-level
 rate limits are not per-Discord-sender or conversation limits. Cost counters are estimates, not bills.
 
-The next implementation should retain native Magpie accounting and key limits, allocate separate
-agent/route credential scopes when independent aggregate ceilings are needed, and add only bounded
-sender/conversation admission where the host lacks it. Budget exhaustion must end the authorized
+PR #52 adds durable sender/conversation rates, concurrency and per-agent daily gateway-request budgets,
+with actual OpenClaw/Magpie and six-process SQLite acceptance. It does not implement a token/currency
+budget or whole-run deadline. Production activation remains pending. Retain native Magpie accounting
+and key limits, and allocate separate
+agent/route credential scopes when independent aggregate token/currency ceilings are needed. Budget exhaustion must end the authorized
 chain rather than start another key/provider. Concurrency and in-flight budget reservations, repeated
 failure attempts, process restart, config reload and clock/window rollover need explicit acceptance
 coverage. Choose actual numeric limits from operator policy and available subscriptions before live

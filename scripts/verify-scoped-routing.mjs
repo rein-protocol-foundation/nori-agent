@@ -63,18 +63,24 @@ try {
         platforms: { discord: { primary: 'claude' } },
         channels: [{ platform: 'discord', accountId: 'default', workspaceId: '100000000000000001', channelId: '100000000000000002', primary: 'google', fallbacks: [] }],
         origins: [{ platform: 'discord', accountId: 'default', workspaceId: '100000000000000001', channelIds: ['100000000000000002', '100000000000000004'] }],
-        maxOutputTokens: 512, requestTimeoutMs: 30000 },
+        maxOutputTokens: 512, requestTimeoutMs: 30000,
+        usageLimits: { perUserPerMinute: 20, perConversationPerMinute: 30, perUserConcurrent: 1, perConversationConcurrent: 1, maxConcurrent: 1, maxGatewayRequestsPerDay: 100 } },
     } };
   // Keep each preference internally consistent; platform override adds the reverse fallback.
   router.scopedPolicies['nori-community'].default.fallbacks = [];
   router.scopedPolicies['nori-community'].platforms.discord.fallbacks = ['google'];
+  router.scopedPolicies['nori-budget-probe'] = {
+    ...structuredClone(router.scopedPolicies['nori-community']), platforms: {}, channels: [],
+    usageLimits: { perUserPerMinute: 5, perConversationPerMinute: 5, perUserConcurrent: 1,
+      perConversationConcurrent: 1, maxConcurrent: 1, maxGatewayRequestsPerDay: 1 },
+  };
   const cfg = buildOpenClawFragment(router, join(root, 'plugins/rein-router'));
   const reserved = socketServer(); await new Promise(resolve => reserved.listen(0, '127.0.0.1', resolve));
   const port = reserved.address().port; await new Promise(resolve => reserved.close(resolve));
   cfg.gateway = { mode: 'local', bind: 'loopback', port, auth: { mode: 'token', token: 'synthetic-scoped-probe-token' } };
   const workspace = join(temp, 'workspace'); mkdirSync(workspace);
   Object.assign(cfg.agents.defaults, { workspace, skipBootstrap: true, timeoutSeconds: 60, compaction: { memoryFlush: { enabled: false } } });
-  cfg.agents.entries = Object.fromEntries(['main', 'nori-community'].map(id => [id, { workspace, model: { primary: 'rein-magpie/auto', fallbacks: [] } }]));
+  cfg.agents.entries = Object.fromEntries(['main', 'nori-community', 'nori-budget-probe'].map(id => [id, { workspace, model: { primary: 'rein-magpie/auto', fallbacks: [] } }]));
   cfg.memory = { search: { enabled: false, rememberAcrossConversations: false } };
   cfg.tools = { allow: [] }; cfg.channels = { slack: { enabled: true }, discord: { enabled: true } };
   const fixture = join(temp, 'fixture'); mkdirSync(fixture);
@@ -86,7 +92,7 @@ try {
   cfg.plugins.allow.push('rein-scoped-probe', 'openai'); cfg.plugins.load.paths.push(fixture);
   Object.assign(cfg.plugins.entries, { slack: { enabled: false }, discord: { enabled: false }, 'rein-scoped-probe': { enabled: true, hooks: { allowConversationAccess: true } } });
   const state = join(temp, 'state'), home = join(temp, 'home'); mkdirSync(state); mkdirSync(home);
-  for (const id of ['main', 'nori-community']) {
+  for (const id of ['main', 'nori-community', 'nori-budget-probe']) {
     const agentDir = join(state, 'agents', id, 'agent'); mkdirSync(agentDir, { recursive: true });
     writeFileSync(join(agentDir, 'settings.json'), JSON.stringify({ retry: { provider: { maxRetries: 0 } } }));
   }
@@ -116,6 +122,10 @@ try {
   assert.ok(calls('CASE_COMMUNITY_EMPTY').length > 0 && calls('CASE_COMMUNITY_EMPTY').every(model => model === 'google'));
   assert.ok(requests.every(request => request.model !== 'payg' && request.maxTokens <= 512));
   assert.ok(contexts.some(context => context.agentId === 'main') && contexts.some(context => context.agentId === 'nori-community'), JSON.stringify(contexts));
+  assert.ok(report.sent.some(reply => reply.marker === 'CASE_BUDGET_FIRST' && reply.text.includes('OK CASE_BUDGET_FIRST')));
+  assert.equal(calls('CASE_BUDGET_FIRST').length, 1, JSON.stringify(requests));
+  assert.equal(calls('CASE_BUDGET_EXHAUSTED').length, 0, JSON.stringify(requests));
+  console.log('PASS: durable daily budget blocks the next request; native settlement frees sequential concurrency slots. Synthetic ingress only.');
   console.log('PASS: actual OpenClaw scoped hooks and pinned Magpie; two agents, platform/channel precedence, ordered fallback, empty fallback, hidden paid provider denied, capped output; Jev absent. Synthetic ingress, not live platform acceptance.');
 } finally {
   for (const child of children.reverse()) if (child.exitCode === null && child.signalCode === null) {

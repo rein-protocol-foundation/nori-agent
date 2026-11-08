@@ -23,7 +23,7 @@ export function validateScopedPolicies(raw, routes, globalPaid) {
   const result = {};
   for (const [agentId, policy] of Object.entries(raw)) {
     if (!/^[a-z][a-z0-9_-]{0,63}$/.test(agentId) || ['__proto__', 'constructor', 'prototype'].includes(agentId)) fail();
-    keys(policy, ['allowedRoutes', 'allowPaidUsage', 'default', 'platforms', 'channels', 'origins', 'maxOutputTokens', 'requestTimeoutMs']);
+    keys(policy, ['allowedRoutes', 'allowPaidUsage', 'default', 'platforms', 'channels', 'origins', 'maxOutputTokens', 'requestTimeoutMs', 'usageLimits']);
     if (!list(policy.allowedRoutes) || typeof policy.allowPaidUsage !== 'boolean' ||
         (policy.allowPaidUsage && !globalPaid) || !Number.isSafeInteger(policy.maxOutputTokens) ||
         policy.maxOutputTokens < 1 || policy.maxOutputTokens > 32768 ||
@@ -35,6 +35,16 @@ export function validateScopedPolicies(raw, routes, globalPaid) {
       if (!route || !route.gatewayKeyEnvVar || !route.billingVerified || route.billingMode === 'coding-plan' ||
           (route.access && route.access !== 'all') ||
           (route.billingMode === 'pay-as-you-go' && !policy.allowPaidUsage)) fail();
+    }
+    let usageLimits;
+    if (policy.usageLimits !== undefined) {
+      const fields = { perUserPerMinute: 120, perConversationPerMinute: 600,
+        perUserConcurrent: 16, perConversationConcurrent: 64, maxConcurrent: 128,
+        maxGatewayRequestsPerDay: 50000 };
+      keys(policy.usageLimits, Object.keys(fields));
+      for (const [name, maximum] of Object.entries(fields))
+        if (!Number.isSafeInteger(policy.usageLimits[name]) || policy.usageLimits[name] < 1 || policy.usageLimits[name] > maximum) fail();
+      usageLimits = { ...policy.usageLimits };
     }
     const defaults = preferences(policy.default, allowed);
     const platforms = {};
@@ -48,6 +58,7 @@ export function validateScopedPolicies(raw, routes, globalPaid) {
       if (!['slack', 'discord'].includes(origin.platform) || !id(origin.accountId) || !id(origin.workspaceId) || !list(origin.channelIds)) fail();
       return { ...origin, channelIds: [...origin.channelIds] };
     });
+    if (origins.some(origin => origin.platform === 'discord') && !usageLimits) fail();
     const seen = new Set();
     for (const origin of origins) for (const channel of origin.channelIds) {
       const key = JSON.stringify([origin.platform, origin.accountId, channel]);
@@ -67,7 +78,7 @@ export function validateScopedPolicies(raw, routes, globalPaid) {
         ...preferences(Object.fromEntries(['primary', 'fallbacks'].filter(key => channel[key] !== undefined).map(key => [key, channel[key]])), allowed, true) };
     });
     result[agentId] = { allowedRoutes: [...allowed], allowPaidUsage: policy.allowPaidUsage, default: defaults,
-      platforms, channels, origins, maxOutputTokens: policy.maxOutputTokens, requestTimeoutMs: policy.requestTimeoutMs };
+      platforms, channels, origins, ...(usageLimits ? { usageLimits } : {}), maxOutputTokens: policy.maxOutputTokens, requestTimeoutMs: policy.requestTimeoutMs };
   }
   return result;
 }
@@ -94,7 +105,7 @@ export function resolveScopedPolicy(policies, ctx, { hasAttachments = false } = 
   if (!policy.allowedRoutes.includes(primary)) return null;
   const fallbacks = manual ? [] : inherited.fallbacks.filter(route => route !== primary);
   return Object.freeze({ primary, fallbacks: Object.freeze(fallbacks), manual,
-    sources: Object.freeze(sources), maxOutputTokens: policy.maxOutputTokens, requestTimeoutMs: policy.requestTimeoutMs });
+    sources: Object.freeze(sources), workspaceId: origin.workspaceId, maxOutputTokens: policy.maxOutputTokens, requestTimeoutMs: policy.requestTimeoutMs });
 }
 
 /** Administrative projection contains configured policy only, never private sender/session identities. */
@@ -102,6 +113,7 @@ export function describeScopedPolicies(policies) {
   return Object.entries(policies ?? {}).map(([agentId, policy]) => ({ agentId,
     allowedRoutes: policy.allowedRoutes, allowPaidUsage: policy.allowPaidUsage,
     maxOutputTokens: policy.maxOutputTokens, requestTimeoutMs: policy.requestTimeoutMs,
+    ...(policy.usageLimits ? { usageLimits: policy.usageLimits } : {}),
     default: policy.default,
     platforms: Object.entries(policy.platforms).map(([platform, settings]) => ({ platform, ...policy.default, ...settings })),
     channels: policy.channels.map(channel => ({ ...policy.default, ...policy.platforms[channel.platform], ...channel })),
