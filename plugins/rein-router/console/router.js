@@ -133,7 +133,7 @@ magpie.plugin('rein-router', ctx => {
       group.append(el('p', '', `可用模型：${policy.allowedRoutes.map(routeLabel).join('；')}`));
       if (policy.usageLimits) {
         const limits = policy.usageLimits;
-        group.append(el('p', '', `每人/每会话每分钟：${limits.perUserPerMinute}/${limits.perConversationPerMinute} 次；并发：${limits.perUserConcurrent}/${limits.perConversationConcurrent}，Agent 总并发 ${limits.maxConcurrent}；UTC 每日网关请求预算 ${limits.maxGatewayRequestsPerDay} 次；单次任务最长 ${limits.maxRunMs / 1000} 秒。重试与回退计入同一预算。`));
+        group.append(el('p', '', `每人/每会话每分钟：${limits.perUserPerMinute}/${limits.perConversationPerMinute} 次；并发：${limits.perUserConcurrent}/${limits.perConversationConcurrent}，Agent 总并发 ${limits.maxConcurrent}；UTC 每日网关请求预算 ${limits.maxGatewayRequestsPerDay} 次。路由回退和后续模型请求计入同一预算。`));
       }
 
       for (const [label, settings] of [['Agent 默认', policy.default],
