@@ -36,7 +36,7 @@ function privateEnvironmentPath(root) {
   return path;
 }
 
-/** Only an active, exact project-owned gateway may receive this one secret. */
+/** Only an active project-owned gateway receives its declared gateway and singleton-route secrets. */
 export function loadMagpieGatewayEnvironment({ root = projectRoot, environment = process.env } = {}) {
   try {
     if (typeof root !== 'string' || !isAbsolute(root) || !object(environment)) refuse('arguments_invalid');
@@ -69,17 +69,22 @@ export function loadMagpieGatewayEnvironment({ root = projectRoot, environment =
     const consoleManaged = gateway.managed.mode === 'console';
     const name = gateway.apiKeyEnvVar;
     if (!isGatewayCredentialEnvironmentName(name)) refuse('variable_disallowed');
-    const text = readRegular(privateEnvironmentPath(canonicalRoot), 4096, { privateMode: true });
+    const scopedIds = new Set(Object.values(entry.config.scopedPolicies ?? {}).flatMap(policy => policy.allowedRoutes ?? []));
+    const routeNames = (entry.config.routes ?? []).filter(route => scopedIds.has(route.id)).map(route => route.gatewayKeyEnvVar);
+    const allowed = new Set([name, ...routeNames]);
+    if ([...allowed].some(variable => !isGatewayCredentialEnvironmentName(variable))) refuse('variable_disallowed');
+    const text = readRegular(privateEnvironmentPath(canonicalRoot), allowed.size === 1 ? 4096 : 32768, { privateMode: true });
     const parsed = parseEnv(text);
     const entries = Object.keys(parsed);
-    // Reject duplicate assignments and extra non-comment content as well as
-    // extra parsed variables; the prepared file contains exactly one secret.
     const declarations = text.split(/\r?\n/).filter(line => line.trim() && !line.trimStart().startsWith('#'));
-    if (entries.length !== 1 || entries[0] !== name || declarations.length !== 1 ||
-        !new RegExp(`^\\s*(?:export\\s+)?${name}\\s*=`).test(declarations[0]) ||
-        typeof parsed[name] !== 'string' || !KEY.test(parsed[name])) refuse('contents_invalid');
-    if (!consoleManaged && copy[name] !== undefined && copy[name] !== parsed[name]) refuse('existing_value_conflict');
-    copy[name] = parsed[name];
+    if (entries.length !== allowed.size || declarations.length !== allowed.size ||
+        entries.some(variable => !allowed.has(variable) || !KEY.test(parsed[variable])) ||
+        [...allowed].some(variable => declarations.filter(line => new RegExp(`^\\s*(?:export\\s+)?${variable}\\s*=`).test(line)).length !== 1))
+      refuse('contents_invalid');
+    for (const variable of allowed) {
+      if (!consoleManaged && copy[variable] !== undefined && copy[variable] !== parsed[variable]) refuse('existing_value_conflict');
+      copy[variable] = parsed[variable];
+    }
     const otherTypeSafeUse = host.plugins?.entries?.typesafe?.enabled === true &&
       host.plugins.entries.typesafe.config?.apiKey?.id === 'JEV_API_KEY' &&
       [host.agents?.defaults, ...(host.agents?.list ?? []), ...Object.values(host.agents?.entries ?? {})]

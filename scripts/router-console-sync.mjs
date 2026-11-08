@@ -1,3 +1,4 @@
+import { describeScopedPolicies } from '../plugins/rein-router/scoped-policy.mjs';
 import { isRestrictedRoute } from '../plugins/rein-router/policy.mjs';
 import { join, resolve } from 'node:path';
 import { createRequire } from 'node:module';
@@ -25,7 +26,7 @@ function plain(value) {
 }
 
 export function validateConsoleSettings(s) {
-  if (!object(s) || !plain(s) || Object.keys(s).some(k => !['enabled','dynamic','allowPaidUsage','funding','policy','fallbacks','minProbability','adminSenders','developmentChannels','targetAgent'].includes(k)))
+  if (!object(s) || !plain(s) || Object.keys(s).some(k => !['enabled','dynamic','allowPaidUsage','funding','policy','fallbacks','minProbability','adminSenders','developmentChannels','targetAgent','scopedPolicies'].includes(k)))
     throw new Error('router_settings_invalid');
   for (const k of ['enabled','dynamic','allowPaidUsage']) if (s[k] !== undefined && typeof s[k] !== 'boolean') throw new Error('router_settings_invalid');
   if (s.funding && (!object(s.funding) || Object.entries(s.funding).some(([id,v]) =>
@@ -48,13 +49,13 @@ export function createConsoleSync({ root, native, gatewayBaseUrl = 'http://127.0
   const keyName = `Rein Router Console ${createHash('sha256').update(root).digest('hex').slice(0,16)}`;
   const locked = fn => { const result = busy.then(fn); busy = result.catch(() => {}); return result; };
   let key;
-  async function ownedKey() {
+  async function ownedKey(name = keyName) {
     const data = await native('/api/caller-keys');
-    const records = data.keys.filter(k => k.name === keyName);
+    const records = data.keys.filter(k => k.name === name);
     if (records.length > 1) throw new Error('router_key_ambiguous');
     if (!records.length) {
-      const made = await native('/api/caller-keys/add-key', { name: keyName });
-      const entry = made.keys.find(k => k.name === keyName);
+      const made = await native('/api/caller-keys/add-key', { name });
+      const entry = made.keys.find(k => k.name === name);
       if (!entry) throw new Error('router_key_invalid');
       await native('/api/caller-keys/off-key', { key: entry.id });
       key = { ...entry, off: true, secret: made.secret };
@@ -66,7 +67,7 @@ export function createConsoleSync({ root, native, gatewayBaseUrl = 'http://127.0
     return key;
   }
   async function disableKey() {
-    const keys = (await native('/api/caller-keys')).keys.filter(k => k.name === keyName);
+    const keys = (await native('/api/caller-keys')).keys.filter(k => k.name === keyName || k.name.startsWith(`${keyName} route `));
     for (const k of keys) await native('/api/caller-keys/off-key', { key: k.id });
   }
   async function publish() {
@@ -76,11 +77,28 @@ export function createConsoleSync({ root, native, gatewayBaseUrl = 'http://127.0
       managed: { binaryPath: paths.binary, homeDir: paths.homeDir, allowSubscriptionAccounts: true, mode: 'console' } };
     const result = compileCatalog({ catalog, settings: state, gateway, pluginPath: resolve(root, 'plugins/rein-router') });
     await spendCheck({ gateway, routes: result.fragment.plugins.entries['rein-router'].config.routes, allowPaidUsage: state.allowPaidUsage });
+    const routerConfig = result.fragment.plugins.entries['rein-router'].config;
+    for (const policy of Object.values(routerConfig.scopedPolicies ?? {})) if (!policy.allowPaidUsage)
+      await spendCheck({ gateway: { ...gateway, subscriptionOnly: true },
+        routes: routerConfig.routes.filter(route => policy.allowedRoutes.includes(route.id)), allowPaidUsage: false });
     const secret = JSON.parse(await readPrivate(root, secretPath, '{}'));
     if (state.dynamic && !validJevKey(secret.jevApiKey)) throw new Error('router_jev_key_required');
     const fingerprint = createHash('sha256').update(JSON.stringify(result.fragment)).digest('hex');
     const desiredModels = [...new Set(result.eligible.map(m => m.id))].sort();
     const current = await ownedKey();
+    const routeCredentials = [];
+    for (const route of routerConfig.routes.filter(route => route.gatewayKeyEnvVar)) {
+      if (routeCredentials.some(item => item.env === route.gatewayKeyEnvVar)) continue;
+      const credential = await ownedKey(`${keyName} route ${route.gatewayKeyEnvVar}`);
+      routeCredentials.push({ env: route.gatewayKeyEnvVar, model: route.gatewayModel, credential });
+    }
+    const routeScoped = routeCredentials.every(item => !item.credential.off &&
+      JSON.stringify(item.credential.models) === JSON.stringify([item.model]));
+    const activeNames = new Set([current.name, ...routeCredentials.map(item => item.credential.name)]);
+    // Removed routes remain revoked, including after dropping scoped policies entirely.
+    for (const existing of (await native('/api/caller-keys')).keys)
+      if (existing.name.startsWith(`${keyName} route `) && !activeNames.has(existing.name))
+        await native('/api/caller-keys/off-key', { key: existing.id });
     // Off -> exact scope -> config publication -> on. No unrestricted key reaches OpenClaw.
     const scoped = !current.off && JSON.stringify([...(current.models ?? [])].sort()) === JSON.stringify(desiredModels);
     const merged = mergeRouterFragment(host, result.fragment, { pluginPath: resolve(root, 'plugins/rein-router'),
@@ -88,15 +106,21 @@ export function createConsoleSync({ root, native, gatewayBaseUrl = 'http://127.0
       targetAgent: state.targetAgent ?? 'defaults',
       previousModels: host.models?.providers?.['rein-magpie']?.models?.map(m => m.id) ?? [] });
     const next = JSON.stringify(merged, null, 2) + '\n';
-    if (fingerprint !== digest || !scoped || JSON.stringify(host) !== JSON.stringify(merged)) {
+    if (fingerprint !== digest || !scoped || !routeScoped || JSON.stringify(host) !== JSON.stringify(merged)) {
       await native('/api/caller-keys/off-key', { key: current.id });
       try {
+        for (const item of routeCredentials) {
+          await native('/api/caller-keys/off-key', { key: item.credential.id });
+          await native('/api/caller-keys/models-key', { key: item.credential.id, models: [item.model] });
+        }
         await native('/api/caller-keys/models-key', { key: current.id, models: desiredModels });
         // Persist the first pre-console profile once for a simple, explicit rollback.
         const backup = join(root, 'runtime/openclaw/openclaw.before-router-console.json');
         if (await readPrivate(root, backup, '', { publicFile: true }) === '') await writePrivate(root, backup, hostText, '');
-        await writePrivate(root, join(root, ENV), `REIN_MAGPIE_GATEWAY_KEY=${current.secret}\n`);
+        await writePrivate(root, join(root, ENV), `REIN_MAGPIE_GATEWAY_KEY=${current.secret}\n` +
+          routeCredentials.map(item => `${item.env}=${item.credential.secret}\n`).join(''));
         if (JSON.stringify(host) !== JSON.stringify(merged)) await writePrivate(root, configPath, next, hostText);
+        for (const item of routeCredentials) await native('/api/caller-keys/on-key', { key: item.credential.id });
         await native('/api/caller-keys/on-key', { key: current.id });
         digest = fingerprint;
       } catch (e) { await disableKey(); throw e; }
@@ -108,7 +132,7 @@ export function createConsoleSync({ root, native, gatewayBaseUrl = 'http://127.0
     if (!state.enabled) await disableKey();
     catalog = readMagpieCatalog(await native('/api/providers'));
     if (state.enabled) {
-      if (repair) {
+      if (repair && !state.scopedPolicies) {
         const eligible = catalog.filter(m => !m.hasFallback && state.funding?.[m.providerId]?.confirmed &&
           (state.funding[m.providerId].mode !== 'pay-as-you-go' || state.allowPaidUsage));
         const recommendations = recommendPolicy(eligible.filter(m => state.funding[m.providerId].mode !== 'coding-plan' && !isRestrictedRoute(state.funding[m.providerId])));
@@ -132,7 +156,9 @@ export function createConsoleSync({ root, native, gatewayBaseUrl = 'http://127.0
     const secret = JSON.parse(await readPrivate(root, secretPath, '{}'));
     const host = parseHost(await readPrivate(root, configPath, '{}', { publicFile: true }));
     const agentTargets = [...new Set([...(host.agents?.list ?? []).map(a => a.id), ...Object.keys(host.agents?.entries ?? {})])];
-    return { settings: structuredClone(state), agentTargets, catalog, recommendations: recommendPolicy(catalog), lastSync, error: lastError,
+    return { settings: structuredClone(state), agentTargets, catalog,
+      configuredRoutes: (host.plugins?.entries?.['rein-router']?.config?.routes ?? []).map(({ id, gatewayModel, effort }) => ({ id, gatewayModel, effort })),
+      effectiveScopedPolicies: describeScopedPolicies(host.plugins?.entries?.['rein-router']?.config?.scopedPolicies), recommendations: recommendPolicy(catalog), lastSync, error: lastError,
       administratorAuthority: { source: 'foundation', configured: host.plugins?.entries?.['rein-operations']?.enabled === true &&
         host.plugins.entries['rein-operations'].config?.foundationDb?.enabled === true },
       jevKeyConfigured: validJevKey(secret.jevApiKey),

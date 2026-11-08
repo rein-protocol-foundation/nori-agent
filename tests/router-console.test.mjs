@@ -95,7 +95,7 @@ async function fixture(t) {
     if (unavailable.has(path)) throw new Error('synthetic-native-unavailable');
     if(path==='/api/providers')return structuredClone(raw);
     if(path==='/api/caller-keys')return {keys:structuredClone(keys).map(({secret,...k})=>k)};
-    if(path.endsWith('/add-key'))keys.push({id:'owned',name:body.name,secret:'sk-magpie-key-'+ 'a'.repeat(48)});
+    if(path.endsWith('/add-key'))keys.push({id:keys.length ? `owned-${keys.length}` : 'owned',name:body.name,secret:'sk-magpie-key-'+ String.fromCharCode(97 + keys.length).repeat(48)});
     else if(path.endsWith('/copy-key')){}
     else if(path.endsWith('/off-key'))keys.find(k=>k.id===body.key).off=true;
     else if(path.endsWith('/on-key'))keys.find(k=>k.id===body.key).off=false;
@@ -337,4 +337,45 @@ test('provider access restrictions cover raw model aliases and survive catalog r
   f.raw.providers[0].models = f.raw.providers[0].models.filter(m => m.id !== 'pro');
   await assert.rejects(f.sync.refresh(), /capable_default_required/);
   assert.equal(f.keys[0].off, true, 'restricted premium must never replace a missing everyday default');
+});
+
+
+test('scoped console publishes singleton model keys, displays inherited policy and revokes all keys on pause', async t => {
+  const f = await fixture(t);
+  const scoped = { ...settings(), scopedPolicies: { 'nori-community': {
+    allowedRoutes: ['general', 'quick'], allowPaidUsage: false,
+    default: { primary: 'general', fallbacks: ['quick'] }, platforms: { discord: { primary: 'quick' } },
+    channels: [{ platform: 'discord', accountId: 'default', workspaceId: 'GUILD', channelId: 'ROOM', fallbacks: [] }],
+    origins: [{ platform: 'discord', accountId: 'default', workspaceId: 'GUILD', channelIds: ['ROOM'] }],
+    maxOutputTokens: 512, requestTimeoutMs: 30000,
+  } } };
+  await f.sync.save(scoped);
+  assert.equal(f.keys.length, 3);
+  assert.ok(f.keys.slice(1).every(key => key.models.length === 1 && !key.off));
+  const view = await f.sync.view();
+  assert.equal(view.effectiveScopedPolicies[0].channels[0].primary, 'quick');
+  assert.deepEqual(view.effectiveScopedPolicies[0].channels[0].fallbacks, []);
+  assert.ok(!JSON.stringify(view).includes(f.keys[1].secret));
+  const env = loadMagpieGatewayEnvironment({ root: f.root, environment: { OPENCLAW_CONFIG_PATH: f.hostPath } });
+  const loaded = JSON.parse(await readFile(f.hostPath, 'utf8')).plugins.entries['rein-router'].config;
+  for (const route of loaded.routes.filter(route => route.gatewayKeyEnvVar)) assert.ok(env[route.gatewayKeyEnvVar]);
+  // A wider key never survives the next sync; the transport also checks it before egress.
+  f.keys[1].models.push('paid/escape'); await f.sync.refresh();
+  assert.equal(f.keys[1].models.length, 1);
+  await f.sync.save({ ...scoped, enabled: false });
+  assert.ok(f.keys.every(key => key.off));
+});
+
+test('scoped catalog loss revokes keys without repairing a hard route into a different provider', async t => {
+  const f = await fixture(t);
+  const s = { ...settings(), policy: { general: { model: 'test/pro', effort: 'medium' } },
+    scopedPolicies: { main: { allowedRoutes: ['general'], allowPaidUsage: false,
+      default: { primary: 'general', fallbacks: [] }, origins: [{ platform: 'slack', accountId: 'default', workspaceId: 'TEAM', channelIds: ['ROOM'] }],
+      maxOutputTokens: 512, requestTimeoutMs: 1000 } } };
+  await f.sync.save(s);
+  const previous = await readFile(f.hostPath, 'utf8');
+  f.raw.providers[0].models = [{ id: 'replacement', on: true, efforts: ['medium', 'high'] }];
+  await assert.rejects(f.sync.refresh(), /router_policy_model_missing_general/);
+  assert.equal(await readFile(f.hostPath, 'utf8'), previous);
+  assert.ok(f.keys.every(key => key.off));
 });

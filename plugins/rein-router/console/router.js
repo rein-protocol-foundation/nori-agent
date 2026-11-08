@@ -3,11 +3,12 @@ magpie.plugin('rein-router', ctx => {
   ctx.slots.add('page', {
     key: 'rein-router', title: 'OpenClaw Router',
     html: `<div class="rein-console"><header class="rein-heading"><div><p class="rein-eyebrow">OPENCLAW × MAGPIE</p><h1>模型配置一次，任务自动选路</h1><p>Provider 与模型在 Magpie 管理。这里配置 OpenClaw 如何使用它们。</p></div><span class="rein-status" id="rein-sync">尚未连接</span></header>
-    <div class="rein-flow" aria-label="请求流程"><span>Discord / Slack</span><i>→</i><b>OpenClaw</b><i>→</i><span>Dynamic Router</span><i>→</i><b>Magpie Providers</b></div>
+    <div class="rein-flow" aria-label="请求流程"><span>Discord / Slack</span><i>→</i><b>OpenClaw</b><i>→</i><span>路由策略</span><i>→</i><b>Magpie Providers</b></div>
     <div id="rein-message" role="status" aria-live="polite"></div>
     <section class="rein-section"><div class="rein-section-head"><div><h2>1. Provider 与模型</h2><p>直接来自 Magpie。新增或移除模型后，每 5 秒自动同步。</p></div><button type="button" class="text" id="rein-providers">管理 Providers ↗</button></div><div id="rein-catalog"></div></section>
     <section class="rein-section"><div class="rein-section-head"><div><h2>2. 任务路由与思考强度</h2><p>选择适合的模型；推荐值只是起点，可按实际效果调整。</p></div><button type="button" class="text" id="rein-recommend">使用推荐策略</button></div><div id="rein-policy"></div></section>
     <section class="rein-section"><div class="rein-section-head"><div><h2>3. Dynamic Router</h2><p>Jev 判断任务类型、复杂度及是否需要上下文，再选择模型与思考强度。</p></div></div><div id="rein-dynamic"></div></section>
+    <section class="rein-section" id="rein-scoped-section" hidden><div class="rein-section-head"><div><h2>Agent 与频道生效策略</h2><p>频道覆盖 → 平台默认 → Agent 默认。空回退列表表示不回退；所有选择受 Agent 可用模型与付费边界约束。</p></div></div><div id="rein-scoped"></div></section>
     <details class="rein-advanced"><summary>开发频道与回退顺序</summary><div id="rein-fallbacks"></div><label class="rein-field">旧版管理员模式名单（每行 channel/accountId/senderId）<textarea id="rein-admins" rows="3" placeholder="discord/default/YOUR_USER_ID"></textarea></label><p>此名单仅用于旧版管理员模式，不影响开发频道授权。开发频道成员须绑定 Rein 账户，并拥有当前有效的 Contributor 或 Director 角色。</p><label class="rein-field">私有开发频道（每行 accountId/workspaceId/channelId/agentId）<textarea id="rein-dev-channels" rows="3" placeholder="default/T_WORKSPACE/C_CHANNEL/nori-development"></textarea></label><p>开发 Agent 必须配置独立沙箱。退出频道、角色撤销或核验失败后，开发模型和工具均不可用。</p></details>
     <footer class="rein-save"><div><strong>连接到现有 OpenClaw</strong><p>保存后自动合并配置。首次连接后启动或重启 OpenClaw，后续目录变更自动更新。</p></div><div class="rein-actions"><button type="button" id="rein-pause" class="text" hidden>暂停路由</button><button type="button" id="rein-save" class="text primary">保存并连接 OpenClaw</button></div></footer>
     <p class="rein-footnote">OpenClaw 就是你的 harness，无需连接 Magpie 的 Agents。手动选模型时使用 /model；自动模式使用 /model auto。</p></div>`,
@@ -102,7 +103,7 @@ magpie.plugin('rein-router', ctx => {
       if (models.some(m => m.hasFallback)) card.append(el('p', 'rein-error', '此 Provider 配有内部回退，请在 Providers 移除回退后再用于 OpenClaw。回退顺序在下方统一配置。'));
       box.append(card);
     }
-    renderPolicy(); renderDynamic(); renderFallbacks();
+    renderPolicy(); renderDynamic(); renderFallbacks(); renderScoped();
     $r('#rein-admins').value = (settings.adminSenders ?? []).map(a => [a.channel,a.accountId,a.senderId].join('/')).join('\n');
     $r('#rein-admins').oninput = changed;
     $r('#rein-dev-channels').value = (settings.developmentChannels ?? []).map(c => [c.accountId,c.workspaceId,c.channelId,c.agentId].join('/')).join('\n');
@@ -116,6 +117,29 @@ magpie.plugin('rein-router', ctx => {
         message('路由已暂停。保存并连接 OpenClaw 可重新启用。');
       } catch (e) { message(labelError(e.message), true); }
     };
+  }
+  function renderScoped() {
+    const policies = state.effectiveScopedPolicies ?? [];
+    $r('#rein-scoped-section').hidden = policies.length === 0;
+    const box = $r('#rein-scoped'); box.replaceChildren();
+    const routeLabel = id => {
+      const route = state.configuredRoutes?.find(route => route.id === id);
+      return route ? `${route.gatewayModel} · ${route.effort}` : id;
+    };
+    for (const policy of policies) {
+      const group = el('div', 'rein-provider');
+      group.append(el('h3', '', policy.agentId));
+      group.append(el('p', '', `${policy.allowPaidUsage ? '允许已授权付费路由' : '禁止付费路由'} · 最多 ${policy.maxOutputTokens} 输出 token · ${policy.requestTimeoutMs / 1000} 秒请求上限`));
+      group.append(el('p', '', `可用模型：${policy.allowedRoutes.map(routeLabel).join('；')}`));
+      for (const [label, settings] of [['Agent 默认', policy.default],
+        ...policy.platforms.map(value => [`${value.platform} 平台默认`, value]),
+        ...policy.channels.map(value => [`${value.platform} / ${value.accountId} / ${value.workspaceId} / ${value.channelId}`, value])]) {
+        const row = el('div', 'rein-policy-row');
+        row.append(el('strong', '', label), el('span', '', `首选：${routeLabel(settings.primary)}；回退：${settings.fallbacks.length ? settings.fallbacks.map(routeLabel).join(' → ') : '无'}`));
+        group.append(row);
+      }
+      box.append(group);
+    }
   }
   function renderPolicy() {
     const box = $r('#rein-policy'); box.replaceChildren();
