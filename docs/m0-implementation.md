@@ -55,8 +55,8 @@ confine native filesystem, session, messaging or delegation tools; those require
 | Real authorized and ineligible community retrieval | Pending |
 | Workspace, host, credential and delegation denials | Pending |
 | Two-account DM/room/thread/audience/private-memory behavior | Pending; native room history is shared, DMs remain disabled |
-| Scoped effective routes and ordered provider failures | Pending |
-| Public request/concurrency/output/runtime/usage limits | Pending |
+| Scoped effective routes and ordered provider failures | Slice 2 actual OpenClaw/Magpie with synthetic ingress passes OCI and CI; live activation pending |
+| Public request/concurrency/output/runtime/usage limits | Slice 3a rate/concurrency/daily request budget passes synthetic OCI and CI checks; whole-run deadline requires upstream support; live activation pending |
 | Normal tasks with Jev disabled; classifier dependency audit | Pending |
 | Native transport compatibility and private ownership feasibility | Pending; see discord-isolation-redesign.md |
 | Preserved histories/task destinations, single bot consumers and rollback | Pending |
@@ -177,12 +177,13 @@ existing Magpie limit primitives, remaining admission scope and exact acceptance
 | --- | --- | --- | --- |
 | Backend caller/tool boundary | #49 / `9fa48abb01f7005b250be728dcb9593f781c8089` | `m0-s1-backend-boundary` | Healthy, November 7, 2026 22:28 Pacific |
 | Scoped Magpie policy | #50 / `2073016d07c112067fdd00a04d7c77dbdf0b95e1` | `m0-s2-provider-policy` | Healthy, November 7, 2026 23:01 Pacific |
+| Durable request admission | #52 / `c8af4b5b49f9219fb4783703a1ac8d0380286299` | `m0-s3a-usage-admission` | Healthy, November 7, 2026 23:51 Pacific |
 
-Both source PRs passed GitHub checks and used the existing merge webhook. Router, web, Slack and
+All three source PRs passed GitHub checks and used the existing merge webhook. Router, web, Slack and
 Discord services were active after deployment. These tags mark delivered opt-in source slices,
 not completed M0 runtime isolation. No live runtime policies, workspaces or historical ownership
 were migrated. The native feasibility proposal remains a draft in PR #51, retargeted from the
-provider branch to main after #50 merged.
+provider branch, then the usage-admission branch, and back to main after #52 merged.
 
 ## Slice 3a: durable public request admission
 
