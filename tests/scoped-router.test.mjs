@@ -12,7 +12,7 @@ const policy = () => ({ allowedRoutes: ['a', 'b', 'c'], allowPaidUsage: false,
   default: { primary: 'a', fallbacks: ['b', 'c'] }, platforms: { discord: { primary: 'b' } },
   channels: [{ platform: 'discord', accountId: 'default', workspaceId: 'GUILD', channelId: 'ROOM', primary: 'c', fallbacks: [] }],
   origins: [{ platform: 'discord', accountId: 'default', workspaceId: 'GUILD', channelIds: ['ROOM', 'OTHER'] }],
-  maxOutputTokens: 512, requestTimeoutMs: 1000 });
+  maxOutputTokens: 512, requestTimeoutMs: 1000, usageLimits: { perUserPerMinute: 20, perConversationPerMinute: 30, perUserConcurrent: 2, perConversationConcurrent: 3, maxConcurrent: 4, maxGatewayRequestsPerDay: 100 } });
 const config = () => ({ enabled: true, gateway: { baseUrl: 'http://127.0.0.1:3425/v1', apiKeyEnvVar: 'M0_GATEWAY' },
   routes: ['a', 'b', 'c'].map(route), defaultRoute: 'a', fallbackRoutes: [], scopedPolicies: { 'nori-community': policy() } });
 const ctx = (extra = {}) => ({ runId: 'run', agentId: 'nori-community', sessionId: 'session', sessionKey: 'agent:nori-community:discord:room',
@@ -28,6 +28,7 @@ const stream = (message, events = []) => ({ async *[Symbol.asyncIterator]() {
   yield message.stopReason === 'error' ? { type: 'error', reason: 'error', error: message } : { type: 'done', reason: 'stop', message };
 }, result: async () => message });
 const fixtureRouter = (raw = config(), overrides = {}) => createRouter({ config: raw,
+  usage: { admit() {}, assertCurrent() {}, reserveRequest() {}, settle: () => false },
   decisions: { evaluate() { assert.fail('scoped requests must never classify'); } },
   environment: { M0_GATEWAY: key('global'), M0_ROUTE_A: key('a'), M0_ROUTE_B: key('b'), M0_ROUTE_C: key('c') },
   fetchImpl: async (_url, init) => {
@@ -140,4 +141,41 @@ test('fallback stops after any visible delta, gateway auth rejection, or cancell
     if (mode === 'cancel') await assert.rejects(output.result()); else assert.equal((await output.result()).stopReason, 'error');
     assert.deepEqual(attempts, ['a']);
   }
+});
+
+test('public origins require complete bounded usage limits; Slack can retain legacy admission', () => {
+  for (const change of [p => { delete p.usageLimits; }, p => { delete p.usageLimits.maxConcurrent; },
+    p => { p.usageLimits.maxConcurrent = 1.5; }, p => { p.usageLimits.perUserConcurrent = 0; },
+    p => { p.usageLimits.maxGatewayRequestsPerDay = 50001; }, p => { p.usageLimits.unknown = 1; }]) {
+    const raw = config(); change(raw.scopedPolicies['nori-community']);
+    assert.throws(() => validateRouterConfig(raw), /router_/);
+  }
+  const raw = config(), p = raw.scopedPolicies['nori-community'];
+  p.origins[0].platform = 'slack'; p.platforms = {}; p.channels = []; delete p.usageLimits;
+  assert.doesNotThrow(() => validateRouterConfig(raw));
+  assert.doesNotThrow(() => createRouter({ config: { ...config(), enabled: false } }));
+  assert.throws(() => createRouter({ config: config() }), /usage_required/);
+});
+
+test('real ledger blocks fallback before transport when the shared daily budget is exhausted', async t => {
+  const { createUsageLedger } = await import('../plugins/rein-router/usage-limits.mjs');
+  const { mkdtempSync, rmSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const stateDir = mkdtempSync(join(tmpdir(), 'nori-router-budget-'));
+  const usage = createUsageLedger({ stateDir });
+  const raw = config(); raw.scopedPolicies['nori-community'].usageLimits.maxGatewayRequestsPerDay = 1;
+  const r = fixtureRouter(raw, { usage });
+  t.after(() => { usage.close(); rmSync(stateDir, { recursive: true, force: true }); });
+  const source = ctx({ chatId: 'OTHER' });
+  await r.beforeModelResolve({ prompt: 'hello' }, source);
+  assert.equal(r.beforeAgentRun({}, { ...source, modelId: 'b' }).outcome, 'pass');
+  const attempts = [];
+  const wrapped = r.wrapStreamFn({ agentId: source.agentId, streamFn: m => { attempts.push(m.id); return stream(terminal(503)); } });
+  await assert.rejects(wrapped(model('b'), {}, { sessionId: source.sessionId }).result());
+  assert.deepEqual(attempts, ['fixture/b:medium']);
+  r.lifecycleEvent({ runId: source.runId, stream: 'lifecycle', data: { phase: 'end', executionSettled: true } });
+  const next = { ...source, runId: 'next' };
+  await r.beforeModelResolve({ prompt: 'hello' }, next);
+  assert.equal(r.beforeAgentRun({}, { ...next, modelId: 'b' }).outcome, 'block');
 });

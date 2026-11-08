@@ -131,6 +131,11 @@ magpie.plugin('rein-router', ctx => {
       group.append(el('h3', '', policy.agentId));
       group.append(el('p', '', `${policy.allowPaidUsage ? '允许已授权付费路由' : '禁止付费路由'} · 最多 ${policy.maxOutputTokens} 输出 token · ${policy.requestTimeoutMs / 1000} 秒请求上限`));
       group.append(el('p', '', `可用模型：${policy.allowedRoutes.map(routeLabel).join('；')}`));
+      if (policy.usageLimits) {
+        const limits = policy.usageLimits;
+        group.append(el('p', '', `每人/每会话每分钟：${limits.perUserPerMinute}/${limits.perConversationPerMinute} 次；并发：${limits.perUserConcurrent}/${limits.perConversationConcurrent}，Agent 总并发 ${limits.maxConcurrent}；UTC 每日网关请求预算 ${limits.maxGatewayRequestsPerDay} 次。路由回退和后续模型请求计入同一预算。`));
+      }
+
       for (const [label, settings] of [['Agent 默认', policy.default],
         ...policy.platforms.map(value => [`${value.platform} 平台默认`, value]),
         ...policy.channels.map(value => [`${value.platform} / ${value.accountId} / ${value.workspaceId} / ${value.channelId}`, value])]) {

@@ -18,15 +18,18 @@ export default definePluginEntry({ id: 'rein-scoped-probe', name: 'Synthetic M0 
       isEnabled: () => true, isConfigured: () => true },
     gateway: { async startAccount(ctx) {
       const runtime = ctx.channelRuntime, cfg = ctx.cfg;
-      const agentId = platform === 'slack' ? 'main' : 'nori-community';
+      const defaultAgentId = platform === 'slack' ? 'main' : 'nori-community';
       const spaceId = platform === 'slack' ? 'T0123456ABC' : '100000000000000001';
       const senderId = platform === 'slack' ? 'U0123456ABC' : '100000000000000003';
       const cases = platform === 'slack' ? [['C0123456ABC', 'CASE_SLACK']] : [
         ['100000000000000002', 'CASE_COMMUNITY_OVERRIDE'], ['100000000000000004', 'CASE_COMMUNITY_PLATFORM'],
         ['100000000000000004', 'CASE_COMMUNITY_FAILURE'], ['100000000000000002', 'CASE_COMMUNITY_EMPTY'],
+        ['100000000000000002', 'CASE_BUDGET_FIRST', 'nori-budget-probe'],
+        ['100000000000000002', 'CASE_BUDGET_EXHAUSTED', 'nori-budget-probe'],
       ];
       try {
-        for (const [index, [channelId, text]] of cases.entries()) {
+        for (const [index, [channelId, text, selectedAgent]] of cases.entries()) {
+          const agentId = selectedAgent ?? defaultAgentId;
           const sessionKey = `agent:${agentId}:${platform}:channel:${channelId}:${index}`;
           const messageId = platform === 'slack' ? `${1794000000 + index}.000001` : String(100000000000000010n + BigInt(index));
           const ingress = await runtime.inbound.ingress.resolveStable({ channelId: platform, accountId: 'default', cfg,

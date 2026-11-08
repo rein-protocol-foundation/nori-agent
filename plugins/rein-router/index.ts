@@ -1,5 +1,6 @@
 import { definePluginEntry } from 'openclaw/plugin-sdk/plugin-entry';
 import { createRouter, assertRuntimeConfig, bindRouterLifecycle, PROVIDER_ID } from './runtime.mjs';
+import { createUsageLedger } from './usage-limits.mjs';
 import { validateRouterConfig } from './policy.mjs';
 import { createManagedGateway } from './managed-gateway.mjs';
 import { bindManagedService, managedServiceScope, managedServiceRegistry } from './service-bridge.mjs';
@@ -25,10 +26,17 @@ export default definePluginEntry({
     const authorizeAdmin = createFoundationAdminAuthorizer(foundation);
     const authorizeDevelopment = createSlackDevelopmentAuthorizer({ config,
       authorizeFoundation: createFoundationDeveloperAuthorizer(foundation) });
-    const router = createRouter({ config, decisions: api.runtime.decisions, gatewayReady: gateway?.isReady, authorizeAdmin, authorizeDevelopment });
+    if (config.enabled) assertRuntimeConfig(config, api.config);
+    const usage = config.enabled && Object.values(config.scopedPolicies ?? {}).some(policy => policy.usageLimits)
+      ? createUsageLedger({ stateDir: api.runtime.state.resolveStateDir() }) : undefined;
+    const router = createRouter({ config, decisions: api.runtime.decisions, gatewayReady: gateway?.isReady,
+      authorizeAdmin, authorizeDevelopment, usage });
     if (!router.config.enabled) return;
-    assertRuntimeConfig(router.config, api.config);
     bindRouterLifecycle(router, { events: api.runtime.events, lifecycle: api.lifecycle });
+    if (usage) {
+      if (api.lifecycle.onDispose) api.lifecycle.onDispose(() => usage.close());
+      else api.lifecycle.registerRuntimeLifecycle({ id: 'rein-router-usage', dispose: () => usage.close() });
+    }
     if (gateway) {
       api.registerService({ id: 'rein-magpie', start: gateway.start, stop: gateway.stop });
       if (api.lifecycle.onDispose) api.lifecycle.onDispose(gateway.stop);

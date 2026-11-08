@@ -108,6 +108,8 @@ jobs:
               -run '^(TestClaudeRunKeptForTheNextTurn|TestClaudeRunKeptAcrossEffort|TestClaudeLetGoConversationResumesItsSession|TestClaudeToolResultsKeepTheSelectedAccount|TestClaudeCLIEffortXHigh|TestCleanClaudeEnvRemovesGatewayOverrides)$'
       - name: Verify actual Magpie gateway with synthetic upstream providers
         run: pnpm verify:subscriptions --magpie-checkout runtime/magpie-fixture
+      - name: Verify scoped provider policy and durable usage admission
+        run: node scripts/verify-scoped-routing.mjs runtime/magpie-fixture
       - name: Prepare pinned headless Magpie dependency
         run: pnpm magpie:setup
       - name: Verify project-local Magpie configuration UI without inference
