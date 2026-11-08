@@ -1,5 +1,7 @@
+import { registerAgentProfiles } from './agent-profiles.mjs';
 import { Type } from "typebox";
 import { isAbsolute } from "node:path";
+import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
 import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
 import { createRound, castBallot, tallyRound } from "./governance.ts";
 import { checkCompleteness, validateSchedule, routeProcessingPath } from "./proposals.ts";
@@ -23,6 +25,12 @@ export default definePluginEntry({
   name: "Nori-Agent Operations",
   description: "Rein Protocol Foundation operations extension",
   register(api) {
+    if (api.pluginConfig?.agentProfiles !== undefined) return registerAgentProfiles(api, registerOperations);
+    return registerOperations(api);
+  },
+});
+
+function registerOperations(api: OpenClawPluginApi) {
     const proposalConfig = api.pluginConfig?.proposalTools;
     const proposalEnabled = Boolean(proposalConfig && typeof proposalConfig === 'object' && (proposalConfig as Record<string, unknown>).enabled === true);
     const foundationDbConfig = api.pluginConfig?.foundationDb;
@@ -261,5 +269,4 @@ export default definePluginEntry({
         }
       },
     });
-  },
-});
+}

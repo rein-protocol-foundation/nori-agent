@@ -117,3 +117,35 @@ try {
 } finally {
   rmSync(temp, { recursive: true, force: true });
 }
+
+// M0 shared registration must pass the actual loader/schema, not only a mock API.
+const scopedTemp = mkdtempSync(join(tmpdir(), 'rein-openclaw-agent-profiles-'));
+try {
+  const foundation = (platform, suffix) => ({ enabled: true,
+    workspaces: [{ platform, workspaceId: 'FIXTURE_WORKSPACE', nativeChannelIds: ['FIXTURE_ROOM'] }],
+    proposalChannelIds: ['FIXTURE_ROOM'], boardChannelIds: ['FIXTURE_ROOM'],
+    backendApiBaseUrlEnvVar: BACKEND_URL_ENV, agentCallerIdEnvVar: `${CALLER_ENV}_${suffix}`,
+    agentCredentialEnvVar: `${CREDENTIAL_ENV}_${suffix}`, proposalConfirmationKeyEnvVar: GOVERNANCE_CONFIRM_ENV });
+  const configPath = join(scopedTemp, 'openclaw.json');
+  writeFileSync(configPath, JSON.stringify({ plugins: { allow: ['rein-operations'],
+    load: { paths: [resolve(root, 'plugins/rein-operations')] }, entries: {
+      'rein-operations': { enabled: true, config: { agentProfiles: {
+        main: { platform: 'slack', accountId: 'default', capabilities: 'internal', foundationDb: foundation('slack', 'MAIN') },
+        'nori-community': { platform: 'discord', accountId: 'default', capabilities: 'community', foundationDb: foundation('discord', 'COMMUNITY') },
+      } } },
+    } } }, null, 2));
+  const scoped = inspectPlugin({ ...environment(), OPENCLAW_STATE_DIR: scopedTemp,
+    OPENCLAW_CONFIG_PATH: configPath, [BACKEND_URL_ENV]: 'https://backend.rein.example',
+    [`${CALLER_ENV}_MAIN`]: 'fixture-internal', [`${CALLER_ENV}_COMMUNITY`]: 'fixture-community',
+    [`${CREDENTIAL_ENV}_MAIN`]: `${CREDENTIAL}-main`, [`${CREDENTIAL_ENV}_COMMUNITY`]: `${CREDENTIAL}-community`,
+    [GOVERNANCE_CONFIRM_ENV]: GOVERNANCE_CONFIRM_KEY });
+  assert.equal(scoped.report.plugin.imported, true);
+  assert.notEqual(scoped.report.plugin.status, 'error', scoped.report.plugin.error);
+  const names = scoped.report.tools.flatMap(tool => tool.names);
+  assert.equal(new Set(names).size, names.length, 'each tool has one registration owner');
+  assert.equal(names.length, 20);
+  assert.equal(scoped.report.diagnostics.filter(item => item.level === 'error').length, 0);
+  assert.ok(!scoped.stdout.includes(CREDENTIAL));
+  assert.ok(!scoped.stdout.includes(GOVERNANCE_CONFIRM_KEY));
+  console.log('Verified real OpenClaw loader: scoped backend profiles register once without credentials in output.');
+} finally { rmSync(scopedTemp, { recursive: true, force: true }); }
