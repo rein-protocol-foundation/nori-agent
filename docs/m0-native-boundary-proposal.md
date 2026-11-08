@@ -138,8 +138,9 @@ Pinned Magpie already provides caller-key `limit`/`moreLimits` with token/cost w
 rate limits are not per-Discord-sender or conversation limits. Cost counters are estimates, not bills.
 
 PR #52 adds durable sender/conversation rates, concurrency and per-agent daily gateway-request budgets,
-with actual OpenClaw/Magpie and six-process SQLite acceptance. It does not implement a token/currency
-budget or whole-run deadline. Production activation remains pending. Retain native Magpie accounting
+with actual OpenClaw/Magpie and six-process SQLite acceptance. Its `before_agent_run` admission gate
+does not precede native history loading, debounce or queueing, so it also does not bound all ingress
+processing costs. It does not implement a token/currency budget or whole-run deadline. Production activation remains pending. Retain native Magpie accounting
 and key limits, and allocate separate
 agent/route credential scopes when independent aggregate token/currency ceilings are needed. Budget exhaustion must end the authorized
 chain rather than start another key/provider. Concurrency and in-flight budget reservations, repeated
