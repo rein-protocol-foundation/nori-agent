@@ -138,7 +138,7 @@ commit. A newer commit cancels the older run. Manual `workflow_dispatch` always 
 | `plugins/rein-router/**` | Plugin checks plus Router/Magpie native probes, offline provider fixtures and Router Console browser checks |
 | `plugins/rein-discord/**`, `plugins/rein-slack/**`, `plugins/rein-isolation/**` | Plugin checks plus native isolation and routing probes, because routing consumes these adapters' ingress contracts |
 | Upstream pin, dependencies, CI setup, shared runtime scripts, native fixtures, or unfamiliar executable paths | All suites |
-| Documentation and brand assets only | Scaffold checks; no OpenClaw installation/build |
+| Documentation, brand assets, or coding assistant development configuration only | Scaffold checks and CI scope tests; no OpenClaw installation/build |
 
 Unit-test-only changes run the plugin suite; native fixture and explicitly enabled native-test
 changes retain full integration. Browser tooling has its own existing browser workflow and still
@@ -158,7 +158,12 @@ The existing `OpenClaw integration / integration` check remains as an always-run
 It fails if change detection fails or any selected suite fails, is cancelled or is unexpectedly
 skipped. Documentation-only changes report success after explicitly skipping runtime suites, so
 branch protection does not wait for a path-filtered workflow that never started. Keep this aggregate
-check required; individual conditional suites need not be required separately. See
+check required; individual conditional suites need not be required separately. Repository-root
+`.codex/**`, `.claude/**`, `.opencode/**`, `opencode.json`, and `opencode.jsonc` follow the same
+skip policy. Markdown instructions such as `AGENTS.md` and `CLAUDE.md` already follow the
+documentation rule. Mixed changes still select coverage for every affected runtime path.
+The lightweight scaffold workflow also tests the selector without installing OpenClaw. Changes to
+the selector or OpenClaw workflow itself still select all suites. See
 [GitHub's required-check guidance](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks).
 
 To reproduce the common plugin checks after preparing the pinned runtime:

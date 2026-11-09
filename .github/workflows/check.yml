@@ -17,3 +17,5 @@ jobs:
         with:
           node-version: '22'
       - run: node scripts/check.mjs
+      - name: Test CI scope selection without installing OpenClaw
+        run: node --test tests/ci-scope.test.mjs
