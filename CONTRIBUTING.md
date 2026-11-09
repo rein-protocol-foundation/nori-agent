@@ -7,3 +7,5 @@ Do not commit secrets or real organization records. Run `node scripts/check.mjs`
 Use synthetic examples explicitly marked as fixtures. Keep Chinese and English requirements aligned. A change to an example config does not constitute governance approval.
 
 Develop Nori-Agent capabilities in `plugins/`, using public OpenClaw SDK seams. Do not modify tracked files in `vendor/openclaw`. For plugin/runtime changes follow `docs/setup.md`, run `pnpm test` and runtime plugin inspection, and review the separate upstream update procedure in `docs/upstream.md`.
+
+For end-of-task token reporting and usage handoffs across agent runtimes, see the [Token Usage guide](docs/agent-token-usage.md).

@@ -57,6 +57,16 @@ Sol model/effort fresh-context fallback in `AGENTS.md`; if it cannot be verified
 work and report the limitation. Record future PRD progress in the existing roadmap and acceptance
 matrix, with checks, blockers, and next steps here; no product acceptance status changes in this entry.
 
+### Token usage handoff follow-up (2026-11-09)
+
+Added a mandatory Chinese end-of-task usage template to root `AGENTS.md` and a
+[cross-agent handoff guide](agent-token-usage.md), discoverable from `CONTRIBUTING.md`.
+Owner: Codex orchestrator with Sol Low documentation support. Configuration/documentation scope
+only; no PRD milestone advanced. Reports must identify missing data and their collection cutoff,
+avoid double counting, and distinguish measured usage from estimated or billed cost.
+Verification: `node scripts/check.mjs` and `git diff --check` passed.
+Handoff: non-Codex agents must explicitly load the guide if their host does not load `AGENTS.md`.
+
 ## Current backend configuration (2026-10-26)
 
 Nori connects to `https://rein-protocol.org` by default. `REIN_BACKEND_URL` is resolved in this order:

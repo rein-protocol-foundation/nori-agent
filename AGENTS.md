@@ -46,6 +46,38 @@ explicit user requests still apply. It governs repository development, not Nori'
 - Never claim completion without relevant verification. State failed, skipped, and pending checks
   explicitly. Keep external sends, publishing, and deployment within explicit user authorization.
 
+## 任务结束时的 Token Usage 报告
+
+所有参与本仓库开发的 agent（含非 Codex agent）都必须在每次任务的最终回复中附上以下报告。
+子 agent 和执行模型调用的子进程应将可取得的运行时用量及覆盖范围交给父 agent 汇总。
+接入方式见[跨 Agent 用量交接指南](docs/agent-token-usage.md)。
+
+### Token Usage
+
+- 任务：<名称或 ID>
+- 状态：<完成 / 部分完成 / 阻塞>
+- 统计范围：<起止轮次、已覆盖的子 agent 和报告截止点>
+
+| 角色 | 实际模型 / 推理强度 | 输入 | 缓存输入（输入的子集） | 输出 | 总计 |
+| --- | --- | ---: | ---: | ---: | ---: |
+| 主 agent | <运行时确认的值或不可用> | <数量或不可用> | <数量或不可用> | <数量或不可用> | <数量或不可用> |
+| 子 agent：<名称，无则删除此行> | <运行时确认的值或不可用> | <数量或不可用> | <数量或不可用> | <数量或不可用> | <数量或不可用> |
+| 合计 | — | <数量或不可用> | <数量或不可用> | <数量或不可用> | <数量或不可用> |
+
+- 费用：<实际金额和币种 / 估算金额和币种 / 未知>
+- 数据来源：<运行时用量、会话元数据或账单。估算另附定价来源>
+- 缺失范围：<未覆盖的轮次、agent、字段及原因>
+
+只使用当前任务的实际运行时记录或账单。排除复用会话中的历史任务。字段缺失时填
+「不可用」，只有来源明确记录为零时才填零。汇总前核对供应商的字段定义，部分供应商单列缓存用量。
+将已计入输入的缓存和已计入输出的推理 token 保留为子集，汇总时各计一次。按调用去重，避免父
+agent 的汇总与子 agent 的明细重叠。只有来源提供总数，或组成字段齐全且口径明确时才填写总计。
+
+实际费用以可归属到本任务的账单为准。估算须核实当前模型和计费档位的价格并注明来源。
+订阅额度或百分比不得换算为金额。最终回复本身的 token 往往要等发送后才能取得，注明统计截止点和
+未覆盖范围，仅在账单证明确实覆盖完整任务时报告完整账单总额。禁止为生成报告单独发起额外的
+agent 或模型调用。
+
 ## Development and design standard
 
 Extend Nori through focused, optional, reversible changes that preserve native capabilities and

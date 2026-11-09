@@ -49,6 +49,15 @@ Astra/medium 设置；TOML 不会追溯修改活动轮次。UI/CLI 显式选择�
 模型/推理强度并使用新上下文；无法验证时停止委派并报告限制。PRD 进度继续记录到现有路线图
 与验收矩阵，验证、阻塞和下一步记录于本文；本条记录不改变产品验收状态。
 
+### Token 用量交接补充（2026-11-09）
+
+根目录 `AGENTS.md` 增加任务结束时必须使用的中文报告模板，并新增
+[跨 Agent 交接说明](agent-token-usage.md)，从 `CONTRIBUTING.md` 提供入口。
+负责人：Codex 主协调代理与 Sol Low 文档子代理。仅配置/文档范围，未推进 PRD 里程碑。
+报告必须标注缺失数据与采集截止范围，避免重复计数，区分实测用量、估算费用和账单费用。
+验证：`node scripts/check.mjs` 与 `git diff --check` 均已通过。
+交接：非 Codex 宿主若不自动加载 `AGENTS.md`，必须显式读取交接说明。
+
 ## 当前后端配置（2026-10-26）
 
 Nori 默认连接 `https://rein-protocol.org`。`REIN_BACKEND_URL` 的优先级为：启动进程环境变量、
