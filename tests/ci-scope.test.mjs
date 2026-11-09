@@ -81,15 +81,21 @@ test('Claude Code and OpenCode configuration skips runtime suites with exact pat
 });
 
 test('required gate rejects failed, cancelled or unexpectedly skipped selected checks', () => {
-  const results = { changes: 'success', plugins: 'success', routing: 'skipped', isolation: 'skipped' };
+  const results = { changes: 'success', prepare: 'skipped', plugins: 'success', routing: 'skipped', isolation: 'skipped' };
   assert.equal(requiredChecksPass(plugins, results), true);
-  assert.equal(requiredChecksPass(none, { ...results, plugins: 'skipped' }), true);
+  assert.equal(requiredChecksPass(none, { ...results, prepare: 'skipped', plugins: 'skipped' }), true);
   for (const result of ['failure', 'cancelled', 'skipped', undefined]) {
     assert.equal(requiredChecksPass(plugins, { ...results, plugins: result }), false);
     assert.equal(requiredChecksPass(plugins, { ...results, changes: result }), false);
+    for (const name of ['prepare', 'plugins', 'routing', 'isolation']) {
+      const complete = { changes: 'success', prepare: 'success', plugins: 'success', routing: 'success', isolation: 'success' };
+      assert.equal(requiredChecksPass(all, { ...complete, [name]: result }), false, `${name}: ${result}`);
+    }
   }
+  assert.equal(requiredChecksPass(none, { ...results, prepare: 'success', plugins: 'skipped' }), false);
+  assert.equal(requiredChecksPass(plugins, { ...results, prepare: 'failure' }), false);
   assert.equal(requiredChecksPass(all, results), false);
-  assert.equal(requiredChecksPass(all, { changes: 'success', plugins: 'success', routing: 'success', isolation: 'success' }), true);
+  assert.equal(requiredChecksPass(all, { changes: 'success', prepare: 'success', plugins: 'success', routing: 'success', isolation: 'success' }), true);
 });
 
 test('git diff includes deletions, both sides of renames, and uses the PR merge base', t => {

@@ -1,0 +1,25 @@
+name: Fetch pinned OpenClaw source
+description: Reuse a pristine checkout of the exact gitlink before installing dependencies.
+runs:
+  using: composite
+  steps:
+    - name: Read pinned source identity
+      id: pin
+      shell: bash
+      run: echo "revision=$(git rev-parse HEAD:vendor/openclaw)" >> "$GITHUB_OUTPUT"
+    - name: Restore pristine source
+      id: source
+      uses: actions/cache/restore@v4
+      with:
+        path: vendor/openclaw
+        key: openclaw-source-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.pin.outputs.revision }}-${{ hashFiles('.gitmodules', '.github/actions/checkout-openclaw/action.yml', 'scripts/ci-openclaw-source.mjs') }}
+    - name: Fetch missing source and verify the pin
+      shell: bash
+      run: node scripts/ci-openclaw-source.mjs
+    # Save now, never in a post step after tests, installs or runtime state creation.
+    - name: Save pristine source
+      if: steps.source.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: vendor/openclaw
+        key: ${{ steps.source.outputs.cache-primary-key }}

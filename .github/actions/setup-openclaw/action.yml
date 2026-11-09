@@ -10,7 +10,9 @@ runs:
     - name: Read upstream build identity
       id: identity
       shell: bash
-      run: echo "revision=$(git -C vendor/openclaw rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      run: |
+        echo "revision=$(git -C vendor/openclaw rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+        echo "pnpm=$(pnpm --version)" >> "$GITHUB_OUTPUT"
     - name: Locate pnpm store
       id: store
       shell: bash
@@ -18,7 +20,7 @@ runs:
     - uses: actions/cache@v4
       with:
         path: ${{ steps.store.outputs.path }}
-        key: pnpm-store-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package.json', 'pnpm-lock.yaml', 'vendor/openclaw/pnpm-lock.yaml') }}
+        key: pnpm-store-v2-${{ runner.os }}-${{ runner.arch }}-node24.16.0-pnpm${{ steps.identity.outputs.pnpm }}-${{ hashFiles('pnpm-lock.yaml', 'vendor/openclaw/pnpm-lock.yaml') }}
     - name: Install upstream dependencies
       shell: bash
       working-directory: vendor/openclaw
@@ -43,8 +45,10 @@ runs:
       id: build
       uses: actions/cache@v4
       with:
+        # The upstream SHA covers its manifests, lockfiles and build scripts.
+        # Rein manifests do not affect the upstream build; actual pnpm version does.
         # No restore-keys: never load artifacts from another SDK revision or toolchain.
-        key: openclaw-build-v1-${{ runner.os }}-${{ runner.arch }}-node24.16.0-${{ steps.identity.outputs.revision }}-${{ hashFiles('package.json', 'pnpm-lock.yaml', 'vendor/openclaw/pnpm-lock.yaml', '.github/actions/setup-openclaw/action.yml') }}
+        key: openclaw-build-v2-${{ runner.os }}-${{ runner.arch }}-node24.16.0-pnpm${{ steps.identity.outputs.pnpm }}-${{ steps.identity.outputs.revision }}-${{ hashFiles('.github/actions/setup-openclaw/action.yml') }}
         path: |
           vendor/openclaw/dist
           vendor/openclaw/packages/*/dist
