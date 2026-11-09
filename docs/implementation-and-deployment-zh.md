@@ -51,7 +51,7 @@ Astra/medium 设置；TOML 不会追溯修改活动轮次。UI/CLI 显式选择�
 
 ### Token 用量交接补充（2026-11-09）
 
-根目录 `AGENTS.md` 增加任务结束时必须使用的中文报告模板，并新增
+根目录 `AGENTS.md` 增加任务结束时必须提交的用量报告，并新增
 [跨 Agent 交接说明](agent-token-usage.md)，从 `CONTRIBUTING.md` 提供入口。
 负责人：Codex 主协调代理与 Sol Low 文档子代理。仅配置/文档范围，未推进 PRD 里程碑。
 报告必须标注缺失数据与采集截止范围，避免重复计数，区分实测用量、估算费用和账单费用。

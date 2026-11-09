@@ -59,7 +59,7 @@ matrix, with checks, blockers, and next steps here; no product acceptance status
 
 ### Token usage handoff follow-up (2026-11-09)
 
-Added a mandatory Chinese end-of-task usage template to root `AGENTS.md` and a
+Added a mandatory end-of-task usage report to root `AGENTS.md` and a
 [cross-agent handoff guide](agent-token-usage.md), discoverable from `CONTRIBUTING.md`.
 Owner: Codex orchestrator with Sol Low documentation support. Configuration/documentation scope
 only; no PRD milestone advanced. Reports must identify missing data and their collection cutoff,

@@ -50,6 +50,8 @@ explicit user requests still apply. It governs repository development, not Nori'
 
 所有参与本仓库开发的 agent（含非 Codex agent）都必须在每次任务的最终回复中附上以下报告。
 子 agent 和执行模型调用的子进程应将可取得的运行时用量及覆盖范围交给父 agent 汇总。
+报告默认使用英语。有当前用户请求或委派开发任务时，使用其语言。明确指定的语言优先。
+下方中文模板仅示范格式，标题、字段标签和状态值按报告语言本地化。
 接入方式见[跨 Agent 用量交接指南](docs/agent-token-usage.md)。
 
 ### Token Usage
