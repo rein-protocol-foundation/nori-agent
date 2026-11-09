@@ -146,17 +146,33 @@ runs the common plugin tests. Workspace/config changes follow `scripts/ci-scope.
 paths and unavailable Git diff history fall back to all suites. The selector tests cover mixed
 changes, deletions, renames, PR merge bases and failure propagation.
 
-Plugin checks use the real pinned SDK, not a stub. Upstream dependencies and build outputs are
-cached separately. Build reuse requires the exact upstream commit, Node version, OS/architecture,
-lockfiles and setup action; there is no fallback to another revision. Only build outputs
-(root/package `dist`, the runtime overlay and untracked upstream-declared generated assets) are cached, never runtime profiles, credentials or member data. Restored freshness
-stamp times are refreshed through the upstream helper without changing their producer identity.
-A cold cache still requires a full upstream build. Native suites start after plugin checks and can reuse that build;
-routing and isolation then run in parallel. All runtime jobs check that upstream remains unchanged.
+Plugin checks use the real pinned SDK, not a stub. Source, dependency store and build outputs
+have separate caches. The source action reads the gitlink from the checked-out commit, fetches
+that SHA directly on a miss, and saves a standalone, pristine checkout **before** installation.
+Cache hits must match the pin and have no tracked, untracked or ignored worktree changes.
+Source caches never include the parent repository's credentials, runtime profiles or installed
+dependencies. There are no cross-revision restore keys.
+
+Build reuse requires the exact upstream commit, Node and actual pnpm versions, OS/architecture,
+and setup action. The upstream commit already identifies its manifests, lockfiles and build
+scripts; Rein package metadata and its lockfile no longer invalidate the upstream build.
+The dependency store still follows both lockfiles and the toolchain. Build caches include only
+root/package `dist`, the runtime overlay and untracked upstream-declared generated assets.
+Restored freshness stamp times are refreshed through the upstream helper without changing
+their producer identity.
+
+When routing or isolation is selected, a shared preparation job populates the source and build
+caches first. Plugin-only changes prepare inline to avoid an extra runner and installation. Its cache post steps finish before the plugin, routing and isolation jobs start
+in parallel on separate runners. Every original test and probe remains in its original suite;
+parallelism does not share ports, runtime profiles or test workspaces. Cold builds happen in
+preparation, while consumers normally restore the exact build. Cache eviction or a failed cache
+save may still require a consumer to rebuild safely. Shared preparation adds runner overhead
+on warm runs; compare end-to-end timings, not just individual job durations. All runtime
+jobs check that upstream remains unchanged.
 
 The existing `OpenClaw integration / integration` check remains as an always-running result gate.
-It fails if change detection fails or any selected suite fails, is cancelled or is unexpectedly
-skipped. Documentation-only changes report success after explicitly skipping runtime suites, so
+It fails if change detection or required shared preparation fails, or any selected suite fails,
+is cancelled or is unexpectedly skipped. Documentation-only changes report success after explicitly skipping runtime suites, so
 branch protection does not wait for a path-filtered workflow that never started. Keep this aggregate
 check required; individual conditional suites need not be required separately. See
 [GitHub's required-check guidance](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks).

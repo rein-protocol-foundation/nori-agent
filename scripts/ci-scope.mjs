@@ -35,6 +35,8 @@ export function changedPaths(base, head = 'HEAD', { pullRequest = false, cwd } =
 
 export function requiredChecksPass(scope, results) {
   if (results.changes !== 'success') return false;
+  const sharedPreparation = scope.routing || scope.isolation;
+  if (results.prepare !== (sharedPreparation ? 'success' : 'skipped')) return false;
   return ['plugins', 'routing', 'isolation'].every(name =>
     scope[name] ? results[name] === 'success' : results[name] === 'skipped');
 }
