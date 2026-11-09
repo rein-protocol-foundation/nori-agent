@@ -2,6 +2,62 @@
 
 [English](implementation-and-deployment.md) | 简体中文
 
+## Codex 开发任务委派配置（2026-11-09）
+
+范围仅限配置与文档，没有实施 PRD 或推进产品里程碑。负责人：项目 Codex 主协调代理。
+状态：配置与实际路由冒烟验证通过。根目录 `AGENTS.md` 中的新策略取代旧的项目委派规则。
+
+| 角色 | 实际模型 | 推理强度 | 配置 |
+| --- | --- | --- | --- |
+| 主协调代理 | `gpt-6-astra` | high | `.codex/config.toml` |
+| Implementation Agent | `gpt-6.1-sol` | high | `.codex/agents/implementation.toml` |
+| Routine Agent | `gpt-6.1-sol` | low | `.codex/agents/routine.toml` |
+| 其他子代理 | `gpt-6.1-sol` | medium | `[agents]` 默认设置 |
+
+已检查 PATH CLI `0.162.1`、本地 daemon 二进制 `0.167.0`、桌面内置 CLI
+`0.167.0-alpha.3.2`；本地已信任该项目。官方
+[子代理文档](https://learn.chatgpt.com/docs/agent-configuration/subagents) 与
+[配置参考](https://learn.chatgpt.com/docs/config-file/config-reference) 支持项目角色发现、
+角色模型/推理强度及独立子代理默认值。未修改全局用户配置、供应商或认证配置。
+
+验证证据：
+
+- CLI `0.162.1` 的 `app-server --strict-config` 通过 `config/read` 解析出 Astra/high、
+  Sol/medium 默认值、启用子代理及最多两个并发子代理。
+- `0.167.0` 新建只读严格配置测试会话 `01a1c1a8-dea4-7cc2-8ce6-7a5a9c340e65`
+  的运行时 turn context 为 Astra/high。依次创建以下子代理，均使用 `fork_turns="none"`，
+  未显式覆盖模型或推理强度，均返回 `ROUTE_OK`，没有执行仓库开发工作。
+- Implementation：`01a1c1a8-f679-75a2-8e5c-a19c8fe875a9`，Sol/high。
+- Routine：`01a1c1a9-110b-71f2-aec0-9933bbfc8f15`，Sol/low。
+- 默认子代理：`01a1c1a9-2f45-79e2-a0cd-0bfc8a10ef85`，Sol/medium。
+- 外层验证独立读取本地运行时线程元数据与持久化 `turn_context` 的 `model`、`effort`，
+  并非相信代理自述；测试父代理本身没有暴露这些元数据。
+- 当前桌面会话还测试了显式指定 Sol/low 的后备方式：
+  `01a1c1a8-756d-7141-b3be-abd527165f32`，运行时线程元数据确认成功。
+- `node scripts/check.mjs` 与 `git diff --check` 均通过。仅变更开发配置和文档，
+  未运行产品测试或生产集成验证。
+
+交接与限制：新建项目会话以加载角色目录和默认值。本次已打开的配置会话仍保留此前的
+Astra/medium 设置；TOML 不会追溯修改活动轮次。UI/CLI 显式选择可覆盖项目默认值，
+恢复旧会话时应确认主模型为 Astra High。实际测试运行时支持角色模型路由；未单独测试旧 CLI
+的角色创建。已有 `rbtrading_mcp` 和 `playwright` MCP 启动警告未阻碍冒烟测试，也未修复。
+提示缓存仅尽力复用，不保证节省额度。
+
+后续可在项目内使用 `codex exec --strict-config --json -s read-only`，要求依次创建
+`implementation`、`routine`、`default` 无操作子代理，不传模型/推理强度覆盖，再核对实际
+运行元数据。不可用代理自述证明模型。旧会话若缺少新角色，按 `AGENTS.md` 显式指定 Sol
+模型/推理强度并使用新上下文；无法验证时停止委派并报告限制。PRD 进度继续记录到现有路线图
+与验收矩阵，验证、阻塞和下一步记录于本文；本条记录不改变产品验收状态。
+
+### Token 用量交接补充（2026-11-09）
+
+根目录 `AGENTS.md` 增加任务结束时必须提交的用量报告，并新增
+[跨 Agent 交接说明](agent-token-usage.md)，从 `CONTRIBUTING.md` 提供入口。
+负责人：Codex 主协调代理与 Sol Low 文档子代理。仅配置/文档范围，未推进 PRD 里程碑。
+报告必须标注缺失数据与采集截止范围，避免重复计数，区分实测用量、估算费用和账单费用。
+验证：`node scripts/check.mjs` 与 `git diff --check` 均已通过。
+交接：非 Codex 宿主若不自动加载 `AGENTS.md`，必须显式读取交接说明。
+
 ## 当前后端配置（2026-10-26）
 
 Nori 默认连接 `https://rein-protocol.org`。`REIN_BACKEND_URL` 的优先级为：启动进程环境变量、
