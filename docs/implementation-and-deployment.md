@@ -2,6 +2,71 @@
 
 English | [简体中文](implementation-and-deployment-zh.md)
 
+## Codex development delegation configuration (2026-11-09)
+
+Scope: configuration and documentation only; no PRD implementation or milestone advancement.
+Owner: project Codex orchestrator. Status: configuration and routing smoke verification passed.
+The repository development policy in `AGENTS.md` supersedes previous project delegation rules.
+
+| Role | Effective model | Reasoning | Configuration |
+| --- | --- | --- | --- |
+| Primary orchestrator | `gpt-6-astra` | high | `.codex/config.toml` |
+| Implementation Agent | `gpt-6.1-sol` | high | `.codex/agents/implementation.toml` |
+| Routine Agent | `gpt-6.1-sol` | low | `.codex/agents/routine.toml` |
+| Other subagents | `gpt-6.1-sol` | medium | `[agents]` defaults |
+
+Installed versions inspected: PATH CLI `0.162.1`, local daemon binary `0.167.0`, desktop-bundled
+CLI `0.167.0-alpha.3.2`. The project is already trusted locally. Official
+[subagent documentation](https://learn.chatgpt.com/docs/agent-configuration/subagents) and
+[configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference) document
+project agent discovery, per-agent model/effort settings, and separate subagent defaults.
+The role files pin both settings; no global user configuration or provider/auth settings changed.
+
+Verification evidence:
+
+- CLI `0.162.1` app-server with `--strict-config`: `config/read` for this checkout resolved
+  Astra/high, Sol/medium defaults, enabled agents, and a two-child concurrency limit.
+- Fresh `0.167.0` strict-config, read-only smoke session
+  `01a1c1a8-dea4-7cc2-8ce6-7a5a9c340e65`: runtime turn context recorded Astra/high.
+  It sequentially spawned the following roles with `fork_turns="none"` and **no explicit model
+  or effort overrides**. All returned `ROUTE_OK` and performed no repository work.
+- Implementation child `01a1c1a8-f679-75a2-8e5c-a19c8fe875a9`: Sol/high.
+- Routine child `01a1c1a9-110b-71f2-aec0-9933bbfc8f15`: Sol/low.
+- Default child `01a1c1a9-2f45-79e2-a0cd-0bfc8a10ef85`: Sol/medium.
+- Each assignment above was independently read from local runtime thread metadata and its
+  persisted `turn_context` (`model`, `effort`), rather than inferred from the child's response.
+  The smoke parent could not itself expose that metadata; the outer verification supplied it.
+- The existing desktop session's explicit-model fallback also completed a Sol/low probe
+  (`01a1c1a8-756d-7141-b3be-abd527165f32`), confirmed in runtime thread metadata.
+- `node scripts/check.mjs`: passed. `git diff --check`: passed. Product tests and production
+  integration were not run because this change is limited to development configuration/docs.
+
+Handoff and limitations: start a fresh project session to load the role catalog and defaults.
+The already-open configuration chat retained its prior Astra/medium turn setting; writing TOML
+does not retroactively change active turns. An explicit UI/CLI model or effort selection can
+override project defaults. Verify the displayed primary is Astra High when resuming older chats.
+Per-agent routing is supported on the tested runtime; older CLI role spawning was not separately
+tested. Unrelated existing MCP startup warnings for `rbtrading_mcp` and `playwright` did not block
+the smoke test and were not repaired. Prompt caching is best effort, not guaranteed savings.
+
+For future verification, run a read-only `codex exec --strict-config --json -s read-only` smoke
+from this checkout, asking for sequential no-op spawns of `implementation`, `routine`, and `default`
+without model/effort overrides, then check each child's runtime model and effort. Never use a
+model's self-report as evidence. If a running session lacks the named roles, use the explicit
+Sol model/effort fresh-context fallback in `AGENTS.md`; if it cannot be verified, stop delegated
+work and report the limitation. Record future PRD progress in the existing roadmap and acceptance
+matrix, with checks, blockers, and next steps here; no product acceptance status changes in this entry.
+
+### Token usage handoff follow-up (2026-11-09)
+
+Added a mandatory end-of-task usage report to root `AGENTS.md` and a
+[cross-agent handoff guide](agent-token-usage.md), discoverable from `CONTRIBUTING.md`.
+Owner: Codex orchestrator with Sol Low documentation support. Configuration/documentation scope
+only; no PRD milestone advanced. Reports must identify missing data and their collection cutoff,
+avoid double counting, and distinguish measured usage from estimated or billed cost.
+Verification: `node scripts/check.mjs` and `git diff --check` passed.
+Handoff: non-Codex agents must explicitly load the guide if their host does not load `AGENTS.md`.
+
 ## Current backend configuration (2026-10-26)
 
 Nori connects to `https://rein-protocol.org` by default. `REIN_BACKEND_URL` is resolved in this order:
