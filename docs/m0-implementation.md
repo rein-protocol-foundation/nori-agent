@@ -1,9 +1,29 @@
 # M0 implementation and acceptance ledger
 
-Requirements: [Super Agent PRD v0.5.1](super-agent-nori-prd-en.md), sections 2.2, 2.3 and M0.
+Requirements: [Super Agent PRD v0.6](super-agent-nori-prd-en.md), sections 2.2, 2.3 and M0.
 Started November 7, 2026 (America/Los_Angeles). M0 is **not accepted** until all gates below pass.
 
-## Baseline and delivery sequence
+## Current v0.6 implementation direction — November 9, 2026
+
+The approved [PRD v0.6](super-agent-nori-prd-en.md) and [feature checklist](super-agent-feature-checklist.md) supersede the implementation assumptions in the historical slices below. Reuse native configuration, existing Magpie/Rein/ACP and community open-source integrations; add a thin adapter or propose an upstream change only for a specific reproduced gap. Existing merged slices remain delivered evidence, not a requirement to activate their old policy unchanged. M0 is independent of internal M1–M3 and remains unaccepted.
+
+Community must support onboarding and learning-resource/event/organization Q/A with useful read/retrieval/native interaction tools and a carefully limited shell/tool surface. Configure separate main/Community sessions, workspace, memory and callers; do not disable native memory or attachments to pass isolation. Nori coding uses existing ACP→Codex and separately validated Claude Code/OpenCode adapters with client-native login; Nori inference Provider management stays in Magpie.
+
+Current work: #54 configures/verifies native runtime limits before proposing extensions; #55 tests native automatic-memory/session/permission compatibility; #56 covers background/auxiliary/media and Magpie integration; #57 owns independent migration acceptance; #66 fixes trusted Slack/Cron authority; #67 adds Qwen-first single-question escalation and Magpie quota configuration plus Slack dynamic/manual control; #68 adds channel-attributed Axiom usage and 09:00 America/Los_Angeles #nori-alerts reporting/80% allowance alerts. Runtime limits, token/estimated-cost quotas and request-count admission are distinct. No substitute scheduler, memory engine, quota ledger or UI is planned.
+
+No new code, configuration, paid inference or production verification is part of this document revision. The earlier #61 snapshot remains an independent SDK credential compatibility PR, not completion of #56 or a reason to rebuild all of M0. Retention duration and M3 first-release necessity are tracked product decisions; actual implementation seams still need evidence.
+
+### Earlier recovery checkpoint (historical; v0.5.2 scope assumptions superseded)
+
+The [Super Agent feature checklist](super-agent-feature-checklist.md) now tracks every M0 acceptance bullet and M1–M3 feature with stable IDs. The owner requested a whole-PRD scope review before implementation resumes. The owner then confirmed internal Slack task delivery first and shared-Gateway/Discord migration as an independent M0 milestone. PRD v0.5.2 removes the blanket M0 prerequisite for internal M1–M3, retaining every M0 public-migration acceptance criterion. M0 remains unaccepted; #54–#60 remain open. Track decisions in [#65](https://github.com/rein-protocol-foundation/nori-agent/issues/65).
+
+Main is `7bbd3cd5` at this refresh. #49/#50/#52/#53/#51 are merged source slices. #61 remains open at `8e260a64`; its exact-head Scaffold and OpenClaw integration CI succeeded, but it preserves the old upstream pin and does not complete auxiliary/media compatibility. Recheck mergeability against the current base before resuming; this checkpoint does not claim that the PR is ready to merge.
+
+The earlier recovery audit observed production `412f88c9` with OpenClaw `4a11f89e`, healthy services and empty queues. This documentation update did not reinspect production. The SDK candidate `9fb5cdc3` and three untracked diagnostic/notes files remain preserved in the original M0 worktree. Current automatic-flush probe results are unverified; explicit reset-continuity assertions and complete boundary evidence remain necessary. PR #61 supersedes the earlier credential-mismatch failure note, not the other M0 blockers.
+
+Next: settle SA-D02a and SA-D03–07. SA-D01/02 are confirmed: Slack first, M0 independent. Concrete internal task storage/authority boundaries and the remaining M1–M3 feature scope are still pending; this is not permission to weaken boundaries.
+
+## Historical starting baseline and delivered sequence
 
 The inspected production revision is `bc593ac76f49226dff36427962f66496bbfb1a6d`, newer than
 PRD section 2.1's snapshot. OpenClaw remains pinned at `4a11f89e840b2bb3eedcad2820ab25b8520905b6`.
@@ -11,7 +31,7 @@ Native Slack and Discord run in separate services, share `workspace/`, and both 
 Neither has an explicit `session.dmScope`. Both inherit an internal operations memory extraPath.
 The withdrawn Discord adapter must not be re-enabled. The existing Slack development binding stays.
 
-Small dependent PRs will cover:
+The original sequence (historical; v0.6 above controls future work) was:
 
 1. **Backend caller boundary:** opt-in `rein-operations.agentProfiles`, coordinated tool registration,
    trusted agent/platform/bot-account dispatch, Community-only tool surface and negative tests.
@@ -56,8 +76,9 @@ confine native filesystem, session, messaging or delegation tools; those require
 | Workspace, host, credential and delegation denials | Slice 3b native filesystem/skill probe passes; final writable memory/media/message policy pending |
 | Two-account DM/room/thread/audience/private-memory behavior | Public room sharing explicitly approved November 8; native DM key separation proven synthetically; private-memory and live two-account acceptance pending |
 | Scoped effective routes and ordered provider failures | Slice 2 actual OpenClaw/Magpie with synthetic ingress passes OCI and CI; live activation pending |
-| Public request/concurrency/output/runtime/usage limits | Slice 3a rate/concurrency/daily request budget passes synthetic OCI and CI checks; whole-run deadline requires upstream support; live activation pending |
-| Normal tasks with Jev disabled; classifier dependency audit | Pending |
+| Public request/concurrency/output/runtime/usage limits | Slice 3a rate/concurrency/daily request budget passes synthetic OCI and CI checks; old plugin cancellation probe failed; #54 now verifies native configuration before assuming an extension; live activation pending |
+| Qwen-first Community, bounded escalation, Slack dynamic/manual controls and fixed effective Cron model | #67/#66 pending; supersedes Jev-disabled product requirement |
+| Channel-attributed Axiom usage and 09:00 Slack report/80% configured-allowance warnings | #68 pending; existing health telemetry is not usage acceptance |
 | Native transport compatibility and private ownership feasibility | Private memory, auxiliary inference and whole-run deadline unresolved; strict per-speaker public history no longer required; see m0-native-boundary-proposal.md |
 | Preserved histories/task destinations, single bot consumers and rollback | Pending |
 
@@ -221,7 +242,7 @@ a full Gateway restart proves the old process dead and permits reclamation. Do n
 to clear a limit, and preserve the native state directory in deployment/rollback. This slice does not
 change production runtime configuration, migrate workspaces, or accept M0 isolation.
 
-### Runtime deadline remains an upstream gate
+### Historical runtime-deadline probe and proposed extension
 
 An OCI probe on November 7, 2026 Pacific used the actual pinned OpenClaw runtime and a synthetic
 15-second cancellable tool. Calling `api.runtime.gateway.request('sessions.abort', ...)` at a
@@ -229,7 +250,7 @@ one-second deadline was rejected because `rein-router` is neither a bundled nor 
 plugin. The tool completed after 15 seconds with its abort signal unset. A successful method lookup
 or timer is therefore insufficient evidence of cancellation. The attempted implementation was removed.
 
-A narrow upstream extension is required: let `before_agent_run` return a shorter host-enforced
+The original proposal was a narrow upstream extension: let `before_agent_run` return a shorter host-enforced
 run deadline (never a longer one), bound to the exact run/agent/session and inherited through provider
 fallback. The host must abort active model and tool signals, preserve native cancellation semantics,
 retain concurrency until execution settles, and never stop a successor or clear unrelated queued work.
@@ -319,19 +340,19 @@ keeps main's internal roots while excluding Community, but the memory filter sti
 workspace-memory hit for either DM sender and for the public room. A successful diagnostic means
 the limitation was reproduced, not that private memory passed acceptance.
 
-### Next work packages and dependencies
+### Current work packages and dependencies (v0.6)
 
 | Package | Deliverable | Dependency / acceptance |
 | --- | --- | --- |
-| [M0-MEM #55](https://github.com/rein-protocol-foundation/nori-agent/issues/55) | Narrow upstream owner/audience contract across native capture, index, recall, file reads and deletion; Nori adapter after SDK feasibility | DM A/B and public canaries; useful automatic memory across restart; no native feature removal |
-| [M0-RUN #54](https://github.com/rein-protocol-foundation/nori-agent/issues/54) | Host-owned shorter per-agent/run deadline | Actual cancellable model/tool run, fallback, settlement/reload races; main timeout retained |
-| [M0-COMPAT #56](https://github.com/rein-protocol-foundation/nori-agent/issues/56) | Origin-preserving auxiliary inference and media capability routing | Concurrent origins and budgets; native compaction, memory, attachments and actions with Jev disabled |
-| [M0-CUTOVER #57](https://github.com/rein-protocol-foundation/nori-agent/issues/57) | Shared-Gateway candidate, preserved-state migration and runtime change record | Above packages; then actual two-account CLI tests, one bot consumer, rollback rehearsal and health |
+| [M0-MEM #55](https://github.com/rein-protocol-foundation/nori-agent/issues/55) | Configure and validate native memory/session/audience integration; evaluate existing public seams first | DM A/B/public canaries, capture/recall/compaction/reset/deletion/cache and preserved migration; no replacement memory engine |
+| [M0-RUN #54](https://github.com/rein-protocol-foundation/nori-agent/issues/54) | Configure and validate native runtime/concurrency limits; extension only for a reproduced gap | Actual cancellation/settlement, fallback/restart/races; preserve main behavior; per-request timeout is not whole-run proof |
+| [M0-COMPAT #56](https://github.com/rein-protocol-foundation/nori-agent/issues/56) | Existing Router/Magpie integration for native background, auxiliary/media and tool calls | No live-user assumption for system work; no hidden Provider/paid escape; #61 remains independent credential compatibility |
+| [SA-OPS #66](https://github.com/rein-protocol-foundation/nori-agent/issues/66) | Trusted Slack/Cron executor and capability continuity | Diagnosed system Cron works without online user; revoke/disable/public spoofing regressions |
+| [M0-ROUTE #67](https://github.com/rein-protocol-foundation/nori-agent/issues/67) | Qwen-first escalation, existing Magpie limits, Slack dynamic/manual selection | Restore Qwen, quota fallback, actual enforcement scope; no separate quota ledger |
+| [SA-USAGE #68](https://github.com/rein-protocol-foundation/nori-agent/issues/68) | Axiom channel usage and native Cron Slack report/alerts | No double accounting, query rights, ACP unknowns, timezone and alert deduplication |
+| [M0-CUTOVER #57](https://github.com/rein-protocol-foundation/nori-agent/issues/57) | Shared-Gateway candidate, preserved-state migration and rollback | Actual above behavior plus two-account tests and useful Community tasks; no duplicate consumer |
 
-MEM, RUN and COMPAT are separate extension proposals; implementation must use a public SDK seam
-and a reviewed upstream pin update. CUTOVER depends on their validated behavior and the already
-delivered caller/provider/quota/workspace primitives. Keep the existing two instances until then.
-No M0-complete tag is justified by delivering this decision/diagnostic slice.
+These are integration/acceptance packages, not precommitted SDK extensions. Keep vendor read-only and preserve source/runtime history. M0 cutover requires verified applicable behavior; internal milestones depend only on boundaries their actual paths use. No completion tag is justified by documenting or reproducing gaps.
 
 ### Runtime disposition and recovery
 
