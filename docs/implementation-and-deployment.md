@@ -2,6 +2,19 @@
 
 English | [简体中文](implementation-and-deployment-zh.md)
 
+## Super Agent v0.6 native-first revision (2026-11-09)
+
+Task: SA-D01–10 / SA-M0–M3 / SA-OPS/ROUTE/COST/OBS. Owner: Codex for documentation; project owner for product decisions; implementation assignees pending. Status: PRD/checklist/roadmap and GitHub tickets revised; no new runtime acceptance. [PRD v0.6](super-agent-nori-prd-en.md) supersedes the earlier default-disabled Dynamic Router and extension-first implementation assumptions. M1 Slack/native research and existing ACP coding is first; M0 remains independent. Reuse native agents, sessions, memory, Cron, subagents, Dashboard, Magpie quotas and community integrations before adding thin adapters. ACP clients retain native login/subscriptions. Community defaults to Bailian Qwen instant/thinking-off with bounded per-question escalation; Slack defaults to dynamic with persistent manual control; Cron retains its effective fixed model.
+
+Tracker #65 and #54–#60 were updated; new #66 tracks trusted Slack/system Cron authority (including the previously diagnosed skill review failure), #67 Qwen-first/quotas and Slack control, #68 channel usage/Axiom and native Cron reporting at 09:00 America/Los_Angeles to #nori-alerts with 80% configured-allowance alerts. Estimates, native exhaustion and unknown ACP usage remain explicit. Retention duration (formerly fixed 30 days) and M3 first-release necessity remain product parameters; actual native seams and Axiom query access remain unverified. Next: assign bounded integration slices and collect exact-version behavior evidence. Validation: Markdown links/ID mappings, Scaffold, diff scope and GitHub read-back; no application suite, paid inference, code/configuration change, production replay, commit or deployment.
+
+### Earlier recovery checkpoint (historical; decisions below superseded by v0.6)
+
+## Super Agent recovery and scope review (2026-11-09)
+
+Task: SA-D01–07 / SA-M0–M3. Owner: Codex for this documentation checkpoint; project owner for scope decisions; implementation assignees pending. Status: evidence/checklist refreshed, scope decisions pending. Read the [feature checklist](super-agent-feature-checklist.md). #49–#53 are merged; #61 remains open at 8e260a64 with successful exact-head CI. This refresh records current GitHub state and preserved local SDK work; no new runtime acceptance or deployment is claimed. The earlier production observation is historical. The user's instruction is to review the whole PRD before resuming implementation. The owner confirmed Slack task delivery first and shared-Gateway/Discord migration as an independent PRD milestone. PRD v0.5.2 records this dependency change; M0 public criteria remain intact. Scope issue: [#65](https://github.com/rein-protocol-foundation/nori-agent/issues/65). Other feature cuts are not approved. Next: resolve SA-D02a/03–07, then resume bounded work. Verification for this update: documentation/link consistency and GitHub read-back only; no application suite, paid inference or production changes.
+
+
 ## Codex development delegation configuration (2026-11-09)
 
 Scope: configuration and documentation only; no PRD implementation or milestone advancement.
