@@ -1,5 +1,9 @@
 # P0 acceptance evidence matrix
 
+| Task / date / owner | Status and evidence | Pending acceptance / next step |
+| --- | --- | --- |
+| SA-OPS-01 / #66; 2026-11-10 America/Los_Angeles; Codex; base `ac8d766`, native `4a11f89` | **BLOCKED / no acceptance**. [Authority gap and isolated probe](sa-ops-native-authority.md); 9/9 synthetic cases reproduce senderless/role-gate defects and reject forged labels. #61/#69 merged. Unchanged-runtime baseline: build passed (4m56s); Node suite 1289 tests / 1287 pass / 0 fail / 2 existing conditional skips; real loader three modes and Director-authorized native ACP synthetic end-to-end passed. | User review of blocker and proposed read-only host-owned execution-authority view + `assertCurrent()`; explicit confirmation required before continuing within #66. Complete Cron lifecycle, actual native child/memory follow-up compatibility, new #66 ACP authority behavior, this path's Provider/destination, real Slack and production remain unverified. Existing Director ACP regression is not new Cron/ordinary-Slack authority acceptance. No runtime fix or M0/M1/AC01–AC20 advancement. |
+
 Super Agent acceptance uses the separate [SA-M0–M3 feature checklist](super-agent-feature-checklist.md), updated November 9, 2026. Its source/CI evidence does not advance the historical governance AC01–AC20 below. Super Agent PRD v0.6 uses native configuration and existing integrations; M0 remains unaccepted and independent of internal M1–M3. Checklist SA-M0-01–09, SA-M1-01–05, SA-M2-01–06, SA-M3-01–05 and SA-OPS/ROUTE/COST/OBS map to #54–#60 and #66–#68. Routing, trusted Cron, Magpie limits and Axiom reporting require new behavior evidence; this documentation revision advances no product acceptance.
 
 This matrix preserves the PRD's AC01–AC20 **historical acceptance evidence**. Current configuration

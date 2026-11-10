@@ -2,6 +2,36 @@
 
 English | [简体中文](implementation-and-deployment-zh.md)
 
+## SA-OPS-01 / #66 native authority blocker (2026-11-10)
+
+Owner: Codex. Date: 2026-11-10, America/Los_Angeles. Base `ac8d766`; native pin `4a11f89`.
+Status: **BLOCKED / no acceptance**. #61/#69 are merged in local ancestry. The
+[evidence report](sa-ops-native-authority.md) records exact native/Rein source lines, known
+creation/enable/executor/disable/revoke/restart/model/destination/child/memory/ACP boundaries,
+and a minimal proposed read-only host-owned execution-authority view with `assertCurrent()`.
+The current public hooks cannot prove the active occurrence/parent authority. No runtime
+label bypass was implemented; announce routing is distinct from message-tool authority.
+Native Dashboard configuration, scheduling/model selection, Magpie limits and ACP remain native.
+
+Verification: the revised probe passed **9/9** cases with disposable private HOME/state/config/TMPDIR,
+actual native context projections and Rein gates. It reproduces senderless Cron/memory/child-result
+blocking and the same trusted Slack member's denial when only Foundation role authorization is
+false; forged labels remain blocked. Scaffold, local/immutable source-link mapping and diff checks
+are recorded in the evidence report. No full suite or ACP rerun for this focused revision.
+
+Existing logs confirm the unchanged-runtime regression baseline: pinned build passed (4m56s);
+complete Node suite **1289 tests, 1287 pass, 0 fail, 2 existing conditional skips** (native managed
+Magpie two-model-call and native Magpie UI launcher tests); real loader passed three modes;
+Director-authorized native ACP synthetic end-to-end passed native Slack ingress, fresh Director
+authorization, child admission/running status/progress/final. These establish existing regression
+behavior, not #66 ordinary trusted Slack without a role gate, new Cron authority or M0/M1 acceptance.
+Complete Cron lifecycle, actual native child/memory follow-up compatibility, new #66 ACP authority
+behavior, production and real Slack acceptance remain unverified. Changes stay limited to evidence
+and a test-only probe; no runtime plugin/configuration/tracked vendor source or deployment changed.
+Next: user review of the blocker and minimal contract proposal; continue only within #66 after
+explicit user confirmation. No other Issue was started; no push, PR, external send, merge or
+deployment was performed. The authorized local evidence commit is for user review.
+
 ## Super Agent v0.6 native-first revision (2026-11-09)
 
 Task: SA-D01–10 / SA-M0–M3 / SA-OPS/ROUTE/COST/OBS. Owner: Codex for documentation; project owner for product decisions; implementation assignees pending. Status: PRD/checklist/roadmap and GitHub tickets revised; no new runtime acceptance. [PRD v0.6](super-agent-nori-prd-en.md) supersedes the earlier default-disabled Dynamic Router and extension-first implementation assumptions. M1 Slack/native research and existing ACP coding is first; M0 remains independent. Reuse native agents, sessions, memory, Cron, subagents, Dashboard, Magpie quotas and community integrations before adding thin adapters. ACP clients retain native login/subscriptions. Community defaults to Bailian Qwen instant/thinking-off with bounded per-question escalation; Slack defaults to dynamic with persistent manual control; Cron retains its effective fixed model.

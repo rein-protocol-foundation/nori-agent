@@ -121,9 +121,15 @@ v0.6 保留原有用户行为，新增已有 ACP 复用与最小 change/stop 的
 
 ## 可信 Slack 与系统 Cron
 
-- [ ] **SA-OPS-01**：修复状态 NOT STARTED，根因已定位；原生配置 + 已有实现复用 + 必要薄适配。独立跟踪 [#66](https://github.com/rein-protocol-foundation/nori-agent/issues/66)，关联 #56/#60/#68。
+- [ ] **SA-OPS-01**：**BLOCKED / no acceptance**（2026-11-10，America/Los_Angeles；owner Codex；base `ac8d766`，native pin `4a11f89`）。误封已安全复现，完整 occurrence/parent 授权尚无公开 SDK 接缝，未实施运行时放行。独立跟踪 [#66](https://github.com/rein-protocol-foundation/nori-agent/issues/66)，关联 #56/#60/#68；不完成 M0/M1。
 - 可信系统任务创建/启用时明确 native executor、能力、Provider 范围和目的地；无需在线用户。验证重启、撤销/禁用、公私来源与普通 Slack 回归；不伪造个人身份，不跳过业务权限。
 - 只对实际使用的内部路径建立依赖，不恢复整个 M0 前置门槛。下方保留此前只读诊断，本次未重跑 Cron 或检查生产。
+
+### SA-OPS-01 原生权限阻塞证据（2026-11-10）
+
+[具体源码行号、最小上游契约建议与合成探针](sa-ops-native-authority.md)：原生 creator grant、occurrence admission、parent token 真实存在于 host 私有对象，普通 hook 无法验证当前运行的授权、能力上限和目的地。public Cron query/store、trigger/provenance 标签或 sessionKey 不能替代。announce 目的地与消息工具权限不同；配置仍使用 native Dashboard，不重建调度/选模。#61/#69 已合并（本地 ancestry 已核对）；上方旧 checkpoint 的 #61 开放状态保留为历史记录。
+
+`node scripts/probe-sa-ops-authority.mjs`：私有临时 HOME/state/config/TMPDIR 下 9/9 合成案例通过；真实 native projection + Rein gates 复现无 sender Cron/memory/child-result 误封，同一可信成员仅 Foundation 授权为 false 仍被拒绝，伪造标签未获放行。已核对未改 runtime 的回归基线：pinned build 成功（4m56s）；完整 Node suite 1289 tests、1287 pass、0 fail、2 既有条件 skip；真实 loader 三模式与现有 Director 授权 ACP native 合成端到端通过。它们不构成 #66 去角色门槛、新 Cron 权限或 M0/M1 验收。完整 Cron 生命周期、实际 native child/memory 后续兼容、该路径 Provider/目的地、真实 Slack/生产仍未验证。下一步由用户审阅当前阻塞与最小只读 host-owned execution-authority view + `assertCurrent()` 提议，获明确确认后仅在 #66 内继续；当前不实施运行时放行。
 
 ### SA-OPS-01 实际故障证据（2026-11-09 只读检查）
 

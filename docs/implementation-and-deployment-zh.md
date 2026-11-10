@@ -2,6 +2,31 @@
 
 [English](implementation-and-deployment.md) | 简体中文
 
+## SA-OPS-01 / #66 原生权限阻塞（2026-11-10）
+
+负责人：Codex。日期：2026-11-10，America/Los_Angeles。base `ac8d766`；native pin `4a11f89`。
+状态：**BLOCKED / no acceptance**。本地 ancestry 确认 #61/#69 已合并。
+[证据报告](sa-ops-native-authority.md) 记录 native/Rein 精确源码行号，以及创建、启用、executor、
+禁用、撤销、重启、选模/Provider、目的地、child、memory、ACP 的已证与未证边界；提出最小只读
+host-owned execution-authority view + `assertCurrent()`。现有公开 hooks 无法验证当前
+occurrence/parent 授权，未实施标签放行。announce 路由与消息工具权限不同；配置仍使用 native
+Dashboard，保留原生调度/选模、Magpie 限额和 ACP。
+
+验证：修订探针在私有临时 HOME/state/config/TMPDIR 中 **9/9** 合成案例通过，使用真实 native
+context projection 与 Rein gates；复现无 sender Cron/memory/child-result 误封，以及同一可信
+Slack 成员仅 Foundation 角色授权为 false 时仍被拒绝，伪造标签未获放行。scaffold、本地链接与
+不可变源码 URL 映射、diff 检查结果见证据报告；本次聚焦修订不重跑完整套件或 ACP。
+
+已核对既有日志，未改 runtime 的回归基线为：pinned build 成功（4m56s）；完整 Node suite
+**1289 tests、1287 pass、0 fail、2 既有条件 skip**（native managed Magpie 两次模型调用及
+native Magpie UI launcher）；真实 loader 三模式通过；现有 Director 授权 ACP native 合成端到端
+通过 native Slack ingress、当前 Director 授权、child admission/running status/progress/final。
+这些证明现有回归行为，不构成 #66 普通可信 Slack 去角色门槛、新 Cron 权限或 M0/M1 产品验收。
+完整 Cron 生命周期、实际 native child/memory 后续兼容、新 #66 ACP 权限行为、生产及真实 Slack
+验收仍未验证。本轮仅证据与测试专用探针，未改 runtime plugins、配置、vendor tracked 源码或部署。
+下一步由用户审阅当前阻塞与最小契约提议，获明确确认后仅在 #66 内继续。未启动其他 Issue，
+未 push、创建 PR、外发、合并或部署；已授权的本地证据提交用于用户审阅。
+
 ## Super Agent v0.6 原生优先修订（2026-11-09）
 
 任务：SA-D01–10 / SA-M0–M3 / SA-OPS/ROUTE/COST/OBS。负责人：Codex 维护文档，项目负责人决定产品范围，实现负责人待分配。状态：PRD/checklist/roadmap 与 GitHub tickets 已修订，无新增运行验收。[PRD v0.6](super-agent-nori-prd-en.md) 替换旧的默认禁用 Dynamic Router、预设上游扩展方案。M1 Slack 原生研究与已有 ACP 编程优先，M0 仍独立。优先原生 Agent/session/记忆/Cron/子代理/Dashboard、Magpie 限额与社区开源集成，再补薄适配。ACP 客户端保留原生登录/订阅；Community 默认 Bailian Qwen instant/关闭推理、按问题有限升级；Slack 默认动态并允许持续手动控制；Cron 保持有效固定模型。

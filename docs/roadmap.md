@@ -1,5 +1,20 @@
 # Nori-Agent implementation roadmap
 
+## SA-OPS-01 / #66 authority checkpoint — November 10, 2026
+
+Owner: Codex. Date: 2026-11-10, America/Los_Angeles. Base `ac8d766`; native pin `4a11f89`.
+Status: **BLOCKED / no acceptance**. #61/#69 are merged in local ancestry. The
+[native authority investigation and safe reproduction](sa-ops-native-authority.md) establish
+the human-only gate defect and the missing public occurrence/parent authority view; nine
+synthetic projection/gate cases reproduce senderless and redundant-role defects without external
+calls. Pinned build (4m56s), complete Node suite (1289 tests / 1287 pass / 0 fail / 2 existing
+conditional skips), real loader three modes and existing Director-authorized native ACP synthetic
+end-to-end are passing unchanged-runtime regression baselines, not #66 or M0/M1 acceptance.
+No runtime bypass is implemented. Next: user review of the blocker and minimal read-only host-owned
+view with `assertCurrent()`; continue only within #66 after explicit user confirmation. Complete
+Cron lifecycle, actual native child/memory follow-up compatibility, new #66 ACP authority behavior,
+real Slack and production remain unverified. Historical governance milestones are unchanged.
+
 ## Super Agent roadmap — separate scope, November 9, 2026
 
 Super Agent M0–M3 are distinct from the historical governance milestones below. [PRD v0.6](super-agent-nori-prd-en.md) and the [feature checklist](super-agent-feature-checklist.md) record the approved native-first direction: configuration → existing community integration → necessary thin adapter. M1 Slack/native research and existing ACP coding is first (#60/#66); M2 reuses native continuation/recovery (#58); M3 reuses Lobster/mail (#59), with first-release necessity pending. M0 remains an independent shared-Gateway/Discord milestone (#57), including useful Community Q/A, Qwen-first escalation/Magpie limits (#67), native memory/runtime compatibility (#54–#56) and Axiom usage/09:00 Slack reporting (#68). It is not a blanket prerequisite for internal tasks. M0 is unaccepted; source/CI evidence is distinct from product acceptance. Scope owner: project owner; implementation assignees pending. Tracker: [#65](https://github.com/rein-protocol-foundation/nori-agent/issues/65). This revision changes documents and tickets only; retention duration and M3 optionality remain open, not a reason to rebuild native platforms.
