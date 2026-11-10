@@ -6,6 +6,8 @@ import { pathToFileURL } from 'node:url';
 export function classifyChanges(paths, { full = false } = {}) {
   const scope = { plugins: full, routing: full, isolation: full };
   for (const path of paths) {
+    // Repository-local coding assistant configuration is not an OpenClaw runtime input.
+    if (/^\.(codex|claude|opencode)\//.test(path) || /^opencode\.jsonc?$/.test(path)) continue;
     if (/^(docs\/|assets\/|.*\.md$)/.test(path) || ['LICENSE', '.gitignore'].includes(path)) continue;
     scope.plugins = true;
     if (/^plugins\/rein-operations\//.test(path)) continue;
@@ -35,6 +37,8 @@ export function changedPaths(base, head = 'HEAD', { pullRequest = false, cwd } =
 
 export function requiredChecksPass(scope, results) {
   if (results.changes !== 'success') return false;
+  const sharedPreparation = scope.routing || scope.isolation;
+  if (results.prepare !== (sharedPreparation ? 'success' : 'skipped')) return false;
   return ['plugins', 'routing', 'isolation'].every(name =>
     scope[name] ? results[name] === 'success' : results[name] === 'skipped');
 }

@@ -25,16 +25,29 @@ jobs:
           node-version: '24.16.0'
       - id: scope
         run: node scripts/ci-scope.mjs
-  plugins:
-    name: Nori plugin checks
+  prepare:
+    name: Prepare shared OpenClaw caches
     needs: changes
-    if: needs.changes.outputs.plugins == 'true'
+    # Plugin-only changes prepare inline; sharing only pays off with native consumers.
+    if: needs.changes.outputs.routing == 'true' || needs.changes.outputs.isolation == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+      - uses: ./.github/actions/checkout-openclaw
+      - uses: ./.github/actions/setup-openclaw
+      - name: Confirm upstream tracked files remain unchanged
+        if: always()
+        run: test -z "$(git -C vendor/openclaw status --porcelain)"
+  plugins:
+    name: Nori plugin checks
+    needs: [changes, prepare]
+    if: ${{ !cancelled() && needs.changes.result == 'success' && needs.changes.outputs.plugins == 'true' && (needs.prepare.result == 'success' || needs.prepare.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/checkout-openclaw
       - uses: ./.github/actions/setup-openclaw
       - run: pnpm check
       - name: Test Rein tools, hooks, adapters and routing logic
@@ -54,14 +67,13 @@ jobs:
         run: test -z "$(git -C vendor/openclaw status --porcelain)"
   routing:
     name: Router and Magpie integration
-    needs: [changes, plugins]
+    needs: [changes, prepare]
     if: needs.changes.outputs.routing == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+      - uses: ./.github/actions/checkout-openclaw
       - uses: ./.github/actions/setup-openclaw
       - run: pnpm setup:local
       - name: Verify subscription routing with local synthetic endpoints
@@ -133,14 +145,13 @@ jobs:
           test -z "$(git -C runtime/magpie-fixture status --porcelain --untracked-files=all)"
   isolation:
     name: Discord and Slack integration
-    needs: [changes, plugins]
+    needs: [changes, prepare]
     if: needs.changes.outputs.isolation == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+      - uses: ./.github/actions/checkout-openclaw
       - uses: ./.github/actions/setup-openclaw
       - run: pnpm setup:local
       - name: Verify historical Discord isolation fixture and Slack native pipeline
@@ -156,7 +167,7 @@ jobs:
         run: test -z "$(git -C vendor/openclaw status --porcelain)"
   # Preserve the existing required check, including on documentation-only PRs.
   integration:
-    needs: [changes, plugins, routing, isolation]
+    needs: [changes, prepare, plugins, routing, isolation]
     if: always()
     runs-on: ubuntu-latest
     steps:

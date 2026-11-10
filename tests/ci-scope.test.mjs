@@ -47,16 +47,55 @@ test('documentation avoids runtime setup and combined changes retain all selecte
   assert.deepEqual(classifyChanges(['scripts/agent-browser.mjs', '.github/workflows/browser.yml']), plugins);
 });
 
+test('Codex-only PRs skip runtime suites without suppressing mixed changes or manual runs', () => {
+  // PR #62: development agent configuration and its verification records.
+  const paths = [
+    '.codex/agents/implementation.toml', '.codex/agents/routine.toml', '.codex/config.toml',
+    'AGENTS.md', 'docs/implementation-and-deployment-zh.md', 'docs/implementation-and-deployment.md',
+  ];
+  assert.deepEqual(classifyChanges(paths), none);
+  assert.deepEqual(classifyChanges([...paths, 'plugins/rein-operations/index.ts']), plugins);
+  assert.deepEqual(classifyChanges([...paths, 'plugins/rein-router/runtime.mjs']), { ...plugins, routing: true });
+  for (const path of ['vendor/openclaw', '.github/workflows/openclaw.yml', 'package.json', '.codex-runtime/index.mjs']) {
+    assert.deepEqual(classifyChanges([...paths, path]), all, path);
+  }
+  assert.deepEqual(classifyChanges(paths, { full: true }), all);
+});
+
+test('Claude Code and OpenCode configuration skips runtime suites with exact path boundaries', () => {
+  const paths = [
+    '.claude/settings.json', '.claude/settings.local.json', '.claude/agents/reviewer.md',
+    'CLAUDE.md', 'CLAUDE.local.md', '.opencode/opencode.json', '.opencode/package.json',
+    '.opencode/plugins/local.ts', 'opencode.json', 'opencode.jsonc',
+  ];
+  for (const path of paths) {
+    assert.deepEqual(classifyChanges([path]), none, path);
+    assert.deepEqual(classifyChanges([path, 'plugins/rein-operations/index.ts']), plugins, path);
+    assert.deepEqual(classifyChanges([path, 'vendor/openclaw']), all, path);
+    assert.deepEqual(classifyChanges([path], { full: true }), all, path);
+  }
+  for (const path of [
+    '.claude-runtime/index.ts', '.opencode-runtime/index.ts', 'opencode.jsonc.ts',
+    'config/opencode.json', 'scripts/opencode.json',
+  ]) assert.deepEqual(classifyChanges([path]), all, path);
+});
+
 test('required gate rejects failed, cancelled or unexpectedly skipped selected checks', () => {
-  const results = { changes: 'success', plugins: 'success', routing: 'skipped', isolation: 'skipped' };
+  const results = { changes: 'success', prepare: 'skipped', plugins: 'success', routing: 'skipped', isolation: 'skipped' };
   assert.equal(requiredChecksPass(plugins, results), true);
-  assert.equal(requiredChecksPass(none, { ...results, plugins: 'skipped' }), true);
+  assert.equal(requiredChecksPass(none, { ...results, prepare: 'skipped', plugins: 'skipped' }), true);
   for (const result of ['failure', 'cancelled', 'skipped', undefined]) {
     assert.equal(requiredChecksPass(plugins, { ...results, plugins: result }), false);
     assert.equal(requiredChecksPass(plugins, { ...results, changes: result }), false);
+    for (const name of ['prepare', 'plugins', 'routing', 'isolation']) {
+      const complete = { changes: 'success', prepare: 'success', plugins: 'success', routing: 'success', isolation: 'success' };
+      assert.equal(requiredChecksPass(all, { ...complete, [name]: result }), false, `${name}: ${result}`);
+    }
   }
+  assert.equal(requiredChecksPass(none, { ...results, prepare: 'success', plugins: 'skipped' }), false);
+  assert.equal(requiredChecksPass(plugins, { ...results, prepare: 'failure' }), false);
   assert.equal(requiredChecksPass(all, results), false);
-  assert.equal(requiredChecksPass(all, { changes: 'success', plugins: 'success', routing: 'success', isolation: 'success' }), true);
+  assert.equal(requiredChecksPass(all, { changes: 'success', prepare: 'success', plugins: 'success', routing: 'success', isolation: 'success' }), true);
 });
 
 test('git diff includes deletions, both sides of renames, and uses the PR merge base', t => {
