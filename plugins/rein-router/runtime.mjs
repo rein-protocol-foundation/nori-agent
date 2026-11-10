@@ -429,9 +429,10 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
         const gatewayKey = environment[scoped ? route.gatewayKeyEnvVar : config.gateway.apiKeyEnvVar];
         if (typeof gatewayKey !== 'string' || !/^sk-magpie-key-[A-Za-z0-9_-]{16,240}$/.test(gatewayKey))
           throw new Error('rein_router_managed_gateway_key_required');
-        if (options?.apiKey !== undefined && options.apiKey !== gatewayKey &&
-            (!scoped || options.apiKey !== environment[config.gateway.apiKeyEnvVar]))
-          throw new Error('rein_router_gateway_credential_mismatch');
+        // Magpie credentials belong to the validated router configuration, never to caller
+        // stream options. New hosts pass opaque SecretRef sentinels here, not comparable bytes.
+        // Ignore that hint entirely; the configured key replaces every accepted auth channel
+        // below. Omitting/forging a hint grants neither a route nor a configured credential.
         // Magpie's fixed suffix wins over the caller's pre-resolved thinking
         // level, including an off request from the OpenClaw channel pipeline.
         const gatewayModel = `${route.gatewayModel}:${route.effort === 'off' ? 'none' : route.effort}`;

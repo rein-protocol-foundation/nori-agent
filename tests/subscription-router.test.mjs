@@ -176,8 +176,11 @@ test('provider wrapper keeps native tools, history and stream, enforces qualifie
   assert.equal(original.id, 'code');
   assert.throws(() => wrapped({ ...original, id: 'auto' }, history), /disallowed/);
   assert.throws(() => wrapped({ ...original, baseUrl: 'https://payg.example/v1' }, history), /disallowed/);
-  assert.throws(() => wrapped(original, history, { apiKey: 'magpie' }), /credential_mismatch/);
-  assert.throws(() => wrapped(original, history, { apiKey: 'sk-magpie-key-other-synthetic-credential-00000000' }), /credential_mismatch/);
+  for (const apiKey of ['magpie', 'sk-magpie-key-other-synthetic-credential-00000000', 'oc-sent-v2.synthetic-opaque.end']) {
+    // Caller hints are never forwarded or resolved. The assertions inside streamFn verify
+    // that each request still carries only the router-owned credential and exact model.
+    assert.equal(await (await wrapped(original, history, { apiKey })).result(), final);
+  }
 });
 
 test('status separates configured billing from observed alias and isolates sessions', async () => {

@@ -17,7 +17,7 @@ const temp = mkdtempSync(join(tmpdir(), 'nori-scoped-routing-'));
 const requests = [], children = [];
 let nativeOutput = '';
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-const marker = body => JSON.stringify(body).match(/CASE_[A-Z_]+/)?.[0];
+const marker = body => JSON.stringify(body.messages?.findLast(message => message.role === 'user' && /CASE_[A-Z_]+/.test(JSON.stringify(message.content)))).match(/CASE_[A-Z_]+/)?.[0];
 const server = createServer(async (req, res) => {
   if (req.method === 'GET') { res.setHeader('content-type', 'application/json'); res.end(JSON.stringify({ data: ['openai', 'claude', 'google', 'bailian', 'payg'].map(id => ({ id })) })); return; }
   let text = ''; for await (const chunk of req) text += chunk;
@@ -71,6 +71,7 @@ try {
   router.scopedPolicies['nori-community'].platforms.discord.fallbacks = ['google'];
   router.scopedPolicies['nori-budget-probe'] = {
     ...structuredClone(router.scopedPolicies['nori-community']), platforms: {}, channels: [],
+    origins: [{ platform: 'discord', accountId: 'default', workspaceId: '100000000000000001', channelIds: ['100000000000000006'] }],
     usageLimits: { perUserPerMinute: 5, perConversationPerMinute: 5, perUserConcurrent: 1,
       perConversationConcurrent: 1, maxConcurrent: 1, maxGatewayRequestsPerDay: 1 },
   };
@@ -81,6 +82,12 @@ try {
   const workspace = join(temp, 'workspace'); mkdirSync(workspace);
   Object.assign(cfg.agents.defaults, { workspace, skipBootstrap: true, timeoutSeconds: 60, compaction: { memoryFlush: { enabled: false } } });
   cfg.agents.entries = Object.fromEntries(['main', 'nori-community', 'nori-budget-probe'].map(id => [id, { workspace, model: { primary: 'rein-magpie/auto', fallbacks: [] } }]));
+  cfg.agents.ownership = 'explicit';
+  cfg.bindings = [
+    { agentId: 'main', match: { channel: 'slack', accountId: 'default' } },
+    { agentId: 'nori-community', match: { channel: 'discord', accountId: 'default' } },
+    { agentId: 'nori-budget-probe', match: { channel: 'discord', accountId: 'default', peer: { kind: 'channel', id: '100000000000000006' } } },
+  ];
   cfg.memory = { search: { enabled: false, rememberAcrossConversations: false } };
   cfg.tools = { allow: [] }; cfg.channels = { slack: { enabled: true }, discord: { enabled: true } };
   const fixture = join(temp, 'fixture'); mkdirSync(fixture);
@@ -111,7 +118,7 @@ try {
   assert.ok(existsSync(evidence), `native fixture did not finish: ${nativeOutput.slice(-8000)}`);
   const report = JSON.parse(readFileSync(evidence));
   const contexts = readFileSync(join(temp, 'contexts.jsonl'), 'utf8').trim().split('\n').map(line => JSON.parse(line));
-  assert.deepEqual(report.failures, [], JSON.stringify(report));
+    assert.deepEqual(report.failures, [], JSON.stringify({ report, output: nativeOutput.slice(-16000) }));
   for (const expected of ['CASE_SLACK', 'CASE_COMMUNITY_OVERRIDE', 'CASE_COMMUNITY_PLATFORM', 'CASE_COMMUNITY_FAILURE'])
     assert.ok(report.sent.some(reply => reply.marker === expected && reply.text.includes(`OK ${expected}`)), JSON.stringify({ expected, report, requests, output: nativeOutput.slice(-5000) }));
   const calls = name => requests.filter(request => request.marker === name).map(request => request.model);

@@ -176,8 +176,16 @@ try {
     assert.deepEqual(body.input,body.operation.endsWith('_get')?{id:catalogId}:{});
   }
   for(const marker of ['CASE_RESOURCE_SEARCH','CASE_RESOURCE_GET'])assert.ok(inputWithTools(marker).includes('SYNTHETIC_CATALOG_COURSE'));
-  assert.match(toolOutputFor('CASE_EVENT_SEARCH'),/"status"\s*:\s*"empty"/);
-  assert.match(toolOutputFor('CASE_EVENT_GET'),/"status"\s*:\s*"not_found"/);
+  for(const [marker,name,status] of [['CASE_EVENT_SEARCH','rein_events_search','empty'],['CASE_EVENT_GET','rein_event_get','not_found']]) {
+    let result=JSON.parse(toolOutputFor(marker));
+    // Newer native tool_call returns a named tool envelope around the original content.
+    if(result.tool && result.result) {
+      assert.equal(result.tool.name,name);
+      assert.equal(result.result.content.length,1);
+      result=JSON.parse(result.result.content[0].text);
+    }
+    assert.equal(result.status,status);
+  }
   assert.ok(toolOutputFor('CASE_DISCOVERY_DENIED').includes('community_member_required'));
   assert.ok(!inputWithTools('CASE_DISCOVERY_DENIED').includes('SYNTHETIC_CATALOG_COURSE'),'unlinked sender must not receive another member\'s catalog results');
   assert.ok(toolOutputFor('CASE_GENERAL_SKILL').includes('GENERAL_SKILL_RESOURCE_CANARY'),'native Slack read must load a new skill reference without adapter edits');
