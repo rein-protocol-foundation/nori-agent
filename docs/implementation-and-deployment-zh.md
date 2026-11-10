@@ -2,6 +2,19 @@
 
 [English](implementation-and-deployment.md) | 简体中文
 
+## Super Agent v0.6 原生优先修订（2026-11-09）
+
+任务：SA-D01–10 / SA-M0–M3 / SA-OPS/ROUTE/COST/OBS。负责人：Codex 维护文档，项目负责人决定产品范围，实现负责人待分配。状态：PRD/checklist/roadmap 与 GitHub tickets 已修订，无新增运行验收。[PRD v0.6](super-agent-nori-prd-en.md) 替换旧的默认禁用 Dynamic Router、预设上游扩展方案。M1 Slack 原生研究与已有 ACP 编程优先，M0 仍独立。优先原生 Agent/session/记忆/Cron/子代理/Dashboard、Magpie 限额与社区开源集成，再补薄适配。ACP 客户端保留原生登录/订阅；Community 默认 Bailian Qwen instant/关闭推理、按问题有限升级；Slack 默认动态并允许持续手动控制；Cron 保持有效固定模型。
+
+已更新总跟踪 #65 和 #54–#60；新增 #66 跟踪可信 Slack/系统 Cron 权限（含已定位 skill review 故障）、#67 跟踪 Qwen-first/额度与 Slack 控制、#68 跟踪渠道 usage/Axiom 与 native Cron 每日洛杉矶 09:00 向 #nori-alerts 汇报及 80% 配置额度预警。明确估算费用、原生耗尽状态和未知 ACP 用量。保留期限（原固定 30 天）、M3 首轮必要性仍待决定；native 接缝和 Axiom 查询权限待验证。下一步分配小型集成任务并收集精确版本行为证据。验证：Markdown 链接/ID 映射、Scaffold、差异范围及 GitHub 回读；未运行应用套件、付费推理，未改代码/配置、重跑生产、提交或部署。
+
+### 更早恢复检查点（历史记录；下方范围决定已由 v0.6 替换）
+
+## Super Agent 恢复与范围复审（2026-11-09）
+
+任务：SA-D01–07 / SA-M0–M3。负责人：Codex 维护本次文档检查点，项目负责人决定范围，开发执行者待分配。状态：证据与清单已刷新，范围待讨论。见 [feature checklist](super-agent-feature-checklist.md)。#49–#53 已合并；#61 在 8e260a64 保持开放，对应 HEAD 的 CI 成功。本次记录 GitHub 当前状态与保留的本地 SDK 工作，不宣称新增运行验收或部署，之前的生产观测明确作为历史记录。用户要求讨论整个 PRD 后再恢复实现；用户随后确认 Slack 任务闭环优先、共享 Gateway/Discord 迁移保留为独立 PRD milestone；v0.5.2 已记录依赖调整，保留全部 M0 公共验收。范围 Issue：[#65](https://github.com/rein-protocol-foundation/nori-agent/issues/65)。其他 feature 删减未批准。下一步：讨论 SA-D02a/03–07，再恢复小任务。本次验证仅限文档/链接一致性与 GitHub 回读，没有运行应用套件、付费推理或修改生产。
+
+
 ## Codex 开发任务委派配置（2026-11-09）
 
 范围仅限配置与文档，没有实施 PRD 或推进产品里程碑。负责人：项目 Codex 主协调代理。

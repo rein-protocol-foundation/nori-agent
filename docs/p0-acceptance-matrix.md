@@ -1,5 +1,7 @@
 # P0 acceptance evidence matrix
 
+Super Agent acceptance uses the separate [SA-M0–M3 feature checklist](super-agent-feature-checklist.md), updated November 9, 2026. Its source/CI evidence does not advance the historical governance AC01–AC20 below. Super Agent PRD v0.6 uses native configuration and existing integrations; M0 remains unaccepted and independent of internal M1–M3. Checklist SA-M0-01–09, SA-M1-01–05, SA-M2-01–06, SA-M3-01–05 and SA-OPS/ROUTE/COST/OBS map to #54–#60 and #66–#68. Routing, trusted Cron, Magpie limits and Axiom reporting require new behavior evidence; this documentation revision advances no product acceptance.
+
 This matrix preserves the PRD's AC01–AC20 **historical acceptance evidence**. Current configuration
 and the 19 backend tools are documented in [setup](setup.md#optional-enable-backend-backed-tools);
 older direct-database tool counts and test results below are not current deployment instructions. “Core tested” means synthetic inputs exercised deterministic Nori-Agent-owned modules. It does not mean the real chat, member registry, website or finance provider has passed. A production result requires the provider evidence in the last column. The ten synthetic Slack
