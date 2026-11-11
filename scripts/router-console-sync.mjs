@@ -70,14 +70,21 @@ export function createConsoleSync({ root, native, gatewayBaseUrl = 'http://127.0
     const keys = (await native('/api/caller-keys')).keys.filter(k => k.name === keyName || k.name.startsWith(`${keyName} route `));
     for (const k of keys) await native('/api/caller-keys/off-key', { key: k.id });
   }
-  async function publish() {
+  async function publish({ jevApiKey, onValidated } = {}) {
     const hostText = await readPrivate(root, configPath, undefined, { publicFile: true });
     const host = parseHost(hostText);
     const gateway = { baseUrl: gatewayBaseUrl, apiKeyEnvVar: 'REIN_MAGPIE_GATEWAY_KEY', subscriptionOnly: !state.allowPaidUsage,
       managed: { binaryPath: paths.binary, homeDir: paths.homeDir, allowSubscriptionAccounts: true, mode: 'console' } };
     const result = compileCatalog({ catalog, settings: state, gateway, pluginPath: resolve(root, 'plugins/rein-router') });
+    const merged = mergeRouterFragment(host, result.fragment, { pluginPath: resolve(root, 'plugins/rein-router'),
+      typesafePath: resolve(root, 'vendor/openclaw/extensions/typesafe'),
+      targetAgent: state.targetAgent ?? 'defaults',
+      previousModels: host.models?.providers?.['rein-magpie']?.models?.map(m => m.id) ?? [] });
+    // Reject stale host authority before credentials, settings or config publication.
+    await onValidated?.();
+    if (jevApiKey) await writePrivate(root, secretPath, JSON.stringify({ jevApiKey }));
     await spendCheck({ gateway, routes: result.fragment.plugins.entries['rein-router'].config.routes, allowPaidUsage: state.allowPaidUsage });
-    const routerConfig = result.fragment.plugins.entries['rein-router'].config;
+    const routerConfig = merged.plugins.entries['rein-router'].config;
     for (const policy of Object.values(routerConfig.scopedPolicies ?? {})) if (!policy.allowPaidUsage)
       await spendCheck({ gateway: { ...gateway, subscriptionOnly: true },
         routes: routerConfig.routes.filter(route => policy.allowedRoutes.includes(route.id)), allowPaidUsage: false });
@@ -101,10 +108,6 @@ export function createConsoleSync({ root, native, gatewayBaseUrl = 'http://127.0
         await native('/api/caller-keys/off-key', { key: existing.id });
     // Off -> exact scope -> config publication -> on. No unrestricted key reaches OpenClaw.
     const scoped = !current.off && JSON.stringify([...(current.models ?? [])].sort()) === JSON.stringify(desiredModels);
-    const merged = mergeRouterFragment(host, result.fragment, { pluginPath: resolve(root, 'plugins/rein-router'),
-      typesafePath: resolve(root, 'vendor/openclaw/extensions/typesafe'),
-      targetAgent: state.targetAgent ?? 'defaults',
-      previousModels: host.models?.providers?.['rein-magpie']?.models?.map(m => m.id) ?? [] });
     const next = JSON.stringify(merged, null, 2) + '\n';
     if (fingerprint !== digest || !scoped || !routeScoped || JSON.stringify(host) !== JSON.stringify(merged)) {
       await native('/api/caller-keys/off-key', { key: current.id });
@@ -127,7 +130,8 @@ export function createConsoleSync({ root, native, gatewayBaseUrl = 'http://127.0
     }
     lastSync = new Date().toISOString(); lastError = null;
   }
-  async function refreshInner({ repair = true } = {}) {
+  async function refreshInner({ repair = true, jevApiKey, onValidated } = {}) {
+    const previousState = state;
     // Pausing is independent of catalog availability. Retry revocation on every disabled refresh.
     if (!state.enabled) await disableKey();
     catalog = readMagpieCatalog(await native('/api/providers'));
@@ -144,11 +148,13 @@ export function createConsoleSync({ root, native, gatewayBaseUrl = 'http://127.0
         for (const [role, choice] of Object.entries(nextPolicy)) if (!choice) delete nextPolicy[role];
         if (JSON.stringify(nextPolicy) !== JSON.stringify(state.policy)) {
           state = { ...state, policy: nextPolicy };
-          await writePrivate(root, statePath, JSON.stringify(state, null, 2) + '\n');
         }
       }
-      try { await publish(); }
-      catch (e) { await disableKey(); lastError = /^router_[a-z_]+$/.test(e.message) ? e.message : 'router_sync_failed'; throw new Error(lastError); }
+      try {
+        await publish({ jevApiKey, onValidated });
+        if (state !== previousState) await writePrivate(root, statePath, JSON.stringify(state, null, 2) + '\n');
+      }
+      catch (e) { state = previousState; await disableKey(); lastError = /^router_[a-z_]+$/.test(e.message) ? e.message : 'router_sync_failed'; throw new Error(lastError); }
     }
     return view();
   }
@@ -184,14 +190,29 @@ export function createConsoleSync({ root, native, gatewayBaseUrl = 'http://127.0
       const next = validateConsoleSettings(settings);
       if (jevApiKey !== undefined && !validJevKey(jevApiKey))
         throw new Error('router_jev_key_invalid');
-      if (jevApiKey) await writePrivate(root, secretPath, JSON.stringify({ jevApiKey }));
+      const host = parseHost(await readPrivate(root, configPath, '{}', { publicFile: true }));
+      const authority = host.plugins?.entries?.['rein-router']?.config ?? {};
+      const hasHostPolicy = ['trustedSlackChannels','nativeAgentRoutes'].some(field => Object.hasOwn(authority, field));
+      const previousState = state;
       state = next;
-      await writePrivate(root, statePath, JSON.stringify(state, null, 2) + '\n');
+      let intentPersisted = false;
+      const persistIntent = async () => {
+        await writePrivate(root, statePath, JSON.stringify(state, null, 2) + '\n');
+        intentPersisted = true;
+      };
       try {
-        await refreshInner({ repair: false });
+        if (!next.enabled) await persistIntent();
+        if (!next.enabled && jevApiKey) await writePrivate(root, secretPath, JSON.stringify({ jevApiKey }));
+        await refreshInner({ repair: false, jevApiKey, onValidated: persistIntent });
         await writePrivate(root, statePath, JSON.stringify(state, null, 2) + '\n');
         return view();
-      } catch (e) { throw e; }
+      } catch (e) {
+        if (!intentPersisted && (e.message === 'router_host_policy_invalid' || (next.enabled && hasHostPolicy))) state = previousState;
+        // Before validation, reject UI changes with invalid host policy (including
+        // missing UI models). After validation, retain the persisted publication intent.
+        else await writePrivate(root, statePath, JSON.stringify(state, null, 2) + '\n');
+        throw e;
+      }
     }),
     close: () => locked(async () => { await disableKey(); }),
   };

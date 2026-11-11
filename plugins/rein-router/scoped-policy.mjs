@@ -83,9 +83,17 @@ export function validateScopedPolicies(raw, routes, globalPaid) {
   return result;
 }
 
-/** Only authenticated direct user turns are supported in M0; delegation needs a preserved origin contract. */
-export function resolveScopedPolicy(policies, ctx, { hasAttachments = false } = {}) {
+/** Direct turns use origin preferences; host-admitted native turns retain the effective agent/job model. */
+export function resolveScopedPolicy(policies, ctx, { hasAttachments = false, native = false } = {}) {
   const policy = policies?.[ctx?.agentId];
+  if (native) {
+    if (!policy || !ctx.runId || !ctx.sessionId || !ctx.sessionKey || hasAttachments) return null;
+    const primary = ctx.modelId === 'auto' ? policy.default.primary : ctx.modelId;
+    if (!policy.allowedRoutes.includes(primary)) return null;
+    return Object.freeze({ primary, fallbacks: Object.freeze(ctx.modelId === 'auto' ? policy.default.fallbacks : []),
+      manual: ctx.modelId !== 'auto', sources: Object.freeze({ primary: 'agent', fallbacks: 'agent' }),
+      maxOutputTokens: policy.maxOutputTokens, requestTimeoutMs: policy.requestTimeoutMs });
+  }
   if (!policy || !ctx.runId || !ctx.sessionId || !ctx.sessionKey || !ctx.senderId ||
       ctx.trigger !== 'user' || (ctx.inputProvenance !== undefined && ctx.inputProvenance.kind !== 'external_user') ||
       (ctx.messageProvider !== undefined && ctx.messageProvider !== ctx.channel) || hasAttachments) return null;

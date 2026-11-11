@@ -1,6 +1,66 @@
 # Nori-Agent 开发、验证与部署记录
 
+
 [English](implementation-and-deployment.md) | 简体中文
+
+## PR70 Console host 策略持久化复审修复（2026-11-10）
+
+负责人 Codex；America/Los_Angeles；base `500fd4b`。PR 标题保持
+**Fix scheduled tasks requiring an online Slack user**。本地修复完成；远程 CI、Reviewer
+确认与 merge 由父 agent 按授权处理，本 worker 未外发。
+
+复审发现编译未传递两项 host 策略，整 entry 替换会在轮询时抹去它们。修复前四个实际
+compile/merge/sync 复现均失败。现以 native Dashboard/host 配置为唯一 authority：合并
+保留 `trustedSlackChannels`、`nativeAgentRoutes` 的显式字段；host 省略时丢弃编译器
+默认字段，并重新验证新 routes。Console settings 不复制这两项策略。显式空容器不复活；
+省略创建策略继续继承当前 developmentChannels，修改/清空开发频道同步改变隐式许可。
+旧 native route 失效时拒绝发布，不静默删限制。自动推荐修复等待验证后再写；失败保持
+host 与 Console 原配置。验证通过后在密钥/config 发布前持久化意图，后续启用失败时
+配置一致且密钥关闭。原有暂停/收紧行为保留。
+
+run12：**96 项 Console/Router 测试通过**；完整 Node **1314 tests／1312 pass／0 fail／
+2 既有条件 skip**；scaffold、链接/示例与 diff-check 通过。持久 fixture 覆盖 refresh、
+save、目录增删、close/新 sync 实例 init、空值撤销、隐式继承修改、运行时 route 限制及
+发布后失败。可选 `verify-router-console` **未能启动**：缺已准备 Magpie binary
+（`magpie_dependency_not_prepared`），未安装/构建，不能称原生 UI 通过。
+日志前缀 `/tmp/sa-ops-run12-`：`reproduction.log`、`targeted.log`、`node-tests.log`、
+`check.log`、`native-console.log`、`links.log`。
+[配置语义](slack-development.md#console-refresh-and-host-policy-ownership)。
+
+下一步父 agent 审阅、按已有授权 commit/push，待 CI 和 Reviewer 均无问题后 merge。
+本 worker 未 commit/push、发 PR 消息、merge、部署、访问生产或修改 vendor。
+本轮是独立复审修复，不推进产品里程碑；下方旧验证记录仍为历史。
+
+## SA-OPS-01 / #66 原生执行修复（2026-11-10）
+
+负责人 Codex；日期 2026-11-10，America/Los_Angeles。实现 base `b36f21b3`，初次调查
+base `ac8d766`，native pin `4a11f89`；#61/#69 已合并。
+状态：**已实现／本地验证通过；无生产或产品验收**。native 负责执行 admission，取代旧
+BLOCKED/grant-view 前提。普通可信 Slack/ACP 无需 Foundation 角色，业务特权保持。
+创建/扩权要求当前可信 Slack、配置获准 Agent 和 native `commands.ownerAllowFrom` 权限；
+审计段仅供显示/筛选，按 owner 隔离，错误与总 deadline 显式拒绝。
+
+[源码和证据](sa-ops-native-authority.md) 覆盖真实 native Cron 创建、两用户审计、
+update/declare、禁用/启用/删除、公共创建/spawn/send 拒绝、重启、无 sender 使用显式
+获准 development subscription Agent default 与 job override，以及 announce 回送。
+还覆盖真实 native child spawn、无 sender 执行及父会话结果；transport 与 loopback 模型
+为合成。普通用户/native fallback 均保留，native 每个候选都检查资格；scoped stream 在
+读取候选凭据/网络请求前检查。公共入口按 native ID 规范化做间接 spawn/send 可达检查，
+不影响与公共入口隔离的内部原生协作。
+
+run11：**31 项定向测试通过**（创建/Provider/用量、scoped stream、fixture parser）；
+**7 个 native projection 案例及停用 entry 通过**；完整 Node **1309 tests／1307 pass／
+0 fail／2 既有条件 skip**；scaffold、源码链接、diff-check 通过。真实 loader 三模式与
+无角色门槛的 native ACP 合成端到端再次通过。复用 pinned build（4m56s），日志前缀
+`/tmp/sa-ops-run11-*`，具体命令与保留目录见报告。此前模型误取旧 child tag 的 fixture
+解析已修复，仅排除合成模型读取的 internal metadata，不改 native 输入/权限。
+
+native enable 仍可能写入成功后返回 `scheduleErrorCount` output-schema 错误，按实际
+store 验证且不重试 mutation。真实 Slack/生产/付费 Provider、完整 memory、广义 child
+续接、执行中取消/授权撤销竞争和全部消息工具目的地未验收；真实有界 child 启动/执行/
+结果已验证，不能用 projection 替代 memory 验收。不完成 M0/M1 或治理验收。
+下一步审阅有界差异及上游返回限制，再由父 agent 按已有授权提交/push PR70。本 worker
+未 commit/push、更新 PR、外发、合并、部署或启动其他 Issue。管理仍使用 native Dashboard。
 
 ## Super Agent v0.6 原生优先修订（2026-11-09）
 

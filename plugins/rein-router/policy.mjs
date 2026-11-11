@@ -124,7 +124,7 @@ function freeze(value) {
 /** Validate operator configuration without resolving secrets or contacting services. */
 export function validateRouterConfig(raw = {}) {
   object(raw, 'config', ['enabled', 'gateway', 'routes', 'defaultRoute', 'fallbackRoutes',
-    'allowPaidUsage', 'channels', 'adminSenders', 'developmentChannels', 'decision', 'scopedPolicies']);
+    'allowPaidUsage', 'channels', 'adminSenders', 'developmentChannels', 'decision', 'scopedPolicies', 'trustedSlackChannels', 'nativeAgentRoutes']);
   const enabled = boolean(raw.enabled, 'enabled', false);
   const allowPaidUsage = boolean(raw.allowPaidUsage, 'allowPaidUsage', false);
   const normalizedGateway = raw.gateway === undefined ? null : gateway(raw.gateway);
@@ -164,7 +164,7 @@ export function validateRouterConfig(raw = {}) {
       senderId: text(sender.senderId, `${field}.senderId`, 256) };
   });
   if (new Set(adminSenders.map(sender => JSON.stringify(sender))).size !== adminSenders.length) invalid('adminSenders');
-  const developmentChannels = array(raw.developmentChannels, 'developmentChannels', 16, []).map((entry, index) => {
+  const parseSlackChannels = (input, allowMain) => array(input, 'developmentChannels', 16, []).map((entry, index) => {
     const field = `developmentChannels[${index}]`;
     object(entry, field, ['accountId', 'workspaceId', 'channelId', 'agentId', 'botTokenEnvVar']);
     const result = { accountId: text(entry.accountId, `${field}.accountId`, 128),
@@ -173,10 +173,14 @@ export function validateRouterConfig(raw = {}) {
       agentId: text(entry.agentId, `${field}.agentId`, 128),
       botTokenEnvVar: text(entry.botTokenEnvVar ?? 'SLACK_BOT_TOKEN', `${field}.botTokenEnvVar`, 128) };
     if (!/^T[A-Z0-9]{5,31}$/.test(result.workspaceId) || !/^[CG][A-Z0-9]{5,31}$/.test(result.channelId) ||
-        !/^[a-z][a-z0-9_-]*$/.test(result.agentId) || result.agentId === 'main' ||
+        !/^[a-z][a-z0-9_-]*$/.test(result.agentId) || (!allowMain && result.agentId === 'main') ||
         !isGatewayCredentialEnvironmentName(result.botTokenEnvVar)) invalid(field);
     return result;
   });
+  const developmentChannels = parseSlackChannels(raw.developmentChannels, false);
+  const trustedSlackChannels = raw.trustedSlackChannels === undefined ? developmentChannels : parseSlackChannels(raw.trustedSlackChannels, true);
+  if (new Set(trustedSlackChannels.map(entry => `${entry.accountId}/${entry.channelId}`)).size !== trustedSlackChannels.length)
+    invalid('trustedSlackChannels');
   if (new Set(developmentChannels.map(entry => `${entry.accountId}/${entry.channelId}`)).size !== developmentChannels.length)
     invalid('developmentChannels');
   const decisionRaw = raw.decision === undefined ? {} : raw.decision;
@@ -196,8 +200,21 @@ export function validateRouterConfig(raw = {}) {
   if (enabled && channels.length === 0) invalid('channels');
   const scopedPolicies = validateScopedPolicies(raw.scopedPolicies, routes, allowPaidUsage);
   if (scopedPolicies && fallbackRoutes.length) invalid('fallbackRoutes', 'router_scoped_global_fallback_disallowed');
+  let nativeAgentRoutes;
+  if (raw.nativeAgentRoutes !== undefined) {
+    if (!raw.nativeAgentRoutes || typeof raw.nativeAgentRoutes !== 'object' || Array.isArray(raw.nativeAgentRoutes)) invalid('nativeAgentRoutes');
+    nativeAgentRoutes = {};
+    for (const [agentId, allowed] of Object.entries(raw.nativeAgentRoutes)) {
+      if (!/^[a-z][a-z0-9_-]*$/.test(agentId)) invalid('nativeAgentRoutes');
+      nativeAgentRoutes[agentId] = array(allowed, 'nativeAgentRoutes').map(id => {
+        const selected = routes.find(route => route.id === id);
+        if (!selected || selected.billingMode === 'coding-plan' || selected.access === 'admin-complex-coding') invalid('nativeAgentRoutes');
+        return id;
+      });
+    }
+  }
   return freeze({ ...(scopedPolicies ? { scopedPolicies } : {}), enabled, gateway: normalizedGateway ?? undefined, routes, defaultRoute: defaultRoute ?? undefined, fallbackRoutes,
-    allowPaidUsage, channels, adminSenders, developmentChannels, decision });
+    allowPaidUsage, channels, adminSenders, developmentChannels, trustedSlackChannels, ...(nativeAgentRoutes ? { nativeAgentRoutes } : {}), decision });
 }
 
 function enabledConfig(config) {

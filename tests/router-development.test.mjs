@@ -19,25 +19,25 @@ function authorization(overrides={}, foundation=async()=>true) {
   }});
   return {check,calls};
 }
-test('configured private channel membership and Foundation authority suffice without an administrator list or invitation history',async()=>{
+test('trusted private Slack membership needs no Foundation identity or role',async()=>{
   let backend=0;const {check,calls}=authorization({},async()=>{backend++;return true;});
-  assert.equal(await check(context),true);assert.equal(await check(context),true);assert.equal(backend,2);assert.equal(calls.length,6);
-  assert.equal(await check({...context,senderId:'UADMIN01'}),true);assert.equal(backend,3);
+  assert.equal(await check(context),true);assert.equal(await check(context),true);assert.equal(backend,0);assert.equal(calls.length,6);
+  assert.equal(await check({...context,senderId:'UADMIN01'}),true);assert.equal(backend,0);
 });
-test('channel, membership and current backend denial fail closed',async()=>{
+test('channel and membership fail closed independently of business-role availability',async()=>{
   for(const overrides of [
     {'auth.test':{team_id:'TOTHER01',user_id:'UBOT0001',bot_id:'BBOT0001'}},
     ...[{is_private:false},{is_shared:true},{is_archived:true},{context_team_id:'TOTHER01'}].map(delta=>({'conversations.info':{channel:{...goodChannel,...delta}}})),
     {'conversations.members':{members:['UADMIN01']}},
     {'conversations.members':{ok:false,error:'ratelimited'}},
   ]){let backend=0;assert.equal(await authorization(overrides,async()=>{backend++;return true;}).check(context),false);assert.equal(backend,0);}
-  for(const foundation of [async()=>false,async()=>{throw Error('unavailable');}])assert.equal(await authorization({},foundation).check(context),false);
+  for(const foundation of [async()=>false,async()=>{throw Error('unavailable');}])assert.equal(await authorization({},foundation).check(context),true);
 });
 test('leaving the configured channel revokes access on the next check',async()=>{
   let joined=true,backend=0;
   const {check}=authorization({'conversations.members':()=>({members:joined?['UMEMBER1']:[]})},async()=>{backend++;return true;});
   assert.equal(await check(context),true);
-  joined=false;assert.equal(await check(context),false);assert.equal(backend,1);
+  joined=false;assert.equal(await check(context),false);assert.equal(backend,0);
 });
 test('paginated membership is supported without accepting repeated cursors',async()=>{
   const paged=authorization({'conversations.members':p=>p.get('cursor')?{members:['UMEMBER1']}:{members:['UADMIN01'],response_metadata:{next_cursor:'members2'}}});
@@ -51,15 +51,22 @@ test('missing and conflicting native context never reaches Slack or backend',asy
 });
 const complex = probabilityTrue => ({status:'ok',result:{answers:{route:{type:'choice',choice:'premium',probabilities:{premium:0.98}},task:{type:'choice',choice:'coding',probabilities:{coding:0.98}},contextIndependent:{type:'boolean',probabilityTrue:0.99},complexDevelopment:{type:'boolean',probabilityTrue}}}});
 const toolContext=delta=>({runId:context.runId,agentId:context.agentId,sessionKey:context.sessionKey,requester:{channel:'slack',accountId:'default',senderId:context.senderId},...delta});
-test('developer tools recheck revocation and cannot inherit another run or requester',async()=>{
-  let allowed=true,checks=0;const r=createRouter({config,authorizeDevelopment:async()=>{checks++;return allowed;},decisions:{evaluate:async()=>complex(0.99)}});
+test('native admission owns execution and tools; subscription task eligibility stays separate',async()=>{
+  let allowed=true,checks=0;
+  const r=createRouter({config,authorizeDevelopment:async()=>{checks++;return allowed;},decisions:{evaluate:async()=>complex(0.99)}});
   assert.equal((await r.beforeModelResolve({prompt:'Implement and test multiple files'},context)).modelOverride,'premium');
   assert.equal(r.beforeAgentRun({},{...context,modelId:'premium'}).outcome,'pass');
-  assert.equal(await r.beforeToolCall({},toolContext()),undefined);assert.equal(checks,2);
-  for(const delta of [{runId:'other'},{sessionKey:'other'},{requester:{channel:'slack',accountId:'default',senderId:'UOTHER01'}},{requester:undefined}])assert.equal((await r.beforeToolCall({},toolContext(delta))).block,true);
-  allowed=false;assert.equal((await r.beforeToolCall({},toolContext())).block,true);
-  assert.equal((await r.beforeModelResolve({prompt:'Implement and test'}, {...context,runId:'r2'})).modelOverride,'standard');
-  assert.equal(r.beforeAgentRun({},{...context,runId:'r2',modelId:'standard'}).outcome,'block');
+  assert.equal(await r.beforeToolCall({},toolContext()),undefined);assert.equal(checks,1);
+  allowed=false;
+  const next={...context,runId:'ordinary',modelId:'standard'};
+  await r.beforeModelResolve({prompt:'Ordinary work'},next);
+  assert.equal(r.beforeAgentRun({},next).outcome,'pass');
+  assert.equal(await r.beforeToolCall({},toolContext({runId:'ordinary'})),undefined);
+  for(const trigger of ['cron','memory','system']){
+    const native={...next,trigger,runId:trigger,senderId:undefined};
+    await r.beforeModelResolve({prompt:'Native work'},native);
+    assert.equal(r.beforeAgentRun({},native).outcome,'pass');
+  }
 });
 test('simple terminal work stays on normal route; manual premium and fallback cannot bypass classification',async()=>{
   const r=createRouter({config:{...config,fallbackRoutes:['premium']},authorizeDevelopment:async()=>true,decisions:{evaluate:async()=>complex(0.1)}});

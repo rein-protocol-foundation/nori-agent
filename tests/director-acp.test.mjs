@@ -10,26 +10,19 @@ const toolCtx = (delta = {}) => ({ runId: ctx.runId, agentId: ctx.agentId, sessi
 const spawn = params => ({ toolName: 'sessions_spawn', params: { task: 'Create and test a tiny pure function', ...params } });
 const success = body => ({ ok: true, httpStatus: 200, body });
 
-test('Director gate uses fresh signed identity and current private Slack membership through the whole admission/tool flow', async () => {
-  let director = true, member = true, assertions = 0;
-  const foundation = createFoundationDirectorAuthorizer({ config: { enabled: true, workspaces: [{ platform: 'slack', workspaceId: config.channel.workspaceId, nativeChannelIds: [config.channel.channelId] }], proposalChannelIds: [config.channel.channelId], boardChannelIds: [config.channel.channelId], backendApiBaseUrlEnvVar: 'TEST_URL', agentCallerIdEnvVar: 'TEST_CALLER', agentCredentialEnvVar: 'TEST_CREDENTIAL' }, env: { TEST_URL: 'http://127.0.0.1:9999', TEST_CALLER: 'fixture', TEST_CREDENTIAL: 'synthetic-credential' }, transport: {
-    relayIngress: async () => { assertions++; return success({ ok: true, assertion: 'synthetic-proof' }); },
-    resolveIdentity: async () => success({ ok: true, status: 'resolved', contact_id: 'synthetic-contact', is_director: director, is_active_contributor: true, is_administrator: true }),
-  } });
-  const authorize = createSlackDevelopmentAuthorizer({ config: { developmentChannels: [config.channel] }, authorizeFoundation: foundation, env: { TEST_SLACK_TOKEN: 'xoxb-synthetic' }, fetchImpl: async url => Response.json({ ok: true, ...({
-    'auth.test': { team_id: config.channel.workspaceId, user_id: 'UBOT0001', bot_id: 'BBOT0001' },
-    'conversations.info': { channel: { id: config.channel.channelId, context_team_id: config.channel.workspaceId, is_private: true, is_member: true, is_archived: false, is_im: false, is_mpim: false } },
-    'conversations.members': { members: member ? [ctx.senderId] : [] },
-  })[url.split('/').at(-1)] }) });
-  const r = createDirectorAcp({ config, authorize });
-  assert.equal((await r.beforeAgentRun({}, ctx)).outcome, 'pass');
-  assert.deepEqual((await r.beforeToolCall(spawn(), toolCtx())).params, { task: 'Create and test a tiny pure function', runtime: 'acp', agentId: 'codex', cwd: config.cwd, mode: 'run', thread: false, streamTo: 'parent' });
-  assert.equal(assertions, 2);
-  director = false;
-  assert.equal((await r.beforeToolCall({ toolName: 'subagents', params: { action: 'list' } }, toolCtx())).block, true);
-  assert.equal((await r.beforeAgentRun({}, ctx)).outcome, 'block');
-  director = 'true'; assert.equal((await r.beforeAgentRun({}, ctx)).outcome, 'block');
-  director = true; member = false; assert.equal((await r.beforeAgentRun({}, ctx)).outcome, 'block');
+test('trusted Slack ACP does not resolve Foundation roles; membership is still checked', async () => {
+  let member=true,roles=0;
+  const authorize=createSlackDevelopmentAuthorizer({config:{developmentChannels:[config.channel]},
+    authorizeFoundation:async()=>{roles++;return false;},env:{TEST_SLACK_TOKEN:'xoxb-synthetic'},fetchImpl:async url=>Response.json({ok:true,...({
+      'auth.test':{team_id:config.channel.workspaceId,user_id:'UBOT0001',bot_id:'BBOT0001'},
+      'conversations.info':{channel:{id:config.channel.channelId,context_team_id:config.channel.workspaceId,is_private:true,is_member:true,is_archived:false,is_im:false,is_mpim:false}},
+      'conversations.members':{members:member?[ctx.senderId]:[]},
+    })[url.split('/').at(-1)]})});
+  const r=createDirectorAcp({config,authorize});
+  assert.equal((await r.beforeAgentRun({},ctx)).outcome,'pass');
+  assert.equal((await r.beforeToolCall(spawn(),toolCtx())).params.runtime,'acp');
+  assert.equal(roles,0);
+  member=false;assert.equal((await r.beforeAgentRun({},ctx)).outcome,'block');
 });
 
 test('forged, missing and wrong-run authority cannot start, inspect or cancel ACP work', async () => {

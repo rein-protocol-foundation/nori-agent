@@ -1,39 +1,110 @@
-# Private Slack development channel
+# Private Slack development and native automation
 
-For the separate Director-only external coding-harness pilot with subagent status reporting, see [Director ACP](director-acp.md). Ordinary development below remains sandboxed and permits Contributors and Directors.
+Ordinary work from a configured trusted private Slack channel requires current Slack membership,
+not a Foundation Contributor or Director role. Business tools keep their own backend role checks.
+The optional [trusted Slack ACP controller](director-acp.md) keeps bounded harness delegation,
+status, cancellation, progress and results.
 
-Development access requires two conditions:
-
-1. The requester is a current member of the private Slack channel configured in Router, using its native channel route and dedicated agent.
-2. The requester has a linked Rein identity with a current active Contributor or Director role, resolved through the Foundation signed-ingress API. Administrators qualify through their Director role; an administrator flag alone does not grant development access.
-
-Invitation history and the legacy administrator list are not authorization inputs. Each task is checked again; every tool invocation rechecks current Slack membership and backend authority. No role or membership cache is used. API errors deny access. Slack history retention does not affect authorization.
-
-The `development-complex-coding` model policy additionally requires confident complex-development classification. Routine terminal work uses ordinary configured models. Prompt text, manual model selection and fallback routes cannot override the access or model restrictions.
+Router no longer blocks every development-agent run or tool call when no live Slack sender is
+present. OpenClaw owns native Cron, child and memory execution admission and capability inheritance.
+Rein continues to enforce Provider eligibility, billing, quota and scoped usage limits. Background
+runs use the effective native agent default or job override; Jev does not reselect their model.
+Each non-scoped fallback candidate must be eligible and follow the configured fallback order.
+Scoped native candidates are checked before credential lookup/network; ordinary user fallback is retained.
+`nativeAgentRoutes` is an optional eligibility list, not a Cron model selector. Coding Plan and administrator-only routes remain excluded. A full-subscription development-tag
+route requires explicit `nativeAgentRoutes` eligibility for the Agent; omission does not widen access.
 
 ## Configuration
 
-In Magpie → Dynamic Router, select the authorized development-channel access policy for every OpenAI provider alias. Advanced settings list development channels as `accountId/workspaceId/channelId/agentId`. The administrator list only applies to legacy `admin-complex-coding` routes.
+In Magpie → Dynamic Router, the development access policy applies to complex-development model
+selection from current Slack members. Advanced settings list channels as
+`accountId/workspaceId/channelId/agentId`. Legacy `admin-complex-coding` alone retains its Foundation
+administrator check. Native channel, tools, agent collaboration and Cron settings remain in the
+OpenClaw Dashboard/configuration.
 
-An example plugin configuration fragment:
+Example Router plugin fragment (synthetic identifiers):
 
 ```json
 {
   "developmentChannels": [{
     "accountId": "default", "workspaceId": "TWORK001", "channelId": "CDEVEL01",
     "agentId": "nori-development", "botTokenEnvVar": "SLACK_BOT_TOKEN"
-  }]
+  }],
+  "trustedSlackChannels": [{
+    "accountId": "default", "workspaceId": "TWORK001", "channelId": "CDEVEL01",
+    "agentId": "nori-development", "botTokenEnvVar": "SLACK_BOT_TOKEN"
+  }],
+  "nativeAgentRoutes": { "nori-development": ["openai-general"] }
 }
 ```
 
-The channel must also be included in the native Slack allowlist, Foundation `workspaces[].nativeChannelIds`, and the Foundation service caller's channel allowlist. Bind that native channel to `nori-development` using OpenClaw's channel peer binding. Keep the Foundation URL at its canonical HTTPS origin; redirects are rejected by the signed backend transport.
+`trustedSlackChannels` defaults to `developmentChannels` when omitted. An explicit empty list
+permits no Rein automation creation. It can name an approved ordinary agent, including `main`,
+without enabling the sandboxed-development model policy. The approved agent must not also own
+public Community Discord ingress. Native public-to-internal spawn/send policy must stay closed;
+allowed internal collaboration remains available. Indirect public-to-worker-to-internal paths
+and native-normalized target IDs are checked too. Other channels retain their native admission and
+routing: they do not acquire this Slack creation permission.
 
-Create the agent before enabling the development-channel configuration. It must explicitly use `sandbox.mode: "all"`, a supported sandbox backend, and `tools.elevated.enabled: false`; the plugin rejects missing isolation. Restrict its available tools to development tools. Keep credentials, production working directories and administrative privileges outside that environment. An SSH backend requires a dedicated unprivileged account, a verified host key and a separate seed workspace; see the pinned [OpenClaw SSH backend documentation](../vendor/openclaw/docs/gateway/sandboxing/ssh-backend.md).
+### Console refresh and host policy ownership
 
-Users must complete Rein identity binding through an ordinary Nori channel before using the development channel, because the development agent rejects unbound requests. Slack workspace administration alone does not establish a Rein Director role.
+Keep `trustedSlackChannels` and `nativeAgentRoutes` in the host's
+`plugins.entries.rein-router.config`, managed through native Dashboard/configuration. Console
+settings do not duplicate either policy. Polling, other UI saves and a fresh Console init preserve
+explicit host values and validate them against the new compiled routes before publication.
 
-Slack channel membership is managed through Slack. Nori checks current membership and the linked Rein role regardless of who invited the member.
+Omitting `trustedSlackChannels` continues to inherit the current `developmentChannels`; saving a
+changed/empty development list updates that inheritance. Explicit `trustedSlackChannels: []`
+revokes creation and cannot be repopulated from compiler defaults. Explicit `nativeAgentRoutes: {}`
+removes explicit route grants, including development-subscription qualification; it does not mean
+a blanket denial of otherwise unrestricted default routes. An Agent entry `"main": []` denies that
+Agent every native route. Empty containers remain explicit; omission remains omitted.
+
+If a catalog/funding change invalidates a host route qualification, publication returns
+`router_host_policy_invalid`, preserves the host/Console configuration and disables the owned
+keys. Restore the route or deliberately update the host policy, then retry. Console does not
+silently remove the restriction or repair it into another Provider. Automatic UI recommendation
+repairs are saved only after successful policy validation/publication. Once validation succeeds,
+Console intent is persisted before key/config publication so later activation failures keep the
+same intended settings and leave keys disabled. Concurrent host edits retain the existing
+compare-before-replace guard.
+
+Automation creation/expansion needs **both** current trusted Slack ingress and native creation
+permission. Configure native `commands.ownerAllowFrom`, for example
+`["slack:UALICE01", "slack:UBOB0001"]`, only for actual approved creators, plus the native Slack
+channel allowlist and exact agent binding. A channel member missing native creation permission is
+still refused by OpenClaw. Do not infer ownership from model arguments or set synthetic owner flags.
+No Foundation workspace, account binding or role lookup is needed for ordinary development or Cron.
+Business tools still require their separately configured backend authority.
+
+The hook covers `automations`, `cron` and compact `tool_call` envelopes, including trimmed actions.
+It checks the current host requester for add/update, refuses executor retargeting, and writes a
+searchable `[Nori creation v1 workspace=… account=… channel=… user=…]` description line. Native owner
+fields are retained. The line supports Dashboard display/search and management; it is not a signed
+credential. Description edits preserve an existing line only from the same native owner
+agent/account/session. Old ownerless or mismatched records cannot be description-edited through
+this adapter; manage them without changing description, or use the native administrator Dashboard.
+Declaration convergence retains the original description. Native read/control, exact disable and
+self-removal retain native scope. Announce destination and message-tool permission remain distinct.
+
+A development agent still explicitly requires `sandbox.mode: "all"`, a supported sandbox backend,
+and `tools.elevated.enabled: false`. Keep production resources outside that environment. See the
+[pinned native SSH sandbox documentation](https://github.com/openclaw/openclaw/blob/4a11f89e840b2bb3eedcad2820ab25b8520905b6/docs/gateway/sandboxing/ssh-backend.md).
 
 ## Validation
 
-Run `node --test tests/router-development.test.mjs tests/router-foundation-admin.test.mjs tests/subscription-router.test.mjs tests/router-console.test.mjs` and the repository checks. For live acceptance use a verified test account, a short-lived synthetic backend identity and two small cases: inspect terminal/runtime versions, then bootstrap and test a tiny local project. Verify actual tool execution and revoke the synthetic role/link afterward. Do not include tokens, live member records or private runtime transcripts in evidence committed to Git.
+With the repository toolchain on PATH, run:
+
+```sh
+node --test tests/router-development.test.mjs tests/sa-ops-cron-ingress.test.mjs
+node scripts/probe-sa-ops-authority.mjs
+node scripts/verify-sa-ops-cron.mjs
+node scripts/verify-director-acp.mjs
+node scripts/check.mjs
+```
+
+See [#66 evidence and limits](sa-ops-native-authority.md). Local Cron uses the actual pinned
+scheduler/store/tools with synthetic transport and loopback inference. It is not real-user Slack,
+production, paid Provider or complete memory or broad child-continuation acceptance. The bounded native child spawn,
+senderless execution and parent-result path is verified separately in run11. Enabling/disabling the plugin
+changes only its extension hooks/provider; native admission and management stay native.

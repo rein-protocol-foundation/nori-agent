@@ -1,6 +1,6 @@
 import { resolveScopedPolicy, describeScopedPolicies } from './scoped-policy.mjs';
 import { createScopedFallbackStream } from './scoped-stream.mjs';
-import { usageIdentity } from './usage-limits.mjs';
+import { usageIdentity, nativeUsageIdentity } from './usage-limits.mjs';
 import { validateRouterConfig, selectRoute, describeRoute, isRestrictedRoute } from './policy.mjs';
 import { developmentChannelFor, DEVELOPMENT_AUTH_TIMEOUT_MS } from './slack-development.mjs';
 import { wrapQuotaErrors, normalizeIncludedQuotaError } from './quota.mjs';
@@ -104,6 +104,15 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
   const requester = ctx => JSON.stringify([ctx.agentId, ctx.sessionKey, ctx.sessionId, ctx.channel ?? ctx.messageProvider,
     ctx.accountId, ctx.senderId, ctx.chatId, ctx.channelContext?.chat?.id, ctx.channelContext?.sender?.id,
     ctx.inputProvenance?.kind, ctx.trigger]);
+  const nativeTurn = ctx => !ctx.senderId || Boolean(ctx.trigger && ctx.trigger !== 'user') ||
+    Boolean(ctx.inputProvenance && ctx.inputProvenance.kind !== 'external_user');
+  const nativeRouteAllowed = (ctx, id) => {
+    const configured = config.nativeAgentRoutes?.[ctx.agentId];
+    const allowed = configured ?? config.scopedPolicies?.[ctx.agentId]?.allowedRoutes ?? config.routes
+      .filter(route => !restricted(route) && route.billingMode !== 'coding-plan').map(route => route.id);
+    const route = routeById(id);
+    return Boolean(route && route.billingMode !== 'coding-plan' && route.access !== 'admin-complex-coding' && allowed.includes(id));
+  };
   async function verifiedAdmin(ctx) {
     if (!isAdmin(ctx)) return false;
     if (!config.routes.some(restricted)) return true;
@@ -206,6 +215,29 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
     async beforeModelResolve(event, ctx) {
       if (ctx.modelProviderId !== PROVIDER_ID) return;
       markRun(ctx);
+      const native = nativeTurn(ctx);
+      if (native) {
+        const run = runs.get(ctx.runId);
+        if (!run) return;
+        run.native = true; run.requester = requester(ctx); run.admitted = false;
+        if (config.gateway.managed?.mode === 'console') {
+          run.gatewayUnavailable = true;
+          if (!await consoleGatewayReady()) return;
+          run.gatewayUnavailable = false;
+        }
+        if (config.gateway.managed && config.gateway.managed.mode !== 'console' && !gatewayReady?.()) {
+          run.gatewayUnavailable = true; return;
+        }
+        if (config.scopedPolicies?.[ctx.agentId]) {
+          run.scopedPlan = resolveScopedPolicy(config.scopedPolicies, ctx, { native: true });
+          if (!run.scopedPlan) return;
+          run.requested = run.scopedPlan.primary;
+        } else {
+          run.requested ??= ctx.modelId === 'auto' ? config.defaultRoute : ctx.modelId;
+        }
+        // Native already admitted execution. This is only the configured Provider/billing boundary.
+        return { providerOverride: PROVIDER_ID, modelOverride: run.requested };
+      }
       if (config.scopedPolicies?.[ctx.agentId]) {
         const run = runs.get(ctx.runId);
         if (!run) return;
@@ -310,15 +342,19 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
         // Locked manual selections can skip model resolution; still require the same ingress proof.
         if (!run) {
           markRun(ctx); run = runs.get(ctx.runId);
-          if (run) { run.scopedPlan = resolveScopedPolicy(config.scopedPolicies, ctx); run.requester = requester(ctx); }
+          if (run) {
+            run.native = nativeTurn(ctx);
+            run.scopedPlan = resolveScopedPolicy(config.scopedPolicies, ctx, { native: run.native }); run.requester = requester(ctx);
+          }
         }
-        if ((developmentAgent(ctx) && !run?.developer) || ctx.modelProviderId !== PROVIDER_ID || !run?.scopedPlan || run.requester !== requester(ctx) ||
+        if (run?.gatewayUnavailable) return block('rein_router_gateway_unavailable');
+        if ((run?.native && !nativeRouteAllowed(ctx, ctx.modelId)) || ctx.modelProviderId !== PROVIDER_ID || !run?.scopedPlan || run.requester !== requester(ctx) ||
             run.agentId !== ctx.agentId || run.sessionId !== ctx.sessionId || run.sessionKey !== ctx.sessionKey ||
             ctx.modelId !== run.scopedPlan.primary) return block('rein_router_scoped_route_disallowed');
         const limits = config.scopedPolicies[ctx.agentId].usageLimits;
         if (limits) {
           try {
-            run.usageIdentity = usageIdentity(ctx, run.scopedPlan.workspaceId);
+            run.usageIdentity = run.native ? nativeUsageIdentity(ctx) : usageIdentity(ctx, run.scopedPlan.workspaceId);
             usage.admit(run.usageIdentity, limits);
           } catch {
             return { outcome: 'block', reason: 'rein_router_usage_limit',
@@ -328,19 +364,22 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
         run.admitted = true;
         return { outcome: 'pass' };
       }
-      if (developmentAgent(ctx) && (!run?.developer || run.requester !== requester(ctx)))
-        return { ...block('rein_router_development_authorization_required'), message: 'Development access requires current membership in this configured private channel and a linked Rein identity with an active Contributor or Director role. Complete identity binding in an ordinary Nori channel first.' };
+      if (!run && ctx.modelProviderId === PROVIDER_ID && nativeTurn(ctx)) {
+        markRun(ctx); run = runs.get(ctx.runId);
+        if (run) { run.native = true; run.requested = ctx.modelId; }
+      }
       if (ctx.modelProviderId !== PROVIDER_ID && !runs.has(ctx.runId)) return;
       if (runs.get(ctx.runId)?.gatewayUnavailable) return block('rein_router_gateway_unavailable');
       if (config.gateway.managed && config.gateway.managed.mode !== 'console' && !gatewayReady?.()) return block('rein_router_gateway_unavailable');
       if (ctx.modelProviderId !== PROVIDER_ID || !routeById(ctx.modelId)) return block('rein_router_route_disallowed');
-      if (restricted(routeById(ctx.modelId)) && (!run?.restrictedEligible || !accessAllowed(routeById(ctx.modelId), run) ||
+      if (run?.native && !nativeRouteAllowed(ctx, ctx.modelId)) return block('rein_router_native_route_disallowed');
+      if (!run?.native && restricted(routeById(ctx.modelId)) && (!run?.restrictedEligible || !accessAllowed(routeById(ctx.modelId), run) ||
           (routeById(ctx.modelId).access === 'admin-complex-coding' && !isAdmin(ctx)) || run.requester !== requester(ctx)))
         return block('rein_router_admin_complex_coding_required');
       const requested = run?.requested;
       // A swallowed/failed automatic selection must not become a named fallback attempt.
       if (run?.manual === false && !requested) return block('rein_router_route_disallowed');
-      if (requested && ctx.modelId !== requested && (run.manual || !config.fallbackRoutes.includes(ctx.modelId)))
+      if (requested && ctx.modelId !== requested && ((run.manual && !run.native) || !config.fallbackRoutes.includes(ctx.modelId)))
         return block('rein_router_fallback_disallowed');
       if (requested && ctx.modelId !== requested && routeById(ctx.modelId).billingMode === 'coding-plan' &&
           !runs.get(ctx.runId)?.codingEligible) return block('rein_router_coding_plan_task_ineligible');
@@ -361,14 +400,6 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
           usage.assertCurrent(run.usageIdentity);
         } catch { return { block: true, blockReason: 'This request is no longer active or its usage ledger is unavailable.' }; }
       }
-      if (!developmentAgent(ctx)) return;
-      const run = runs.get(ctx.runId);
-      const source = run?.developmentContext;
-      const same = source && run.developer && ctx.agentId === source.agentId && ctx.sessionKey === source.sessionKey &&
-        ctx.requester?.channel === source.channel && ctx.requester?.accountId === source.accountId &&
-        ctx.requester?.senderId === source.senderId;
-      if (!same || !await verifiedDeveloper(source))
-        return { block: true, blockReason: 'Development tools require current membership in the configured private channel and a linked Rein identity with an active Contributor or Director role.' };
     },
     async llmOutput(event, ctx) {
       if (event.provider !== PROVIDER_ID || !routeById(event.model)) return;
@@ -509,6 +540,8 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
         return createScopedFallbackStream({ routes: [plan.primary, ...plan.fallbacks], signal, assertCurrent,
           invoke: async routeId => {
             assertCurrent();
+            if (run.native && !nativeRouteAllowed({agentId}, routeId))
+              throw new Error('rein_router_native_route_disallowed');
             const route = routeById(routeId);
             const gatewayKey = environment[route.gatewayKeyEnvVar];
             if (typeof gatewayKey !== 'string' || !/^sk-magpie-key-[A-Za-z0-9_-]{16,240}$/.test(gatewayKey))

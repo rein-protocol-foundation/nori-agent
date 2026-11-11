@@ -1,4 +1,4 @@
-/** Development access requires current membership in an operator-selected private channel and a live Rein role. */
+/** Trusted Slack membership is operational authority, independent of Foundation business roles. */
 export const DEVELOPMENT_AUTH_TIMEOUT_MS = 8000;
 const nativeId = value => typeof value === 'string' && /^[A-Z][A-Z0-9]{5,31}$/.test(value);
 const runField = value => typeof value === 'string' && value.length > 0 && value.length <= 1024;
@@ -16,10 +16,10 @@ export function developmentChannelFor(config, ctx) {
     entry.channelId === channelId && entry.agentId === ctx.agentId) ?? null;
 }
 
-export function createSlackDevelopmentAuthorizer({ config, authorizeFoundation, env = process.env, fetchImpl = globalThis.fetch }) {
+export function createSlackDevelopmentAuthorizer({ config, env = process.env, fetchImpl = globalThis.fetch }) {
   return async ctx => {
     const selected = developmentChannelFor(config, ctx);
-    if (!selected || typeof authorizeFoundation !== 'function') return false;
+    if (!selected) return false;
     const token = env[selected.botTokenEnvVar];
     if (typeof token !== 'string' || !/^xoxb-[A-Za-z0-9-]+$/.test(token)) return false;
     const signal = AbortSignal.timeout(DEVELOPMENT_AUTH_TIMEOUT_MS - 100);
@@ -59,7 +59,7 @@ export function createSlackDevelopmentAuthorizer({ config, authorizeFoundation, 
         seen.add(cursor);
       }
       if (!member) return false;
-      return await authorizeFoundation(ctx) === true;
+      return true;
     } catch { return false; }
   };
 }
