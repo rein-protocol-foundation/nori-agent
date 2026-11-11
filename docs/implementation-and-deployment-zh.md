@@ -3,6 +3,34 @@
 
 [English](implementation-and-deployment.md) | 简体中文
 
+## PR70 Console host 策略持久化复审修复（2026-11-10）
+
+负责人 Codex；America/Los_Angeles；base `500fd4b`。PR 标题保持
+**Fix scheduled tasks requiring an online Slack user**。本地修复完成；远程 CI、Reviewer
+确认与 merge 由父 agent 按授权处理，本 worker 未外发。
+
+复审发现编译未传递两项 host 策略，整 entry 替换会在轮询时抹去它们。修复前四个实际
+compile/merge/sync 复现均失败。现以 native Dashboard/host 配置为唯一 authority：合并
+保留 `trustedSlackChannels`、`nativeAgentRoutes` 的显式字段；host 省略时丢弃编译器
+默认字段，并重新验证新 routes。Console settings 不复制这两项策略。显式空容器不复活；
+省略创建策略继续继承当前 developmentChannels，修改/清空开发频道同步改变隐式许可。
+旧 native route 失效时拒绝发布，不静默删限制。自动推荐修复等待验证后再写；失败保持
+host 与 Console 原配置。验证通过后在密钥/config 发布前持久化意图，后续启用失败时
+配置一致且密钥关闭。原有暂停/收紧行为保留。
+
+run12：**96 项 Console/Router 测试通过**；完整 Node **1314 tests／1312 pass／0 fail／
+2 既有条件 skip**；scaffold、链接/示例与 diff-check 通过。持久 fixture 覆盖 refresh、
+save、目录增删、close/新 sync 实例 init、空值撤销、隐式继承修改、运行时 route 限制及
+发布后失败。可选 `verify-router-console` **未能启动**：缺已准备 Magpie binary
+（`magpie_dependency_not_prepared`），未安装/构建，不能称原生 UI 通过。
+日志前缀 `/tmp/sa-ops-run12-`：`reproduction.log`、`targeted.log`、`node-tests.log`、
+`check.log`、`native-console.log`、`links.log`。
+[配置语义](slack-development.md#console-refresh-and-host-policy-ownership)。
+
+下一步父 agent 审阅、按已有授权 commit/push，待 CI 和 Reviewer 均无问题后 merge。
+本 worker 未 commit/push、发 PR 消息、merge、部署、访问生产或修改 vendor。
+本轮是独立复审修复，不推进产品里程碑；下方旧验证记录仍为历史。
+
 ## SA-OPS-01 / #66 原生执行修复（2026-11-10）
 
 负责人 Codex；日期 2026-11-10，America/Los_Angeles。实现 base `b36f21b3`，初次调查

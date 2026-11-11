@@ -3,6 +3,39 @@
 
 English | [简体中文](implementation-and-deployment-zh.md)
 
+## PR70 Console host-policy persistence review fix (2026-11-10)
+
+Owner Codex; America/Los_Angeles; base `500fd4b`. PR title:
+**Fix scheduled tasks requiring an online Slack user**. Local fix complete; remote CI/reviewer
+approval and merge remain the parent workflow, not performed by this worker.
+
+The reviewer identified that Console compilation omitted the two host authority policies and
+entry replacement erased them every polling cycle. Four actual compile/merge/sync reproductions
+failed before the fix. Host Dashboard/configuration is now the single source for
+`trustedSlackChannels` and `nativeAgentRoutes`: merge preserves own properties, discards generated
+defaults for absent host fields, and revalidates the result against the new routes. Console settings
+contain no duplicate authority. Explicit empty lists/maps remain empty; omitted creation policy
+tracks current development channels. Removed qualified routes reject publication instead of
+silently widening Provider eligibility. Automatic recommendation repair waits for validation;
+invalid host-policy saves preserve both host and Console files. Validated intent is persisted
+before key/config publication; post-publication activation failure leaves keys disabled and
+settings coherent with the host. Legacy pause/tightening behavior remains covered.
+
+Run12: **96 Console/Router tests passed**; full Node **1314 tests / 1312 pass / 0 fail / 2 existing
+conditional skips**; scaffold, source links/examples and diff-check passed. Persistent fixtures
+exercise refresh, save, catalog expansion/removal, close/new sync instance/init, explicit empty
+revocation, implicit inheritance changes, runtime route restrictions and post-publication failure.
+Optional `node scripts/verify-router-console.mjs` **could not start** because the prepared Magpie
+binary is absent (`magpie_dependency_not_prepared`); no install/build was attempted. This is not a
+passing native UI check. Logs: `/tmp/sa-ops-run12-reproduction.log`,
+`/tmp/sa-ops-run12-targeted.log`, `/tmp/sa-ops-run12-node-tests.log`,
+`/tmp/sa-ops-run12-check.log`, `/tmp/sa-ops-run12-native-console.log`,
+`/tmp/sa-ops-run12-links.log`. [Configuration semantics](slack-development.md#console-refresh-and-host-policy-ownership).
+
+Next: parent review, then authorized commit/push and CI/reviewer verification before merge.
+No commit/push, PR message, merge, deployment, production or vendor change was made here.
+This new review task does not advance product milestones; prior verification entries below are historical.
+
 ## SA-OPS-01 / #66 native execution fix (2026-11-10)
 
 Owner Codex; date 2026-11-10, America/Los_Angeles. Implementation base `b36f21b3`, initial

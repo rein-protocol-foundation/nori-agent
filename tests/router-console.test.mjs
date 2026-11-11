@@ -8,6 +8,9 @@ import { realpathSync } from 'node:fs';
 import { readMagpieCatalog, compileCatalog, mergeRouterFragment, recommendPolicy } from '../plugins/rein-router/catalog-sync.mjs';
 import { createConsoleSync, validateConsoleSettings } from '../scripts/router-console-sync.mjs';
 import { createConsoleServer, decorateMagpieHtml } from '../scripts/router-console.mjs';
+import { validateRouterConfig } from '../plugins/rein-router/policy.mjs';
+import { developmentChannelFor } from '../plugins/rein-router/slack-development.mjs';
+import { catalogRouteId } from '../plugins/rein-router/catalog-sync.mjs';
 import { createRouter } from '../plugins/rein-router/runtime.mjs';
 import { loadMagpieGatewayEnvironment } from '../scripts/magpie-gateway-env.mjs';
 
@@ -104,7 +107,7 @@ async function fixture(t) {
     return {keys:structuredClone(keys).map(({secret,...k})=>k),secret:keys.find(k=>k.id===body?.key)?.secret ?? keys.at(-1)?.secret};
   };
   const sync=createConsoleSync({root,native,spendCheck:async()=>{}});await sync.init();
-  return {root,hostPath,sync,calls,keys,unavailable,get raw(){return raw;},set raw(v){raw=v;}};
+  return {root,hostPath,sync,calls,keys,unavailable,restart:()=>createConsoleSync({root,native,spendCheck:async()=>{}}),get raw(){return raw;},set raw(v){raw=v;}};
 }
 
 test('one save creates scoped credentials, backs up and merges profile; polling tracks new and removed models', async t=>{
@@ -381,4 +384,96 @@ test('scoped catalog loss revokes keys without repairing a hard route into a dif
   await assert.rejects(f.sync.refresh(), /router_policy_model_missing_general/);
   assert.equal(await readFile(f.hostPath, 'utf8'), previous);
   assert.ok(f.keys.every(key => key.off));
+});
+
+
+const approvedSlack = {accountId:'default',workspaceId:'TFIXTURE1',channelId:'CFIXTURE1',agentId:'main',botTokenEnvVar:'SLACK_TEST_TOKEN'};
+const consolePolicySource = {agentId:'main',accountId:'default',channel:'slack',senderId:'UALICE01',chatId:'CFIXTURE1',trigger:'user',runId:'policy-run',sessionId:'policy-session',sessionKey:'agent:main:slack:channel:cfixture1'};
+async function setHostAuthority(f, authority) {
+  const host=JSON.parse(await readFile(f.hostPath,'utf8'));
+  const config=host.plugins.entries['rein-router'].config;
+  delete config.trustedSlackChannels;delete config.nativeAgentRoutes;
+  Object.assign(config,authority);await writeFile(f.hostPath,JSON.stringify(host),{mode:0o600});
+}
+async function hostPolicy(f){return JSON.parse(await readFile(f.hostPath,'utf8')).plugins.entries['rein-router'].config;}
+function assertExplicitPolicyWorks(raw){
+  const config=validateRouterConfig(raw);assert.ok(developmentChannelFor({developmentChannels:config.trustedSlackChannels},consolePolicySource));
+  const router=createRouter({config});
+  assert.equal(router.beforeAgentRun({}, {...consolePolicySource,senderId:undefined,trigger:'cron',modelProviderId:'rein-magpie',modelId:'quick',runId:'denied'}).outcome,'block');
+  assert.equal(router.beforeAgentRun({}, {...consolePolicySource,senderId:undefined,trigger:'cron',modelProviderId:'rein-magpie',modelId:'general',runId:'allowed'}).outcome,'pass');
+}
+test('host automation authority survives actual Console refresh/save/reload/restart without settings duplication',async t=>{
+  const f=await fixture(t);await f.sync.save(settings());
+  const authority={trustedSlackChannels:[approvedSlack],nativeAgentRoutes:{main:['general']}};
+  await setHostAuthority(f,authority);
+  await f.sync.refresh();assert.deepEqual((await hostPolicy(f)).nativeAgentRoutes,authority.nativeAgentRoutes);
+  assertExplicitPolicyWorks(await hostPolicy(f));
+  f.raw.providers[0].models.push({id:'new-pro',on:true,efforts:['medium','high']});
+  await f.sync.refresh();assertExplicitPolicyWorks(await hostPolicy(f));
+  const expanded=await hostPolicy(f);
+  assert.ok(expanded.routes.some(route=>route.id===catalogRouteId('test/new-pro')));
+  assert.equal(createRouter({config:expanded}).beforeAgentRun({}, {...consolePolicySource,senderId:undefined,trigger:'cron',modelProviderId:'rein-magpie',modelId:catalogRouteId('test/new-pro')}).outcome,'block');
+  await f.sync.save({...settings(),minProbability:0.91});assertExplicitPolicyWorks(await hostPolicy(f));
+  await f.sync.close();const restarted=f.restart();await restarted.init();await restarted.refresh();
+  assertExplicitPolicyWorks(await hostPolicy(f));
+  for(const key of Object.keys(authority)){
+    assert.deepEqual((await hostPolicy(f))[key],authority[key]);
+    assert.ok(!Object.hasOwn((await restarted.view()).settings,key));
+    assert.ok(!Object.hasOwn(JSON.parse(await readFile(join(f.root,'runtime/magpie/router-console.json'),'utf8')),key));
+  }
+  await restarted.close();
+});
+test('merge discards generated defaults for omitted host authority; implicit grants track edited development channels',async t=>{
+  const development={...approvedSlack,agentId:'nori-development'};
+  const fragment=compile(undefined,{...settings(),developmentChannels:[development]}).fragment;
+  const merged=mergeRouterFragment({},fragment,{pluginPath:'/test',typesafePath:'/typesafe'});
+  assert.ok(!Object.hasOwn(merged.plugins.entries['rein-router'].config,'trustedSlackChannels'));
+  const f=await fixture(t);await f.sync.save({...settings(),developmentChannels:[development]});
+  assert.ok(!Object.hasOwn(await hostPolicy(f),'trustedSlackChannels'));
+  assert.deepEqual(validateRouterConfig(await hostPolicy(f)).trustedSlackChannels,[development]);
+  await f.sync.save({...settings(),developmentChannels:[]});await f.sync.refresh();
+  await f.sync.close();const restarted=f.restart();await restarted.init();
+  assert.deepEqual(validateRouterConfig(await hostPolicy(f)).trustedSlackChannels,[]);await restarted.close();
+});
+test('explicit empty authority remains revoked across UI edits and Console restart',async t=>{
+  const f=await fixture(t);await f.sync.save(settings());
+  for(const nativeAgentRoutes of [{},{main:[]}]){
+    await setHostAuthority(f,{trustedSlackChannels:[],nativeAgentRoutes});
+    await f.sync.refresh();await f.sync.save({...settings(),developmentChannels:[{...approvedSlack,agentId:'nori-development'}]});
+    const restarted=f.restart();await restarted.init();await restarted.refresh();
+    const raw=await hostPolicy(f);assert.deepEqual(raw.trustedSlackChannels,[]);assert.deepEqual(raw.nativeAgentRoutes,nativeAgentRoutes);
+    assert.equal(developmentChannelFor({developmentChannels:validateRouterConfig(raw).trustedSlackChannels},consolePolicySource),null);
+    if(Object.hasOwn(nativeAgentRoutes,'main')){
+      const r=createRouter({config:raw});assert.equal(r.beforeAgentRun({}, {...consolePolicySource,senderId:undefined,trigger:'cron',modelProviderId:'rein-magpie',modelId:'general'}).outcome,'block');
+    }
+    await restarted.close();
+  }
+});
+test('removed qualified catalog route rejects refresh/save/restart without changing host or Console settings',async t=>{
+  const f=await fixture(t);f.raw.providers[0].models.push({id:'zz-pro',on:true,efforts:['medium','high']});
+  const saved={...settings(),policy:recommendPolicy(readMagpieCatalog(f.raw))};await f.sync.save(saved);
+  await setHostAuthority(f,{trustedSlackChannels:[approvedSlack],nativeAgentRoutes:{main:[catalogRouteId('test/pro')]}});
+  const beforeHost=await readFile(f.hostPath,'utf8'),statePath=join(f.root,'runtime/magpie/router-console.json'),beforeState=await readFile(statePath,'utf8');
+  f.raw.providers[0].models=f.raw.providers[0].models.filter(model=>model.id!=='pro');
+  await assert.rejects(f.sync.refresh(),/native.*policy|host.*policy|config_invalid/);
+  assert.equal(await readFile(f.hostPath,'utf8'),beforeHost);assert.equal(await readFile(statePath,'utf8'),beforeState);
+  // Old UI selections can fail before merge validation; they must not publish settings either.
+  await assert.rejects(f.sync.save({...saved,minProbability:0.94}),/model_missing/);
+  assert.equal(await readFile(statePath,'utf8'),beforeState);
+  await assert.rejects(f.sync.save({...saved,policy:recommendPolicy(readMagpieCatalog(f.raw)),minProbability:0.95}),/native.*policy|host.*policy|config_invalid/);
+  assert.equal(await readFile(f.hostPath,'utf8'),beforeHost);assert.equal(await readFile(statePath,'utf8'),beforeState);
+  const restarted=f.restart();await assert.rejects(restarted.init(),/native.*policy|host.*policy|config_invalid/);
+  assert.equal(await readFile(f.hostPath,'utf8'),beforeHost);assert.equal(await readFile(statePath,'utf8'),beforeState);
+  assert.deepEqual((await f.sync.view()).settings,saved);assert.ok(f.keys.every(key=>key.off));
+});
+
+test('validated Console intent stays coherent with host if key activation fails after publication',async t=>{
+  const f=await fixture(t);await f.sync.save(settings());
+  await setHostAuthority(f,{trustedSlackChannels:[approvedSlack],nativeAgentRoutes:{main:['general']}});
+  f.unavailable.add('/api/caller-keys/on-key');
+  await assert.rejects(f.sync.save({...settings(),minProbability:0.91}));
+  assert.equal((await hostPolicy(f)).decision.minProbability,0.91);
+  assert.equal(JSON.parse(await readFile(join(f.root,'runtime/magpie/router-console.json'),'utf8')).minProbability,0.91);
+  assert.deepEqual((await hostPolicy(f)).nativeAgentRoutes,{main:['general']});
+  assert.ok(f.keys.every(key=>key.off));
 });

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { buildOpenClawFragment, isRestrictedRoute } from './policy.mjs';
+import { buildOpenClawFragment, isRestrictedRoute, validateRouterConfig } from './policy.mjs';
 
 const modelId = /^[A-Za-z0-9][A-Za-z0-9._-]*\/[A-Za-z0-9][A-Za-z0-9._/-]{0,255}$/;
 const efforts = ['off', 'low', 'medium', 'high'];
@@ -132,7 +132,23 @@ export function mergeRouterFragment(host, fragment, { pluginPath, typesafePath, 
   if (out.plugins.allow !== undefined) out.plugins.allow = [...new Set([...out.plugins.allow, ...fragment.plugins.allow])];
   out.plugins.load.paths = [...new Set([...(out.plugins.load.paths ?? []), pluginPath,
     ...(fragment.plugins.entries.typesafe ? [typesafePath] : [])])];
-  Object.assign(out.plugins.entries, fragment.plugins.entries);
+  // Host Dashboard/config is the only authority for these policies. Compiler defaults
+  // must not turn omission/inheritance into an explicit grant or resurrect a revocation.
+  const authority = host.plugins?.entries?.['rein-router']?.config ?? {};
+  const nextConfig = { ...fragment.plugins.entries['rein-router'].config };
+  const hostPolicies = ['trustedSlackChannels', 'nativeAgentRoutes'];
+  for (const field of hostPolicies) {
+    if (Object.hasOwn(authority, field)) nextConfig[field] = structuredClone(authority[field]);
+    else delete nextConfig[field];
+  }
+  let validated;
+  try { validated = { ...validateRouterConfig(nextConfig) }; }
+  catch { throw new Error('router_host_policy_invalid'); }
+  // Validation computes defaults for runtime use; retain omission in persisted config.
+  for (const field of hostPolicies) if (!Object.hasOwn(authority, field)) delete validated[field];
+  Object.assign(out.plugins.entries, fragment.plugins.entries, {
+    'rein-router': { ...fragment.plugins.entries['rein-router'], config: validated },
+  });
   const typesafe = out.plugins.entries.typesafe;
   const usesTypeSafe = [defaults, ...(out.agents.list ?? []), ...Object.values(out.agents.entries ?? {})]
     .some(a => typeof a.decisionModel === 'string' && a.decisionModel.startsWith('typesafe/'));

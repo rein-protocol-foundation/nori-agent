@@ -46,6 +46,29 @@ allowed internal collaboration remains available. Indirect public-to-worker-to-i
 and native-normalized target IDs are checked too. Other channels retain their native admission and
 routing: they do not acquire this Slack creation permission.
 
+### Console refresh and host policy ownership
+
+Keep `trustedSlackChannels` and `nativeAgentRoutes` in the host's
+`plugins.entries.rein-router.config`, managed through native Dashboard/configuration. Console
+settings do not duplicate either policy. Polling, other UI saves and a fresh Console init preserve
+explicit host values and validate them against the new compiled routes before publication.
+
+Omitting `trustedSlackChannels` continues to inherit the current `developmentChannels`; saving a
+changed/empty development list updates that inheritance. Explicit `trustedSlackChannels: []`
+revokes creation and cannot be repopulated from compiler defaults. Explicit `nativeAgentRoutes: {}`
+removes explicit route grants, including development-subscription qualification; it does not mean
+a blanket denial of otherwise unrestricted default routes. An Agent entry `"main": []` denies that
+Agent every native route. Empty containers remain explicit; omission remains omitted.
+
+If a catalog/funding change invalidates a host route qualification, publication returns
+`router_host_policy_invalid`, preserves the host/Console configuration and disables the owned
+keys. Restore the route or deliberately update the host policy, then retry. Console does not
+silently remove the restriction or repair it into another Provider. Automatic UI recommendation
+repairs are saved only after successful policy validation/publication. Once validation succeeds,
+Console intent is persisted before key/config publication so later activation failures keep the
+same intended settings and leave keys disabled. Concurrent host edits retain the existing
+compare-before-replace guard.
+
 Automation creation/expansion needs **both** current trusted Slack ingress and native creation
 permission. Configure native `commands.ownerAllowFrom`, for example
 `["slack:UALICE01", "slack:UBOB0001"]`, only for actual approved creators, plus the native Slack
