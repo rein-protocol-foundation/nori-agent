@@ -9,7 +9,7 @@ magpie.plugin('rein-router', ctx => {
     <section class="rein-section"><div class="rein-section-head"><div><h2>2. 任务路由与思考强度</h2><p>选择适合的模型；推荐值只是起点，可按实际效果调整。</p></div><button type="button" class="text" id="rein-recommend">使用推荐策略</button></div><div id="rein-policy"></div></section>
     <section class="rein-section"><div class="rein-section-head"><div><h2>3. Dynamic Router</h2><p>Jev 判断任务类型、复杂度及是否需要上下文，再选择模型与思考强度。</p></div></div><div id="rein-dynamic"></div></section>
     <section class="rein-section" id="rein-scoped-section" hidden><div class="rein-section-head"><div><h2>Agent 与频道生效策略</h2><p>频道覆盖 → 平台默认 → Agent 默认。空回退列表表示不回退；所有选择受 Agent 可用模型与付费边界约束。</p></div></div><div id="rein-scoped"></div></section>
-    <details class="rein-advanced"><summary>开发频道与回退顺序</summary><div id="rein-fallbacks"></div><label class="rein-field">旧版管理员模式名单（每行 channel/accountId/senderId）<textarea id="rein-admins" rows="3" placeholder="discord/default/YOUR_USER_ID"></textarea></label><p>此名单仅用于旧版管理员模式，不影响开发频道授权。开发频道成员须绑定 Rein 账户，并拥有当前有效的 Contributor 或 Director 角色。</p><label class="rein-field">私有开发频道（每行 accountId/workspaceId/channelId/agentId）<textarea id="rein-dev-channels" rows="3" placeholder="default/T_WORKSPACE/C_CHANNEL/nori-development"></textarea></label><p>开发 Agent 必须配置独立沙箱。退出频道、角色撤销或核验失败后，开发模型和工具均不可用。</p></details>
+    <details class="rein-advanced"><summary>开发频道与回退顺序</summary><div id="rein-fallbacks"></div><label class="rein-field">旧版管理员模式名单（每行 channel/accountId/senderId）<textarea id="rein-admins" rows="3" placeholder="discord/default/YOUR_USER_ID"></textarea></label><p>此名单仅用于旧版管理员模式，不影响开发频道授权。开发频道按当前 Slack 成员身份核验，普通工作无需 Foundation 角色。</p><label class="rein-field">私有开发频道（每行 accountId/workspaceId/channelId/agentId）<textarea id="rein-dev-channels" rows="3" placeholder="default/T_WORKSPACE/C_CHANNEL/nori-development"></textarea></label><p>开发 Agent 必须配置独立沙箱。受限开发模型与自动化创建会核验当前成员；原生任务执行及工具权限由 OpenClaw 管理。</p></details>
     <footer class="rein-save"><div><strong>连接到现有 OpenClaw</strong><p>保存后自动合并配置。首次连接后启动或重启 OpenClaw，后续目录变更自动更新。</p></div><div class="rein-actions"><button type="button" id="rein-pause" class="text" hidden>暂停路由</button><button type="button" id="rein-save" class="text primary">保存并连接 OpenClaw</button></div></footer>
     <p class="rein-footnote">OpenClaw 就是你的 harness，无需连接 Magpie 的 Agents。手动选模型时使用 /model；自动模式使用 /model auto。</p></div>`,
     mount() {
@@ -91,12 +91,12 @@ magpie.plugin('rein-router', ctx => {
       const fundingMenu = ctx.ui.menu([{ v: 'subscription', name: '订阅额度' }, { v: 'coding-plan', name: 'Coding Plan' }, { v: 'pay-as-you-go', name: 'API 按量付费' }],
         funding.mode, '计费来源', v => { funding.mode = v; funding.confirmed = false; changed(); render(); });
       card.append(ctx.ui.row('计费来源', '仅设置调用边界，账号和模型继续在 Providers 管理。', fundingMenu));
-      card.append(ctx.ui.row('使用范围', '开发频道授权要求：配置频道的当前成员，以及已绑定 Rein 的有效 Contributor／Director。受限模型另要求复杂开发分类；每次任务和工具调用重新核验权限。',
+      card.append(ctx.ui.row('使用范围', '受限开发模型要求配置私有频道的当前 Slack 成员及复杂开发分类。原生任务采用 Agent 配置的 Provider 范围；计费与 Coding Plan 边界始终有效。',
         ctx.ui.menu([{ v: 'all', name: '普通任务可用' }, { v: 'development-complex-coding', name: '仅限授权开发频道的复杂开发任务' }, { v: 'admin-complex-coding', name: '旧版：仅限指定管理员' }],
           funding.access ?? 'all', '使用范围', v => { funding.access = v; changed(); })));
-      if (['admin-complex-coding', 'development-complex-coding'].includes(funding.access)) card.append(el('p', state.administratorAuthority?.configured ? '' : 'rein-error',
+      if (funding.access === 'admin-complex-coding') card.append(el('p', state.administratorAuthority?.configured ? '' : 'rein-error',
         state.administratorAuthority?.configured
-          ? '身份来源：Rein Protocol 后端。开发频道核验当前 Slack 成员身份及 Contributor／Director 角色。未绑定、无有效角色或查询失败均不放行。'
+          ? '旧版管理员身份来源：Rein Protocol 后端。仅此策略要求 Foundation 管理员核验。'
           : '尚未配置 Foundation 身份后端，受限模型不会放行。请先完成 rein-operations 的 foundationDb 配置和账号绑定。'));
       card.append(ctx.ui.row('已确认此 Provider 的额度与额外用量设置', '新增模型继承此 Provider 的边界；新增 Provider 默认不启用。',
         ctx.ui.toggle(funding.confirmed, '确认 ' + models[0].provider + ' 计费设置', v => { funding.confirmed = v; changed(); })));

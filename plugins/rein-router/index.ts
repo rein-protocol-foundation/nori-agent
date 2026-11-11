@@ -4,7 +4,9 @@ import { createUsageLedger } from './usage-limits.mjs';
 import { validateRouterConfig } from './policy.mjs';
 import { createManagedGateway } from './managed-gateway.mjs';
 import { bindManagedService, managedServiceScope, managedServiceRegistry } from './service-bridge.mjs';
-import { createFoundationAdminAuthorizer, createFoundationDeveloperAuthorizer, FOUNDATION_ADMIN_TIMEOUT_MS } from './foundation-admin.ts';
+import { createFoundationAdminAuthorizer, FOUNDATION_ADMIN_TIMEOUT_MS } from './foundation-admin.ts';
+import { createCronIngress, assertTrustedSlackBoundaries } from './cron-ingress.mjs';
+import { loadCronStore, resolveCronStorePath } from 'openclaw/plugin-sdk/cron-store-runtime';
 import { createSlackDevelopmentAuthorizer, DEVELOPMENT_AUTH_TIMEOUT_MS } from './slack-development.mjs';
 
 export default definePluginEntry({
@@ -24,9 +26,9 @@ export default definePluginEntry({
       config: operations?.enabled === true ? operations.config?.foundationDb : undefined,
     };
     const authorizeAdmin = createFoundationAdminAuthorizer(foundation);
-    const authorizeDevelopment = createSlackDevelopmentAuthorizer({ config,
-      authorizeFoundation: createFoundationDeveloperAuthorizer(foundation) });
-    if (config.enabled) assertRuntimeConfig(config, api.config);
+    const authorizeDevelopment = createSlackDevelopmentAuthorizer({ config });
+    const authorizeCreator = createSlackDevelopmentAuthorizer({ config: { developmentChannels: config.trustedSlackChannels } });
+    if (config.enabled) { assertRuntimeConfig(config, api.config); assertTrustedSlackBoundaries(config.trustedSlackChannels, api.config); }
     const usage = config.enabled && Object.values(config.scopedPolicies ?? {}).some(policy => policy.usageLimits)
       ? createUsageLedger({ stateDir: api.runtime.state.resolveStateDir() }) : undefined;
     const router = createRouter({ config, decisions: api.runtime.decisions, gatewayReady: gateway?.isReady,
@@ -47,6 +49,13 @@ export default definePluginEntry({
       wrapSimpleCompletionStreamFn: ctx => router.wrapStreamFn({ ...ctx, simpleCompletion: true }) });
     api.on('before_model_resolve', router.beforeModelResolve,
       { priority: 100, timeoutMs: router.config.decision.timeoutMs + FOUNDATION_ADMIN_TIMEOUT_MS + DEVELOPMENT_AUTH_TIMEOUT_MS + (config.gateway.managed?.mode === 'console' ? 2000 : 1000) });
+    const cronIngress = createCronIngress({ channels: config.trustedSlackChannels, authorize: authorizeCreator,
+      readJobs: async source => (await loadCronStore(resolveCronStorePath(api.config.cron?.store))).jobs.filter(job =>
+        job.owner?.agentId === source.agentId && job.owner?.accountId === source.accountId &&
+        job.owner?.sessionKey === source.sessionKey) });
+    api.on('before_agent_run', cronIngress.observe, { priority: 110 });
+    api.on('agent_end', cronIngress.end);
+    api.on('before_tool_call', cronIngress.beforeToolCall, { priority: 110, timeoutMs: DEVELOPMENT_AUTH_TIMEOUT_MS + 1000 });
     api.on('before_agent_run', router.beforeAgentRun, { priority: 100 });
     api.on('before_tool_call', router.beforeToolCall, { priority: 100, timeoutMs: DEVELOPMENT_AUTH_TIMEOUT_MS + 1000 });
     api.on('llm_output', router.llmOutput);

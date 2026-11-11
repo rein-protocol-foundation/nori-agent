@@ -19,6 +19,8 @@
     "additionalProperties": false,
     "properties": {
       "enabled": { "type": "boolean", "default": false },
+      "trustedSlackChannels": { "$ref": "#/properties/developmentChannels", "description": "Approved Nori Agent/private Slack creation channels; main is allowed. Omitted inherits developmentChannels." },
+      "nativeAgentRoutes": { "type": "object", "additionalProperties": { "type": "array", "items": { "$ref": "#/$defs/routeId" } }, "description": "Explicit subscription routes for native background work by Agent; full subscription development routes require explicit eligibility; Coding Plan and administrator-only routes remain excluded." },
       "gateway": {
         "type": "object",
         "additionalProperties": false,
@@ -51,7 +53,7 @@
             "billingMode": { "enum": ["subscription", "coding-plan", "pay-as-you-go"] },
             "billingVerified": { "type": "boolean", "default": false },
             "gatewayKeyEnvVar": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,127}$", "description": "Server variable for an exact single-model Magpie key, required for scoped policies." },
-            "access": { "enum": ["all", "admin-complex-coding", "development-complex-coding"], "description": "Restricted routes require current authority and confidently classified complex development. Development routes additionally require a configured private Slack channel, current membership and a linked active Contributor or Director role." },
+            "access": { "enum": ["all", "admin-complex-coding", "development-complex-coding"], "description": "Restricted routes require current authority and confidently classified complex development. Development routes require a configured private Slack channel and current membership, without a Foundation role. Native background route eligibility is configured separately." },
             "purpose": { "type": "string", "minLength": 1, "maxLength": 1024, "pattern": "^\\S(?:[^\\u0000-\\u001F\\u007F]*\\S)?$" },
             "effort": { "enum": ["off", "low", "medium", "high"] },
             "contextWindow": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },

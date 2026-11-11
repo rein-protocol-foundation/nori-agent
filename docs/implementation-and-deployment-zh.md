@@ -1,31 +1,38 @@
 # Nori-Agent 开发、验证与部署记录
 
+
 [English](implementation-and-deployment.md) | 简体中文
 
-## SA-OPS-01 / #66 原生权限阻塞（2026-11-10）
+## SA-OPS-01 / #66 原生执行修复（2026-11-10）
 
-负责人：Codex。日期：2026-11-10，America/Los_Angeles。base `ac8d766`；native pin `4a11f89`。
-状态：**BLOCKED / no acceptance**。本地 ancestry 确认 #61/#69 已合并。
-[证据报告](sa-ops-native-authority.md) 记录 native/Rein 精确源码行号，以及创建、启用、executor、
-禁用、撤销、重启、选模/Provider、目的地、child、memory、ACP 的已证与未证边界；提出最小只读
-host-owned execution-authority view + `assertCurrent()`。现有公开 hooks 无法验证当前
-occurrence/parent 授权，未实施标签放行。announce 路由与消息工具权限不同；配置仍使用 native
-Dashboard，保留原生调度/选模、Magpie 限额和 ACP。
+负责人 Codex；日期 2026-11-10，America/Los_Angeles。实现 base `b36f21b3`，初次调查
+base `ac8d766`，native pin `4a11f89`；#61/#69 已合并。
+状态：**已实现／本地验证通过；无生产或产品验收**。native 负责执行 admission，取代旧
+BLOCKED/grant-view 前提。普通可信 Slack/ACP 无需 Foundation 角色，业务特权保持。
+创建/扩权要求当前可信 Slack、配置获准 Agent 和 native `commands.ownerAllowFrom` 权限；
+审计段仅供显示/筛选，按 owner 隔离，错误与总 deadline 显式拒绝。
 
-验证：修订探针在私有临时 HOME/state/config/TMPDIR 中 **9/9** 合成案例通过，使用真实 native
-context projection 与 Rein gates；复现无 sender Cron/memory/child-result 误封，以及同一可信
-Slack 成员仅 Foundation 角色授权为 false 时仍被拒绝，伪造标签未获放行。scaffold、本地链接与
-不可变源码 URL 映射、diff 检查结果见证据报告；本次聚焦修订不重跑完整套件或 ACP。
+[源码和证据](sa-ops-native-authority.md) 覆盖真实 native Cron 创建、两用户审计、
+update/declare、禁用/启用/删除、公共创建/spawn/send 拒绝、重启、无 sender 使用显式
+获准 development subscription Agent default 与 job override，以及 announce 回送。
+还覆盖真实 native child spawn、无 sender 执行及父会话结果；transport 与 loopback 模型
+为合成。普通用户/native fallback 均保留，native 每个候选都检查资格；scoped stream 在
+读取候选凭据/网络请求前检查。公共入口按 native ID 规范化做间接 spawn/send 可达检查，
+不影响与公共入口隔离的内部原生协作。
 
-已核对既有日志，未改 runtime 的回归基线为：pinned build 成功（4m56s）；完整 Node suite
-**1289 tests、1287 pass、0 fail、2 既有条件 skip**（native managed Magpie 两次模型调用及
-native Magpie UI launcher）；真实 loader 三模式通过；现有 Director 授权 ACP native 合成端到端
-通过 native Slack ingress、当前 Director 授权、child admission/running status/progress/final。
-这些证明现有回归行为，不构成 #66 普通可信 Slack 去角色门槛、新 Cron 权限或 M0/M1 产品验收。
-完整 Cron 生命周期、实际 native child/memory 后续兼容、新 #66 ACP 权限行为、生产及真实 Slack
-验收仍未验证。本轮仅证据与测试专用探针，未改 runtime plugins、配置、vendor tracked 源码或部署。
-下一步由用户审阅当前阻塞与最小契约提议，获明确确认后仅在 #66 内继续。未启动其他 Issue，
-未 push、创建 PR、外发、合并或部署；已授权的本地证据提交用于用户审阅。
+run11：**31 项定向测试通过**（创建/Provider/用量、scoped stream、fixture parser）；
+**7 个 native projection 案例及停用 entry 通过**；完整 Node **1309 tests／1307 pass／
+0 fail／2 既有条件 skip**；scaffold、源码链接、diff-check 通过。真实 loader 三模式与
+无角色门槛的 native ACP 合成端到端再次通过。复用 pinned build（4m56s），日志前缀
+`/tmp/sa-ops-run11-*`，具体命令与保留目录见报告。此前模型误取旧 child tag 的 fixture
+解析已修复，仅排除合成模型读取的 internal metadata，不改 native 输入/权限。
+
+native enable 仍可能写入成功后返回 `scheduleErrorCount` output-schema 错误，按实际
+store 验证且不重试 mutation。真实 Slack/生产/付费 Provider、完整 memory、广义 child
+续接、执行中取消/授权撤销竞争和全部消息工具目的地未验收；真实有界 child 启动/执行/
+结果已验证，不能用 projection 替代 memory 验收。不完成 M0/M1 或治理验收。
+下一步审阅有界差异及上游返回限制，再由父 agent 按已有授权提交/push PR70。本 worker
+未 commit/push、更新 PR、外发、合并、部署或启动其他 Issue。管理仍使用 native Dashboard。
 
 ## Super Agent v0.6 原生优先修订（2026-11-09）
 

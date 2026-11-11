@@ -1,19 +1,19 @@
 # Nori-Agent implementation roadmap
 
-## SA-OPS-01 / #66 authority checkpoint — November 10, 2026
+## SA-OPS-01 / #66 native execution — November 10, 2026
 
-Owner: Codex. Date: 2026-11-10, America/Los_Angeles. Base `ac8d766`; native pin `4a11f89`.
-Status: **BLOCKED / no acceptance**. #61/#69 are merged in local ancestry. The
-[native authority investigation and safe reproduction](sa-ops-native-authority.md) establish
-the human-only gate defect and the missing public occurrence/parent authority view; nine
-synthetic projection/gate cases reproduce senderless and redundant-role defects without external
-calls. Pinned build (4m56s), complete Node suite (1289 tests / 1287 pass / 0 fail / 2 existing
-conditional skips), real loader three modes and existing Director-authorized native ACP synthetic
-end-to-end are passing unchanged-runtime regression baselines, not #66 or M0/M1 acceptance.
-No runtime bypass is implemented. Next: user review of the blocker and minimal read-only host-owned
-view with `assertCurrent()`; continue only within #66 after explicit user confirmation. Complete
-Cron lifecycle, actual native child/memory follow-up compatibility, new #66 ACP authority behavior,
-real Slack and production remain unverified. Historical governance milestones are unchanged.
+Owner Codex; America/Los_Angeles; implementation base `b36f21b3`, investigation base `ac8d766`,
+native pin `4a11f89`; #61/#69 merged. **IMPLEMENTED / LOCAL VERIFIED; no product acceptance**.
+[Current evidence](sa-ops-native-authority.md): native owns execution; trusted Slack creation,
+owner-scoped audit, membership-only ACP and Provider/usage boundaries are implemented. Native
+Cron lifecycle/restart, two-user audit, public refusal, development-subscription default/job override,
+announce, and real native child spawn/senderless execution/parent result are locally exercised.
+Native fallback candidates, scoped credential/network boundaries and normalized indirect public
+reachability have regression tests. Run11: Node 1309/1307/0/2, 31 targeted tests, projection,
+loader, ACP, scaffold and links/diff passed. Native enable's post-commit schema error remains;
+store state is checked without retry. Live Slack/production, complete memory, broader child
+continuation and cancellation/revocation races remain unverified. Next: final review and already
+authorized parent commit/push workflow; no deployment/new Issue. M0/M1 and governance remain open.
 
 ## Super Agent roadmap — separate scope, November 9, 2026
 

@@ -20,6 +20,14 @@ export function usageIdentity(ctx, workspaceId) {
     subject: hash(['sender', ...base, ctx.senderId]), conversation: hash(['conversation', ...base, chat]) });
 }
 
+/** A distinct native execution subject, never a fabricated Slack user or channel. */
+export function nativeUsageIdentity(ctx) {
+  if (![ctx.runId, ctx.agentId, ctx.sessionKey, ctx.sessionId].every(present)) fail();
+  return Object.freeze({ run: hash(['run', ctx.runId]), agent: hash(['agent', ctx.agentId]),
+    session: hash(['session', ctx.sessionKey]), subject: hash(['native-agent', ctx.agentId]),
+    conversation: hash(['native-session', ctx.agentId, ctx.sessionKey]) });
+}
+
 /** One private database per native state directory; SQLite serializes admission across runtimes. */
 export function createUsageLedger({ stateDir, clock = () => Date.now(), pid = process.pid, processAlive = liveProcess }) {
   if (!isAbsolute(stateDir) || !Number.isSafeInteger(pid) || pid < 1) fail();

@@ -57,16 +57,16 @@ export default definePluginEntry({
         let error;
         try {
           for (const [i, item] of [
-            { sender: 'UCONTRIB1', text: 'ACP_DENIED_TASK' },
-            { sender: 'UDIRECT1', text: 'ACP_START_TASK' },
-            { sender: 'UDIRECT1', text: 'ACP_QUERY_STATUS' },
+            { sender: 'UPUBLIC1', text: 'ACP_DENIED_TASK' },
+            { sender: 'UCONTRIB1', text: 'ACP_START_TASK' },
+            { sender: 'UCONTRIB1', text: 'ACP_QUERY_STATUS' },
           ].entries()) {
             const sessionKey = `agent:${agentId}:slack:channel:fixture-${item.sender.toLowerCase()}`;
             const messageId = `fixture-${i}`, target = `channel:${channelId}`;
             const ingress = await runtime.inbound.ingress.resolveStable({ channelId: 'slack', accountId: 'default', cfg: ctx.cfg,
               identity: { key: 'slack-user-id', entryIdPrefix: 'rein-acp-fixture' }, subject: { stableId: item.sender },
               conversation: { kind: 'channel', id: channelId }, contextBinding: { agentId, sessionKey, nativeChannelId: channelId, messageId, inboundEventKind: 'user_request' },
-              dmPolicy: 'disabled', groupPolicy: 'allowlist', groupAllowFrom: ['UDIRECT1', 'UCONTRIB1'] });
+              dmPolicy: 'disabled', groupPolicy: 'allowlist', groupAllowFrom: ['UDIRECT1', 'UCONTRIB1', 'UPUBLIC1'] });
             const ctxPayload = runtime.inbound.buildContext({ channel: 'slack', accountId: 'default', channelIngress: ingress, messageId, timestamp: Date.now(),
               from: `slack:channel:${channelId}`, sender: { id: item.sender },
               conversation: { kind: 'channel', id: channelId, spaceId: workspaceId, nativeChannelId: channelId },

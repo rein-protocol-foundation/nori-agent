@@ -121,15 +121,10 @@ v0.6 保留原有用户行为，新增已有 ACP 复用与最小 change/stop 的
 
 ## 可信 Slack 与系统 Cron
 
-- [ ] **SA-OPS-01**：**BLOCKED / no acceptance**（2026-11-10，America/Los_Angeles；owner Codex；base `ac8d766`，native pin `4a11f89`）。误封已安全复现，完整 occurrence/parent 授权尚无公开 SDK 接缝，未实施运行时放行。独立跟踪 [#66](https://github.com/rein-protocol-foundation/nori-agent/issues/66)，关联 #56/#60/#68；不完成 M0/M1。
-- 可信系统任务创建/启用时明确 native executor、能力、Provider 范围和目的地；无需在线用户。验证重启、撤销/禁用、公私来源与普通 Slack 回归；不伪造个人身份，不跳过业务权限。
-- 只对实际使用的内部路径建立依赖，不恢复整个 M0 前置门槛。下方保留此前只读诊断，本次未重跑 Cron 或检查生产。
-
-### SA-OPS-01 原生权限阻塞证据（2026-11-10）
-
-[具体源码行号、最小上游契约建议与合成探针](sa-ops-native-authority.md)：原生 creator grant、occurrence admission、parent token 真实存在于 host 私有对象，普通 hook 无法验证当前运行的授权、能力上限和目的地。public Cron query/store、trigger/provenance 标签或 sessionKey 不能替代。announce 目的地与消息工具权限不同；配置仍使用 native Dashboard，不重建调度/选模。#61/#69 已合并（本地 ancestry 已核对）；上方旧 checkpoint 的 #61 开放状态保留为历史记录。
-
-`node scripts/probe-sa-ops-authority.mjs`：私有临时 HOME/state/config/TMPDIR 下 9/9 合成案例通过；真实 native projection + Rein gates 复现无 sender Cron/memory/child-result 误封，同一可信成员仅 Foundation 授权为 false 仍被拒绝，伪造标签未获放行。已核对未改 runtime 的回归基线：pinned build 成功（4m56s）；完整 Node suite 1289 tests、1287 pass、0 fail、2 既有条件 skip；真实 loader 三模式与现有 Director 授权 ACP native 合成端到端通过。它们不构成 #66 去角色门槛、新 Cron 权限或 M0/M1 验收。完整 Cron 生命周期、实际 native child/memory 后续兼容、该路径 Provider/目的地、真实 Slack/生产仍未验证。下一步由用户审阅当前阻塞与最小只读 host-owned execution-authority view + `assertCurrent()` 提议，获明确确认后仅在 #66 内继续；当前不实施运行时放行。
+- [ ] **SA-OPS-01**：**已实现／本地验证通过，无产品验收**（2026-11-10 America/Los_Angeles；owner Codex；实现 base `b36f21b3`，调查 base `ac8d766`，native `4a11f89`；#61/#69 已合并）。[当前证据](sa-ops-native-authority.md)。native 负责执行；普通可信 Slack/ACP 去角色门槛，业务权限不变；创建仍需可信 ingress、获准 Agent 和 native owner 权限。description 审计不是 credential。[#66](https://github.com/rein-protocol-foundation/nori-agent/issues/66) 独立跟踪，不完成 M0/M1。
+- run11 真实 native 创建/审计/update/declare/启停/删除/重启、development subscription default/job override、announce、公共创建/spawn/send 拒绝，以及真实 child spawn/无 sender 执行/父会话结果通过。Provider、显式 native 资格与逐候选 fallback 边界保留，scoped 在凭据/网络前拒绝越界；内部原生协作保持可用，公共间接可达检查采用 native ID 规范化。
+- 检查：31 定向、projection 7 案例及停用 entry；完整 Node 1309 tests／1307 pass／0 fail／2 既有 skip；scaffold、链接/diff、真实 loader 三模式和 membership-only ACP 通过。复用 pinned build（4m56s）。旧 BLOCKED/SDK grant-view 前提已由 native 责任归属取代；旧 fixture metadata 解析错误已修复。
+- native enable 仍可能写入后返回 output-schema 错误，已按 store 验证且不重试。真实 Slack/生产、完整 memory、广义 child 续接和执行中取消/授权撤销竞争未验收。下一步最终审阅后父 agent 按已有授权 commit/push；不启动其他 Issue 或部署。
 
 ### SA-OPS-01 实际故障证据（2026-11-09 只读检查）
 
@@ -137,4 +132,4 @@ v0.6 保留原有用户行为，新增已有 ACP 复用与最小 change/stop 的
 
 生产 checkout 为 `dd09c81a1a1cac79c124cd2204c850ab595b97af`，部署/报告队列为空。已核对生产与本地 `plugins/rein-router/runtime.mjs`、`slack-development.mjs` 哈希一致：`developmentChannelFor` 要求实时 sender 和 `trigger === 'user'`；`beforeAgentRun` 对 development agent 缺少 developer 授权直接 block。该交互式授权路径不接纳系统 Cron，形成后台执行兼容性缺口。此证据不说明应跳过所有 provider 或业务权限。
 
-状态更新：根因已定位，修复尚未实现。下一步设计 native 可验证的系统 Cron 执行路径，保留明确 agent、任务能力与 provider 范围；同时按已确认的 Slack 信任原则去掉普通操作的冗余角色门槛。先检查真实创建/启用契约与 native provenance，不能只按可伪造标签放行。验收需包括该任务类型无在线用户执行、禁用/撤销、公私来源区分及普通 Slack 回归。本次没有重跑任务、发送通知、改配置或部署。
+历史状态（已由上方 2026-11-10 实现记录取代）：当时根因已定位、修复尚未实现，计划设计 native 可验证的系统 Cron 执行路径，保留明确 agent、任务能力与 provider 范围；同时按已确认的 Slack 信任原则去掉普通操作的冗余角色门槛。先检查真实创建/启用契约与 native provenance，不能只按可伪造标签放行。验收需包括该任务类型无在线用户执行、禁用/撤销、公私来源区分及普通 Slack 回归。本次没有重跑任务、发送通知、改配置或部署。

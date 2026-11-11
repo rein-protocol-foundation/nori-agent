@@ -1,4 +1,4 @@
-# Director-only ACP coding slice
+# Trusted Slack ACP coding slice
 
 **Production status (2026-11-06):** the operator has replaced this restricted controller
 policy in the production Slack profile with [trusted host access](trusted-slack-host-access.md).
@@ -6,14 +6,14 @@ The rein-acp policy plugin is disabled there; acpx remains configured. The instr
 describe the opt-in restricted slice and its pilot configuration, not current production
 Slack authorization. Re-enabling it requires restoring its matching controller tool policy.
 
-Requirement **R-ACP-01 / AC-ACP-01** (user-confirmed): a Director can delegate a small coding task from Slack, using a flow similar to Slack-directed development, and receive the subagent's status and result. Contributor access to ordinary sandboxed development does not grant ACP access.
+Requirement **R-ACP-01 / AC-ACP-01**, updated by SA-OPS-01/#66: current members of the configured trusted private Slack channel can delegate ordinary coding work without a Foundation Director or Contributor role. The `rein-acp` compatibility package and `director-control` example agent name remain unchanged. True business-role requirements in `rein-operations` are unaffected.
 
-The opt-in local plugin is `plugins/rein-acp`. It uses the existing private Slack membership check and signed Foundation identity relay, with the stricter predicate `is_director === true`. An administrator flag, Contributor role, prompt claim or prior Director result is insufficient. Each human turn and each spawn/list/wait/cancel call rechecks current authority. Missing identity, revocation, timeout and backend errors deny access.
+The opt-in plugin uses current private Slack workspace/channel membership. Each human turn and spawn/list/wait/cancel call rechecks membership and its host requester; missing identity, membership revocation, timeout and Slack errors deny new control. It does not use a Foundation identity relay.
 
 ## Flow
 
-1. A Director sends a task in the configured private Slack conversation. Identity binding must already have been completed through ordinary Nori.
-2. Nori verifies current channel membership and current Foundation Director authority.
+1. A current channel member sends a task in the configured private Slack conversation.
+2. Nori verifies the current host requester and private Slack workspace/channel membership.
 3. The dedicated controller invokes native `sessions_spawn` with the configured harness and working directory, `runtime: "acp"`, `mode: "run"`, `thread: false`, and `streamTo: "parent"`.
 4. The requester receives the accepted task identifier. Native OpenClaw ACP progress is relayed to the parent; Nori reports progress in the originating conversation/thread.
 5. A status request uses native `subagents` with `action: "list"`; waiting and cancellation use `wait` and `cancel`. Native task ownership restricts these actions to the controller's session tree.
@@ -54,8 +54,8 @@ Example fragment (synthetic identifiers and paths; merge into a configured pilot
     "match": { "channel": "slack", "accountId": "default", "peer": { "kind": "channel", "id": "CFIXTURE1" } }
   }],
   "plugins": {
-    "allow": ["rein-acp", "rein-operations", "acpx", "slack"],
-    "load": { "paths": ["/path/to/rein-agent/plugins/rein-acp", "/path/to/rein-agent/plugins/rein-operations"] },
+    "allow": ["rein-acp", "acpx", "slack"],
+    "load": { "paths": ["/path/to/rein-agent/plugins/rein-acp"] },
     "entries": {
       "acpx": { "enabled": true },
       "rein-acp": {
@@ -79,7 +79,7 @@ Example fragment (synthetic identifiers and paths; merge into a configured pilot
 }
 ```
 
-Also configure the ordinary parent model/provider, Slack admission and progress presentation, and `rein-operations.config.foundationDb` as in [setup](setup.md). The channel must appear in the Foundation workspace and caller allowlists. The local plugin reuses sibling `rein-router` and `rein-operations` modules; load from this repository checkout. It is not a standalone published package.
+Also configure the ordinary parent model/provider, native Slack admission and progress presentation as in [setup](setup.md). Foundation configuration is not required for ordinary ACP. The local plugin reuses the sibling `rein-router` membership helper; load from this repository checkout. It is not a standalone published package.
 
 This small slice deliberately has no direct ACP channel bindings or Slack `/acp` command entry: those bypass the model/tool authorization path. Startup rejects ACP bindings or enabled Slack command admission. `commands.allowFrom.slack: []` disables Slack commands throughout this pilot profile, so do not merge that setting into an existing shared deployment without accounting for its command users. Native `sessions_spawn` ACP calls outside the configured controller are blocked while this plugin is enabled. Gateway operators retain their normal administrative authority.
 
@@ -93,10 +93,10 @@ node scripts/verify-director-acp.mjs
 node scripts/check.mjs
 ```
 
-Use the repository's supported Node/toolchain. The native verification script starts an isolated loopback Gateway, loads the real plugin, supplies synthetic signed-identity responses, exercises native Slack ingress and ACP task admission, then checks task status, progress and parent completion. Slack transport, model responses and the ACP harness are fixtures; this is not live provider or live Slack acceptance.
+Use the repository's supported Node/toolchain. The native verification script starts an isolated loopback Gateway, loads the real plugin, supplies synthetic Slack membership responses, exercises native Slack ingress and ACP task admission, then checks task status, progress and parent completion. Slack transport, model responses and the ACP harness are fixtures; this is not live provider or live Slack acceptance.
 
-Local verification on 2026-11-04: 1,230 repository tests passed, two skipped, zero failures; the native fixture verified a running ACP task, an `ok` terminal event and completion delivery to the original Slack thread. Scaffold and whitespace checks passed. The same native probe is included in the plugin CI job; no remote CI run is claimed here.
+Current local verification is recorded in [SA-OPS-01/#66 evidence](sa-ops-native-authority.md). The real pinned native ingress and ACP task runtime admit a trusted member without a Foundation role, reject a non-member, and report running status, progress and final result to the original Slack thread. Transport, inference and harness execution are synthetic. The earlier 2026-11-04 Director-only result is historical and does not define the current role policy.
 
-Live pilot acceptance remains a separate operator action: confirm the deployed revision and healthy backend, send one tiny coding task from a linked Director, inspect its running state and final result in the same thread, then confirm Contributor denial and role-revocation denial. Record only redacted outcomes. No real account setup, Slack message, deployment, paid harness request or production member-data change is performed by the local checks.
+Live pilot acceptance remains a separate operator action: verify the deployed revision/backend, send a tiny task from an approved current member, inspect running/final delivery, then verify membership-revocation denial. No real account setup, Slack message, deployment, paid harness request or production member-data change is performed by these local checks.
 
-中文摘要：Director 在指定 Slack 私有频道下达任务 → 实时校验频道成员与 Director 身份 → 启动单次 ACP 子任务 → 原会话回报已接收、运行状态及最终结果。查询/等待/取消均重新鉴权；Contributor 和仅管理员身份不能进入。现有沙箱开发入口保持不变，ACP 使用独立试点 profile。自动测试使用本地模拟后端，真实 Slack／外部编程工具验收另行执行。
+中文摘要：指定 Slack 私有频道的当前成员可委派普通 ACP 工作，无需 Foundation Contributor/Director 角色。保留固定 harness/cwd、单次任务、状态/等待/取消与原线程进度和结果；业务工具自己的角色检查不变。测试使用真实 native ACP 流程及本地合成后端，不代表真实 Slack 或生产验收。

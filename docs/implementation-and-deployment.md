@@ -1,36 +1,44 @@
 # Nori-Agent development, verification and deployment record
 
+
 English | [简体中文](implementation-and-deployment-zh.md)
 
-## SA-OPS-01 / #66 native authority blocker (2026-11-10)
+## SA-OPS-01 / #66 native execution fix (2026-11-10)
 
-Owner: Codex. Date: 2026-11-10, America/Los_Angeles. Base `ac8d766`; native pin `4a11f89`.
-Status: **BLOCKED / no acceptance**. #61/#69 are merged in local ancestry. The
-[evidence report](sa-ops-native-authority.md) records exact native/Rein source lines, known
-creation/enable/executor/disable/revoke/restart/model/destination/child/memory/ACP boundaries,
-and a minimal proposed read-only host-owned execution-authority view with `assertCurrent()`.
-The current public hooks cannot prove the active occurrence/parent authority. No runtime
-label bypass was implemented; announce routing is distinct from message-tool authority.
-Native Dashboard configuration, scheduling/model selection, Magpie limits and ACP remain native.
+Owner Codex; date 2026-11-10, America/Los_Angeles. Implementation base `b36f21b3`, initial
+investigation base `ac8d766`, native pin `4a11f89`; #61/#69 merged.
+Status: **IMPLEMENTED / LOCAL VERIFIED; no production or product acceptance**.
+Native execution ownership replaces the historical grant-view/BLOCKED premise. Ordinary trusted
+Slack and ACP need no Foundation role; business privileges remain. Creation/expansion requires
+current trusted Slack ingress, an approved Agent and native creation permission (`commands.ownerAllowFrom`).
+Description audit is informational and owner-scoped; errors/deadlines explicitly block.
 
-Verification: the revised probe passed **9/9** cases with disposable private HOME/state/config/TMPDIR,
-actual native context projections and Rein gates. It reproduces senderless Cron/memory/child-result
-blocking and the same trusted Slack member's denial when only Foundation role authorization is
-false; forged labels remain blocked. Scaffold, local/immutable source-link mapping and diff checks
-are recorded in the evidence report. No full suite or ACP rerun for this focused revision.
+[Source and evidence](sa-ops-native-authority.md) cover actual native Cron create/update/declare,
+two-user audit, disable/enable/remove, public creation/spawn/send refusal, restart, senderless
+execution with an explicitly eligible development-subscription Agent default and job override,
+and announce delivery. Real native child spawn, senderless execution and parent result are also
+exercised, with synthetic transport and loopback model. Both ordinary and native fallback remain;
+every native candidate is checked for eligibility, including scoped stream fallback before any
+candidate credential/network access. Public configuration reachability uses native-normalized IDs
+and detects indirect spawn/send paths while preserving isolated internal collaboration.
 
-Existing logs confirm the unchanged-runtime regression baseline: pinned build passed (4m56s);
-complete Node suite **1289 tests, 1287 pass, 0 fail, 2 existing conditional skips** (native managed
-Magpie two-model-call and native Magpie UI launcher tests); real loader passed three modes;
-Director-authorized native ACP synthetic end-to-end passed native Slack ingress, fresh Director
-authorization, child admission/running status/progress/final. These establish existing regression
-behavior, not #66 ordinary trusted Slack without a role gate, new Cron authority or M0/M1 acceptance.
-Complete Cron lifecycle, actual native child/memory follow-up compatibility, new #66 ACP authority
-behavior, production and real Slack acceptance remain unverified. Changes stay limited to evidence
-and a test-only probe; no runtime plugin/configuration/tracked vendor source or deployment changed.
-Next: user review of the blocker and minimal contract proposal; continue only within #66 after
-explicit user confirmation. No other Issue was started; no push, PR, external send, merge or
-deployment was performed. The authorized local evidence commit is for user review.
+Run11 checks: **31 targeted tests passed** (creation/Provider/usage, scoped stream and fixture parser);
+**7 native projection cases plus disabled Router entry passed**; complete Node **1309 tests /
+1307 pass / 0 fail / 2 existing conditional skips**; scaffold, local/pinned source links and
+whitespace passed. Real loader three modes and membership-only native ACP E2E passed again.
+The pinned build (4m56s) was reused. Logs use `/tmp/sa-ops-run11-*`; exact commands and retained
+native fixture evidence are in the report. Earlier fixture metadata-selection failures are fixed:
+synthetic model parsing excludes internal metadata blocks without changing native input/permissions.
+
+Native enable can commit then return an upstream `scheduleErrorCount` output-schema error; actual
+store state is checked and the mutation is not retried. Live Slack/production/paid Providers,
+complete memory maintenance, broader child continuation, active cancellation/revocation races and
+all message-tool audiences remain unverified. Actual bounded child launch/result is verified;
+projection alone is not called memory acceptance. M0/M1 and governance acceptance stay open.
+Next: review the bounded diff and known native return-contract limitation, then use the already
+authorized parent commit/push workflow for PR70. This worker made no commit/push/PR update,
+external send, merge or deployment, and started no other Issue. Native Dashboard/configuration
+remain the management path.
 
 ## Super Agent v0.6 native-first revision (2026-11-09)
 

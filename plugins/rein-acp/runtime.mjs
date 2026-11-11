@@ -6,7 +6,7 @@ export const ACP_TOOLS = ['sessions_spawn', 'subagents'];
 // The controller's before_tool_call gate still blocks every local coding invocation.
 export const ACP_HOST_TOOLS = [...ACP_TOOLS, 'apply_patch', 'edit', 'exec', 'process', 'read', 'write'];
 const deny = blockReason => ({ block: true, blockReason });
-const reason = 'ACP requires current private-channel membership and a linked Rein Director role.';
+const reason = 'ACP requires current membership in the configured trusted private Slack channel.';
 const human = ctx => ctx.trigger === 'user' && (!ctx.inputProvenance || ctx.inputProvenance.kind === 'external_user');
 
 export function validateAcpConfig(raw = {}) {
@@ -74,7 +74,7 @@ export function createDirectorAcp({ config, authorize, clock = Date.now, timeout
     beforePromptBuild(_event, ctx) {
       if (!selected(ctx)) return;
       return { toolsAllow: human(ctx) ? ACP_HOST_TOOLS : [], prependContext:
-        `You coordinate Director-authorized ACP coding tasks. Use sessions_spawn with runtime="acp", agentId="${config.harnessAgentId}", mode="run", thread=false, streamTo="parent". ` +
+        `You coordinate trusted Slack ACP coding tasks. Use sessions_spawn with runtime="acp", agentId="${config.harnessAgentId}", mode="run", thread=false, streamTo="parent". ` +
         'After admission report the task ID and accepted/queued status; do not call it completed. Report incoming child progress and the terminal result in the originating Slack thread. ' +
         'Use subagents action=list for current status, wait when requested, and cancel only when requested. Distinguish queued, running, succeeded, failed, timed out and cancelled using actual task evidence. ' +
         'A blocked or unavailable harness is a failure, never success. Delegate all file and shell work to ACP: local coding tools are declared for ACP capability inheritance but calls from this controller are blocked. ' +

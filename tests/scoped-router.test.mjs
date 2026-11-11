@@ -188,3 +188,34 @@ test('real ledger blocks fallback before transport when the shared daily budget 
   await r.beforeModelResolve({ prompt: 'hello' }, next);
   assert.equal(r.beforeAgentRun({}, { ...next, modelId: 'b' }).outcome, 'block');
 });
+
+
+test('scoped native fallback checks each candidate before credentials/network; direct-user fallback is unchanged',async()=>{
+  for(const mode of ['native-denied','native-allowed','direct-user']){
+    const raw=config();raw.scopedPolicies['nori-community'].platforms={};raw.scopedPolicies['nori-community'].channels=[];
+    raw.nativeAgentRoutes={'nori-community':mode==='native-allowed'?['a','b']:['a']};
+    const credentialReads=[],network=[],attempts=[];
+    const environment=new Proxy({M0_GATEWAY:key('global'),M0_ROUTE_A:key('a'),M0_ROUTE_B:key('b'),M0_ROUTE_C:key('c')},
+      {get(target,name){credentialReads.push(name);return target[name];}});
+    const r=fixtureRouter(raw,{environment,fetchImpl:async(_url,init)=>{
+      const id=['a','b','c'].find(id=>new Headers(init.headers).get('Authorization')===`Bearer ${key(id)}`);
+      network.push(id);return new Response(JSON.stringify({data:[{id:`fixture/${id}`}]}));
+    }});
+    const source=ctx(mode==='direct-user'?{}:{senderId:undefined,trigger:'cron'});
+    const selected=await r.beforeModelResolve({prompt:'work'},source);
+    assert.equal(selected.modelOverride,'a');assert.equal(r.beforeAgentRun({}, {...source,modelId:'a'}).outcome,'pass');
+    credentialReads.length=0;
+    const wrapped=r.wrapStreamFn({agentId:'nori-community',streamFn:m=>{
+      attempts.push(m.id);return stream(terminal(m.id.startsWith('fixture/a:')?503:undefined));
+    }});
+    const output=wrapped(model('a'),{},{sessionId:'session'});
+    if(mode==='native-denied'){
+      await assert.rejects(output.result());
+      assert.deepEqual(attempts,['fixture/a:medium']);assert.deepEqual(network,['a']);
+      assert.ok(!credentialReads.includes('M0_ROUTE_B'));
+    }else{
+      assert.equal((await output.result()).stopReason,'stop');
+      assert.deepEqual(attempts,['fixture/a:medium','fixture/b:medium']);assert.deepEqual(network,['a','b']);
+    }
+  }
+});

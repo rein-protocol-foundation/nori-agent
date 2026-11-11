@@ -88,8 +88,8 @@ try {
   assert.ok(evidence.progress.some(x => x.phase === 'started' && x.requester?.threadId === '1000.001'), JSON.stringify(evidence));
   assert.ok(evidence.progress.some(x => x.phase === 'ended' && x.outcome === 'ok'), JSON.stringify(evidence));
   assert.ok(evidence.sent.some(x => x.background && x.to === 'channel:CFIXTURE1' && x.threadId === '1000.001' && x.text.includes('ACP_FINAL_REPORT')), JSON.stringify(evidence));
-  assert.ok(!requests.some(r => JSON.stringify(r.messages).includes('ACP_DENIED_TASK')), 'Contributor must be rejected before model execution');
-  console.log('Director ACP synthetic end-to-end passed: native Slack ingress, fresh Director authorization, native ACP child admission, running task status, progress and completion report. No live Slack, member records or external model contacted.');
+  assert.ok(!requests.some(r => JSON.stringify(r.messages).includes('ACP_DENIED_TASK')), 'Non-member must be rejected before model execution');
+  console.log('Trusted Slack ACP synthetic end-to-end passed: native Slack ingress, trusted Slack membership without a Foundation role, native ACP child admission, running task status, progress and completion report. No live Slack, member records or external model contacted.');
 } finally {
   if (child) { try { process.kill(-child.pid, 'SIGTERM'); } catch {} await Promise.race([new Promise(resolve => child.once('exit', resolve)), new Promise(resolve => setTimeout(resolve, 3000))]); try { process.kill(-child.pid, 'SIGKILL'); } catch {} }
   server.closeAllConnections(); await new Promise(resolve => server.close(resolve));
