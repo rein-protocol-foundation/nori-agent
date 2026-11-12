@@ -2,12 +2,12 @@
 
 ## SA-OBS-02 / #68 daily receipt — November 12, 2026
 
-Owner: Codex. **IMPLEMENTED / LOCAL VERIFICATION IN PROGRESS; live delivery blocked.**
-A separate PR adds a deterministic PNG from the pinned Magpie public usage API,
+Owner: Codex. **IMPLEMENTED / LOCAL VERIFIED; live delivery blocked.**
+[PR #72](https://github.com/rein-protocol-foundation/nori-agent/pull/72) adds a deterministic PNG from the pinned Magpie public usage API,
 with previous-day America/Los_Angeles boundaries and a native command automation
 for 09:00 delivery to #nori-alerts. Existing gateway/provider configuration stays
 intact. [Runbook and scope](daily-agent-receipt.md). Read-only production data
-can render locally; the active Nori bot lacks `files:write`. Next: finish checks,
+can render locally; the active Nori bot lacks `files:write`. Next: complete CI,
 apply the dedicated PR, reauthorize Slack attachments, verify one send and the
 scheduled run. This does not complete Axiom/channel attribution, budget alerts,
 SA-M0-09, M0/M1 or governance AC01–AC20.

@@ -125,6 +125,8 @@ usage API, target channel name, membership and availability of DejaVu Sans Mono.
 The active Nori bot token (also used by the reporter) lacks `files:write`; native
 attachment delivery therefore requires verification/reauthorization before
 activation. No production schedule, send or code installation has been performed
-by this PR's preparation. Local checks and final CI results are recorded in the
-PR and implementation handoff; live image read-back and the first 09:00 run are
+by this PR's preparation. Local full regression passed (1324 tests, 1322 pass, 2 existing skips) in a
+no-space checkout; the original checkout exposed an existing encoded-path worker
+test failure. [PR #72](https://github.com/rein-protocol-foundation/nori-agent/pull/72)
+tracks CI and deployment; live image read-back and the first 09:00 run are
 pending.

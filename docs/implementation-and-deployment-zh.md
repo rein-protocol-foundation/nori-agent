@@ -2,7 +2,7 @@
 
 ## 2026-11-12 — SA-OBS-02 / #68 每日用量小票
 
-Owner：Codex。状态：**已实现，本地验证进行中**；按用户要求通过独立 PR 应用。
+Owner：Codex。状态：**已实现，本地验证通过**；按用户要求通过独立 PR 应用。
 [运行手册](daily-agent-receipt.md)记录固定版本 Magpie 公共用量接口、确定性 SVG/PNG、
 原生 Slack 附件发送命令、洛杉矶时间 09:00 的原生 Cron、异常投递核对与回滚。
 未修改上游/vendor 或线上配置。只读核对确认 Nori 是 #nori-alerts 成员，但实际
@@ -11,7 +11,11 @@ Owner：Codex。状态：**已实现，本地验证进行中**；按用户要求
 
 已验证：定向 Node 10/10（含真实 PNG 渲染）、其中 Python 发送器 6/6、scaffold 通过；
 通过 SSH 隧道只读查询生产 API，在本地生成并目视检查 PNG。私有产物保持忽略，未提交。
-完整回归/CI 待完成。下一步完成检查与独立 PR，激活前补真实发送和运行证据。
+不含空格的验证 checkout 全量回归：1324 tests / 1322 pass / 0 fail / 2 个既有跳过。
+原工作目录首先触发既有 usage-admission 测试的 URL 编码空格路径问题；临时 checkout
+初次也缺少插件依赖链接，补齐后原套件通过。
+[独立 PR #72](https://github.com/rein-protocol-foundation/nori-agent/pull/72) 的 CI 待完成，
+下一步通过 PR 应用，激活前补真实发送和运行证据。
 准备阶段未发送消息、启用任务、合并或部署。
 
 [English](implementation-and-deployment.md) | 简体中文
