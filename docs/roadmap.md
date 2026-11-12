@@ -10,9 +10,10 @@ expanded native run `nori-m1-PzyVU6` pass: research change/stop, ACP pending/set
 cancellation, actual accepted/canonical IDs, member/revocation/foreign-scope controls and original
 thread delivery while ordinary chat continues. ACP task summaries and delayed canonical visibility
 are explicitly handled. Full suite: 1331 pass, 2 existing skips, 0 fail; existing ACP/Cron, loader
-and skill-discovery checks pass. Earlier failed runs remain documented. Remote CI and live
-acceptance are pending; no publishing/deployment/outreach. Next: review local commit, separately
-authorize live acceptance; stop at #60. Product checkboxes and M0/M2/M3 remain unchanged.
+and skill-discovery checks pass. Earlier failed runs remain documented. User-authorized publication is tracked in [PR #74](https://github.com/rein-protocol-foundation/nori-agent/pull/74).
+After merging main: 1343 tests pass, 3 conditional skips, 0 fail. Automatic code review of the
+implementation found no issues; current CI/review is on the PR. Next: finish checks and report;
+no merge/deployment/outreach or next task. Live acceptance remains separately gated. Product checkboxes and M0/M2/M3 remain unchanged.
 
 ## SA-OBS-02 / #68 daily receipt — November 12, 2026
 

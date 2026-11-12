@@ -6,7 +6,8 @@ same verified Sol High CLI worker, with parent final review. Native pin:
 real Slack, research and production Codex acceptance pending**.
 M0, M2, M3 and historical governance acceptance are unchanged. This task used isolated
 HOME/state, synthetic transport/model/backend data and local dependency preparation only.
-No live account data, external sends, outreach, vendor source edits, push, PR or deployment.
+The initial local-only handoff made no live account access, external sends, outreach, vendor source
+edits or deployment. The user subsequently authorized publishing this branch and opening PR #74.
 
 ## Minimal integration and scope
 
@@ -157,7 +158,8 @@ The parent verified the pinned native build, existing `verify-director-acp` and
 `verify-sa-ops-cron` regressions, plugin loader and native workspace skill discovery in isolated
 HOME/state. Repository tests passed: **1333 tests / 1331 pass / 2 existing conditional skips /
 0 fail**. The final decoder edit also passed all 19 targeted tests. Scaffold/diff checks and
-vendor source cleanliness are part of the final local handoff. Remote CI is wired but not run.
+vendor source cleanliness passed the local handoff. Remote CI and review are now tracked in
+[PR #74](https://github.com/rein-protocol-foundation/nori-agent/pull/74).
 
 The Gateway script loads the real plugin with the actual pinned loader, uses native synthetic
 Slack ingress and scripted loopback inference through Rein Router/Magpie, starts actual native
@@ -241,8 +243,19 @@ Final parent review preserved these additional failures before the successful re
   ACP pending/settled/failed cancellation, accepted run then canonical status, original-thread
   final delivery, backend predecessor/criteria input and all authorization assertions.
 
-**Handoff:** review the local commit, then separately authorize live Slack/research/Codex
-acceptance and any publication/deployment. Product checkboxes remain unchecked; M0/M2/M3 are
+**PR follow-up (2026-11-12):** user authorized push, PR creation and CI/review fixes only.
+[PR #74](https://github.com/rein-protocol-foundation/nori-agent/pull/74) contains the #60 slice.
+Merged main `4d62769` into this branch as `c67ae12`, retaining both sets of acceptance records
+when resolving two documentation conflicts. No #72/#73 source changes were rewritten.
+After installing the already locked `@resvg/resvg-js` dependency newly required by main, the
+combined local suite passed **1346 tests / 1343 pass / 3 conditional skips / 0 fail**. The first
+combined run failed solely because that dependency was not yet installed; no source fix was needed.
+Codex automatic code review completed for implementation `46b7be3` with no findings. Current
+head CI/review status is authoritative on the PR; the merge changed no #60 implementation.
+Owner: Codex. Next: finish PR CI/review checks and report, without merge or another Issue.
+
+**Handoff:** review PR #74, then separately authorize live Slack/research/Codex acceptance and
+any merge/deployment. Product checkboxes remain unchecked; M0/M2/M3 are
 unchanged. No sidecar store, polling service or upstream patch was added.
 
 Native acknowledgement plus a cancelled Task can precede ACP cleanup; actual synthetic native

@@ -46,6 +46,15 @@ SA-OBS-02 / #68 及更广产品里程碑保持未完成。
 
 [English](implementation-and-deployment.md) | 简体中文
 
+## SA-M1-01–05 / #60 PR 跟进（2026-11-12）
+
+负责人：Codex。用户授权 push、建 PR 及处理 CI/review 问题，未授权合并/部署或下一项。
+[PR #74](https://github.com/rein-protocol-foundation/nori-agent/pull/74) 已打开。以 `c67ae12`
+同步 main `4d62769`，两处文档冲突保留双方历史。首次合并后回归缺少 main 新增的锁定 PNG
+依赖；安装后 1346 项／1343 通过／3 项条件跳过／0 失败。自动 Codex review 对实现
+`46b7be3` 完成，无发现。远端当前检查/review 以 PR 为准；下一步完成检查后汇报。
+[证据](m1-slack-task-loop.md)。真实 Slack/研究/Codex 验收仍待完成。
+
 ## SA-M1-01–05 / #60 原生任务闭环（2026-11-12）
 
 负责人：Codex 主协调；同一已核实 Sol High CLI worker 实施，主协调完成最终审查及原生集成

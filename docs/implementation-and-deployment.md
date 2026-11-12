@@ -56,6 +56,16 @@ are outside this slice. SA-OBS-02 / #68 and broader product milestones remain op
 
 English | [简体中文](implementation-and-deployment-zh.md)
 
+## SA-M1-01–05 / #60 PR follow-up (2026-11-12)
+
+Owner: Codex. User authorized branch push, PR creation and CI/review fixes; no merge/deployment
+or next task. [PR #74](https://github.com/rein-protocol-foundation/nori-agent/pull/74) is open.
+Merged main `4d62769` as `c67ae12`, preserving both documentation histories. Initial combined
+suite lacked main's locked PNG dependency; after installation: 1346 tests / 1343 pass / 3
+conditional skips / 0 fail. Automatic Codex review of implementation `46b7be3` completed with
+no findings. Current remote checks/review are recorded on the PR; next: finish those checks and
+report. [Evidence](m1-slack-task-loop.md). Real Slack/research/Codex acceptance remains pending.
+
 ## SA-M1-01–05 / #60 native task loop (2026-11-12)
 
 Owner: Codex orchestrator; same verified Sol High CLI worker implemented the slice; parent
