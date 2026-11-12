@@ -1,5 +1,18 @@
 # Nori-Agent 开发、验证与部署记录
 
+## 2026-11-12 — SA-OBS-02 / #68 每日用量小票
+
+Owner：Codex。状态：**已实现，本地验证进行中**；按用户要求通过独立 PR 应用。
+[运行手册](daily-agent-receipt.md)记录固定版本 Magpie 公共用量接口、确定性 SVG/PNG、
+原生 Slack 附件发送命令、洛杉矶时间 09:00 的原生 Cron、异常投递核对与回滚。
+未修改上游/vendor 或线上配置。只读核对确认 Nori 是 #nori-alerts 成员，但实际
+机器人 token 缺少 `files:write`；真实图片投递与定时验收须等待 Slack 重新授权及 PR 部署。
+价格缺失显示未知，直连 ACP 不在范围内，不冒充内部 Agent/渠道归属；不推进产品里程碑。
+
+已验证：定向 Node 10/10（含真实 PNG 渲染）、其中 Python 发送器 6/6、scaffold 通过；
+通过 SSH 隧道只读查询生产 API，在本地生成并目视检查 PNG。私有产物保持忽略，未提交。
+完整回归/CI 待完成。下一步完成检查与独立 PR，激活前补真实发送和运行证据。
+准备阶段未发送消息、启用任务、合并或部署。
 
 [English](implementation-and-deployment.md) | 简体中文
 

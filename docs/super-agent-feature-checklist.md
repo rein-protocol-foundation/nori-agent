@@ -90,7 +90,7 @@ v0.6 保留原有用户行为，新增已有 ACP 复用与最小 change/stop 的
 | [ ] | SA-ROUTE-02 | Slack 默认 Dynamic Router；原生入口手动关闭/指定 Provider/model 后持续生效；Cron 使用所属 Agent 默认或 job override | NOT STARTED（新行为验收）；原生配置 + 必要薄适配；#67/#66；不新增选模 UI |
 | [ ] | SA-COST-01 | Magpie 每日额度明确实际 Provider/account/Key 层级、窗口与配置；独立 Key 不冒充共享总预算 | PARTIALLY IMPLEMENTED（已有机制）；原生配置 + 已有实现复用；#67；不虚构额度，不删除 #52 既有准入代码 |
 | [ ] | SA-OBS-01 | Axiom 按平台/native channel/Agent/Provider/model/trigger 归属；缓存/延迟/错误/缺失可见；同次 inference 不重复统计，ACP 原生用量单列或未知 | PARTIALLY IMPLEMENTED（健康数据已有）；已有实现复用 + 必要薄适配；#68；不采集正文或凭据，核实 query 权限 |
-| [ ] | SA-OBS-02 | native Cron 洛杉矶时间 09:00 向 #nori-alerts 报告前一日用量；80% 配置额度预警、原生耗尽判定、告警去重 | NOT STARTED；原生配置 + 已有实现复用；#68/#66；费用标估算，验证时区/DST/数据截止与缺失 |
+| [ ] | SA-OBS-02 | native Cron 洛杉矶时间 09:00 向 #nori-alerts 报告前一日用量；80% 配置额度预警、原生耗尽判定、告警去重 | PARTIALLY IMPLEMENTED；[每日小票](daily-agent-receipt.md)本地验证中，独立 PR 待应用，Nori 缺少 files:write；定时投递/额度告警未验收，#68/#66 |
 
 证据入口：现有 [ACP 实现与生产差异](director-acp.md)、[Magpie 固定版本](../plugins/rein-router/magpie.lock.json)（95e7c6bcc076；原生 access/limit.go 已有 Key token/估算费用窗口限制）、[Axiom 接入记录](observability-status-zh.md)。后者证明健康 Dashboard/告警通知器已接通，同时注明当前 ingestion Token 无查询权限；不证明渠道用量或 Nori 日报已完成。Router 的旧 automatic default 限制见 `plugins/rein-router/catalog-sync.mjs` 与 `plugins/rein-router/runtime.mjs`，具体兼容调整归 #67。
 
