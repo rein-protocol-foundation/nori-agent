@@ -213,39 +213,55 @@ channel/internal-agent attribution, Axiom dashboards or quota alerts.
 
 ## Provider-group layout follow-up — November 12, 2026
 
-Owner: Codex. Status: implemented; targeted/visual verification complete, CI and rollout pending. The user selected
-Day Card style/icon reuse with the existing server sender, active-day groups only.
-The former pricing correction was merged in [PR #73](https://github.com/rein-protocol-foundation/nori-agent/pull/73),
-deployed as `4d627691ac627ceefc816f9ecbc4eb2ead16bf03`, and
-[read back in Slack](https://app.slack.com/archives/C0CG9BQQ4Q0/p1794477317727049).
-Its 44 November 11 requests are priced at a native catalog estimate of $0.0760.
-The original and `pricing-v2` delivery records remain retained.
+Owner: Codex. Status: **DEPLOYED / MANUAL LIVE VERIFIED**.
+The user selected Day Card style/icon reuse with the existing server sender,
+active-day groups only. [PR #75](https://github.com/rein-protocol-foundation/nori-agent/pull/75)
+passed all CI and deployed as `33c44dc268b590acf1d92c8af7afeae1bf7ce9ae`
+on November 12 at 10:38:56 UTC. Four app services passed health checks.
+Targeted Node 13/13, direct Python sender 12/12, scaffold/diff and actual/synthetic
+visual previews passed. Multi-provider, same-model/two-provider, >12 groups,
+long-ID wrapping and icon rasterization are covered.
 
-The November 12 private-profile audit found `bailian-token-plan → alibaba-cn` and
-`openai → openai` already configured, including Qwen/DeepSeek and GPT Sol/Astra.
-The aliases `gemini` and `chatgpt-api` lack catalogs; their intended native mappings
-are `google` and `openai`. The `google` provider already has its catalog and native
-model-prefix resolution. Catalog mappings and any verified rate overrides belong
-in private Magpie configuration, never renderer code. An isolated native CLI audit (public catalog and credential-free fixtures) verified
-prices for 10 of the 11 configured provider/model entries after these mappings.
-`gemini-3-pro-preview` is the sole remaining stale entry: Google's
+The November 11 production preview shows 44 requests, $0.0760, 1,207,998 tokens,
+89.6% cache hits and 0 unpriced requests. Nori delivered `provider-v3`, file
+`F0CH5NH47Q9`, message `1794480068.252469`; independent Slack channel/file read-back
+confirmed it. [Corrected receipt](https://app.slack.com/archives/C0CG9BQQ4Q0/p1794480068252469).
+Rerunning the same revision returned `already-sent`. Original, `pricing-v2` and
+`provider-v3` records all remain `sent`; no original record or image was deleted.
+The existing daily schedule is unchanged; first clock-triggered acceptance remains pending.
+
+### Native price audit correction
+
+`bailian-token-plan → alibaba-cn` and `openai → openai` were already configured,
+including Qwen/DeepSeek and GPT Sol/Astra. An earlier direct catalog lookup wrongly
+interpreted the absent `catalog` on `gemini` and `chatgpt-api` as missing prices.
+These are stored subscription-account model selections, not custom API providers.
+The pinned native `withPicks` does not merge a catalog override for them, and
+`EffectivePriceIn` falls back to `MakerPrice` when no provider tariff applies.
+Google/OpenAI maker prices already cover their current model IDs.
+
+An attempted `provider set gemini catalog=google` returned nonzero; the maintenance
+script restored the original providers file byte-for-byte and restarted Router.
+No catalog change, provider endpoint change, credential change or model replacement
+was retained. A subsequent isolated **native usage-ledger** audit used the original
+public provider metadata/catalog and nonzero synthetic usage, without credentials
+or inference. Native `usage --csv all` priced 10/11 configured provider/model entries
+with **no added alias mappings**, including every still-served configured model.
+This is stronger evidence than checking one catalog JSON key or invoking a CLI
+lookup against an unavailable subscription account. No live usage was rewritten.
+
+The only stale model entry is `gemini-3-pro-preview`: Google's
 [model page](https://ai.google.dev/gemini-api/docs/models/gemini-3-pro-preview)
 says it shut down on March 9, 2026; no live ledger request names it. Google's
 [launch post](https://blog.google/innovation-and-ai/technology/developers-tools/gemini-3-developers/)
 confirms its former basic input/output rates, but a complete verified historical
-cache/context-tier configuration remains pending. Do not substitute the current
-Gemini 3.1 price or remove/change the operator's selected models silently.
-Three earlier ledger attempts record both requested and served model as `auto`;
-no actual model is recoverable from those fields. They lie outside November 11.
-Also, the native `priced` flag can be false on zero-token failed attempts; the
-footer reports that native flag and does not assert that a model has no published
-price. These historical data gaps must not be hidden by a synthetic zero price.
+cache/context-tier configuration remains pending. Do not substitute another
+model's price or silently remove the operator's selected model.
 
-Targeted renderer/sender Node tests 13/13 and scaffold/diff checks passed.
-Actual November 11 sanitized aggregate preview was visually inspected: 44 requests,
-$0.0760, 1,207,998 tokens, 89.6% cache hits and 0 unpriced requests.
-A synthetic multi-provider preview verifies brand icons and long model-ID wrapping.
-
-Next: separate PR CI, deployment,
-native catalog reconciliation, and one `provider-v3` correction with read-back and
-deduplication. First clock-triggered acceptance remains pending.
+Three earlier ledger attempts record requested and served model as `auto`; those
+fields do not identify the actual model and they lie outside November 11.
+The native `priced` flag is also false on observed zero-token failed attempts.
+The footer faithfully reports the flag; it does not assert that a model has no
+published API rate. Unknown mappings/data must not become fabricated zero prices.
+Catalog mappings and verified rate overrides belong in private Magpie configuration,
+never renderer code. No broader SA-OBS-02 milestone is completed by this follow-up.
