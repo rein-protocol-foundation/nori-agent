@@ -1,22 +1,48 @@
 # Nori-Agent 开发、验证与部署记录
 
+## 2026-11-12 — SA-OBS-02 小票价格与修正投递
+
+Owner：Codex。状态：**已实现，定向验证通过；上线待完成**。
+本次为中国区 Token Plan 导入补原生 `alibaba-cn` 价格目录默认值，将模型/用量/估算金额
+置于小票主体，并增加显式 revision 实现授权更正，保留原投递记录和图片。
+原生合成验证通过：补目录后历史用量获得价格，订阅端点/密钥/模型及账本字节保持，
+回滚目录后恢复价格未知；导入与原生测试 19 项通过。渲染/发送定向检查和完整 CI
+证据记录在独立 PR。下一步：检查通过后合并部署，原生迁移现有私有 provider 的目录，
+预览并向 #nori-alerts 发送 `pricing-v2`，独立回读图片并确认去重。
+用户已明确授权本次独立 PR、合并部署和一张更正小票。
+[运行手册](daily-agent-receipt.md)含私有回滚、目录估算限制及 revision 恢复。
+执行后的线上验收证据补到 PR；本次修正不完成更广 SA-OBS-02 里程碑。
+
+
 ## 2026-11-12 — SA-OBS-02 / #68 每日用量小票
 
-Owner：Codex。状态：**已实现，本地验证通过**；按用户要求通过独立 PR 应用。
-[运行手册](daily-agent-receipt.md)记录固定版本 Magpie 公共用量接口、确定性 SVG/PNG、
-原生 Slack 附件发送命令、洛杉矶时间 09:00 的原生 Cron、异常投递核对与回滚。
-未修改上游/vendor 或线上配置。只读核对确认 Nori 是 #nori-alerts 成员，但实际
-机器人 token 缺少 `files:write`；真实图片投递与定时验收须等待 Slack 重新授权及 PR 部署。
-价格缺失显示未知，直连 ACP 不在范围内，不冒充内部 Agent/渠道归属；不推进产品里程碑。
+Owner：Codex。状态：**已部署并启用，手动触发原生任务与真实图片投递已验证**。
+用户明确授权添加 Slack `files:write` 并重新授权、合并 PR #72、部署、每天洛杉矶
+时间 09:00 发到 #nori-alerts，以及一次验证发送。重新授权后，使用服务器现有机器人
+凭据调用 `auth.test`，确认 `files:write` 和 `chat:write` 已生效，无需更换凭据。
+PR 全部 CI 通过；合并版本 `831093f8bba3ba70953bdde0cd14403cabf6815c` 于
+2026-11-12 09:19:57 UTC 完成健康部署。四个应用服务均 active；私有状态保留，旧版本可回滚。
 
-已验证：定向 Node 10/10（含真实 PNG 渲染）、其中 Python 发送器 6/6、scaffold 通过；
-通过 SSH 隧道只读查询生产 API，在本地生成并目视检查 PNG。私有产物保持忽略，未提交。
-不含空格的验证 checkout 全量回归：1324 tests / 1322 pass / 0 fail / 2 个既有跳过。
-原工作目录首先触发既有 usage-admission 测试的 URL 编码空格路径问题；临时 checkout
-初次也缺少插件依赖链接，补齐后原套件通过。
-[独立 PR #72](https://github.com/rein-protocol-foundation/nori-agent/pull/72) 的 CI 待完成，
-下一步通过 PR 应用，激活前补真实发送和运行证据。
-准备阶段未发送消息、启用任务、合并或部署。
+运行时小票配置权限为 0600，使用已有原生 Slack media 目录。通过已有认证的 Gateway
+RPC 创建唯一声明 `nori-daily-agent-receipt-v1`，任务 ID
+`bd36ddb1-8aef-4fa5-b89c-c160f51797ca`，已启用 `0 9 * * *`、
+`America/Los_Angeles`、精确调度、command payload，关闭调度器额外文本投递。
+未修改网关信任或认证设置。手动 `cron.run` 执行同一任务成功，exit 0，耗时 13.862 秒。
+发送器记录文件 `F0CH51GJH8R`；Slack 独立回读确认 Nori 在 `C0CG9BQQ4Q0`
+发送 PNG，消息时间戳 `1794475251.025539`，文件回读成功。
+[验证消息](https://app.slack.com/archives/C0CG9BQQ4Q0/p1794475251025539)。
+调度器 `deliveryStatus=not-requested` 符合设计：图片由 command 内部发送，
+确认的原生 file ID 另存持久记录，不再发送调度器文本。
+
+验证：定向 Node 10/10（含真实 PNG）、其中 Python 发送器 6/6、scaffold、全部 CI；
+全量回归 1324 / 1322 pass / 0 fail / 2 个既有跳过。不含空格的 checkout 完成全量验证，
+原目录触发既有 URL 编码路径 worker 测试问题，临时 checkout 初始插件链接补齐后通过。
+线上 PNG 在发送前已目视检查，私有用量产物保持忽略。[运行手册](daily-agent-receipt.md)含范围与回滚。
+
+下一步：首次时钟触发为 11 月 12 日 09:00 PST，预计对已发送的 11 月 11 日小票去重；
+下一张新小票为 11 月 13 日 09:00 PST。时钟触发验收仍待观察，不以手动运行成功替代。
+API 价格缺失继续显示未知，直连 ACP 与内部 Agent/渠道归属不在本切片范围内。
+SA-OBS-02 / #68 及更广产品里程碑保持未完成。
 
 [English](implementation-and-deployment.md) | 简体中文
 

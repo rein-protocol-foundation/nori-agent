@@ -63,6 +63,26 @@ test('aggregate artifacts allow only safe dimensions, and SVG escapes XML inject
   assert.equal(summarizeUsage([row({ agent: 'a\n\u202eb' })], bounds).agents[0].agent, 'ab');
 });
 
+test('main body shows complete wrapped model names, usage and native estimated costs before daily totals', () => {
+  const longName = 'qwen3.5-plus-enterprise-long-context-model-with-complete-release-identifier-2026-11-12';
+  const summary = summarizeUsage([row({ model: longName, cost: 1.2345 }),
+    row({ model: 'mixed-model', cost: 0.25 }), row({ model: 'mixed-model', priced: false, cost: 0 }),
+    row({ model: 'unpriced-model', priced: false, cost: 0 })], bounds);
+  const svg = renderReceiptSvg(summary);
+  const main = svg.slice(svg.indexOf('MODEL / USAGE / ESTIMATED USD'), svg.indexOf('DAILY TOTALS'));
+  const modelLines = [...main.matchAll(/font-size="22"[^>]*>([^<]*)<\/text>/g)].map(match => match[1]);
+  assert.equal(modelLines.slice(0, Math.ceil(longName.length / 40)).join(''), longName);
+  assert.doesNotMatch(main, /…/);
+  assert.match(main, /Provider: p/); assert.match(main, /Uncached input 100 \/ output 20/);
+  assert.match(main, /Cache read 200 \/ write 10/); assert.match(main, /Cache share 64.5%/);
+  assert.match(main, /Estimated USD/); assert.match(main, /\$1\.2345/);
+  assert.match(main, /\$0\.2500 \+ unknown/); assert.match(main, /Price unavailable/);
+  assert.doesNotMatch(svg, /BY MODEL \/ PROVIDER/);
+  assert.match(svg, /Magpie catalog estimate · not a bill/);
+  assert.match(svg, /Subscription charges are not calculated here/);
+  assert.equal(summary.models.find(entry => entry.model === longName).estimatedCostUsd, 1.2345);
+});
+
 test('collector uses read-only native pagination, 3-day padded query, through source and local filtering', async () => {
   const calls = [];
   const summary = await collectMagpieUsage({ date: bounds.date, pageSize: 2, fetchImpl: async (url, options) => {
