@@ -172,6 +172,10 @@ async function importOffline({ projectRoot, configPath, environment = process.en
     const index = data.providers.findIndex(provider => provider.id === PROVIDER_ID);
     const imported = { ...(index >= 0 ? data.providers[index] : {}), id: PROVIDER_ID,
       name: index >= 0 ? data.providers[index].name ?? 'Bailian Token Plan' : 'Bailian Token Plan',
+      // Native list-price estimates use the China API catalog. This changes
+      // neither the subscription endpoint/key nor actual Token Plan billing.
+      // Preserve an operator's explicit catalog override on repeat imports.
+      catalog: (index >= 0 ? data.providers[index].catalog : undefined) ?? 'alibaba-cn',
       preset: PROVIDER_ID, key, chat: CHAT_BASE, anthropic: ANTHROPIC_BASE, models };
     if (index >= 0) data.providers[index] = imported; else data.providers.push(imported);
     temporary = join(dirname(destination), `.providers-import-${randomUUID()}.tmp`);

@@ -188,6 +188,11 @@ const usd = value => `$${value.toFixed(4)}`;
 const costLabel = totals => totals.requests > 0 && totals.pricedRequests === 0 ? 'Price unavailable' :
   totals.estimatedCostUsd === null ? `${usd(totals.knownCostUsd)} + unknown` : usd(totals.estimatedCostUsd);
 function clipped(value, width = 38) { return value.length > width ? `${value.slice(0, width - 1)}…` : value; }
+function wrapped(value, width) {
+  const characters = Array.from(value), lines = [];
+  for (let i = 0; i < characters.length; i += width) lines.push(characters.slice(i, i + width).join(''));
+  return lines;
+}
 /** Deterministic SVG: no remote resources, generated imagery, timestamps or invented comparisons. */
 export function renderReceiptSvg(summary) {
   const t = summary.totals, width = 760, left = 100, right = 660;
@@ -205,9 +210,26 @@ export function renderReceiptSvg(summary) {
   line(summary.timeZone, { size: 15, anchor: 'middle', x: width / 2 });
   rule(); line('ESTIMATED COST · USD', { size: 16 });
   line(t.requests > 0 && t.pricedRequests === 0 ? 'PRICE UNAVAILABLE' : costLabel(t), { size: 34, weight: 700 });
-  line('Magpie API estimate · not a bill', { size: 14 });
+  line('Magpie catalog estimate · not a bill', { size: 14 });
+  line('Subscription charges are not calculated here.', { size: 13 });
   if (t.unpricedRequests) line(`${count(t.unpricedRequests)} attempts have no known price`, { size: 14 });
-  rule(); pair('Gateway attempts', count(t.requests)); pair('Failed attempts', count(t.errors));
+  rule(); line('MODEL / USAGE / ESTIMATED USD', { size: 16, weight: 700 });
+  const models = [...summary.models].sort((a, b) => b.knownCostUsd - a.knownCostUsd || b.requests - a.requests).slice(0, 12);
+  if (!models.length) line('No gateway usage recorded', { size: 16 });
+  for (const model of models) {
+    y += 6;
+    for (const name of wrapped(model.model, 40)) line(name, { size: 22, weight: 700, color: '#26392d' });
+    for (const provider of wrapped(`Provider: ${model.provider}`, 60)) line(provider, { size: 14 });
+    line(`${count(model.totalTokens)} tokens · ${count(model.requests)} attempts · ${count(model.errors)} failed`, { size: 16 });
+    line(`Uncached input ${count(model.inputTokens)} / output ${count(model.outputTokens)}`, { size: 14 });
+    line(`Cache read ${count(model.cacheReadTokens)} / write ${count(model.cacheWriteTokens)}`, { size: 14 });
+    line(`Cache share ${model.cacheReadPercent === null ? 'unknown / no input' : `${model.cacheReadPercent.toFixed(1)}%`}`, { size: 14 });
+    pair('Estimated USD', costLabel(model));
+    y += 10;
+  }
+  if (summary.models.length > models.length) line(`+ ${summary.models.length - models.length} more; full breakdown in JSON`, { size: 13 });
+  rule(); line('DAILY TOTALS', { size: 16, weight: 700 });
+  pair('Gateway attempts', count(t.requests)); pair('Failed attempts', count(t.errors));
   pair('Total tokens incl. cache', count(t.totalTokens)); pair('Uncached input', count(t.inputTokens));
   pair('Output incl. reasoning', count(t.outputTokens)); pair('Reasoning (within output)', count(t.reasoningTokens));
   pair('Cache read / write', `${count(t.cacheReadTokens)} / ${count(t.cacheWriteTokens)}`);
@@ -227,7 +249,6 @@ export function renderReceiptSvg(summary) {
   };
   group('BY MAGPIE CLIENT', summary.agents, e => e.agent);
   group('BY PROVIDER', summary.providers, e => e.provider);
-  group('BY MODEL / PROVIDER', summary.models, e => `${e.model} / ${e.provider}`);
   rule();
   for (const note of ['Gateway traffic only; retries count as attempts.', 'Direct ACP usage: outside coverage / unknown.', 'Internal Nori agent/channel attribution: unknown.', `${summary.date} · ${summary.timeZone} · ${summary.interval.hours}h`]) line(note, { size: 13 });
   y += 12; line('REIN PROTOCOL FOUNDATION', { size: 13, anchor: 'middle', x: width / 2 });

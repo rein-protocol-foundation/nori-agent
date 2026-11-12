@@ -19,9 +19,10 @@ This slice retains the existing gateway and uses its public read-only
 `GET /v1/magpie/usage/requests` interface, with `via=through`. It renders an
 independent receipt using pinned `@resvg/resvg-js`, not a modified Magpie plugin.
 
-The image shows gateway request attempts, failed attempts, token/cache totals
-and costs by Magpie client, provider and model. It says **API price estimate,
-not an invoice**. Unknown prices stay explicit. Magpie's uncached input,
+The main body shows complete wrapped model names, a separate provider label,
+per-model token/cache usage and estimated USD before the daily totals. Secondary
+breakdowns retain Magpie client and provider totals. It says **Magpie catalog
+estimate, not a bill**, and explicitly excludes subscription charges. Unknown prices stay explicit. Magpie's uncached input,
 cache reads and cache writes are combined once; reasoning is already within
 output. Requests forwarded through multiple attempts remain individual attempts.
 Direct session-log/reported usage is excluded so it cannot duplicate gateway
@@ -32,6 +33,45 @@ attribution. There is no invented per-channel breakdown, streak, daily-average
 comparison, subscription cash charge or missing usage estimate. No account,
 credential, session identifier, request/response ID, prompt or error body is
 written to the report. Only aggregate usage leaves the host.
+
+## Native price mapping
+
+The China `bailian-token-plan` preset in pinned Magpie has no catalog mapping.
+The model `deepseek-v4.1-flash` is available in `alibaba-cn`, while maker fallback
+cannot price this exact identifier in the inspected catalog. With no mapping or
+price override, native usage rows report `priced: false`; that does not mean free.
+
+New offline imports now default to `catalog: "alibaba-cn"`, preserving an existing
+operator override (including an explicit empty catalog). This selects the China
+API **reference price** for estimates and leaves the dedicated Token Plan endpoints,
+credentials, selected models and subscription billing route intact. Existing live
+profiles require a one-time native configuration update after deployment; code
+updates do not overwrite private Magpie settings.
+
+For the managed OCI profile, stop only `nori-router` to release its profile lock,
+save a 0600 private rollback copy of `runtime/magpie/config/magpie/providers.json`,
+and run as the service user from the active checkout:
+
+```sh
+.toolchain/node_modules/node/bin/node scripts/magpie.mjs --allow-subscription-accounts \
+  provider set bailian-token-plan catalog=alibaba-cn
+```
+
+Always restart the router after the maintenance command, including on failure.
+Verify the stored catalog, unchanged endpoint/key/model values, unchanged public
+model inventory, service health and `priced: true` on the intended daily ledger.
+Do not re-import credentials or edit the ledger to reprice historical requests.
+For rollback, restore the prior catalog with the same native command (`catalog=`
+when previously unset), retaining all other current provider fields and histories.
+
+Magpie reads its [models.dev](https://models.dev/) catalog and computes costs through
+its native pricer, including separate cache reads. The renderer does not inject
+fallback rates. Catalog estimates use the prices available **at render time**;
+they do not reconstruct historical exchange rates, time-of-day tariffs, discounts
+or subscription cash charges. [Bailian's official model pricing](https://help.aliyun.com/zh/model-studio/deepseek-v4-1-flash)
+includes busy/off-peak rates, which this static catalog estimate does not reproduce.
+A deterministic native regression uses synthetic prices to prove missing mapping →
+priced history → rollback, without inference or modifying ledger data.
 
 ## Local preview and checks
 
@@ -111,6 +151,23 @@ archive that one local record and rerun the same date. Do not delete all history
 or use a new day/key merely to bypass uncertainty. Generation failures happen
 before any send intent and can be retried after fixing the underlying issue.
 
+An explicitly authorized corrected report uses a stable revision, after reading
+back the original delivery and verifying the corrected preview:
+
+```sh
+python3 scripts/send-daily-agent-receipt.py --config <private-config> \
+  --date 2026-11-11 --revision pricing-v2
+# Only after inspecting the preview, for the authorized correction:
+python3 scripts/send-daily-agent-receipt.py --config <private-config> \
+  --date 2026-11-11 --revision pricing-v2 --send
+```
+
+The caption marks the correction. State uses `<day>-<channel>-revision-<revision>.json`
+and artifacts use `<day>/revisions/<revision>/`; original records and PNGs remain
+intact. The same revision deduplicates; unresolved delivery must be reconciled
+before sending a new revision. Never choose another revision to bypass uncertainty.
+The daily Cron declaration keeps its original command without `--revision`.
+
 Disable the one job with native `cron disable <job-id>` (or Dashboard) to stop
 future sends. Inspect the stored state even if the native CLI reports a known
 post-commit output-schema error; do not retry blindly. Preserve config, artifacts
@@ -120,13 +177,31 @@ automation needs to be removed for rollback.
 
 ## Verification status
 
-Read-only production inspection confirmed the current Magpie pin and public
-usage API, target channel name, membership and availability of DejaVu Sans Mono.
-The active Nori bot token (also used by the reporter) lacks `files:write`; native
-attachment delivery therefore requires verification/reauthorization before
-activation. No production schedule, send or code installation has been performed
-by this PR's preparation. Local full regression passed (1324 tests, 1322 pass, 2 existing skips) in a
-no-space checkout; the original checkout exposed an existing encoded-path worker
-test failure. [PR #72](https://github.com/rein-protocol-foundation/nori-agent/pull/72)
-tracks CI and deployment; live image read-back and the first 09:00 run are
-pending.
+PR #72 passed all CI, merged and deployed as `831093f8bba3ba70953bdde0cd14403cabf6815c`
+on 2026-11-12 at 09:19:57 UTC. Following explicit user authorization, Slack app
+reauthorization completed and the active host bot's scopes now include `files:write`
+and `chat:write`; existing credentials remained valid. All four application services
+passed deployment health checks. Private state and the previous release are retained.
+
+The 0600 runtime config follows the example above. Native authenticated Gateway RPC
+created declaration `nori-daily-agent-receipt-v1`, job
+`bd36ddb1-8aef-4fa5-b89c-c160f51797ca`, enabled for exact 09:00 America/Los_Angeles.
+On this trusted-proxy deployment, the maintenance client reused the installed
+updater's authenticated proxy headers over the host's existing loopback route;
+no trust setting or runtime database was modified directly.
+A manual native `cron.run` succeeded (exit 0, 13.862 seconds) and sent the November 11
+PNG as Nori. Sender state records file `F0CH51GJH8R`; Slack channel and file read-back
+confirmed message `1794475251.025539` in `C0CG9BQQ4Q0`.
+[Verification message](https://app.slack.com/archives/C0CG9BQQ4Q0/p1794475251025539).
+`deliveryStatus=not-requested` refers to the deliberately disabled scheduler text;
+the command's own native file delivery is confirmed separately.
+
+Next scheduled execution: November 12, 2026 at 09:00 PST (17:00 UTC). It should skip
+the already-sent November 11 receipt. The next new receipt is due November 13 at
+09:00 PST. **First clock-triggered acceptance remains pending.**
+
+Local full regression passed (1324 tests, 1322 pass, 2 existing skips) in a no-space
+checkout; the original checkout exposed an existing encoded-path worker test failure.
+Targeted Node 10/10, nested Python sender 6/6, scaffold and all PR CI passed.
+Production image rendering was visually inspected. This does not complete #68,
+channel/internal-agent attribution, Axiom dashboards or quota alerts.

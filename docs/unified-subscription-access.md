@@ -183,6 +183,13 @@ npm run toolchain:pnpm -- run magpie:import-bailian
 npm run toolchain:pnpm -- run magpie:prepare-key runtime/magpie/router.local.json
 ```
 
+China Token Plan imports default to Magpie's `alibaba-cn` reference price catalog,
+while retaining dedicated plan credentials/endpoints and explicit model selections.
+An existing operator catalog override is preserved. This supports API-equivalent
+usage estimates, not subscription charges; existing profiles need the native
+[mapping migration](daily-agent-receipt.md#native-price-mapping).
+
+
 The importer reads the existing environment SecretRef and writes only the private Magpie
 provider store. Key preparation captures secret-bearing native output privately and publishes
 `runtime/magpie/gateway.env` with mode 0600 only after verifying the exact model restriction.
