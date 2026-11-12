@@ -1,5 +1,29 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-12 — SA-OBS-02 / #68 daily receipt
+
+Owner: Codex. Status: **IMPLEMENTED / LOCAL VERIFIED**, dedicated
+PR required by the owner. [Runbook](daily-agent-receipt.md) describes the public
+Magpie ledger adapter, deterministic SVG/PNG, native Slack attachment command,
+09:00 America/Los_Angeles native Cron declaration, reconciliation and rollback.
+No upstream/vendor code or production configuration was changed. Native bot and
+channel checks were read-only; the bot is a member of #nori-alerts but its actual
+granted scopes lack `files:write`. Live image send and scheduled acceptance are
+blocked on Slack reauthorization and PR deployment. API costs can be unpriced;
+the report preserves unknown values, excludes direct ACP traffic, and does not
+claim internal-agent/channel attribution. No product milestone advances.
+
+Checks so far: targeted Node suite 10/10 (including real PNG render), Python sender
+6/6 (nested under Node), scaffold passed; real production API read through an
+SSH tunnel generated a local, visually inspected PNG. Private artifacts remain
+ignored and are not committed. Full regression in a no-space verification checkout: 1324 tests / 1322 pass /
+0 fail / 2 existing skips. The original checkout first failed the existing
+usage-admission worker test because it passes a URL-encoded pathname containing
+spaces to Node; initial temporary-checkout setup also lacked plugin dependency
+links. After completing those links, the unchanged suite passed. CI is pending on
+[PR #72](https://github.com/rein-protocol-foundation/nori-agent/pull/72). Next: apply
+the dedicated PR, then attach authorization and live delivery evidence before
+activation. No send, schedule enable, merge or deployment performed in preparation.
 
 English | [简体中文](implementation-and-deployment-zh.md)
 
