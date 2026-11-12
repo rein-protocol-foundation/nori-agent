@@ -3,6 +3,34 @@
 
 English | [简体中文](implementation-and-deployment-zh.md)
 
+## On-demand usage summaries (2026-11-11)
+
+Task: DEV-USAGE-03. Owner: Codex orchestrator. Status: documentation updated.
+Supersedes the earlier mandatory per-reply reporting policy: ordinary Q&A, discussion and progress
+updates do not trigger usage collection. Report only at development completion, handoff or an
+explicit user request, using one line by default. Reuse the verified reader and batch the query
+after the final necessary verification in the same tool call; handoffs/explicit requests without
+pending checks may query once. Detailed breakdowns remain available when needed or requested.
+Verification: Scaffold and diff whitespace checks, plus the documented compact usage query, are
+run together at handoff; results accompany the final response. No product tests, deployment or
+milestone advancement. Blockers: none. Next: apply this policy to subsequent tasks.
+
+## Codex session usage reporting (2026-11-11)
+
+Task: DEV-USAGE-02. Owner: Codex orchestrator. Status: completed documentation update.
+Root `AGENTS.md` now requires reading actual Codex session usage before reporting missing values;
+[the handoff guide](agent-token-usage.md) includes an executable read-only query, field mappings,
+turn/task boundaries, cumulative-session fallback and duplicate-count prevention. PATH CLI 0.162.1
+and daemon CLI 0.167.2 do not advertise a `usage` subcommand; the documented fallback reads native
+`token_usage_record` / legacy `token_count` records for the exact current thread. No new inference
+or account-wide quota query is needed. Actual usage and raw logs remain outside the repository.
+
+Verification: documented query executed against the current session; runtime turn identity and
+input + output = total checked. `node scripts/check.mjs` and `git diff --check` passed.
+Product tests, paginated-history fallback and other CLI versions were not tested. No deployment,
+configuration change or product milestone advancement. Blockers: none for this documentation task.
+Next: use the query before final reports; check the installed interface/schema if storage changes.
+
 ## PR70 Console host-policy persistence review fix (2026-11-10)
 
 Owner Codex; America/Los_Angeles; base `500fd4b`. PR title:
