@@ -1,5 +1,19 @@
 # Nori-Agent implementation roadmap
 
+## SA-M1-01–05 / #60 native task loop — November 12, 2026
+
+Owner: Codex orchestrator, same verified Sol High CLI implementation worker. Native pin `4a11f89`.
+**IMPLEMENTED / LOCAL VERIFIED; real Slack/research/Codex product acceptance pending**.
+[Evidence and limits](m1-slack-task-loop.md): native Task/Flow/session ownership, channel-independent
+skill and reversible additive ACP mode, without a new engine/store. 19 targeted units and final
+expanded native run `nori-m1-PzyVU6` pass: research change/stop, ACP pending/settled/failed
+cancellation, actual accepted/canonical IDs, member/revocation/foreign-scope controls and original
+thread delivery while ordinary chat continues. ACP task summaries and delayed canonical visibility
+are explicitly handled. Full suite: 1331 pass, 2 existing skips, 0 fail; existing ACP/Cron, loader
+and skill-discovery checks pass. Earlier failed runs remain documented. Remote CI and live
+acceptance are pending; no publishing/deployment/outreach. Next: review local commit, separately
+authorize live acceptance; stop at #60. Product checkboxes and M0/M2/M3 remain unchanged.
+
 ## SA-OPS-01 / #66 native execution — November 10, 2026
 
 Owner Codex; America/Los_Angeles; implementation base `b36f21b3`, investigation base `ac8d766`,

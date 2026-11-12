@@ -3,6 +3,34 @@
 
 English | [简体中文](implementation-and-deployment-zh.md)
 
+## SA-M1-01–05 / #60 native task loop (2026-11-12)
+
+Owner: Codex orchestrator; same verified Sol High CLI worker implemented the slice; parent
+reviewed and completed native integration verification. Status: **IMPLEMENTED / LOCAL VERIFIED;
+product acceptance pending**. [Evidence, earlier failures and limits](m1-slack-task-loop.md).
+The optional existing ACP plugin mode and channel-independent skill use native Task/Flow/session
+ownership, current membership, bounded ACP harness/cwd, status and cancellation plus fresh
+user-directed delegation. No new task store, scheduler or coding harness. Existing main/development
+bindings and Magpie policy remain intact. Cancelled outcomes retain partial/uncertain-action
+reports; pending/failed cancellation cannot authorize replacement. Rollback disables the plugin
+entry; setting taskLoop=false selects the legacy restricted controller and is not rollback.
+
+Final expanded native run `nori-m1-PzyVU6` passed: actual pinned loader/Gateway/native research and
+ACP runs, real task/run IDs, shared-member controls, foreign-scope/revoked read denials, unrelated
+chat, original-thread shortlist/results, research stop/change, and ACP pending/settled/failed
+cancellation. Transport, model, research sources and ACP backend are synthetic. Immediate ACP
+canonical lookup can lag acceptance: report the actual run/session and resolve on the next
+request; never respawn. ACP Task rows hold 160-character summaries; full goals/criteria and
+predecessor links are verified at the accepted input/native backend boundary, not invented in
+Task storage. Earlier failed decoder/timing/storage assertions are retained in the evidence page.
+
+Checks: 19 targeted tests passed; full Node suite 1333 tests / 1331 passed / 2 existing conditional
+skips / 0 failed; existing ACP and #66 Cron/native-child regressions, plugin loader and skill
+discovery passed. Scaffold/diff checks and vendor cleanliness are verified for the local handoff.
+CI includes the new native fixture; remote CI was not run. No live data/provider calls, outreach,
+push, PR, merge or deployment. M0/M2/M3 and product checkboxes remain unchanged. Next: review the
+local commit and separately authorize real Slack/research/Codex acceptance; stop at #60.
+
 ## On-demand usage summaries (2026-11-11)
 
 Task: DEV-USAGE-03. Owner: Codex orchestrator. Status: documentation updated.

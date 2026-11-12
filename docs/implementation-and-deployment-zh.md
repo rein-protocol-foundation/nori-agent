@@ -3,6 +3,29 @@
 
 [English](implementation-and-deployment.md) | 简体中文
 
+## SA-M1-01–05 / #60 原生任务闭环（2026-11-12）
+
+负责人：Codex 主协调；同一已核实 Sol High CLI worker 实施，主协调完成最终审查及原生集成
+验证。状态：**已实现／本地验证通过；产品验收待完成**。[证据、历史失败和边界](m1-slack-task-loop.md)。
+在现有 ACP 插件内增加可选模式，配合跨渠道 skill，复用原生 Task/Flow/session 所有权、即时
+成员资格、固定 harness/cwd、状态以及取消后按用户新指令委派。不新增任务库、scheduler 或
+coding harness，不改 main/development binding 和 Magpie 策略。取消报告保留部分结果与操作
+不确定性；pending/failed 不能授权替代。回滚禁用插件 entry；taskLoop=false 会选中旧限制
+控制器，不能作为回滚方式。
+
+最终增强原生演练 `nori-m1-PzyVU6` 通过：真实 pinned loader/Gateway/native 研究与 ACP run、
+实际 task/run ID、共享成员控制、跨范围及撤权读取拒绝、后台普通聊天、原线程 shortlist/结果、
+研究改向/停止，以及 ACP pending/settled/failed 取消。transport、模型、研究来源和 ACP 后端
+均为合成。ACP 接受 run 后 canonical 投影可能暂不可见：如实回报实际 run/session，下次请求
+再查询，不能重发。ACP Task 表仅保留 160 字符摘要；完整目标/标准和前序关联在真实委派输入
+及原生后端边界核实，未虚构 Task 存储。此前解码、时序及存储断言失败均保留在证据页。
+
+检查：定向测试 19 项通过；全仓 Node 1333 项／1331 通过／2 项既有条件跳过／0 失败；
+既有 ACP、#66 Cron/native child 回归、插件 loader、skill 发现通过。本地交接核对 scaffold、
+diff 及 vendor 源码未改。新原生夹具已接入 CI，未运行远端 CI。未访问真实数据/付费 Provider、
+外联、push、建 PR、合并或部署。M0/M2/M3 及产品验收勾选不变。下一步：审阅本地提交，另行
+授权真实 Slack/研究/Codex 验收；本轮停在 #60。
+
 ## 按需用量简报（2026-11-11）
 
 任务：DEV-USAGE-03。负责人：Codex 主协调代理。状态：文档已更新。
