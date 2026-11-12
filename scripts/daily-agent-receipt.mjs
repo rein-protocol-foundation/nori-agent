@@ -4,6 +4,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { receiptIcon, providerIconName, modelIconName } from './daily-agent-receipt-icons.mjs';
 
 const DAY = 86_400_000;
 export const DEFAULT_TIMEZONE = 'America/Los_Angeles';
@@ -187,80 +188,86 @@ const count = value => new Intl.NumberFormat('en-US').format(value);
 const usd = value => `$${value.toFixed(4)}`;
 const costLabel = totals => totals.requests > 0 && totals.pricedRequests === 0 ? 'Price unavailable' :
   totals.estimatedCostUsd === null ? `${usd(totals.knownCostUsd)} + unknown` : usd(totals.estimatedCostUsd);
-function clipped(value, width = 38) { return value.length > width ? `${value.slice(0, width - 1)}…` : value; }
-function wrapped(value, width) {
-  const characters = Array.from(value), lines = [];
-  for (let i = 0; i < characters.length; i += width) lines.push(characters.slice(i, i + width).join(''));
+// Conservative monospace wrapping, preserving exact IDs and reserving the cost column.
+function wrapped(value, columns) {
+  const lines = []; let current = '', width = 0;
+  for (const character of value) {
+    const cells = /[^\u0000-\u00ff]/.test(character) ? 2 : 1;
+    if (current && width + cells > columns) { lines.push(current); current = ''; width = 0; }
+    current += character; width += cells;
+  }
+  if (current) lines.push(current);
   return lines;
 }
-/** Deterministic SVG: no remote resources, generated imagery, timestamps or invented comparisons. */
+/** Day Card-derived SVG adapter. Source/license: assets/daily-agent-receipt/PROVENANCE.md.
+ * Uses its compact paper/cost-row composition; does not execute the stock Canvas plugin.
+ */
 export function renderReceiptSvg(summary) {
-  const t = summary.totals, width = 760, left = 100, right = 660;
-  let y = 90; const body = [];
-  const line = (text, { size = 18, color = '#3f4941', anchor = 'start', weight = 400, x = left } = {}) => {
-    body.push(`<text x="${x}" y="${y}" font-size="${size}" fill="${color}" text-anchor="${anchor}" font-weight="${weight}">${xml(text)}</text>`); y += size + 14;
+  const t = summary.totals, width = 720, paperLeft = 60, paperRight = 660, left = 92, right = 628;
+  const ink = '#1f1d20', muted = '#76736e';
+  let y = 103; const body = [];
+  const text = (value, x, baseline, size = 15, weight = 400, anchor = 'start', color = ink) => {
+    body.push(`<text x="${x}" y="${baseline}" font-size="${size}" fill="${color}" text-anchor="${anchor}" font-weight="${weight}" xml:space="preserve">${xml(value)}</text>`);
   };
-  const rule = () => { y += 6; body.push(`<path d="M${left} ${y}H${right}" stroke="#b4b9aa" stroke-dasharray="4 6"/>`); y += 32; };
-  const pair = (name, value) => {
-    body.push(`<text x="${left}" y="${y}" font-size="18" fill="#586153">${xml(name)}</text><text x="${right}" y="${y}" font-size="18" text-anchor="end" fill="#26392d">${xml(value)}</text>`); y += 34;
+  const center = (value, size = 15, weight = 400, color = ink) => { text(value, width / 2, y, size, weight, 'middle', color); y += size + 14; };
+  const rule = () => { y += 6; body.push(`<path d="M${left} ${y}H${right}" stroke="#a8a49c" stroke-dasharray="5 5"/>`); y += 30; };
+  const pair = (name, value, size = 15, weight = 400) => {
+    text(name, left, y, size, weight); text(value, right, y, size, weight, 'end'); y += 28;
   };
-  line('NORI', { size: 42, weight: 700, anchor: 'middle', x: width / 2 });
-  line('DAILY USAGE RECEIPT', { size: 16, anchor: 'middle', x: width / 2 });
-  y += 12; line(summary.date, { size: 24, anchor: 'middle', x: width / 2 });
-  line(summary.timeZone, { size: 15, anchor: 'middle', x: width / 2 });
-  rule(); line('ESTIMATED COST · USD', { size: 16 });
-  line(t.requests > 0 && t.pricedRequests === 0 ? 'PRICE UNAVAILABLE' : costLabel(t), { size: 34, weight: 700 });
-  line('Magpie catalog estimate · not a bill', { size: 14 });
-  line('Subscription charges are not calculated here.', { size: 13 });
-  if (t.unpricedRequests) line(`${count(t.unpricedRequests)} attempts have no known price`, { size: 14 });
-  rule(); line('MODEL / USAGE / ESTIMATED USD', { size: 16, weight: 700 });
-  const models = [...summary.models].sort((a, b) => b.knownCostUsd - a.knownCostUsd || b.requests - a.requests).slice(0, 12);
-  if (!models.length) line('No gateway usage recorded', { size: 16 });
-  for (const model of models) {
-    y += 6;
-    for (const name of wrapped(model.model, 40)) line(name, { size: 22, weight: 700, color: '#26392d' });
-    for (const provider of wrapped(`Provider: ${model.provider}`, 60)) line(provider, { size: 14 });
-    line(`${count(model.totalTokens)} tokens · ${count(model.requests)} attempts · ${count(model.errors)} failed`, { size: 16 });
-    line(`Uncached input ${count(model.inputTokens)} / output ${count(model.outputTokens)}`, { size: 14 });
-    line(`Cache read ${count(model.cacheReadTokens)} / write ${count(model.cacheWriteTokens)}`, { size: 14 });
-    line(`Cache share ${model.cacheReadPercent === null ? 'unknown / no input' : `${model.cacheReadPercent.toFixed(1)}%`}`, { size: 14 });
-    pair('Estimated USD', costLabel(model));
-    y += 10;
+  // The fixed right column never shares space with wrapped provider/model IDs.
+  const costRow = (name, value, icon, nested) => {
+    const size = nested ? 15 : 18, weight = nested ? 400 : 700;
+    const iconSize = nested ? 17 : 23, iconX = left + (nested ? 24 : 0), nameX = iconX + iconSize + 10;
+    const costWidth = Math.max(86, Array.from(value).length * size * 0.63);
+    const columns = Math.max(8, Math.floor((right - costWidth - 18 - nameX) / (size * 0.63)));
+    const lines = wrapped(name, columns);
+    body.push(`<g data-receipt-row="${nested ? 'model' : 'provider'}">`);
+    body.push(receiptIcon(icon, iconX, y - iconSize + 3, iconSize));
+    text(value, right, y, size, weight, 'end');
+    for (const part of lines) { text(part, nameX, y, size, weight); y += size + 9; }
+    y += nested ? 5 : 6; body.push('</g>');
+  };
+  center('DAILY AI STATEMENT', 31, 700);
+  center('Nori · routed through Magpie', 13);
+  y += 9; pair('DATE', summary.date, 14); pair('TIMEZONE', summary.timeZone, 13);
+  rule(); center('TOTAL ESTIMATED USD', 14); y += 29;
+  center(t.requests > 0 && t.pricedRequests === 0 ? 'PRICE UNAVAILABLE' : costLabel(t), t.pricedRequests === 0 && t.requests ? 30 : 43, 700);
+  center('Magpie catalog estimate · not a bill', 12);
+  center('Subscription charges are not calculated here.', 11, 400, muted);
+  rule(); pair('REQUESTS / ATTEMPTS', count(t.requests)); pair('ERRORS', count(t.errors));
+  rule(); text('PROVIDER / MODEL', left, y, 14, 400, 'start', muted); text('USD COST', right, y, 14, 400, 'end', muted); y += 34;
+  const providers = [...summary.providers].sort((a, b) => b.knownCostUsd - a.knownCostUsd || (a.provider < b.provider ? -1 : a.provider > b.provider ? 1 : 0));
+  const modelsByProvider = new Map();
+  for (const model of summary.models) {
+    if (!modelsByProvider.has(model.provider)) modelsByProvider.set(model.provider, []);
+    modelsByProvider.get(model.provider).push(model);
   }
-  if (summary.models.length > models.length) line(`+ ${summary.models.length - models.length} more; full breakdown in JSON`, { size: 13 });
-  rule(); line('DAILY TOTALS', { size: 16, weight: 700 });
-  pair('Gateway attempts', count(t.requests)); pair('Failed attempts', count(t.errors));
-  pair('Total tokens incl. cache', count(t.totalTokens)); pair('Uncached input', count(t.inputTokens));
-  pair('Output incl. reasoning', count(t.outputTokens)); pair('Reasoning (within output)', count(t.reasoningTokens));
-  pair('Cache read / write', `${count(t.cacheReadTokens)} / ${count(t.cacheWriteTokens)}`);
-  pair('Cache read share of input', t.cacheReadPercent === null ? 'Unknown / no input' : `${t.cacheReadPercent.toFixed(1)}%`);
-  if (t.cacheMetricsMissingRequests) line('Legacy cache counters missing', { size: 14 });
-  const group = (heading, entries, name) => {
-    rule(); line(heading, { size: 16, weight: 700 });
-    if (!entries.length) line('No gateway usage recorded', { size: 16 });
-    const displayed = [...entries].sort((a, b) => b.knownCostUsd - a.knownCostUsd || b.requests - a.requests).slice(0, 12);
-    for (const entry of displayed) {
-      line(clipped(name(entry)), { size: 17 });
-      line(`${count(entry.requests)} req / ${count(entry.errors)} err / ${count(entry.totalTokens)} tok`, { size: 14 });
-      line(`${costLabel(entry)}  · cache ${entry.cacheReadPercent === null ? '?' : `${entry.cacheReadPercent.toFixed(1)}%`}`, { size: 14 });
-      y += 6;
-    }
-    if (entries.length > displayed.length) line(`+ ${entries.length - displayed.length} more; full breakdown in JSON`, { size: 13 });
-  };
-  group('BY MAGPIE CLIENT', summary.agents, e => e.agent);
-  group('BY PROVIDER', summary.providers, e => e.provider);
-  rule();
-  for (const note of ['Gateway traffic only; retries count as attempts.', 'Direct ACP usage: outside coverage / unknown.', 'Internal Nori agent/channel attribution: unknown.', `${summary.date} · ${summary.timeZone} · ${summary.interval.hours}h`]) line(note, { size: 13 });
-  y += 12; line('REIN PROTOCOL FOUNDATION', { size: 13, anchor: 'middle', x: width / 2 });
-  const bottom = y + 30, height = bottom + 60;
-  let edge = `M64 36H696V${bottom}`;
-  for (let x = 696; x > 64; x -= 16) edge += `L${x - 8} ${bottom + 9}L${Math.max(64, x - 16)} ${bottom}`;
+  if (!providers.length) { text('No gateway usage recorded', left, y, 15); y += 28; }
+  for (const provider of providers) {
+    costRow(provider.provider, costLabel(provider), providerIconName(provider.provider), false);
+    const models = [...(modelsByProvider.get(provider.provider) ?? [])].sort((a, b) => b.knownCostUsd - a.knownCostUsd || (a.model < b.model ? -1 : a.model > b.model ? 1 : 0));
+    for (const model of models) costRow(model.model, costLabel(model), modelIconName(model.model, model.provider), true);
+    y += 13;
+  }
+  rule(); pair('TOTAL TOKENS (INCL. CACHE)', count(t.totalTokens));
+  pair('UNCACHED INPUT', count(t.inputTokens)); pair('OUTPUT (REASONING INCLUDED)', count(t.outputTokens));
+  pair('CACHE HIT RATE', t.cacheReadPercent === null ? 'Unknown / no input' : `${t.cacheReadPercent.toFixed(1)}%`);
+  pair('UNPRICED REQUESTS', count(t.unpricedRequests));
+  rule(); center('Gateway only · direct ACP outside coverage', 11);
+  center(`${summary.interval.hours}-hour local day · retries count as attempts`, 11, 400, muted);
+  y += 5; center('Day Card-derived · design inspired by nowdex.app', 10, 400, muted);
+  const bottom = y + 12, height = bottom + 58;
+  // Fail explicitly rather than silently dropping active providers/models or exhausting raster memory.
+  if (height > 16_000) throw new Error('Receipt exceeds safe single-image height; no providers or models were truncated');
+  let edge = `M${paperLeft} 36H${paperRight}V${bottom}`;
+  for (let x = paperRight; x > paperLeft; x -= 12) edge += `L${x - 6} ${bottom + 6}L${Math.max(paperLeft, x - 12)} ${bottom}`;
   edge += 'Z';
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="Nori daily usage receipt"><rect width="100%" height="100%" fill="#a9b6a3"/><path d="${edge}" fill="#faf8ed"/><g font-family="DejaVu Sans Mono, monospace">${body.join('')}</g></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="Nori daily usage receipt"><rect width="100%" height="100%" fill="#c6d4cd"/><path d="${edge}" fill="#f7f4ed"/><g font-family="DejaVu Sans Mono, Menlo, Monaco, Consolas, monospace">${body.join('')}</g></svg>`;
 }
 export async function renderReceiptPng(summary) {
   const { Resvg } = await import('@resvg/resvg-js');
-  return new Resvg(renderReceiptSvg(summary), { font: { loadSystemFonts: true, defaultFontFamily: 'DejaVu Sans Mono' } }).render().asPng();
+  const monospace = process.platform === 'darwin' ? 'Menlo' : process.platform === 'win32' ? 'Consolas' : 'DejaVu Sans Mono';
+  return new Resvg(renderReceiptSvg(summary), { font: { loadSystemFonts: true, defaultFontFamily: monospace, monospaceFamily: monospace } }).render().asPng();
 }
 export async function writeDailyReceipt(options = {}) {
   const summary = await collectMagpieUsage(options), svg = renderReceiptSvg(summary), png = await renderReceiptPng(summary);

@@ -1,5 +1,20 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-12 — SA-OBS-02 Provider receipt layout
+
+Owner: Codex. Status: **IMPLEMENTED / TARGETED AND VISUAL VERIFIED; CI/rollout pending**.
+The user chose Day Card styling/icon reuse
+with the existing server sender. Provider → model grouping shows USD-only model
+rows and bottom token summaries; pricing stays in native Magpie configuration.
+Read-only audit: Bailian/OpenAI catalogs already present; gemini/chatgpt-api aliases
+need native catalog reconciliation. Prior PR #73 is now deployed (`4d627691ac62`),
+44 prior-day requests priced and `pricing-v2` Slack image read back/deduplicated.
+Checks: targeted Node 13/13 (including nested Python sender checks), scaffold/diff
+passed; actual aggregate and synthetic multi-provider images visually inspected.
+Next: separate PR CI, authorized deployment,
+config reconciliation and one `provider-v3` correction. First scheduled acceptance
+remains pending; configuration/layout changes do not complete broader milestones.
+
 ## 2026-11-12 — SA-OBS-02 receipt pricing and corrected delivery
 
 Owner: Codex. Status: **IMPLEMENTED / TARGETED VERIFIED; rollout pending**.

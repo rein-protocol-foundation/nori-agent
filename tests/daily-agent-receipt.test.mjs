@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { createHash } from 'node:crypto';
+import { providerIconName, modelIconName, receiptIcon } from '../scripts/daily-agent-receipt-icons.mjs';
 import test from 'node:test';
 import { calendarDayBounds, collectMagpieUsage, summarizeUsage, renderReceiptSvg, renderReceiptPng,
   writeDailyReceipt, parseReceiptArgs } from '../scripts/daily-agent-receipt.mjs';
@@ -48,7 +50,7 @@ test('missing prices remain unknown, known subtotal is preserved, and legacy cac
   assert.match(renderReceiptSvg(summary), /\+ unknown/);
   const unpriced = renderReceiptSvg(summarizeUsage([row({ priced: false, cost: 0 })], bounds));
   assert.match(unpriced, /PRICE UNAVAILABLE/); assert.match(unpriced, /Price unavailable/);
-  assert.doesNotMatch(unpriced, /\$0\.0000 \+ unknown/); assert.match(unpriced, /BY MAGPIE CLIENT/);
+  assert.doesNotMatch(unpriced, /\$0\.0000 \+ unknown/); assert.match(unpriced, /PROVIDER \/ MODEL/);
   assert.doesNotMatch(unpriced, /No prior-day comparison/);
   const empty = summarizeUsage([], bounds); assert.equal(empty.totals.estimatedCostUsd, 0); assert.equal(empty.totals.cacheReadPercent, null);
 });
@@ -63,24 +65,59 @@ test('aggregate artifacts allow only safe dimensions, and SVG escapes XML inject
   assert.equal(summarizeUsage([row({ agent: 'a\n\u202eb' })], bounds).agents[0].agent, 'ab');
 });
 
-test('main body shows complete wrapped model names, usage and native estimated costs before daily totals', () => {
+test('Day Card-derived main body nests exact model IDs under provider subtotals with costs only', () => {
   const longName = 'qwen3.5-plus-enterprise-long-context-model-with-complete-release-identifier-2026-11-12';
   const summary = summarizeUsage([row({ model: longName, cost: 1.2345 }),
     row({ model: 'mixed-model', cost: 0.25 }), row({ model: 'mixed-model', priced: false, cost: 0 }),
     row({ model: 'unpriced-model', priced: false, cost: 0 })], bounds);
   const svg = renderReceiptSvg(summary);
-  const main = svg.slice(svg.indexOf('MODEL / USAGE / ESTIMATED USD'), svg.indexOf('DAILY TOTALS'));
-  const modelLines = [...main.matchAll(/font-size="22"[^>]*>([^<]*)<\/text>/g)].map(match => match[1]);
-  assert.equal(modelLines.slice(0, Math.ceil(longName.length / 40)).join(''), longName);
-  assert.doesNotMatch(main, /…/);
-  assert.match(main, /Provider: p/); assert.match(main, /Uncached input 100 \/ output 20/);
-  assert.match(main, /Cache read 200 \/ write 10/); assert.match(main, /Cache share 64.5%/);
-  assert.match(main, /Estimated USD/); assert.match(main, /\$1\.2345/);
-  assert.match(main, /\$0\.2500 \+ unknown/); assert.match(main, /Price unavailable/);
-  assert.doesNotMatch(svg, /BY MODEL \/ PROVIDER/);
+  const main = svg.slice(svg.indexOf('PROVIDER / MODEL'), svg.indexOf('TOTAL TOKENS (INCL. CACHE)'));
+  const modelRows = [...main.matchAll(/<g data-receipt-row="model">([\s\S]*?)<\/g>/g)].map(match => match[1]);
+  const firstRow = [...modelRows[0].matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map(match => match[1]);
+  assert.equal(firstRow.slice(1).join(''), longName);
+  assert.doesNotMatch(main, /…|tokens|attempts|failed|Input|input|output|Cache|cache/);
+  assert.match(main, /\$1\.2345/); assert.match(main, /\$0\.2500 \+ unknown/); assert.match(main, /Price unavailable/);
+  assert.doesNotMatch(svg, /BY MAGPIE CLIENT|MODEL \/ USAGE|DAILY TOTALS/);
   assert.match(svg, /Magpie catalog estimate · not a bill/);
   assert.match(svg, /Subscription charges are not calculated here/);
   assert.equal(summary.models.find(entry => entry.model === longName).estimatedCostUsd, 1.2345);
+});
+
+test('only active providers appear; the same model at two providers keeps two subtotals and rows', () => {
+  const summary = summarizeUsage([row({ provider: 'openai', model: 'same-model', cost: 0.1 }),
+    row({ provider: 'google', model: 'same-model', cost: 0.2 }),
+    row({ provider: 'inactive-provider', t: bounds.end })], bounds);
+  const svg = renderReceiptSvg(summary);
+  assert.equal((svg.match(/data-receipt-row="provider"/g) ?? []).length, 2);
+  assert.equal((svg.match(/data-receipt-row="model"/g) ?? []).length, 2);
+  assert.equal((svg.match(/>same-model<\/text>/g) ?? []).length, 2);
+  assert.doesNotMatch(svg, /inactive-provider/);
+  assert.match(svg, /data-icon="google"/); assert.match(svg, /data-icon="openai"/);
+  assert.match(svg, /UNPRICED REQUESTS/);
+  assert.equal(summary.totals.unpricedRequests, 0);
+});
+
+test('bundled vector hashes and brand selection preserve source provenance', async () => {
+  const base = new URL('../assets/daily-agent-receipt/', import.meta.url);
+  const hashes = JSON.parse(await readFile(new URL('icons.sha256.json', base), 'utf8'));
+  for (const [name, hash] of Object.entries(hashes)) {
+    const source = await readFile(new URL(`icons/${name}`, base));
+    assert.equal(createHash('sha256').update(source).digest('hex'), hash);
+    assert.doesNotMatch(source.toString(), /<(?:script|image|foreignObject)\b|(?:href|src)=/i);
+  }
+  assert.equal(providerIconName('bailian-token-plan'), 'alibaba');
+  assert.equal(modelIconName('deepseek-v4.1-flash', 'bailian-token-plan'), 'deepseek');
+  assert.equal(modelIconName('qwen3.8-flash', 'bailian-token-plan'), 'qwen');
+  assert.equal(modelIconName('gemini-3.6-flash', 'google'), 'gemini');
+  assert.equal(modelIconName('gpt-6.1-sol', 'openai'), 'openai');
+  const { Resvg } = await import('@resvg/resvg-js');
+  for (const name of ['alibaba', 'deepseek', 'qwen', 'openai', 'google', 'gemini']) {
+    const image = new Resvg(`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">${receiptIcon(name, 4, 4, 24)}</svg>`,
+      { font: { loadSystemFonts: false } }).render();
+    assert.ok(image.pixels.some((value, index) => index % 4 === 3 && value > 0), `${name} vector must rasterize visible pixels`);
+    assert.deepEqual([...image.asPng().subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+  }
+
 });
 
 test('collector uses read-only native pagination, 3-day padded query, through source and local filtering', async () => {
@@ -125,20 +162,28 @@ test('collector fails closed on API failure, malformed data, truncation, growing
 
 test('actual PNG renderer and artifact writer produce valid deterministic private outputs', async t => {
   const directory = await mkdtemp(join(tmpdir(), 'nori-daily-receipt-')); t.after(() => rm(directory, { recursive: true, force: true }));
-  const summary = summarizeUsage([row()], bounds), png = await renderReceiptPng(summary);
+  const brandedRow = row({ provider: 'bailian-token-plan', model: 'deepseek-v4.1-flash' });
+  const summary = summarizeUsage([brandedRow], bounds), png = await renderReceiptPng(summary);
+  assert.match(renderReceiptSvg(summary), /data-icon="alibaba"/);
+  assert.match(renderReceiptSvg(summary), /data-icon="deepseek"/);
   assert.deepEqual([...png.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
-  assert.equal(png.readUInt32BE(16), 760); assert.ok(png.readUInt32BE(20) > 1000);
+  assert.equal(png.readUInt32BE(16), 720); assert.ok(png.readUInt32BE(20) > 1000);
   assert.deepEqual(png, await renderReceiptPng(summary));
-  const paths = await writeDailyReceipt({ date: bounds.date, outputDir: directory, fetchImpl: async () => response([row()]) });
+  const paths = await writeDailyReceipt({ date: bounds.date, outputDir: directory, fetchImpl: async () => response([brandedRow]) });
   assert.deepEqual(Object.keys(paths), ['date', 'png', 'svg', 'json']);
   assert.deepEqual(await readFile(paths.png), png); assert.equal(await readFile(paths.svg, 'utf8'), renderReceiptSvg(summary));
   assert.deepEqual(JSON.parse(await readFile(paths.json, 'utf8')), summary);
 });
 
-test('large breakdowns keep complete JSON while bounding raster dimensions', () => {
-  const summary = summarizeUsage(Array.from({ length: 20 }, (_, i) => row({ model: `model-${i}` })), bounds);
+test('more than twelve groups render every provider/model and oversized images fail explicitly', () => {
+  const summary = summarizeUsage(Array.from({ length: 20 }, (_, i) => row({ provider: `provider-${i}`, model: `model-${i}` })), bounds);
+  const svg = renderReceiptSvg(summary);
   assert.equal(summary.models.length, 20);
-  assert.match(renderReceiptSvg(summary), /8 more; full breakdown in JSON/);
+  assert.equal((svg.match(/data-receipt-row="provider"/g) ?? []).length, 20);
+  assert.equal((svg.match(/data-receipt-row="model"/g) ?? []).length, 20);
+  assert.doesNotMatch(svg, /more; full breakdown|…/);
+  const oversized = summarizeUsage(Array.from({ length: 500 }, (_, i) => row({ provider: `provider-${i}`, model: `model-${i}` })), bounds);
+  assert.throws(() => renderReceiptSvg(oversized), /safe single-image height/);
 });
 
 test('CLI arguments match wrapper interface and reject duplicates, unknown options and missing values', () => {
