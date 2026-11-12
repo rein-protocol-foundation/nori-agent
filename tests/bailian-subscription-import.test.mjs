@@ -66,7 +66,7 @@ test('offline import reuses the existing env SecretRef and exact models in a pri
   assert.deepEqual(result, { providerId, chatBaseUrl: chat, anthropicBaseUrl: anthropic, models: ['auto', 'qwen3.8-flash'] });
   const stored = JSON.parse(readFileSync(f.destination, 'utf8'));
   assert.deepEqual(stored.providers, [{ id: providerId, name: 'Bailian Token Plan', preset: providerId,
-    key, chat, anthropic, models: ['auto', 'qwen3.8-flash'] }]);
+    catalog: 'alibaba-cn', key, chat, anthropic, models: ['auto', 'qwen3.8-flash'] }]);
   assert.equal(statSync(f.destination).mode & 0o777, 0o600);
   assert.deepEqual(readFileSync(f.configPath), beforeConfig);
   assert.deepEqual(readFileSync(f.envPath), beforeEnv);
@@ -127,7 +127,17 @@ test('repeat import refreshes only the Bailian key/models while retaining non-ro
   const stored = JSON.parse(readFileSync(f.destination, 'utf8')).providers;
   assert.equal(stored.length, 1); assert.equal(stored[0].name, 'Local China plan');
   assert.equal(stored[0].key, otherKey); assert.deepEqual(stored[0].models, ['auto', 'qwen3.8-flash']);
+  assert.equal(stored[0].catalog, 'alibaba-cn');
   assert.deepEqual(stored[0].contexts, { 'qwen3.8-flash': 1000000 }); assert.equal(stored[0].maxConcurrency, 1);
+});
+
+test('repeat import preserves an explicit operator price catalog, including native auto lookup', async t => {
+  const f = fixture(t);
+  for (const catalog of ['custom-catalog', '']) {
+    f.writeDestination({ providers: [{ id: providerId, key, chat, anthropic, catalog }] });
+    await f.run();
+    assert.equal(JSON.parse(readFileSync(f.destination, 'utf8')).providers[0].catalog, catalog);
+  }
 });
 
 test('source endpoint and credential mismatches cannot import pay-as-you-go access', async t => {

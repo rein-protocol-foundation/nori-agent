@@ -1,0 +1,10 @@
+{
+  "timezone": "America/Los_Angeles",
+  "channelId": "C0CG9BQQ4Q0",
+  "accountId": "default",
+  "magpieUrl": "http://127.0.0.1:3425",
+  "nodeExecutable": "/home/ubuntu/rein-agent/.toolchain/node_modules/node/bin/node",
+  "openclawLauncher": "/home/ubuntu/rein-agent/runtime/oci-deploy/slack.mjs",
+  "stateDirectory": "/home/ubuntu/rein-agent/runtime/daily-agent-receipt/state",
+  "outputDirectory": "/home/ubuntu/rein-agent/runtime/openclaw/media/daily-agent-receipt"
+}

@@ -1,5 +1,58 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-12 — SA-OBS-02 receipt pricing and corrected delivery
+
+Owner: Codex. Status: **IMPLEMENTED / TARGETED VERIFIED; rollout pending**.
+The follow-up defaults China Token Plan imports to native `alibaba-cn` catalog
+pricing, puts model/usage/estimate in the receipt main body, and adds an explicit
+revision key for an authorized correction without deleting original delivery state.
+Native synthetic verification passed: mapping reprices history, preserves subscription
+endpoints/key/models and ledger bytes, and rollback restores unknown pricing.
+Importer/native tests: 19 passed. Renderer/sender targeted checks and full CI will be
+recorded in the separate PR. Next: merge only after passing checks, deploy, apply
+native catalog mapping to the existing private profile, preview and send `pricing-v2`
+to #nori-alerts, independently read back the file and confirm deduplication.
+The user explicitly authorized this PR, merge/deployment and one corrected send.
+[Runbook](daily-agent-receipt.md) includes private rollback, catalog estimate limits
+and revision recovery. Live acceptance evidence will be recorded in the PR after
+execution; no broader SA-OBS-02 milestone is completed by this correction.
+
+
+## 2026-11-12 — SA-OBS-02 / #68 daily receipt
+
+Owner: Codex. Status: **DEPLOYED / ENABLED; MANUAL LIVE VERIFIED**.
+The user explicitly authorized Slack `files:write` and reauthorization, merging
+PR #72, deployment, daily 09:00 America/Los_Angeles delivery to #nori-alerts and
+one verification send. Slack app reauthorization completed; `auth.test` against
+the active host bot confirmed `files:write` and `chat:write` without replacing
+credentials. All PR CI passed; merge `831093f8bba3ba70953bdde0cd14403cabf6815c`
+reached healthy deployment at 2026-11-12 09:19:57 UTC. Four app services were active;
+private state was preserved and the previous release remains available for rollback.
+
+The 0600 runtime receipt config uses the existing native Slack media directory.
+Native authenticated Gateway RPC created exactly one declaration
+`nori-daily-agent-receipt-v1`, job `bd36ddb1-8aef-4fa5-b89c-c160f51797ca`.
+It is enabled with `0 9 * * *`, `America/Los_Angeles`, exact timing, command payload
+and no extra scheduler delivery. No gateway trust/authentication setting changed.
+A manual `cron.run` executed the same job successfully (exit 0, 13.862 seconds).
+The sender recorded file `F0CH51GJH8R`; Slack independently returned the PNG from
+Nori at message `1794475251.025539` in `C0CG9BQQ4Q0`, and file read-back succeeded.
+[View verification message](https://app.slack.com/archives/C0CG9BQQ4Q0/p1794475251025539).
+Scheduler `deliveryStatus=not-requested` is expected: its command sends the image
+and persists the confirmed native file ID; scheduler text delivery is disabled.
+
+Checks: targeted Node 10/10 (real PNG render), nested Python sender 6/6, scaffold,
+all CI and full regression 1324 / 1322 pass / 0 fail / 2 existing skips.
+The full regression used a no-space checkout after an existing URL-encoded-path
+worker-test failure; its initial plugin links were also completed before passing.
+The production PNG was visually inspected before delivery. Private usage artifacts
+remain ignored. [Runbook](daily-agent-receipt.md) contains scope and rollback.
+
+Next: the first clock-triggered run is November 12, 09:00 PST; it should deduplicate
+the already-sent November 11 receipt. The next new report is November 13, 09:00 PST.
+Clock-triggered acceptance is pending, not inferred from the successful manual run.
+Unknown API prices remain unknown; direct ACP and internal-agent/channel attribution
+are outside this slice. SA-OBS-02 / #68 and broader product milestones remain open.
 
 English | [简体中文](implementation-and-deployment-zh.md)
 

@@ -126,6 +126,10 @@ jobs:
         run: node scripts/verify-scoped-routing.mjs runtime/magpie-fixture
       - name: Prepare pinned headless Magpie dependency
         run: pnpm magpie:setup
+      - name: Verify native Bailian receipt price mapping without inference
+        env:
+          REIN_RUN_NATIVE_BAILIAN_PRICING: '1'
+        run: node --test tests/bailian-receipt-pricing-native.test.mjs
       - name: Verify project-local Magpie configuration UI without inference
         env:
           REIN_RUN_NATIVE_MAGPIE_UI: '1'

@@ -14,6 +14,26 @@ and skill-discovery checks pass. Earlier failed runs remain documented. Remote C
 acceptance are pending; no publishing/deployment/outreach. Next: review local commit, separately
 authorize live acceptance; stop at #60. Product checkboxes and M0/M2/M3 remain unchanged.
 
+## SA-OBS-02 / #68 daily receipt — November 12, 2026
+
+Owner: Codex. **DEPLOYED / ENABLED; manual native run and Slack image verified.**
+[PR #72](https://github.com/rein-protocol-foundation/nori-agent/pull/72) passed all CI,
+merged and deployed as `831093f8bba3` on 2026-11-12 at 09:19:57 UTC.
+Nori's active bot now has `files:write`; the existing credential remains valid.
+The native command job is enabled for 09:00 America/Los_Angeles to #nori-alerts.
+Its manual run succeeded and delivered the previous-day PNG, independently read
+back from Slack. [Runbook and evidence](daily-agent-receipt.md).
+Next: observe the first clock-triggered run on November 12 at 09:00 PST; it should
+skip the already-sent November 11 receipt. The next new receipt is due November 13
+at 09:00 PST. Clock-triggered acceptance remains pending. This receipt slice does
+not complete Axiom/channel attribution, budget alerts, SA-M0-09, M0/M1 or AC01–AC20.
+
+Pricing follow-up: **implemented / targeted verified; rollout pending**. Native
+`alibaba-cn` mapping, prominent per-model usage/estimate and separately deduplicated
+correction revisions are prepared. Owner: Codex. Native/import tests 19 passed;
+next: separate PR CI, merged deployment, native migration and one corrected Slack
+image with read-back. The earlier deployed receipt evidence above remains valid.
+
 ## SA-OPS-01 / #66 native execution — November 10, 2026
 
 Owner Codex; America/Los_Angeles; implementation base `b36f21b3`, investigation base `ac8d766`,
