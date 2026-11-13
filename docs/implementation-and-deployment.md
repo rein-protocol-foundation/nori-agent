@@ -1,5 +1,28 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-12 — SA-OBS-02 Provider receipt layout
+
+Owner: Codex. Status: **DEPLOYED / MANUAL LIVE VERIFIED**. User selected Day Card
+style/icon reuse with the existing server sender. PR #75 passed all CI and deployed
+`33c44dc268b590acf1d92c8af7afeae1bf7ce9ae` at 10:38:56 UTC. Four app services healthy.
+Node 13/13, Python 12/12, scaffold/diff and actual/synthetic visual checks passed.
+Nori sent `provider-v3` file `F0CH5NH47Q9`; Slack read-back confirmed message
+`1794480068.252469` and repeat invocation returned `already-sent`. Original and
+`pricing-v2` delivery records remain. Provider/model rows contain USD costs only;
+token summary/cache-hit rate/unpriced count are at the bottom.
+
+Price audit correction: an absent catalog field on built-in subscription model
+selections does not mean missing prices. Native maker-price fallback already covers
+current Gemini/Sol/Terra models. An unnecessary native catalog edit failed; the
+providers file was restored byte-for-byte and Router restarted. The original public
+metadata/catalog plus a credential-free synthetic native ledger priced 10/11 stored
+model entries with no new mappings. The exception is retired unused Gemini 3 Pro;
+three historical `auto` records lack actual model identity. No invented prices,
+live ledger edits or credential/endpoint/model changes were retained.
+
+[Runbook/evidence](daily-agent-receipt.md) records limitations and rollback.
+Next: observe first clock-triggered delivery. No broader product milestone advances.
+
 ## 2026-11-12 — SA-OBS-02 receipt pricing and corrected delivery
 
 Owner: Codex. Status: **IMPLEMENTED / TARGETED VERIFIED; rollout pending**.

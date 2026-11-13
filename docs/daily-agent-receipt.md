@@ -13,20 +13,25 @@ window both use the IANA timezone, including 23/25-hour DST days. No model call
 or image generation service is needed. The schedule is optional and removable.
 
 Magpie's community [Day Card](https://github.com/magpie-community/plugins/tree/main/packages/day-card)
-supports receipt images. Its current package requires Magpie >=0.1.3427,
-`usage:day` and `magpie.image`; Nori's pinned `95e7c6bcc076` lacks that read.
-This slice retains the existing gateway and uses its public read-only
-`GET /v1/magpie/usage/requests` interface, with `via=through`. It renders an
-independent receipt using pinned `@resvg/resvg-js`, not a modified Magpie plugin.
+provides the reference receipt layout. The user chose a server adaptation of its
+style and icons. Nori uses an independent SVG renderer with pinned `@resvg/resvg-js`,
+not the stock desktop plugin's Canvas renderer. The desktop plugin requires Magpie
+>=0.1.3427 and has no server export/scheduling interface; its native data groups by
+Agent and truncates group lists. Nori retains its pinned gateway and reads complete
+paginated `GET /v1/magpie/usage/requests` data with `via=through`.
 
-The main body shows complete wrapped model names, a separate provider label,
-per-model token/cache usage and estimated USD before the daily totals. Secondary
-breakdowns retain Magpie client and provider totals. It says **Magpie catalog
-estimate, not a bill**, and explicitly excludes subscription charges. Unknown prices stay explicit. Magpie's uncached input,
-cache reads and cache writes are combined once; reasoning is already within
-output. Requests forwarded through multiple attempts remain individual attempts.
-Direct session-log/reported usage is excluded so it cannot duplicate gateway
-records. Native ACP calls that bypass Magpie are outside coverage.
+The main body groups **Provider → model IDs**, with provider subtotals, brand icons
+and USD estimates. Only providers/models with requests in the selected day appear.
+Per-model rows contain costs only; total tokens, uncached input, output, cache-hit
+percentage and the number of requests without a matched price appear at the bottom.
+Unknown pricing remains an explicit configuration/data-quality gap, never a zero
+price or an assertion that the model has no published API rate. The report uses
+Magpie's native catalog/configuration prices and contains no hardcoded model rates.
+It says **Magpie catalog estimate, not a bill**; subscription cash charges are excluded.
+Magpie's uncached input, cache reads and cache writes are combined once; reasoning
+is already within output. Requests forwarded through multiple attempts remain
+individual attempts. Direct session-log/reported usage is excluded so it cannot
+duplicate gateway records. Native ACP calls that bypass Magpie are outside coverage.
 
 Magpie client names do not establish Nori internal Agent or Slack/Discord channel
 attribution. There is no invented per-channel breakdown, streak, daily-average
@@ -205,3 +210,58 @@ checkout; the original checkout exposed an existing encoded-path worker test fai
 Targeted Node 10/10, nested Python sender 6/6, scaffold and all PR CI passed.
 Production image rendering was visually inspected. This does not complete #68,
 channel/internal-agent attribution, Axiom dashboards or quota alerts.
+
+## Provider-group layout follow-up — November 12, 2026
+
+Owner: Codex. Status: **DEPLOYED / MANUAL LIVE VERIFIED**.
+The user selected Day Card style/icon reuse with the existing server sender,
+active-day groups only. [PR #75](https://github.com/rein-protocol-foundation/nori-agent/pull/75)
+passed all CI and deployed as `33c44dc268b590acf1d92c8af7afeae1bf7ce9ae`
+on November 12 at 10:38:56 UTC. Four app services passed health checks.
+Targeted Node 13/13, direct Python sender 12/12, scaffold/diff and actual/synthetic
+visual previews passed. Multi-provider, same-model/two-provider, >12 groups,
+long-ID wrapping and icon rasterization are covered.
+
+The November 11 production preview shows 44 requests, $0.0760, 1,207,998 tokens,
+89.6% cache hits and 0 unpriced requests. Nori delivered `provider-v3`, file
+`F0CH5NH47Q9`, message `1794480068.252469`; independent Slack channel/file read-back
+confirmed it. [Corrected receipt](https://app.slack.com/archives/C0CG9BQQ4Q0/p1794480068252469).
+Rerunning the same revision returned `already-sent`. Original, `pricing-v2` and
+`provider-v3` records all remain `sent`; no original record or image was deleted.
+The existing daily schedule is unchanged; first clock-triggered acceptance remains pending.
+
+### Native price audit correction
+
+`bailian-token-plan → alibaba-cn` and `openai → openai` were already configured,
+including Qwen/DeepSeek and GPT Sol/Astra. An earlier direct catalog lookup wrongly
+interpreted the absent `catalog` on `gemini` and `chatgpt-api` as missing prices.
+These are stored subscription-account model selections, not custom API providers.
+The pinned native `withPicks` does not merge a catalog override for them, and
+`EffectivePriceIn` falls back to `MakerPrice` when no provider tariff applies.
+Google/OpenAI maker prices already cover their current model IDs.
+
+An attempted `provider set gemini catalog=google` returned nonzero; the maintenance
+script restored the original providers file byte-for-byte and restarted Router.
+No catalog change, provider endpoint change, credential change or model replacement
+was retained. A subsequent isolated **native usage-ledger** audit used the original
+public provider metadata/catalog and nonzero synthetic usage, without credentials
+or inference. Native `usage --csv all` priced 10/11 configured provider/model entries
+with **no added alias mappings**, including every still-served configured model.
+This is stronger evidence than checking one catalog JSON key or invoking a CLI
+lookup against an unavailable subscription account. No live usage was rewritten.
+
+The only stale model entry is `gemini-3-pro-preview`: Google's
+[model page](https://ai.google.dev/gemini-api/docs/models/gemini-3-pro-preview)
+says it shut down on March 9, 2026; no live ledger request names it. Google's
+[launch post](https://blog.google/innovation-and-ai/technology/developers-tools/gemini-3-developers/)
+confirms its former basic input/output rates, but a complete verified historical
+cache/context-tier configuration remains pending. Do not substitute another
+model's price or silently remove the operator's selected model.
+
+Three earlier ledger attempts record requested and served model as `auto`; those
+fields do not identify the actual model and they lie outside November 11.
+The native `priced` flag is also false on observed zero-token failed attempts.
+The footer faithfully reports the flag; it does not assert that a model has no
+published API rate. Unknown mappings/data must not become fabricated zero prices.
+Catalog mappings and verified rate overrides belong in private Magpie configuration,
+never renderer code. No broader SA-OBS-02 milestone is completed by this follow-up.
