@@ -11,6 +11,23 @@
 演练 `nori-task-loop-5tplBg` 均通过，保留首轮失败证据。未改 vendor、操作真实账号或部署。
 下一步审阅命名修订；真实 Slack 验收仍单独进行。[功能文档](slack-task-loop.md)。
 
+## 2026-11-12 — SA-OBS-02 Provider 分组小票
+
+Owner：Codex。状态：**已部署，手动真实投递验收通过**。用户选择复用 Day Card 样式/图标，适配现有服务器发送。
+PR #75 全部 CI 通过，10:38:56 UTC 部署 `33c44dc268b590acf1d92c8af7afeae1bf7ce9ae`，四个应用服务健康。
+Node 13/13、Python 12/12、Scaffold/diff、真实与合成图片视觉检查通过。
+Nori 发出 `provider-v3` 文件 `F0CH5NH47Q9`，Slack 回读消息 `1794480068.252469`，
+重复运行返回 `already-sent`。原小票和 `pricing-v2` 记录保留。
+主体 Provider → 模型行仅显示美元费用；底部汇总 tokens、缓存命中率和未定价请求数。
+
+价格审计纠正：内置订阅模型选项没有 catalog 字段不代表缺价，原生 maker-price 回退已覆盖当前 Gemini/Sol/Terra。
+一次不必要的原生目录修改失败后，providers 文件逐字节恢复并重启 Router。
+随后使用原始公开配置/目录、无凭据的合成账本，经原生 usage 命令确认 11 个存储模型条目中 10 个可直接计价，无需新增映射。
+例外为已停用且无真实调用的 Gemini 3 Pro；另有 3 条历史 auto 记录缺实际模型身份。
+未保留任何猜测价格、真实账本修改或凭据/端点/模型变更。
+
+[运行手册与证据](daily-agent-receipt.md)记录边界和回滚。
+下一步：观察首次时钟触发投递；更广产品里程碑保持未完成。
 
 ## 2026-11-12 — SA-OBS-02 小票价格与修正投递
 

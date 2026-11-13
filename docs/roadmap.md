@@ -44,11 +44,18 @@ skip the already-sent November 11 receipt. The next new receipt is due November 
 at 09:00 PST. Clock-triggered acceptance remains pending. This receipt slice does
 not complete Axiom/channel attribution, budget alerts, SA-M0-09, M0/M1 or AC01–AC20.
 
-Pricing follow-up: **implemented / targeted verified; rollout pending**. Native
-`alibaba-cn` mapping, prominent per-model usage/estimate and separately deduplicated
-correction revisions are prepared. Owner: Codex. Native/import tests 19 passed;
-next: separate PR CI, merged deployment, native migration and one corrected Slack
-image with read-back. The earlier deployed receipt evidence above remains valid.
+Pricing follow-up: **deployed / manual live verified**. [PR #73](https://github.com/rein-protocol-foundation/nori-agent/pull/73)
+passed CI and deployed as `4d627691ac62`; native `alibaba-cn` mapping priced all
+44 prior-day requests. The `pricing-v2` image was read back and deduplicated.
+
+Provider layout follow-up: **deployed / manual live verified**. Owner: Codex.
+[PR #75](https://github.com/rein-protocol-foundation/nori-agent/pull/75) passed CI and
+deployed `33c44dc268b5`; Provider → model USD rows, icons and bottom token summaries
+were visually verified in production. Slack `provider-v3` read-back and repeated-send
+suppression passed; original records remain. Native ledger audit confirmed Google/
+OpenAI maker-price fallback already handles subscription aliases; the unnecessary
+catalog mutation failed and was fully rolled back. Next: first clock-triggered run.
+No broader product milestone advances from this layout/configuration follow-up.
 
 ## SA-OPS-01 / #66 native execution — November 10, 2026
 
