@@ -43,6 +43,7 @@
     "verify:plugin": "node scripts/verify-plugin.mjs",
     "verify:director-acp": "node scripts/verify-director-acp.mjs",
     "verify:slack-task-loop": "node scripts/verify-slack-task-loop.mjs",
+    "probe:task-continuation": "node scripts/probe-task-continuation.mjs",
     "verify:proposal-tools": "node scripts/verify-proposal-tools.mjs",
     "smoke:gateway": "node scripts/smoke-gateway.mjs",
     "verify:slack-isolation": "node scripts/verify-slack-isolation.mjs",

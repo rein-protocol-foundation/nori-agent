@@ -1,5 +1,30 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-12 — SA-M2-01–06 / #58 native continuation seams
+
+Owner: Codex orchestrator (Astra High), same verified Sol High CLI worker. **BLOCKED;
+PRODUCT NOT IMPLEMENTED.** Isolated `tempest/m2-native-continuation`, base `1280a75`.
+PR #74 was open at initial branch preparation, then independently merged with all head checks
+successful; its merge tree equals the original `95f1eac` baseline. Only this local branch was
+fast-forwarded. [Full evidence, failures, commands and upstream proposal](task-continuation.md).
+
+A real fixed-pin loader/Gateway probe verified one known-owner flow across two processes,
+senderless startup wake through Router/M1, fresh completion→eligibility supplement, active
+completion injection, actual task/run linkage and original-thread delivery after unrelated chat.
+Two observed gaps prevent selecting the general product implementation: local keyed state is
+restricted to bundled/official plugins, and same-session events from distinct original threads
+coalesce into one automatic reply route. The latter remains an intentionally failing acceptance
+assertion. Known-owner fixture recovery is not dynamic owner-discovery or product authorization.
+
+The native build and 61 targeted decoder/M1/ACP/#66/Router tests pass. Earlier fixture-decoding
+and assertion errors are retained alongside the passing single-case evidence. Product code,
+config and skills are unchanged; full product cancellation/budget/unknown-effect/retention
+verification and live Slack/research/Codex/production acceptance were not performed. No production
+retention value was selected. Final parent checks are appended to the evidence runbook.
+Next: review the minimal supported storage and per-event reply contracts, then continue #58.
+No vendor source changes, sidecar history platform, custom scheduler, push, PR, remote merge,
+deployment, real sends or M3 work. A local diagnostic commit is the handoff, not completion of #58.
+
 ## 2026-11-12 — Slack task-loop functional naming
 
 Owner: Codex orchestrator and verified Sol High worker. **IMPLEMENTED / LOCAL VERIFIED**.

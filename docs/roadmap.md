@@ -1,5 +1,20 @@
 # Nori-Agent implementation roadmap
 
+## SA-M2-01–06 / #58 native seams — November 12, 2026
+
+Owner: Codex orchestrator / verified Sol High CLI worker. **BLOCKED; PRODUCT NOT IMPLEMENTED**.
+Base `1280a75` includes independently merged PR #74 (all head checks passed); native pin `4a11f89`.
+[Reproducible evidence and minimal upstream contracts](task-continuation.md): actual two-process
+Gateway restart, persisted managed flow, senderless native wake, fresh/active completion supplement,
+canonical run linkage and original-thread delivery pass for one known synthetic owner/task.
+Local-plugin keyed state is refused; two flows sharing an owner session but different threads
+coalesce into one delivery route and fail the destination assertion. No workaround scheduler,
+sidecar history store, vendor patch or product plugin/config/skill change was added.
+61 targeted decoder/M1/ACP/#66/Router tests pass. Product cancellation/budget/retention and live
+Slack/research/Codex acceptance remain untested. Retention duration remains undecided; the actual
+SDK gaps, not that parameter, blocked implementation. Next: review the native storage and
+per-event reply contracts, then resume #58; no M3, external publication or deployment.
+
 ## Slack task-loop functional naming — November 12, 2026
 
 Owner: Codex orchestrator and verified Sol High worker. **IMPLEMENTED / LOCAL VERIFIED**.
