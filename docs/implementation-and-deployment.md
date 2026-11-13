@@ -18,8 +18,9 @@ Python 17/17, native Magpie pricing/restart/stdin-export integration 1/1, scaffo
 and diff passed. A sanitized metadata replay matched 94 missing calls and
 1,614,503 tokens; all seven live agent databases had zero archives at audit time.
 The first full run exposed an existing worker fixture URL-encoding bug in paths
-with spaces; using fileURLToPath restored its 8/8 test pass. Final full gates after
-integrating current main, production preview and acceptance remain pending.
+with spaces; using fileURLToPath restored its 8/8 test pass. After integrating current main, the full suite passed: 1372 tests, 1368 pass,
+4 conditional skips, zero failures. The new native integration was also run
+explicitly and passed. Production preview and acceptance remain pending.
 No product milestone advances.
 See [runbook and rollback](daily-agent-receipt.md).
 
