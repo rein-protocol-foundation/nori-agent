@@ -2,7 +2,7 @@
 
 ## 2026-11-12 — SA-OBS-02 usage coverage correction
 
-Owner: Codex. **IMPLEMENTED / TARGETED VERIFIED; not deployed.** The operator traced the OpenAI
+Owner: Codex. **DEPLOYED / LIVE PREVIEW VERIFIED.** The operator traced the OpenAI
 dashboard comparison to local OpenCode, not Nori. Read-only SQLite/zstd and
 isolated ACP inspection nevertheless confirmed real omissions: direct Qwen
 requests across Nori profiles and Codex runs under the dedicated ACP account.
@@ -20,7 +20,15 @@ and diff passed. A sanitized metadata replay matched 94 missing calls and
 The first full run exposed an existing worker fixture URL-encoding bug in paths
 with spaces; using fileURLToPath restored its 8/8 test pass. After integrating current main, the full suite passed: 1372 tests, 1368 pass,
 4 conditional skips, zero failures. The new native integration was also run
-explicitly and passed. Production preview and acceptance remain pending.
+explicitly and passed. PR #78 passed all CI and deployed as `262878681fa6` at
+2026-11-13 02:44:06 UTC; all four services are healthy. Live native refresh accepted
+94 records, then accepted 0 / skipped 94 on repeat. Seven daily previews total
+479 attempts, 14,520,939 tokens and $1.0706050245 known estimated cost, with four
+unpriced records. The protected-account exporter and integrated sender preview
+passed. Provider/channel configuration equality checks passed; no price or routing
+change. Existing delivery records and images remain intact; no correction was sent.
+The existing 09:00 LA job ran successfully on November 12 and remains enabled for
+November 13. First scheduled delivery using the expanded sources is pending.
 No product milestone advances.
 See [runbook and rollback](daily-agent-receipt.md).
 

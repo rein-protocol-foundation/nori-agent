@@ -32,13 +32,15 @@ no merge/deployment/outreach or next task. Live acceptance remains separately ga
 
 ## SA-OBS-02 / #68 daily receipt — November 12, 2026
 
-Coverage follow-up (Codex, 2026-11-12): **IMPLEMENTED / LOCAL VERIFIED**. Audit confirmed missing
+Coverage follow-up (Codex, 2026-11-12): **DEPLOYED / LIVE PREVIEW VERIFIED**. Audit confirmed missing
 direct Qwen and isolated Nori ACP usage in the gateway-only receipt. The operator
 identified the compared OpenAI dashboard spend as unrelated local OpenCode usage.
 Optional all-agent/profile collection, owned ACP exports and incomplete subtotal
 marking preserve native prices and delivery history. Full suite: 1368 pass / 4
-conditional skips / zero failures; native integration 1/1. Deployment and live
-acceptance are pending. No product milestone advances.
+conditional skips / zero failures; native integration 1/1. PR #78 CI passed and
+deployed `262878681fa6`. Native backfill added 94 records; repeat skipped all 94.
+Seven daily previews and integrated sender preview passed; prices unchanged.
+First scheduled delivery with expanded sources remains pending. No product milestone advances.
 
 Owner: Codex. **DEPLOYED / ENABLED; manual native run and Slack image verified.**
 [PR #72](https://github.com/rein-protocol-foundation/nori-agent/pull/72) passed all CI,
