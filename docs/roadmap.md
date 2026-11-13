@@ -1,5 +1,41 @@
 # Nori-Agent implementation roadmap
 
+## #82 / SA-M2 compatibility review — November 13, 2026
+
+Owner: Codex. Fixed unmanaged M1 change/replacement admission while continuation is enabled,
+using an internal confirmed predecessor receipt and preserving managed-flow restrictions.
+Static checks only; no product milestone advancement. Next: PR review/CI, no deployment.
+
+## SA-M2-01–06 / #58 native continuation core — November 13, 2026
+
+**CORE IMPLEMENTED / STATIC CHECKS ONLY; product acceptance open.** Owner: Codex
+orchestrator / runtime-verified Sol High implementation worker. The opt-in managed Flow
+controller now stores full goals/criteria, durable scope/stop intent and bounds, accepted run
+links, current-owner inventory, native recovery wakes and criteria review/supplements. Same-owner,
+same-audience combined replies retain every pending flow. M1 remains the default.
+
+[Implementation and limits](task-continuation.md): native seven-day cleanup does not satisfy
+SA-M2-06 selected retention/deletion; atomic launch/stop, hard ACP deadlines and exactly-once
+parent delivery are not established. Static syntax/JSON/scaffold/diff checks only; no new tests,
+probes, acceptance, live operations or publication. Product boxes and M3 remain unchanged.
+Next: parent static review and explicit handoff of these native limitations.
+
+
+## SA-M2-01–06 / #58 native seams — November 12, 2026
+
+Owner: Codex orchestrator / verified Sol High CLI worker. **BLOCKED; PRODUCT NOT IMPLEMENTED**.
+Base `1280a75` includes independently merged PR #74 (all head checks passed); native pin `4a11f89`.
+[Reproducible evidence and minimal upstream contracts](task-continuation.md): actual two-process
+Gateway restart, persisted managed flow, senderless native wake, fresh/active completion supplement,
+canonical run linkage and original-thread delivery pass for one known synthetic owner/task.
+Local-plugin keyed state is refused; two flows sharing an owner session but different threads
+coalesce into one delivery route and fail the destination assertion. No workaround scheduler,
+sidecar history store, vendor patch or product plugin/config/skill change was added.
+61 targeted decoder/M1/ACP/#66/Router tests pass. Product cancellation/budget/retention and live
+Slack/research/Codex acceptance remain untested. Retention duration remains undecided; the actual
+SDK gaps, not that parameter, blocked implementation. Next: review the native storage and
+per-event reply contracts, then resume #58; no M3, external publication or deployment.
+
 ## Slack task-loop functional naming — November 12, 2026
 
 Owner: Codex orchestrator and verified Sol High worker. **IMPLEMENTED / LOCAL VERIFIED**.

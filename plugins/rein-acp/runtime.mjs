@@ -17,7 +17,14 @@ export function validateAcpConfig(raw = {}) {
       !/^[A-Z][A-Z0-9_]*$/.test(channel.botTokenEnvVar) || !/^[a-z0-9][a-z0-9_-]*$/.test(channel.agentId) ||
       !/^[a-z0-9][a-z0-9_-]*$/.test(raw.harnessAgentId ?? '') || channel.agentId === raw.harnessAgentId ||
       typeof raw.cwd !== 'string' || !isAbsolute(raw.cwd)) throw new Error('rein_acp_config_invalid');
-  return { enabled: true, channel: { ...channel }, harnessAgentId: raw.harnessAgentId, cwd: raw.cwd };
+  let continuation;
+  if (raw.continuation?.enabled === true) {
+    if (raw.taskLoop !== true) throw Error('rein_continuation_requires_task_loop');
+    continuation = { maxAttempts: 4, maxNoProgress: 2, maxRuntimeMs: 3_600_000, maxActiveFlows: 16, ...raw.continuation };
+    for (const [key, max] of Object.entries({ maxAttempts: 12, maxNoProgress: 12, maxRuntimeMs: 86_400_000, maxActiveFlows: 64 }))
+      if (!Number.isSafeInteger(continuation[key]) || continuation[key] < 1 || continuation[key] > max) throw Error('rein_continuation_bounds_invalid');
+  }
+  return { enabled: true, channel: { ...channel }, harnessAgentId: raw.harnessAgentId, cwd: raw.cwd, ...(continuation ? { continuation } : {}) };
 }
 
 /** An explicit controller avoids relaxing the sandbox on the existing development agent. */

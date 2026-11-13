@@ -53,17 +53,21 @@ v0.6 保留原有用户行为，新增已有 ACP 复用与最小 change/stop 的
 | [ ] | SA-M1-03 | 原授权会话收到来源支撑的筹资/合作研究 shortlist，逐条核对标准，未知项明确 | IMPLEMENTED / #60；合成来源/数据 shortlist 经主代理回原线程；真实研究待验收 |
 | [ ] | SA-M1-04 | 无权限用户不能读结果或改范围；普通可信 Slack 操作无冗余角色门槛 | IMPLEMENTED / #60、#66；当前成员共享 audience，非成员/撤销及跨原生 scope 拒绝；产品未验收 |
 | [ ] | SA-M1-05 | 复用 ACP→Codex，原生 change/stop、真实状态与结果回传，背景执行身份兼容 | IMPLEMENTED / LOCAL VERIFIED / #60；19 项单测及最终增强原生 Gateway 演练通过，研究改停、ACP pending/settled/failed 和新 run/原线程结果已验证；canonical 投影延迟及 Task 摘要边界已记录；真实验收未完成 |
-| [ ] | SA-M2-01 | child 缺少资格信息时主代理主动复核并补充，无需用户提醒 | NOT STARTED / #58 |
-| [ ] | SA-M2-02 | 用户改方向时旧 scope 的迟到结果不能被当作完成 | NOT STARTED / #58 |
-| [ ] | SA-M2-03 | 重启后通过真实 native 入口协调 goal/limits/cancellation/outcomes；不盲重试未知外部结果 | NOT STARTED / #58 |
-| [ ] | SA-M2-04 | 取消后不再委派；原生取消未完成/失败如实报告，迟到结果不重开任务 | NOT STARTED / #58 |
-| [ ] | SA-M2-05 | 次数/runtime/无进展上限跨重启与再次委派保持，输出部分结果与缺口 | NOT STARTED / #58 |
-| [ ] | SA-M2-06 | native run 清理后，授权用户可按选定期限检索最小摘要/链接；期限（原 30 天）待定，显式删除优先 | NOT STARTED / #58 |
+| [ ] | SA-M2-01 | child 缺少资格信息时主代理主动复核并补充，无需用户提醒 | CORE IMPLEMENTED / STATIC ONLY；#58 opt-in native Flow 复核与有界补充；未跑模型/产品验收；[说明](task-continuation.md) |
+| [ ] | SA-M2-02 | 用户改方向时旧 scope 的迟到结果不能被当作完成 | CORE IMPLEMENTED / STATIC ONLY；持久 scope revision、停止意图、旧 attempt 退役及旧报告隔离；竞争行为未验收 |
+| [ ] | SA-M2-03 | 重启后通过真实 native 入口协调 goal/limits/cancellation/outcomes；不盲重试未知外部结果 | CORE IMPLEMENTED / STATIC ONLY；真实 session inventory + native wake + durable inventory；同 owner/audience 接受合并回复；未知效果不盲重试；重启未验收 |
+| [ ] | SA-M2-04 | 取消后不再委派；原生取消未完成/失败如实报告，迟到结果不重开任务 | CORE IMPLEMENTED / STATIC ONLY；持久 stop、native cancel + settlement；无原子 launch/stop，竞争窗口与副作用不作零发生保证 |
+| [ ] | SA-M2-05 | 次数/runtime/无进展上限跨重启与再次委派保持，输出部分结果与缺口 | CORE IMPLEMENTED / STATIC ONLY；次数/期限/无进展跨 scope 保留，部分报告；research 原生 timeout 有界，ACP 期限仅协调时检查；未验收 |
+| [ ] | SA-M2-06 | native run 清理后，授权用户可按选定期限检索最小摘要/链接；期限（原 30 天）待定，显式删除优先 | UNSUPPORTED / #58；native Flow 固定七天清理，无 public 自选期限/显式 delete；不模拟额外保留，不声称产品完成 |
 | [ ] | SA-M3-01 | 真实 Slack：准备→展示精确草稿/测试收件人→审批暂停→继续或取消→报告 | NOT STARTED / #59 |
 | [ ] | SA-M3-02 | 决定绑定 approver/task/checkpoint/material；未授权、过期、重复、取消后批准不发送 | NOT STARTED / #59 |
 | [ ] | SA-M3-03 | 仅向指定测试收件人发送获批版本并记录回执，区分 API 接受与已送达 | NOT STARTED / #59 |
 | [ ] | SA-M3-04 | 审批暂停后重启仍关联同一 checkpoint；缺失或发送结果未知时阻塞而非盲重放 | NOT STARTED / #59 |
 | [ ] | SA-M3-05 | 验证实际 Lobster 安装、可信执行入口、审批监听与 acknowledgment，不削弱公共隔离 | NOT STARTED / #59 |
+
+2026-11-13 更新：#58 原生核心已编码，仅静态检查；产品框不勾选。SA-M2-06、原子 launch/stop、ACP 硬期限及父回复收件仍有限制，详见实现说明。负责人：Codex 主协调 / 已核验 Sol High；下一步主协调静态审阅，不启动 M3。
+
+历史 2026-11-12：#58 已获本地开发授权；实际 native 探针发现存储信任与多线程回复接缝阻塞，产品尚未实现，以上接缝证据不勾选完成。负责人：Codex 主协调 / Sol High；下一步审阅最小上游接口方案后继续 #58，不启动 M3。
 
 依赖基线（v0.6）：M0 独立；M2 依赖 M1；M3 保留 M1/M2 依赖且首轮必要性待定。内部试点验证自己的 owner/audience、私有存储、回复、执行与 Provider 边界；仅记录实际触及的 M0 依赖。本轮不执行功能开发。
 
