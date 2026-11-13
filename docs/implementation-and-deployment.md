@@ -1,5 +1,16 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-13 — #82 review: unmanaged M1 replacement compatibility
+
+Owner: Codex. Addressed review comment 4561989210: continuation now accepts the exact
+replacement authorized by the existing M1 hook after cancellation and run settlement,
+only when the predecessor is not a managed-flow attempt. The internal handoff carries
+native predecessor IDs; model text alone cannot grant an exemption. Existing M1 membership,
+runtime, exact-task and one-shot checks run first. Managed assignments retain their gate.
+Static syntax/transpile, scaffold and diff checks passed; tests/probes/acceptance were not
+run per owner instruction. PR #82 is the delivery; product acceptance and native limitations
+remain unchanged. Next: review the pushed correction and CI; no merge or deployment.
+
 ## 2026-11-13 — SA-M2-01–06 / #58 native continuation core
 
 Owner: Codex orchestrator / runtime-verified GPT-6.1 Sol High implementation worker.

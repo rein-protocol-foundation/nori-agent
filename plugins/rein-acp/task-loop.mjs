@@ -106,6 +106,14 @@ export function createTaskLoop({ config, authorize, tasks, subagent, isNativeChi
       if (tool.name === 'rein_task' && ctx.toolCallId) calls.set(ctx.toolCallId, { turn, ctx });
       if (params) return { params: event.toolName === 'tool_call' ? { ...event.params, args: params } : params };
     },
+    // Internal handoff only: the caller must first run this module's admission hook.
+    // Never infer replacement authority from model-supplied task text alone.
+    confirmedReplacement(event, ctx) {
+      const tool = unwrap(event), turn = turns.get(ctx.runId), change = turn?.change;
+      if (tool.name !== 'sessions_spawn' || !validTurn(turn, ctx) || !change?.replacementTask ||
+          tool.params?.task !== change.replacementTask || (tool.params?.runtime ?? 'subagent') !== change.runtime) return;
+      return change.predecessor;
+    },
     toolFactory: { contextVersion: 2, create(ctx) {
       if (ctx.agentId !== config.channel.agentId) return null;
       return { name: 'rein_task', label: 'Native task control', description: 'Inspect native task IDs/status; stop native work; explicitly change a goal by cancelling, confirming settlement, then returning instructions for a fresh native spawn. Shared private-session audience collaborates; no outreach.',
@@ -163,6 +171,7 @@ export function createTaskLoop({ config, authorize, tasks, subagent, isNativeChi
             partialEvidence: { progress: final.progressSummary, result: final.terminalSummary, taskError: final.error } });
           const replacementTask = `Goal: ${args.goal.trim()}\nCompletion criteria: ${args.criteria.trim()}\nUser-directed replacement of native task ${task.id}, run ${task.runId}, child ${task.childSessionKey}. Its cancellation and run settlement were observed. This is a new scope: an older result cannot satisfy these criteria. Return the result to the original authorized parent conversation. No outreach is authorized.`;
           call.turn.change.replacementTask = replacementTask;
+          call.turn.change.predecessor = { taskId: task.id, runId: task.runId, childSessionKey: task.childSessionKey };
           return result({ ...identity, status: 'cancelled', settled: true, replacementAllowed: true, replacementTask,
             note: 'Cancellation plus fresh delegation, not in-place steer. Start one new native run using replacementTask and the original runtime; report its new IDs.' });
         },

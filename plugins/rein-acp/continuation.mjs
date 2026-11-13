@@ -13,7 +13,7 @@ const digest = value => createHash('sha256').update(JSON.stringify(value)).diges
 const last = state => state.attempts.at(-1);
 
 /** Thin native Flow controller. No timers, execution engine, transcript store or delivery ledger. */
-export function createTaskContinuation({ config, tasks, subagent, system, session, authorize, isNativeChild, clock = Date.now, logger }) {
+export function createTaskContinuation({ config, tasks, subagent, system, session, authorize, isNativeChild, confirmedReplacement = () => undefined, clock = Date.now, logger }) {
   const turns = new Map(), invocations = new Map(), admissions = new Map();
   const selected = ctx => ctx.agentId === config.channel.agentId && !isNativeChild(ctx);
   const flowsFor = sessionKey => tasks.async.managedFlows.bindSession({ sessionKey });
@@ -178,6 +178,13 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
         return { block: true, blockReason: 'Use rein_continuation stop/change for managed work. Ambiguous controls cannot bypass durable stop intent or scope.' };
       if (tool.name !== 'sessions_spawn') return;
       const matches = ownedFlows.filter(flow => !terminalFlow(flow) && last(flow.stateJson)?.phase === 'prepared' && last(flow.stateJson).task === tool.params?.task);
+      // M1 has already checked current membership, settled cancellation, exact text/runtime
+      // and one-shot admission. Preserve that path only for an unmanaged predecessor.
+      const replacement = confirmedReplacement(event, ctx);
+      if (matches.length === 0 && replacement && !managedAttempts.some(attempt =>
+        (attempt.taskId && attempt.taskId === replacement.taskId) ||
+        (attempt.runId && attempt.runId === replacement.runId) ||
+        (attempt.childSessionKey && attempt.childSessionKey === replacement.childSessionKey))) return;
       if (matches.length !== 1) return { block: true, blockReason: 'Persist one flow and obtain its exact bounded assignment from rein_continuation delegate before native spawn.' };
       let flow = matches[0];
       await sourceCurrent(flow, ctx); await current(ctx);

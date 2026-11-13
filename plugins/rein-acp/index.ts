@@ -18,7 +18,8 @@ export default definePluginEntry({
         isNativeChild: ctx => isSubagentSessionKey(ctx.sessionKey) || isAcpSessionKey(ctx.sessionKey) });
       const continuation = config.continuation ? createTaskContinuation({ config: { ...config, hostConfig: api.config }, authorize,
         tasks: api.runtime.tasks, subagent: api.runtime.subagent, system: api.runtime.system, session: api.runtime.agent.session,
-        isNativeChild: ctx => isSubagentSessionKey(ctx.sessionKey) || isAcpSessionKey(ctx.sessionKey), logger: api.logger }) : undefined;
+        isNativeChild: ctx => isSubagentSessionKey(ctx.sessionKey) || isAcpSessionKey(ctx.sessionKey),
+        confirmedReplacement: runtime.confirmedReplacement, logger: api.logger }) : undefined;
       api.registerTool(runtime.toolFactory, { names: ['rein_task'], optional: true });
       if (continuation) {
         api.registerTool(continuation.toolFactory, { names: ['rein_continuation'], optional: true });

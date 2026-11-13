@@ -1,5 +1,11 @@
 # Nori-Agent implementation roadmap
 
+## #82 / SA-M2 compatibility review — November 13, 2026
+
+Owner: Codex. Fixed unmanaged M1 change/replacement admission while continuation is enabled,
+using an internal confirmed predecessor receipt and preserving managed-flow restrictions.
+Static checks only; no product milestone advancement. Next: PR review/CI, no deployment.
+
 ## SA-M2-01–06 / #58 native continuation core — November 13, 2026
 
 **CORE IMPLEMENTED / STATIC CHECKS ONLY; product acceptance open.** Owner: Codex
