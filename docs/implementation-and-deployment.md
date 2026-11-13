@@ -1,5 +1,20 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-12 — Slack task-loop functional naming
+
+Owner: Codex orchestrator and verified Sol High worker. **IMPLEMENTED / LOCAL VERIFIED**.
+Six task-loop files, decoder symbols, fixture IDs/markers/env, imports, links and the
+`verify:slack-task-loop` command now use functional names. AGENTS.md records the naming rule.
+PRD SA-M1-01–05 and historical evidence paths remain for traceability; no milestone advancement.
+The first renamed native run (`nori-task-loop-8Q0JNO`) failed because an explicitly skipped
+pre-execution tool call counted as completed in the synthetic model. The fixture now excludes
+only that exact skip marker, while counting errors with uncertain effects to prevent blind retry.
+Production task-control logic is unchanged. Final checks: 20 targeted tests, scaffold/diff checks,
+and actual renamed native loader/Gateway run `nori-task-loop-5tplBg` passed. Earlier failed
+evidence remains retained. No vendor edits, live operations or deployment. Next: review this
+naming follow-up; real Slack acceptance remains separate. [Runbook](slack-task-loop.md).
+
+
 ## 2026-11-12 — SA-OBS-02 receipt pricing and corrected delivery
 
 Owner: Codex. Status: **IMPLEMENTED / TARGETED VERIFIED; rollout pending**.
@@ -64,13 +79,13 @@ Merged main `4d62769` as `c67ae12`, preserving both documentation histories. Ini
 suite lacked main's locked PNG dependency; after installation: 1346 tests / 1343 pass / 3
 conditional skips / 0 fail. Automatic Codex review of implementation `46b7be3` completed with
 no findings. Current remote checks/review are recorded on the PR; next: finish those checks and
-report. [Evidence](m1-slack-task-loop.md). Real Slack/research/Codex acceptance remains pending.
+report. [Evidence](slack-task-loop.md). Real Slack/research/Codex acceptance remains pending.
 
 ## SA-M1-01–05 / #60 native task loop (2026-11-12)
 
 Owner: Codex orchestrator; same verified Sol High CLI worker implemented the slice; parent
 reviewed and completed native integration verification. Status: **IMPLEMENTED / LOCAL VERIFIED;
-product acceptance pending**. [Evidence, earlier failures and limits](m1-slack-task-loop.md).
+product acceptance pending**. [Evidence, earlier failures and limits](slack-task-loop.md).
 The optional existing ACP plugin mode and channel-independent skill use native Task/Flow/session
 ownership, current membership, bounded ACP harness/cwd, status and cancellation plus fresh
 user-directed delegation. No new task store, scheduler or coding harness. Existing main/development

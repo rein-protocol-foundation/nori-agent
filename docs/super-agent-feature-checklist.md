@@ -48,7 +48,7 @@ v0.6 保留原有用户行为，新增已有 ACP 复用与最小 change/stop 的
 
 | 完成 | ID | 最小可观察验收行为 | 状态／Issue |
 | --- | --- | --- | --- |
-| [ ] | SA-M1-01 | Slack 清晰请求得到任务 ID、目标/标准并关联真实 native child | IMPLEMENTED / #60；真实 native 合成入口已观察 canonical task/run IDs，产品未验收；[证据](m1-slack-task-loop.md) |
+| [ ] | SA-M1-01 | Slack 清晰请求得到任务 ID、目标/标准并关联真实 native child | IMPLEMENTED / #60；真实 native 合成入口已观察 canonical task/run IDs，产品未验收；[证据](slack-task-loop.md) |
 | [ ] | SA-M1-02 | child 运行时可继续无关聊天并查询有意义的任务状态 | IMPLEMENTED / #60；native 合成 child 运行期间无关聊天、共享成员状态已观察，产品未验收 |
 | [ ] | SA-M1-03 | 原授权会话收到来源支撑的筹资/合作研究 shortlist，逐条核对标准，未知项明确 | IMPLEMENTED / #60；合成来源/数据 shortlist 经主代理回原线程；真实研究待验收 |
 | [ ] | SA-M1-04 | 无权限用户不能读结果或改范围；普通可信 Slack 操作无冗余角色门槛 | IMPLEMENTED / #60、#66；当前成员共享 audience，非成员/撤销及跨原生 scope 拒绝；产品未验收 |

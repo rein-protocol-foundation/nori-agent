@@ -1,5 +1,17 @@
 # Nori-Agent 开发、验证与部署记录
 
+## 2026-11-12 — Slack 任务循环按功能命名
+
+负责人：Codex 主协调与已核实 Sol High worker。**已实现／本地验证通过**。
+六个任务闭环文件、解码函数、夹具标识/环境变量、引用和 `verify:slack-task-loop` 命令
+均改用功能命名；AGENTS.md 新增命名规则。保留 PRD 编号与历史证据路径，不推进里程碑。
+首轮 `nori-task-loop-8Q0JNO` 失败：合成模型将原生明确跳过的工具调用计为已执行。
+夹具现仅排除该明确的执行前跳过标记；仍计入结果不确定的错误，避免盲目重试。
+生产任务控制逻辑未改。最终 20 项定向测试、scaffold/diff 和真实原生 loader/Gateway
+演练 `nori-task-loop-5tplBg` 均通过，保留首轮失败证据。未改 vendor、操作真实账号或部署。
+下一步审阅命名修订；真实 Slack 验收仍单独进行。[功能文档](slack-task-loop.md)。
+
+
 ## 2026-11-12 — SA-OBS-02 小票价格与修正投递
 
 Owner：Codex。状态：**已实现，定向验证通过；上线待完成**。
@@ -53,12 +65,12 @@ SA-OBS-02 / #68 及更广产品里程碑保持未完成。
 同步 main `4d62769`，两处文档冲突保留双方历史。首次合并后回归缺少 main 新增的锁定 PNG
 依赖；安装后 1346 项／1343 通过／3 项条件跳过／0 失败。自动 Codex review 对实现
 `46b7be3` 完成，无发现。远端当前检查/review 以 PR 为准；下一步完成检查后汇报。
-[证据](m1-slack-task-loop.md)。真实 Slack/研究/Codex 验收仍待完成。
+[证据](slack-task-loop.md)。真实 Slack/研究/Codex 验收仍待完成。
 
 ## SA-M1-01–05 / #60 原生任务闭环（2026-11-12）
 
 负责人：Codex 主协调；同一已核实 Sol High CLI worker 实施，主协调完成最终审查及原生集成
-验证。状态：**已实现／本地验证通过；产品验收待完成**。[证据、历史失败和边界](m1-slack-task-loop.md)。
+验证。状态：**已实现／本地验证通过；产品验收待完成**。[证据、历史失败和边界](slack-task-loop.md)。
 在现有 ACP 插件内增加可选模式，配合跨渠道 skill，复用原生 Task/Flow/session 所有权、即时
 成员资格、固定 harness/cwd、状态以及取消后按用户新指令委派。不新增任务库、scheduler 或
 coding harness，不改 main/development binding 和 Magpie 策略。取消报告保留部分结果与操作

@@ -1,4 +1,6 @@
-# SA-M1-01–05 / #60: native Slack task loop
+# Native Slack task loop
+
+Tracking: SA-M1-01–05 / #60.
 
 Date: 2026-11-12, America/Los_Angeles. Owner: Codex orchestrator; implementation by the
 same verified Sol High CLI worker, with parent final review. Native pin:
@@ -8,6 +10,28 @@ M0, M2, M3 and historical governance acceptance are unchanged. This task used is
 HOME/state, synthetic transport/model/backend data and local dependency preparation only.
 The initial local-only handoff made no live account access, external sends, outreach, vendor source
 edits or deployment. The user subsequently authorized publishing this branch and opening PR #74.
+
+## Functional naming follow-up — 2026-11-12
+
+Owner: same verified Sol High worker; parent owns final review/commit. Renamed the example,
+runbook, verification script and test fixtures by function; the public verification command is
+`verify:slack-task-loop`. Decoder export is `selectTaskLoopModelInput`; synthetic markers/env
+use `TASK_LOOP_`, fixture IDs use `task-loop-`. Both tag recognizers match the full prefix.
+Root AGENTS.md records the function-based naming rule. PRD IDs and dated `nori-m1-*`
+evidence paths remain unchanged. This is a naming/reference change, with no milestone advancement.
+
+Owner: Codex orchestrator and verified Sol High worker. **IMPLEMENTED / LOCAL VERIFIED**.
+Six task-loop files, decoder symbols, fixture IDs/markers/env, imports, links and the
+`verify:slack-task-loop` command now use functional names. AGENTS.md records the naming rule.
+PRD SA-M1-01–05 and historical evidence paths remain for traceability; no milestone advancement.
+The first renamed native run (`nori-task-loop-8Q0JNO`) failed because an explicitly skipped
+pre-execution tool call counted as completed in the synthetic model. The fixture now excludes
+only that exact skip marker, while counting errors with uncertain effects to prevent blind retry.
+Production task-control logic is unchanged. Final checks: 20 targeted tests, scaffold/diff checks,
+and actual renamed native loader/Gateway run `nori-task-loop-5tplBg` passed. Earlier failed
+evidence remains retained. No vendor edits, live operations or deployment. Next: review this
+naming follow-up; real Slack acceptance remains separate. 
+
 
 ## Minimal integration and scope
 
@@ -105,7 +129,7 @@ production trusted-host profile**. Main/development bindings and Magpie policies
 
 ## Opt-in local configuration
 
-[Example fragment](../config/m1-slack-task-loop.example.json) is synthetic and local-only.
+[Example fragment](../config/slack-task-loop.example.json) is synthetic and local-only.
 Merge it deliberately into a disposable profile with its existing native Slack admission,
 main/development bindings, model/Magpie routes, acpx backend, coding-client authentication and
 runtime/attempt limits. Startup requires native ACP enabled, dispatch not disabled, an explicit
@@ -142,8 +166,8 @@ existing bindings. Production enablement remains a separate operator action.
 Run with the supported local toolchain; parent owns dependency installation and native build:
 
 ```sh
-.toolchain/node_modules/.bin/node --test tests/m1-slack-task-loop.test.mjs
-.toolchain/node_modules/.bin/node scripts/verify-m1-slack-task-loop.mjs
+.toolchain/node_modules/.bin/node --test tests/slack-task-loop.test.mjs
+.toolchain/node_modules/.bin/node scripts/verify-slack-task-loop.mjs
 ```
 
 Current targeted unit result: **19 passed / 0 failed**. This includes fixed ACP defaults and

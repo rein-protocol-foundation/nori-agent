@@ -65,7 +65,7 @@ Do not reuse an old run ID, silently reset attempt limits, or count a late resul
 scope as completion of the revised task. Cancellation is not rollback; disclose available native partial results and already performed
 or uncertain external actions separately in stop/status. If a cancelled completion arrives, return an
 explicitly cancelled/old-scope report to its captured destination without launching or retrying work.
-Native cancellation may suppress its usual announcement; do not promise a later report in that case. This skill adds no M2 restart recovery or autonomous
+Native cancellation may suppress its usual announcement; do not promise a later report in that case. This skill adds no automatic restart recovery or autonomous
 follow-up workflow.
 
 ## Review and delivery
@@ -78,6 +78,6 @@ channel. A child's success does not establish task completion by itself.
 For a shortlist, include the requested number of candidates or explain a specific limit; give
 sources, fit, eligibility/unknowns and priority for every entry. Label synthetic fixtures and
 unverified claims explicitly. Report completed, blocked, limited, failed and cancelled outcomes
-accurately. Missing eligibility may be explicitly unknown in M1; do not claim M2 automatic
+accurately. Missing eligibility may be explicitly unknown in this pilot; do not claim automatic
 follow-up acceptance. Coding reports actual changes, checks/results and unresolved issues;
 completion, PR creation, merge and deployment remain distinct events.

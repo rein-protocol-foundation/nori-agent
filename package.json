@@ -42,7 +42,7 @@
     "upstream:update": "node scripts/update-openclaw.mjs",
     "verify:plugin": "node scripts/verify-plugin.mjs",
     "verify:director-acp": "node scripts/verify-director-acp.mjs",
-    "verify:m1-slack-task-loop": "node scripts/verify-m1-slack-task-loop.mjs",
+    "verify:slack-task-loop": "node scripts/verify-slack-task-loop.mjs",
     "verify:proposal-tools": "node scripts/verify-proposal-tools.mjs",
     "smoke:gateway": "node scripts/smoke-gateway.mjs",
     "verify:slack-isolation": "node scripts/verify-slack-isolation.mjs",

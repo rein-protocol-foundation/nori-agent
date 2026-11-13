@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createTaskLoop, assertTaskLoopRuntimeConfig } from '../plugins/rein-acp/task-loop.mjs';
-import { selectM1ModelInput } from './fixtures/m1-model-input.mjs';
+import { selectTaskLoopModelInput, countTaskLoopToolResults } from './fixtures/slack-task-loop-model-input.mjs';
 import { readFileSync } from 'node:fs';
 
-const config = { channel: { agentId: 'main', accountId: 'default', workspaceId: 'TFIXTURE1', channelId: 'CFIXTURE1' }, harnessAgentId: 'codex', cwd: '/tmp/m1-coding' };
+const config = { channel: { agentId: 'main', accountId: 'default', workspaceId: 'TFIXTURE1', channelId: 'CFIXTURE1' }, harnessAgentId: 'codex', cwd: '/tmp/task-loop-coding' };
 const source = (delta = {}) => ({ runId: 'human-run', agentId: 'main', sessionKey: 'agent:main:slack:channel:cfixture1', sessionId: 'session',
   channel: 'slack', accountId: 'default', chatId: 'CFIXTURE1', senderId: 'UALICE01', trigger: 'user', ...delta });
 const toolContext = src => ({ runId: src.runId, agentId: src.agentId, sessionKey: src.sessionKey, requester: { channel: src.channel, accountId: src.accountId, senderId: src.senderId }, toolCallId: 'call-1' });
@@ -134,12 +134,12 @@ test('stop and status preserve partial evidence and explicitly disclose uncertai
   }
 });
 test('synthetic model decodes current native completion without replaying historical intake/status tags', () => {
-  const history = [{ role: 'user', content: 'M1_RESEARCH_START' }, { role: 'assistant', content: 'Accepted.' },
-    { role: 'user', content: 'M1_RESEARCH_STATUS' }, { role: 'assistant', content: 'Still running.' }];
+  const history = [{ role: 'user', content: 'TASK_LOOP_RESEARCH_START' }, { role: 'assistant', content: 'Accepted.' },
+    { role: 'user', content: 'TASK_LOOP_RESEARCH_STATUS' }, { role: 'assistant', content: 'Still running.' }];
   const internal = text => ({ role: 'user', content: [{ type: 'text', text: `<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>\n${text}\n<<<END_OPENCLAW_INTERNAL_CONTEXT>>>` }] });
-  assert.equal(selectM1ModelInput([...history, internal('A background task completed.\n[Internal task completion event]\nsource: subagent\nM1_SHORTLIST_DATA')]).tag, 'M1_RESEARCH_COMPLETION');
-  assert.equal(selectM1ModelInput([...history, internal('A background task completed.\n[Internal task completion event]\nsource: acp\nM1_ACP_RESULT')]).tag, 'M1_ACP_COMPLETION');
-  assert.equal(selectM1ModelInput([...history, { role: 'user', content: [{ type: 'text', text: 'M1_UNRELATED_CHAT' }, ...internal('Historical task M1_RESEARCH_START').content] }]).tag, 'M1_UNRELATED_CHAT');
+  assert.equal(selectTaskLoopModelInput([...history, internal('A background task completed.\n[Internal task completion event]\nsource: subagent\nTASK_LOOP_SHORTLIST_DATA')]).tag, 'TASK_LOOP_RESEARCH_COMPLETION');
+  assert.equal(selectTaskLoopModelInput([...history, internal('A background task completed.\n[Internal task completion event]\nsource: acp\nTASK_LOOP_ACP_RESULT')]).tag, 'TASK_LOOP_ACP_COMPLETION');
+  assert.equal(selectTaskLoopModelInput([...history, { role: 'user', content: [{ type: 'text', text: 'TASK_LOOP_UNRELATED_CHAT' }, ...internal('Historical task TASK_LOOP_RESEARCH_START').content] }]).tag, 'TASK_LOOP_UNRELATED_CHAT');
 });
 
 test('fixed ACP parameters are filled on both compact/canonical calls; forbidden overrides never widen authority', async () => {
@@ -219,25 +219,37 @@ test('instructed research receipt preserves default parent review delivery inste
 
 
 test('synthetic decoder keeps an active tool turn through native progress context, but never replays it for a fresh background turn', () => {
-  const prior = [{ role: 'user', content: 'M1_ACP_CHANGE_SETTLED' }, { role: 'assistant', content: 'accepted', tool_calls: [{ id: 'new-run' }] }];
+  const prior = [{ role: 'user', content: 'TASK_LOOP_ACP_CHANGE_SETTLED' }, { role: 'assistant', content: 'accepted', tool_calls: [{ id: 'new-run' }] }];
   const progress = { role: 'user', content: 'Native progress notification: synthetic ACP inspecting task.' };
-  assert.equal(selectM1ModelInput([...prior, progress, { role: 'tool', content: 'accepted native run' }]).tag, 'M1_ACP_CHANGE_SETTLED');
-  assert.equal(selectM1ModelInput([...prior, { role: 'tool', content: 'accepted native run' }, progress]).tag, 'M1_ACP_CHANGE_SETTLED');
-  assert.equal(selectM1ModelInput([...prior, { role: 'tool', content: 'accepted native run' }, { role: 'assistant', content: 'Finished this human turn.' }, progress]).tag, 'M1_OTHER');
+  assert.equal(selectTaskLoopModelInput([...prior, progress, { role: 'tool', content: 'accepted native run' }]).tag, 'TASK_LOOP_ACP_CHANGE_SETTLED');
+  assert.equal(selectTaskLoopModelInput([...prior, { role: 'tool', content: 'accepted native run' }, progress]).tag, 'TASK_LOOP_ACP_CHANGE_SETTLED');
+  assert.equal(selectTaskLoopModelInput([...prior, { role: 'tool', content: 'accepted native run' }, { role: 'assistant', content: 'Finished this human turn.' }, progress]).tag, 'TASK_LOOP_OTHER');
 });
 
 test('raw completion injected after spawn preserves the active status query; fresh completion cannot replay it', () => {
-  const human = { role: 'user', content: 'M1_ACP_CHANGE_SETTLED' };
+  const human = { role: 'user', content: 'TASK_LOOP_ACP_CHANGE_SETTLED' };
   const spawn = { role: 'assistant', tool_calls: [{ id: 'spawn-replacement' }] };
-  const completed = { role: 'user', content: '[Thu fixture] [[OPENCLAW_INTERNAL_CONTEXT_BEGIN]]\n[Internal task completion event]\nsession_key: agent:codex:acp:old\ntask: m1-acp-slow\nM1_ACP_RESULT\nStats: fixture\n[[OPENCLAW_INTERNAL_CONTEXT_END]]' };
+  const completed = { role: 'user', content: '[Thu fixture] [[OPENCLAW_INTERNAL_CONTEXT_BEGIN]]\n[Internal task completion event]\nsession_key: agent:codex:acp:old\ntask: task-loop-acp-slow\nTASK_LOOP_ACP_RESULT\nStats: fixture\n[[OPENCLAW_INTERNAL_CONTEXT_END]]' };
   const metadata = { role: 'user', content: [{ type: 'text', text: '<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>\nHistorical task inventory\n<<<END_OPENCLAW_INTERNAL_CONTEXT>>>' }] };
   const active = [human, spawn, { role: 'tool', content: 'accepted native replacement' }, completed, metadata];
-  assert.deepEqual(selectM1ModelInput(active), { at: 0, tag: 'M1_ACP_CHANGE_SETTLED' });
+  assert.deepEqual(selectTaskLoopModelInput(active), { at: 0, tag: 'TASK_LOOP_ACP_CHANGE_SETTLED' });
   const interleaved = [human, spawn, { role: 'tool', content: 'cancelled and settled' }, completed,
     { role: 'assistant', tool_calls: [{ id: 'replacement' }] }, { role: 'tool', content: 'accepted new run' }, metadata];
-  assert.deepEqual(selectM1ModelInput(interleaved), { at: 0, tag: 'M1_ACP_CHANGE_SETTLED' });
+  assert.deepEqual(selectTaskLoopModelInput(interleaved), { at: 0, tag: 'TASK_LOOP_ACP_CHANGE_SETTLED' });
   const fresh = [human, spawn, { role: 'tool', content: 'accepted' }, { role: 'assistant', content: 'New task IDs reported.' }, completed, metadata];
-  assert.deepEqual(selectM1ModelInput(fresh), { at: 4, tag: 'M1_ACP_COMPLETION', sourceSessionKey: 'agent:codex:acp:old' });
-  const firstInference = [...fresh.slice(0, 4), { role: 'user', content: 'M1_RESEARCH_STOP' }, completed, metadata];
-  assert.deepEqual(selectM1ModelInput(firstInference), { at: 4, tag: 'M1_RESEARCH_STOP' });
+  assert.deepEqual(selectTaskLoopModelInput(fresh), { at: 4, tag: 'TASK_LOOP_ACP_COMPLETION', sourceSessionKey: 'agent:codex:acp:old' });
+  const firstInference = [...fresh.slice(0, 4), { role: 'user', content: 'TASK_LOOP_RESEARCH_STOP' }, completed, metadata];
+  assert.deepEqual(selectTaskLoopModelInput(firstInference), { at: 4, tag: 'TASK_LOOP_RESEARCH_STOP' });
+});
+
+test('synthetic step accounting retries only an explicit native pre-execution skip', () => {
+  const messages = [{ role: 'user', content: 'TASK_LOOP_RESEARCH_STOP' },
+    { role: 'assistant', tool_calls: [{ id: 'stop' }] },
+    { role: 'tool', content: 'Skipped to process an incoming message.' }];
+  assert.equal(selectTaskLoopModelInput(messages).tag, 'TASK_LOOP_RESEARCH_STOP');
+  assert.equal(countTaskLoopToolResults(messages, 0), 0);
+  messages.push({ role: 'tool', content: 'Native cancellation recorded.' });
+  assert.equal(countTaskLoopToolResults(messages, 0), 1);
+  messages.push({ role: 'tool', content: 'Error: outcome unknown' });
+  assert.equal(countTaskLoopToolResults(messages, 0), 2);
 });
