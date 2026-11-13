@@ -18,8 +18,10 @@ The follow-up keeps existing prices and the Provider → model layout. Unknown
 items remain explicit; the total displays the known subtotal with a superscript
 `*` and an exclusion footnote. Historical Bailian `auto` rows that contain no
 actual served-model identity cannot be assigned a guessed model or price. A
-separate failed, zero-token request lacks usage evidence; it is not proof of a
-missing published model rate.
+separate failed, zero-token request is counted as $0 under the operator-approved
+reporting policy: identified model, failed request, explicit zero input/output/cache
+counters, zero reasoning and zero recorded cost. Missing counters, unresolved
+models and nonzero usage remain unpriced. The source ledger is not rewritten.
 
 The optional `--sources-config` supplements gateway records using explicit
 trusted profile roots and their native `agent_databases` registries, rather than

@@ -1,5 +1,15 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-13 — SA-OBS-02 zero-usage failure accounting
+
+Owner: Codex. LOCAL VERIFIED. Per operator instruction, identified-model failed
+attempts with explicit zero token counters and zero recorded cost count as $0
+in receipts, even when native priced=false. Unknown models, missing counters and
+nonzero usage remain unknown; source ledger, rates and delivery state are unchanged.
+Checks: receipt/source tests 35/35; scaffold and diff passed. Production verification
+pending. No milestone advancement.
+
+
 ## 2026-11-12 — SA-OBS-02 usage coverage correction
 
 Owner: Codex. **DEPLOYED / LIVE PREVIEW VERIFIED.** The operator traced the OpenAI

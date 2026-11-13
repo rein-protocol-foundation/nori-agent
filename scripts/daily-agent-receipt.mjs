@@ -69,10 +69,18 @@ function safeRow(row) {
       (row.err !== undefined && typeof row.err !== 'string')) throw new Error('Malformed Magpie pricing or status');
   if ((row.source !== undefined && !['', 'log', 'reported'].includes(row.source)) ||
       (row.rejected !== undefined && typeof row.rejected !== 'boolean')) throw new Error('Malformed Magpie source');
+  const model = label(/^(?:auto|.*\/auto)$/i.test(row.model ?? '') && typeof row.served === 'string' && !/^(?:auto|.*\/auto)$/i.test(row.served) ? row.served : row.model, 'Unknown model');
+  // Reporting policy: failed, explicitly zero-usage attempts for an identified
+  // model count as $0 even when the native ledger did not invoke its pricer.
+  // Keep unresolved models, missing counters and nonzero usage unpriced.
+  const zeroUsageFailure = (status >= 400 || Boolean(row.err)) && row.cost === 0 &&
+    !/^(?:auto|.*\/auto|unknown(?: model)?)$/i.test(model) &&
+    row.cache_read !== undefined && row.cache_write !== undefined &&
+    input === 0 && output === 0 && cacheRead === 0 && cacheWrite === 0 && reasoning === 0;
   return { time: Date.parse(row.t), agent: label(row.agent, 'Unknown agent'), provider: label(row.provider, 'Unknown provider'),
-    model: label(/^(?:auto|.*\/auto)$/i.test(row.model ?? '') && typeof row.served === 'string' && !/^(?:auto|.*\/auto)$/i.test(row.served) ? row.served : row.model, 'Unknown model'), input, output, cacheRead, cacheWrite, reasoning,
+    model, input, output, cacheRead, cacheWrite, reasoning,
     cacheMissing: row.cache_read === undefined || row.cache_write === undefined,
-    error: status >= 400 || Boolean(row.err), priced: row.priced, cost: row.cost,
+    error: status >= 400 || Boolean(row.err), priced: row.priced || zeroUsageFailure, cost: row.cost,
     gateway: !row.source && !row.rejected && !(row.provider === '' && status >= 400) };
 }
 function emptyTotals() {
