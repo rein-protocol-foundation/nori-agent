@@ -2,12 +2,15 @@
 
 ## 2026-11-13 — SA-OBS-02 zero-usage failure accounting
 
-Owner: Codex. LOCAL VERIFIED. Per operator instruction, identified-model failed
+Owner: Codex. DEPLOYED / LIVE PREVIEW VERIFIED. Per operator instruction, identified-model failed
 attempts with explicit zero token counters and zero recorded cost count as $0
 in receipts, even when native priced=false. Unknown models, missing counters and
 nonzero usage remain unknown; source ledger, rates and delivery state are unchanged.
-Checks: receipt/source tests 35/35; scaffold and diff passed. Production verification
-pending. No milestone advancement.
+Checks: receipt/source tests 35/35; scaffold/diff and all PR #80 CI passed.
+Deployed `400019cf2b01` at 2026-11-13 09:41:23 UTC. Integrated November 6 preview:
+DeepSeek 121 attempts / 1 error / $0.3136786682 / zero unpriced; daily known cost
+unchanged at $0.3846581493, two unresolved auto records remain. Source coverage
+complete; no manual send. No milestone advancement.
 
 
 ## 2026-11-12 — SA-OBS-02 usage coverage correction

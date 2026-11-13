@@ -134,5 +134,6 @@ allocation, competing proposals and the weighted round model; they do not block 
 P1 adds recurring communities, contributor growth, matching, feedback analysis and authorized social image/text publishing. P2 adds the second chat platform, cross-platform identity, multi-region coordination and governance evolution. No video, autonomous payments, signing, token issuance or on-chain voting in P0.
 
 SA-OBS-02 follow-up (2026-11-13, Codex): explicit zero-usage failures for identified
-models now count as $0 in receipts. LOCAL VERIFIED: 35 tests, scaffold/diff passed.
-Production verification pending; no milestone advancement.
+models now count as $0 in receipts. DEPLOYED / LIVE PREVIEW VERIFIED: 35 tests,
+scaffold/diff and PR #80 CI passed; deployed `400019cf2b01`. November 6 preview
+retains cost and error count, with zero unpriced DeepSeek records; no milestone advancement.

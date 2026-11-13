@@ -180,6 +180,8 @@ These are code interfaces, not
 schema, so they need no migration. The earlier stage-prefixed compatibility views and RPC wrappers
 have been removed, so the stable `<env>_rein_*` names are the only interface in the linked schema.
 
-SA-OBS-02 zero-usage follow-up (2026-11-13, Codex): LOCAL VERIFIED, 35/35 receipt/source
+SA-OBS-02 zero-usage follow-up (2026-11-13, Codex): DEPLOYED / LIVE PREVIEW VERIFIED, 35/35 receipt/source
 tests and scaffold/diff passed. Identified failed zero-usage attempts count as $0;
-unknown models/missing counters/nonzero usage remain unknown. Production pending.
+unknown models/missing counters/nonzero usage remain unknown. PR #80 CI passed;
+deployed `400019cf2b01`. November 6 integrated preview: DeepSeek 121 attempts,
+1 error, zero unpriced; unchanged $0.3136786682. No manual send.
