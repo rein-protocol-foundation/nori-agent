@@ -56,6 +56,63 @@ def message_receipt(result):
     return message_id
 
 
+def refresh_source_exports(config, day, zone, run):
+    """Ask an explicitly configured isolated account for sanitized usage only."""
+    exports = config.get('sourceExports', [])
+    if not isinstance(exports, list) or len(exports) > 8:
+        raise ValueError('Invalid source export configuration')
+    if exports and not config.get('sourcesConfig'):
+        raise ValueError('Source exports require a sources configuration')
+    start = dt.datetime.combine(day, dt.time(), ZoneInfo(zone)).astimezone(dt.timezone.utc)
+    end = dt.datetime.combine(day + dt.timedelta(days=1), dt.time(), ZoneInfo(zone)).astimezone(dt.timezone.utc)
+    for source in exports:
+        user = source['user']
+        if not isinstance(user, str) or not re.fullmatch(r'[a-z_][a-z0-9_-]{0,63}', user):
+            raise ValueError('Invalid source export account')
+        paths = [source[k] for k in ('nodeExecutable', 'configPath', 'outputPath')]
+        if any(not isinstance(p, str) or not Path(p).is_absolute() for p in paths):
+            raise ValueError('Source export paths must be absolute')
+        # The checkout can stay private to the deployment account. Feed only the
+        # fixed audited exporter source to Node in the isolated account; do not
+        # expose its transcripts or install a second drifting copy of the script.
+        program = (ROOT / 'scripts/nori-usage-sources.mjs').read_text(encoding='utf-8')
+        command = ['sudo', '-n', '-u', user, '--', source['nodeExecutable'],
+                   '--input-type=module', '-', 'export',
+                   '--export-config', source['configPath'], '--start', start.isoformat(),
+                   '--end', end.isoformat()]
+        result = run(command, cwd='/', input=program, capture_output=True, text=True, timeout=120, check=False)
+        if result.returncode or len(result.stdout.encode('utf-8')) > 8_000_000:
+            raise RuntimeError('Isolated usage export failed; no receipt was sent')
+        try:
+            data = json.loads(result.stdout)
+        except (ValueError, TypeError):
+            raise RuntimeError('Isolated usage export returned invalid data') from None
+        if not isinstance(data, dict):
+            raise RuntimeError('Isolated usage export returned invalid data')
+        target = Path(source['outputPath'])
+        target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        atomic_json(target, data)
+
+
+def refresh_reported_usage(config, day, zone, run):
+    """Explicitly opt into Magpie's native idempotent reported-usage ingestion."""
+    enabled = config.get('refreshSources', False)
+    if not isinstance(enabled, bool):
+        raise ValueError('refreshSources must be a boolean')
+    if not enabled:
+        return
+    if not config.get('sourcesConfig'):
+        raise ValueError('Source refresh requires a sources configuration')
+    start = dt.datetime.combine(day, dt.time(), ZoneInfo(zone)).astimezone(dt.timezone.utc)
+    end = dt.datetime.combine(day + dt.timedelta(days=1), dt.time(), ZoneInfo(zone)).astimezone(dt.timezone.utc)
+    command = [config['nodeExecutable'], str(ROOT / 'scripts/nori-usage-sources.mjs'), 'refresh',
+               '--sources-config', config['sourcesConfig'], '--start', start.isoformat(),
+               '--end', end.isoformat(), '--magpie-url', config.get('magpieUrl', 'http://127.0.0.1:3425')]
+    result = run(command, cwd=ROOT, capture_output=True, text=True, timeout=180, check=False)
+    if result.returncode:
+        raise RuntimeError('Native usage refresh failed; no receipt was sent')
+
+
 def run_receipt(config, *, date=None, send=False, revision=None, run=subprocess.run, now=None):
     # Corrections are explicit independent deliveries, never a reset of prior evidence.
     # Lowercase identifiers avoid ambiguous keys on case-insensitive filesystems.
@@ -99,9 +156,13 @@ def run_receipt(config, *, date=None, send=False, revision=None, run=subprocess.
                 if not isinstance(record, dict) or record.get('status') != 'sent':
                     raise RuntimeError('Delivery is uncertain; reconcile all receipts for this day and channel before a new send')
         node = config['nodeExecutable']
+        refresh_source_exports(config, day, zone, run)
+        refresh_reported_usage(config, day, zone, run)
         generate = [node, str(ROOT / 'scripts/daily-agent-receipt.mjs'), '--date', str(day),
                     '--timezone', zone, '--magpie-url', config.get('magpieUrl', 'http://127.0.0.1:3425'),
                     '--output-dir', str(output_dir)]
+        if config.get('sourcesConfig'):
+            generate += ['--sources-config', config['sourcesConfig']]
         rendered = run(generate, cwd=ROOT, capture_output=True, text=True, timeout=180, check=False)
         if rendered.returncode:
             raise RuntimeError('Receipt generation failed; no message was sent')
@@ -111,9 +172,11 @@ def run_receipt(config, *, date=None, send=False, revision=None, run=subprocess.
             raise ValueError('Renderer returned an invalid receipt image')
         if not send:
             return {'status': 'preview', 'date': str(day), 'png': str(png), **revision_result}
+        scope = ('统计配置的 Nori 网关、所有 OpenClaw agents 及已归属的 ACP 用量；'
+                 '缺失数据和未定价项目见小票覆盖说明。' if config.get('sourcesConfig') else
+                 '统计本机 Magpie 网关请求；未经过网关的 ACP / 其他直接调用不在统计范围内。')
         caption = (f'Nori 每日 AI 用量 · {day} ({zone})\n'
-                   '按 Magpie 目录 API 价格估算，不计算订阅套餐扣费，非实际账单。统计本机 Magpie 网关请求；'
-                   '未经过网关的 ACP / 其他直接调用不在统计范围内。')
+                   '按 Magpie 目录 API 价格估算，不计算订阅套餐扣费，非实际账单。' + scope)
         if revision is not None:
             caption = f'更正 / CORRECTED · {revision}\n' + caption
         command = [node, config['openclawLauncher'], 'message', 'send', '--channel', 'slack',

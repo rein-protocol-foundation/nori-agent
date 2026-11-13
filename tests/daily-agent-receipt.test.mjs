@@ -49,10 +49,39 @@ test('missing prices remain unknown, known subtotal is preserved, and legacy cac
   assert.equal(summary.totals.cacheMetricsMissingRequests, 1); assert.equal(summary.models[0].estimatedCostUsd, null);
   assert.match(renderReceiptSvg(summary), /\+ unknown/);
   const unpriced = renderReceiptSvg(summarizeUsage([row({ priced: false, cost: 0 })], bounds));
-  assert.match(unpriced, /PRICE UNAVAILABLE/); assert.match(unpriced, /Price unavailable/);
+  assert.match(unpriced, /<tspan>\$0\.0000<\/tspan><tspan baseline-shift="super" font-size="60%">\*<\/tspan>/);
+  assert.match(unpriced, /Price unavailable/);
+  assert.match(unpriced, /Known subtotal only; excludes 1 unpriced request/);
   assert.doesNotMatch(unpriced, /\$0\.0000 \+ unknown/); assert.match(unpriced, /PROVIDER \/ MODEL/);
   assert.doesNotMatch(unpriced, /No prior-day comparison/);
   const empty = summarizeUsage([], bounds); assert.equal(empty.totals.estimatedCostUsd, 0); assert.equal(empty.totals.cacheReadPercent, null);
+});
+
+test('only incomplete total estimates carry a superscript star; itemized unknown costs stay explicit', async () => {
+  const mixed = summarizeUsage([row({ cost: 0.25 }), row({ priced: false, cost: 0 })], bounds);
+  const svg = renderReceiptSvg(mixed);
+  const total = svg.match(/<text data-total-estimate="true"[\s\S]*?<\/text>/)[0];
+  assert.match(total, /<tspan>\$0\.2500<\/tspan><tspan baseline-shift="super" font-size="60%">\*<\/tspan>/);
+  assert.doesNotMatch(total, /unknown|unavailable/);
+  assert.match(svg, /Known subtotal only; excludes 1 unpriced request/);
+  assert.match(svg, /\$0\.2500 \+ unknown/);
+  const fullyPriced = renderReceiptSvg(summarizeUsage([row({ cost: 0.25 })], bounds));
+  assert.doesNotMatch(fullyPriced, /baseline-shift="super"|Known subtotal only/);
+  assert.match(fullyPriced, /<tspan>\$0\.2500<\/tspan><\/text>/);
+  assert.doesNotMatch(renderReceiptSvg(summarizeUsage([], bounds)), /baseline-shift="super"/);
+  const png = await renderReceiptPng(mixed);
+  assert.deepEqual([...png.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+});
+
+test('incomplete source coverage marks an otherwise priced subtotal and explains omissions', () => {
+  const summary = summarizeUsage([row()], bounds);
+  summary.coverage.supplemental = { complete: false, sources: [{ id: 'missing', status: 'unavailable' }] };
+  const svg = renderReceiptSvg(summary);
+  assert.match(svg, /data-total-estimate="true"[\s\S]*?baseline-shift="super"/);
+  assert.match(svg, /Source coverage incomplete; totals omit unavailable usage/);
+  assert.match(svg, /Nori · priced by Magpie/);
+  assert.equal(summary.totals.unpricedRequests, 0);
+  assert.doesNotMatch(svg, /excludes 0 unpriced/);
 });
 
 test('aggregate artifacts allow only safe dimensions, and SVG escapes XML injection', () => {

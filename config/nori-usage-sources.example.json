@@ -1,0 +1,17 @@
+{
+  "profiles": [
+    { "id": "slack", "root": "/home/ubuntu/rein-agent/runtime/openclaw" },
+    { "id": "discord", "root": "/home/ubuntu/rein-agent/runtime/discord-catalog-prod/state" },
+    { "id": "director-pilot", "root": "/home/ubuntu/rein-agent/runtime/director-acp-pilot/state" }
+  ],
+  "gatewayProviderIds": ["rein-magpie"],
+  "providerAliases": {},
+  "imports": [
+    {
+      "id": "nori-acp-pilot",
+      "path": "/home/ubuntu/rein-agent/runtime/daily-agent-receipt/imports/acp.json",
+      "expectedUid": 1000,
+      "maxAgeHours": 1
+    }
+  ]
+}
