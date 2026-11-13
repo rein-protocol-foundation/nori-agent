@@ -1,14 +1,16 @@
 {
   "id": "rein-acp",
   "name": "Rein Director ACP",
-  "description": "Small Director-only Slack ACP delegation flow using native task progress and completion delivery.",
+  "description": "Opt-in trusted Slack native task controls or the legacy bounded ACP controller.",
   "categories": ["agent-orchestration"],
   "enabledByDefault": false,
   "activation": { "onStartup": true },
+  "contracts": { "tools": ["rein_task"] },
   "configSchema": {
     "type": "object", "additionalProperties": false,
     "properties": {
       "enabled": { "type": "boolean", "default": false },
+      "taskLoop": { "type": "boolean", "default": false, "description": "Use additive native task controls without the legacy restricted controller policy. Local pilot only; preserve existing native tools and bindings." },
       "channel": {
         "type": "object", "additionalProperties": false,
         "required": ["accountId", "workspaceId", "channelId", "agentId", "botTokenEnvVar"],

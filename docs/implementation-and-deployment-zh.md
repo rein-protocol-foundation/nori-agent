@@ -15,6 +15,17 @@ Owner：Codex。**已实现，定向验证通过，未部署。** 用户核实�
 改用 fileURLToPath 后该测试文件 8/8 通过。合入最新 main 后的完整检查、生产预览与
 验收待完成；不推进产品里程碑。[运行手册与回滚](daily-agent-receipt.md)。
 
+## 2026-11-12 — Slack 任务循环按功能命名
+
+负责人：Codex 主协调与已核实 Sol High worker。**已实现／本地验证通过**。
+六个任务闭环文件、解码函数、夹具标识/环境变量、引用和 `verify:slack-task-loop` 命令
+均改用功能命名；AGENTS.md 新增命名规则。保留 PRD 编号与历史证据路径，不推进里程碑。
+首轮 `nori-task-loop-8Q0JNO` 失败：合成模型将原生明确跳过的工具调用计为已执行。
+夹具现仅排除该明确的执行前跳过标记；仍计入结果不确定的错误，避免盲目重试。
+生产任务控制逻辑未改。最终 20 项定向测试、scaffold/diff 和真实原生 loader/Gateway
+演练 `nori-task-loop-5tplBg` 均通过，保留首轮失败证据。未改 vendor、操作真实账号或部署。
+下一步审阅命名修订；真实 Slack 验收仍单独进行。[功能文档](slack-task-loop.md)。
+
 ## 2026-11-12 — SA-OBS-02 Provider 分组小票
 
 Owner：Codex。状态：**已部署，手动真实投递验收通过**。用户选择复用 Day Card 样式/图标，适配现有服务器发送。
@@ -78,6 +89,38 @@ API 价格缺失继续显示未知，直连 ACP 与内部 Agent/渠道归属不�
 SA-OBS-02 / #68 及更广产品里程碑保持未完成。
 
 [English](implementation-and-deployment.md) | 简体中文
+
+## SA-M1-01–05 / #60 PR 跟进（2026-11-12）
+
+负责人：Codex。用户授权 push、建 PR 及处理 CI/review 问题，未授权合并/部署或下一项。
+[PR #74](https://github.com/rein-protocol-foundation/nori-agent/pull/74) 已打开。以 `c67ae12`
+同步 main `4d62769`，两处文档冲突保留双方历史。首次合并后回归缺少 main 新增的锁定 PNG
+依赖；安装后 1346 项／1343 通过／3 项条件跳过／0 失败。自动 Codex review 对实现
+`46b7be3` 完成，无发现。远端当前检查/review 以 PR 为准；下一步完成检查后汇报。
+[证据](slack-task-loop.md)。真实 Slack/研究/Codex 验收仍待完成。
+
+## SA-M1-01–05 / #60 原生任务闭环（2026-11-12）
+
+负责人：Codex 主协调；同一已核实 Sol High CLI worker 实施，主协调完成最终审查及原生集成
+验证。状态：**已实现／本地验证通过；产品验收待完成**。[证据、历史失败和边界](slack-task-loop.md)。
+在现有 ACP 插件内增加可选模式，配合跨渠道 skill，复用原生 Task/Flow/session 所有权、即时
+成员资格、固定 harness/cwd、状态以及取消后按用户新指令委派。不新增任务库、scheduler 或
+coding harness，不改 main/development binding 和 Magpie 策略。取消报告保留部分结果与操作
+不确定性；pending/failed 不能授权替代。回滚禁用插件 entry；taskLoop=false 会选中旧限制
+控制器，不能作为回滚方式。
+
+最终增强原生演练 `nori-m1-PzyVU6` 通过：真实 pinned loader/Gateway/native 研究与 ACP run、
+实际 task/run ID、共享成员控制、跨范围及撤权读取拒绝、后台普通聊天、原线程 shortlist/结果、
+研究改向/停止，以及 ACP pending/settled/failed 取消。transport、模型、研究来源和 ACP 后端
+均为合成。ACP 接受 run 后 canonical 投影可能暂不可见：如实回报实际 run/session，下次请求
+再查询，不能重发。ACP Task 表仅保留 160 字符摘要；完整目标/标准和前序关联在真实委派输入
+及原生后端边界核实，未虚构 Task 存储。此前解码、时序及存储断言失败均保留在证据页。
+
+检查：定向测试 19 项通过；全仓 Node 1333 项／1331 通过／2 项既有条件跳过／0 失败；
+既有 ACP、#66 Cron/native child 回归、插件 loader、skill 发现通过。本地交接核对 scaffold、
+diff 及 vendor 源码未改。新原生夹具已接入 CI，未运行远端 CI。未访问真实数据/付费 Provider、
+外联、push、建 PR、合并或部署。M0/M2/M3 及产品验收勾选不变。下一步：审阅本地提交，另行
+授权真实 Slack/研究/Codex 验收；本轮停在 #60。
 
 ## 按需用量简报（2026-11-11）
 

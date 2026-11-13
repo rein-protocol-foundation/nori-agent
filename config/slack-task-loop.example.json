@@ -1,0 +1,25 @@
+{
+  "session": { "dmScope": "per-account-channel-peer", "groupScope": "per-group" },
+  "tools": { "sessions": { "visibility": "tree" } },
+  "agents": { "entries": { "main": { "tools": { "alsoAllow": ["rein_task"] } } } },
+  "plugins": {
+    "load": { "paths": ["/absolute/path/to/rein-agent/plugins/rein-acp"] },
+    "allow": ["rein-acp", "acpx", "slack"],
+    "entries": {
+      "rein-acp": {
+        "enabled": true,
+        "hooks": { "allowConversationAccess": true, "allowPromptInjection": true },
+        "config": {
+          "enabled": true,
+          "taskLoop": true,
+          "channel": {
+            "agentId": "main", "accountId": "default", "workspaceId": "TFIXTURE1",
+            "channelId": "CFIXTURE1", "botTokenEnvVar": "TASK_LOOP_SLACK_BOT_TOKEN"
+          },
+          "harnessAgentId": "codex",
+          "cwd": "/absolute/path/to/authorized-coding-workspace"
+        }
+      }
+    }
+  }
+}

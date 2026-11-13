@@ -62,6 +62,8 @@ jobs:
           node scripts/verify-workspace-skills.mjs
       - name: Verify Director ACP delegation and task status with local fixtures
         run: pnpm verify:director-acp
+      - name: Verify Slack task loop with local native fixtures
+        run: pnpm verify:slack-task-loop
       - name: Confirm upstream tracked files remain unchanged
         if: always()
         run: test -z "$(git -C vendor/openclaw status --porcelain)"

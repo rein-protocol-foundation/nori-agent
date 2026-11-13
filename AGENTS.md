@@ -89,6 +89,8 @@ Extend Nori through focused, optional, reversible changes that preserve native c
 existing user experience. Enforce safety at data and operation boundaries; do not substitute feature
 removal, workspace duplication or skill-name allowlists for correct isolation.
 
+- **Name implementations by function.** Use functional names for implementation files, symbols and
+  commands; keep milestone and issue IDs in tracking and evidence records only.
 - **Native capabilities first.** Use public OpenClaw extension interfaces and preserve channel
   settings, message actions, attachments, tools and memory. Prove extension-point feasibility before
   implementation; if the SDK is insufficient, propose a narrow upstream extension instead of

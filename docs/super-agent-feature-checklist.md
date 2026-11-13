@@ -48,11 +48,11 @@ v0.6 保留原有用户行为，新增已有 ACP 复用与最小 change/stop 的
 
 | 完成 | ID | 最小可观察验收行为 | 状态／Issue |
 | --- | --- | --- | --- |
-| [ ] | SA-M1-01 | Slack 清晰请求得到任务 ID、目标/标准并关联真实 native child | NOT STARTED / #60 |
-| [ ] | SA-M1-02 | child 运行时可继续无关聊天并查询有意义的任务状态 | NOT STARTED / #60 |
-| [ ] | SA-M1-03 | 原授权会话收到来源支撑的筹资/合作研究 shortlist，逐条核对标准，未知项明确 | NOT STARTED / #60 |
-| [ ] | SA-M1-04 | 无权限用户不能读结果或改范围；普通可信 Slack 操作无冗余角色门槛 | NOT STARTED / #60、#66 |
-| [ ] | SA-M1-05 | 复用 ACP→Codex，原生 change/stop、真实状态与结果回传，背景执行身份兼容 | PARTIALLY IMPLEMENTED / #60、#66；既有 ACP 已有，新场景未验收 |
+| [ ] | SA-M1-01 | Slack 清晰请求得到任务 ID、目标/标准并关联真实 native child | IMPLEMENTED / #60；真实 native 合成入口已观察 canonical task/run IDs，产品未验收；[证据](slack-task-loop.md) |
+| [ ] | SA-M1-02 | child 运行时可继续无关聊天并查询有意义的任务状态 | IMPLEMENTED / #60；native 合成 child 运行期间无关聊天、共享成员状态已观察，产品未验收 |
+| [ ] | SA-M1-03 | 原授权会话收到来源支撑的筹资/合作研究 shortlist，逐条核对标准，未知项明确 | IMPLEMENTED / #60；合成来源/数据 shortlist 经主代理回原线程；真实研究待验收 |
+| [ ] | SA-M1-04 | 无权限用户不能读结果或改范围；普通可信 Slack 操作无冗余角色门槛 | IMPLEMENTED / #60、#66；当前成员共享 audience，非成员/撤销及跨原生 scope 拒绝；产品未验收 |
+| [ ] | SA-M1-05 | 复用 ACP→Codex，原生 change/stop、真实状态与结果回传，背景执行身份兼容 | IMPLEMENTED / LOCAL VERIFIED / #60；19 项单测及最终增强原生 Gateway 演练通过，研究改停、ACP pending/settled/failed 和新 run/原线程结果已验证；canonical 投影延迟及 Task 摘要边界已记录；真实验收未完成 |
 | [ ] | SA-M2-01 | child 缺少资格信息时主代理主动复核并补充，无需用户提醒 | NOT STARTED / #58 |
 | [ ] | SA-M2-02 | 用户改方向时旧 scope 的迟到结果不能被当作完成 | NOT STARTED / #58 |
 | [ ] | SA-M2-03 | 重启后通过真实 native 入口协调 goal/limits/cancellation/outcomes；不盲重试未知外部结果 | NOT STARTED / #58 |
