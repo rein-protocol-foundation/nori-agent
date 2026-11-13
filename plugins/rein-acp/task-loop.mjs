@@ -70,7 +70,7 @@ export function createTaskLoop({ config, authorize, tasks, subagent, isNativeChi
       if (!selected(ctx) || isNativeChild(ctx)) return;
       const old = reports.get(ctx.runId);
       if (old) return { toolsAllow: [], prependContext: `CANCELLED / OLD-SCOPE REPORT for native task ${old.id}, run ${old.runId}. This incoming result cannot satisfy a revised goal. Report available partial results and performed or uncertain external actions from the native evidence and incoming result, clearly labeled cancelled/old scope. Cancellation is not rollback; absence of evidence is uncertainty. Send this report through the existing captured original destination. Do not launch, resume, retry or change work. Native progress: ${JSON.stringify(old.progressSummary ?? null)}; terminal summary: ${JSON.stringify(old.terminalSummary ?? null)}; diagnostic: ${JSON.stringify(old.error ?? null)}.` };
-      return { prependContext: `For background work follow the nori-task-loop skill. Research uses native sessions_spawn runtime="subagent", mode="run", cleanup="keep", with completionTarget omitted: retain default external original-thread delivery through parent review. ACP uses fixed agentId=${JSON.stringify(config.harnessAgentId)}, cwd=${JSON.stringify(config.cwd)}, mode="run", thread=false, streamTo="parent"; cwd is not an OS security boundary. Native tasks belong to the originating session/audience, not an individual speaker in a shared private channel. Resolve actual runId via rein_task status for canonical task ID. If native acceptance precedes task-record visibility, report the actual accepted run/session and unavailable canonical record; resolve on the next authorized status request or completion, never respawn or invent an ID. Use rein_task stop/change for confirmed cancellation plus replacement; pending/failed cancellation forbids replacement. Report results against current criteria in the original authorized thread. Cancelled/old-scope outcomes must disclose available partial evidence and performed/uncertain actions, never complete the revised goal. Never describe synthetic or missing evidence as verified.` };
+      return { prependContext: `${config.continuation ? 'Native continuation is enabled: use rein_continuation durable goals, review, stop/change and bounded supplements. Combined same-owner/audience replies may represent multiple flows; original thread delivery is not a per-flow guarantee. Legacy rein_task replacement instructions below apply to unmanaged tasks only. ' : ''}For background work follow the nori-task-loop skill. Research uses native sessions_spawn runtime="subagent", mode="run", cleanup="keep", with completionTarget omitted: retain default external original-thread delivery through parent review. ACP uses fixed agentId=${JSON.stringify(config.harnessAgentId)}, cwd=${JSON.stringify(config.cwd)}, mode="run", thread=false, streamTo="parent"; cwd is not an OS security boundary. Native tasks belong to the originating session/audience, not an individual speaker in a shared private channel. Resolve actual runId via rein_task status for canonical task ID. If native acceptance precedes task-record visibility, report the actual accepted run/session and unavailable canonical record; resolve on the next authorized status request or completion, never respawn or invent an ID. Use rein_task stop/change for confirmed cancellation plus replacement; pending/failed cancellation forbids replacement. Report results against current criteria in the original authorized thread. Cancelled/old-scope outcomes must disclose available partial evidence and performed/uncertain actions, never complete the revised goal. Never describe synthetic or missing evidence as verified.` };
     },
     async beforeToolCall(event, ctx) {
       const tool = unwrap(event), turn = turns.get(ctx.runId);
@@ -105,6 +105,14 @@ export function createTaskLoop({ config, authorize, tasks, subagent, isNativeChi
       }
       if (tool.name === 'rein_task' && ctx.toolCallId) calls.set(ctx.toolCallId, { turn, ctx });
       if (params) return { params: event.toolName === 'tool_call' ? { ...event.params, args: params } : params };
+    },
+    // Internal handoff only: the caller must first run this module's admission hook.
+    // Never infer replacement authority from model-supplied task text alone.
+    confirmedReplacement(event, ctx) {
+      const tool = unwrap(event), turn = turns.get(ctx.runId), change = turn?.change;
+      if (tool.name !== 'sessions_spawn' || !validTurn(turn, ctx) || !change?.replacementTask ||
+          tool.params?.task !== change.replacementTask || (tool.params?.runtime ?? 'subagent') !== change.runtime) return;
+      return change.predecessor;
     },
     toolFactory: { contextVersion: 2, create(ctx) {
       if (ctx.agentId !== config.channel.agentId) return null;
@@ -163,6 +171,7 @@ export function createTaskLoop({ config, authorize, tasks, subagent, isNativeChi
             partialEvidence: { progress: final.progressSummary, result: final.terminalSummary, taskError: final.error } });
           const replacementTask = `Goal: ${args.goal.trim()}\nCompletion criteria: ${args.criteria.trim()}\nUser-directed replacement of native task ${task.id}, run ${task.runId}, child ${task.childSessionKey}. Its cancellation and run settlement were observed. This is a new scope: an older result cannot satisfy these criteria. Return the result to the original authorized parent conversation. No outreach is authorized.`;
           call.turn.change.replacementTask = replacementTask;
+          call.turn.change.predecessor = { taskId: task.id, runId: task.runId, childSessionKey: task.childSessionKey };
           return result({ ...identity, status: 'cancelled', settled: true, replacementAllowed: true, replacementTask,
             note: 'Cancellation plus fresh delegation, not in-place steer. Start one new native run using replacementTask and the original runtime; report its new IDs.' });
         },

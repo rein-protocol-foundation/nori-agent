@@ -32,10 +32,73 @@ native discovery passes all nine workspace skills including `nori-partnership-dr
 diff and clean tracked vendor checks pass. After the final interrupted-preview status clarification,
 the 21 focused tests pass again. Remote CI was not run at that handoff.
 
-Publication follow-up: the owner subsequently authorized committing, pushing and opening a PR.
-The branch base matches current `origin/main` (`3942608`); publication retains the local evidence
-above and leaves remote CI/review and live acceptance pending. Merge and deployment are not authorized.
+Publication follow-up: the owner authorized committing, pushing and opening
+[PR #83](https://github.com/rein-protocol-foundation/nori-agent/pull/83). Commit `92f5773` contains
+the implementation. After the initial base check at `3942608`, M2 PR #82 merged as `50b1275`;
+this branch incorporates it, preserving both sets of documentation and both verification commands.
+M2 delivery is now available in [its runbook](task-continuation.md), superseding the initial
+unverified-delivery observation above; M2 product limitations and live acceptance remain open.
+Remote CI/review remain pending. No PR merge into main or deployment is authorized.
+After synchronization, the full suite passes: 1396 total / 1392 passed / 4 conditional skips /
+0 failures; scaffold and staged diff checks pass. This regression does not establish M2 live acceptance.
 
+## 2026-11-13 — #82 review: unmanaged M1 replacement compatibility
+
+Owner: Codex. Addressed review comment 4561989210: continuation now accepts the exact
+replacement authorized by the existing M1 hook after cancellation and run settlement,
+only when the predecessor is not a managed-flow attempt. The internal handoff carries
+native predecessor IDs; model text alone cannot grant an exemption. Existing M1 membership,
+runtime, exact-task and one-shot checks run first. Managed assignments retain their gate.
+Static syntax/transpile, scaffold and diff checks passed; tests/probes/acceptance were not
+run per owner instruction. PR #82 is the delivery; product acceptance and native limitations
+remain unchanged. Next: review the pushed correction and CI; no merge or deployment.
+
+## 2026-11-13 — SA-M2-01–06 / #58 native continuation core
+
+Owner: Codex orchestrator / runtime-verified GPT-6.1 Sol High implementation worker.
+**CORE IMPLEMENTED / STATIC CHECKS ONLY; no product acceptance.** Added opt-in
+`rein_continuation` using native managed Flow state, session inventory, system wakes and existing
+M1/native spawn controls. Durable goals/criteria, scope revision, stop intent, accepted run links,
+attempt/deadline/no-progress bounds, semantic review/supplement and restart reconciliation are
+implemented. Same-owner/audience replies may combine flows; pending terminal reports replay while
+native retention keeps them, with receipt explicitly pending/uncertain.
+
+Checks: three runtime `.mjs` syntax checks, TypeScript transpile syntax diagnostics, changed JSON
+parsing, `node scripts/check.mjs` and `git diff --check` passed. These are static checks, not
+behavioral evidence. No tests/probes/acceptance were run or added; no Gateway, provider, real
+Slack, deployment, publishing or external sends. Prior synthetic evidence is historical only.
+
+Remaining: SA-M2-06 selected retention/deletion unsupported (native terminal cleanup fixed at seven
+days); launch/stop has no atomic native transaction; ACP deadline is reconciliation-time rather
+than hard timed termination; pending reports may repeat because parent receipt is not established.
+[Detailed contract and limitations](task-continuation.md). Product checkboxes stay open; M3 is
+out of scope. Next: parent review and handoff, without enabling production or claiming acceptance.
+
+
+## 2026-11-12 — SA-M2-01–06 / #58 native continuation seams
+
+Owner: Codex orchestrator (Astra High), same verified Sol High CLI worker. **BLOCKED;
+PRODUCT NOT IMPLEMENTED.** Isolated `tempest/m2-native-continuation`, base `1280a75`.
+PR #74 was open at initial branch preparation, then independently merged with all head checks
+successful; its merge tree equals the original `95f1eac` baseline. Only this local branch was
+fast-forwarded. [Full evidence, failures, commands and upstream proposal](task-continuation.md).
+
+A real fixed-pin loader/Gateway probe verified one known-owner flow across two processes,
+senderless startup wake through Router/M1, fresh completion→eligibility supplement, active
+completion injection, actual task/run linkage and original-thread delivery after unrelated chat.
+Two observed gaps prevent selecting the general product implementation: local keyed state is
+restricted to bundled/official plugins, and same-session events from distinct original threads
+coalesce into one automatic reply route. The latter remains an intentionally failing acceptance
+assertion. Known-owner fixture recovery is not dynamic owner-discovery or product authorization.
+
+The native build and 61 targeted decoder/M1/ACP/#66/Router tests pass. Earlier fixture-decoding
+and assertion errors are retained alongside the passing single-case evidence. Product code,
+config and skills are unchanged; full product cancellation/budget/unknown-effect/retention
+verification and live Slack/research/Codex/production acceptance were not performed. No production
+retention value was selected. Final parent checks are appended to the evidence runbook.
+Next: review the minimal supported storage and per-event reply contracts, then continue #58.
+No vendor source changes, sidecar history platform, custom scheduler, push, PR, remote merge,
+deployment, real sends or M3 work. A local diagnostic commit is the handoff, not completion of #58.
 ## 2026-11-13 — SA-OBS-02 zero-usage failure accounting
 
 Owner: Codex. DEPLOYED / LIVE PREVIEW VERIFIED. Per operator instruction, identified-model failed

@@ -22,6 +22,13 @@ acceptance and M3 first-release necessity remain distinct from this authorized d
 
 ## Integration decision
 
+Publication update: [PR #83](https://github.com/rein-protocol-foundation/nori-agent/pull/83)
+contains implementation commit `92f5773`. During PR creation, M2 PR #82 merged to main as
+`50b1275`; this branch synchronizes it while retaining both sets of records. The initial M2
+uncommitted/unverified observation above is historical: its delivery and remaining product
+limitations are now documented in [task continuation](task-continuation.md).
+The combined suite passes with 1392 passed / 4 conditional skips / 0 failures (1396 total).
+
 The pinned OpenClaw Lobster documentation exposes the public `@clawdbot/lobster/core`
 `runToolRequest` and `resumeToolRequest` engine used by its official optional plugin. Version
 `2026.9.13` is pinned directly, matching the upstream extension. No OpenClaw private runtime

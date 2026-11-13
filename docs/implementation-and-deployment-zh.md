@@ -25,9 +25,60 @@ checkout 的未提交 continuation 改动保持原样，已提交探针记录仍
 均通过，包含 `nori-partnership-draft`；scaffold、diff 与 vendor 跟踪源码未改检查通过。最后补充审批
 预览中断状态的明确阻塞说明后，21 项定向测试再次全过。该次交接尚未运行远端 CI。
 
-发布跟进：负责人随后明确授权提交、推送和创建 PR。分支基线与当前 `origin/main`（`3942608`）一致；
-发布保留上述本地验证证据，远端 CI/review 与真实验收仍待完成，未授权合并或部署。
+发布跟进：负责人授权提交、推送并创建 [PR #83](https://github.com/rein-protocol-foundation/nori-agent/pull/83)，
+实现提交为 `92f5773`。首次检查基线 `3942608` 后，M2 PR #82 并行合并为 `50b1275`；本分支同步该更新，
+冲突保留双方文档与两条验证命令。[M2 运行手册](task-continuation.md)现已有交付记录，取代上方最初
+“交付证据未核实”的观测；M2 产品限制及真实验收仍未完成。远端 CI/review 待完成，未授权将 PR 合入 main 或部署。
+同步后全仓回归：1396 项／1392 通过／4 项条件跳过／0 失败，scaffold 与暂存差异检查通过；不据此宣称 M2 真实验收。
 
+## 2026-11-13 — #82 review：非托管 M1 任务替换兼容性
+
+负责人：Codex。修复 review 4561989210：原有 M1 hook 确认取消与运行结算后，continuation
+允许其精确授权的替换任务，前提是原任务不属于 managed Flow。内部交接使用原生任务身份，
+不从模型文本推断权限；成员资格、runtime、精确任务文本及单次启动限制仍先由 M1 检查。
+托管任务的准入要求保持不变。语法/transpile、scaffold 和 diff 静态检查通过；按用户要求
+未运行测试、探针或验收。交付于 PR #82；产品验收与原生限制不变。下一步：审阅推送修订
+及 CI；不合并、不部署。
+
+## 2026-11-13 — SA-M2-01–06 / #58 原生继续执行核心
+
+负责人：Codex 主协调 / 运行时已核验 GPT-6.1 Sol High 实现 worker。
+**核心已实现 / 仅静态检查；未做产品验收。** 新增可选 `rein_continuation`，复用 native
+managed Flow 状态、session inventory、system wake 和既有 M1/native spawn 边界。完整目标与
+标准、scope revision、持久停止意图、真实 accepted run 关联、次数/期限/无进展限制、结果复核与
+缺项补充、重启协调均已有代码。同 owner/audience 可合并回复，每个待处理 Flow 均须列出。
+终态报告在原生保留期内可重启重放，收件状态明确为 pending/uncertain。
+
+检查：三个运行时 `.mjs` 语法检查、TypeScript transpile 语法诊断、修改 JSON 解析、
+`node scripts/check.mjs` 与 `git diff --check` 通过。仅静态检查，不是行为证据。本轮未运行或
+新增测试/探针/验收；未启动 Gateway、调用 Provider、连接真实 Slack、部署、发布或发送消息。
+历史合成探针结果不验证新增代码。
+
+剩余限制：SA-M2-06 自选保留期/显式删除不受支持（native 终态固定七天清理）；launch/stop
+无原子事务；ACP 期限仅在协调时检查，非定时硬终止；没有父回复收件证据，重放可能重复。
+详见[实现与限制](task-continuation.md)。产品勾选仍开放，不启动 M3。下一步：主协调静态审阅
+并交接限制；不启用生产，不声称验收完成。
+
+
+## 2026-11-12 — SA-M2-01–06 / #58 原生继续执行接缝
+
+负责人：Codex 主协调（Astra High）及同一已核实 Sol High CLI worker。**阻塞；产品未实现**。
+隔离分支 `tempest/m2-native-continuation`，基线 `1280a75`。建分支时 #74 尚未合并，随后由
+其他流程独立合并，原 head 全部 CI 通过；merge 与原 `95f1eac` 文件树相同，本任务仅快进本地
+分支。[完整证据、失败记录、复现命令与上游方案](task-continuation.md)。
+
+真实固定 pin loader/Gateway 验证了：已知合成 owner 的 Flow 跨两个进程持久化、无在线用户的
+启动唤醒经 Router/M1 准入、fresh completion 自动补充资格信息、active completion 注入、
+真实 task/run 关联，以及无关聊天切换线程后仍回原线程。两个实际缺口阻止采用通用产品方案：
+local plugin 无权打开原生 keyed store；同会话不同原始线程的恢复事件合并成一个自动回复路由。
+后一项保留为失败的验收断言。固定合成 owner 恢复不等于动态 owner 发现或产品权限验收。
+
+原生构建和 61 项 decoder/M1/ACP/#66/Router 定向测试通过。保留此前夹具消息解码与断言错误，
+并与最终单任务通过证据区分。产品代码、配置和 skill 未改；跨重启取消、限制、未知外部结果、
+保留/删除等产品验证，以及真实 Slack/研究/Codex/生产验收均未执行。未选择生产保留期限。
+主协调最终检查补入证据文档。下一步：审阅最小原生存储与逐事件回复接口方案，再继续 #58。
+未改 vendor 源码、另建历史平台/调度器、push、建 PR、远端合并、部署、真实外发或启动 M3。
+本地诊断提交是阻塞交接，不代表 #58 完成。
 ## 2026-11-13 — SA-OBS-02 零用量失败请求计价
 
 负责人：Codex。已部署，线上预览验证通过。按用户要求，已知模型、明确零 token 且记录费用为零的

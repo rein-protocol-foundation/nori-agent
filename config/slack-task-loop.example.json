@@ -1,7 +1,7 @@
 {
   "session": { "dmScope": "per-account-channel-peer", "groupScope": "per-group" },
   "tools": { "sessions": { "visibility": "tree" } },
-  "agents": { "entries": { "main": { "tools": { "alsoAllow": ["rein_task"] } } } },
+  "agents": { "entries": { "main": { "tools": { "alsoAllow": ["rein_task", "rein_continuation"] } } } },
   "plugins": {
     "load": { "paths": ["/absolute/path/to/rein-agent/plugins/rein-acp"] },
     "allow": ["rein-acp", "acpx", "slack"],
@@ -12,6 +12,10 @@
         "config": {
           "enabled": true,
           "taskLoop": true,
+          "continuation": {
+            "enabled": false, "maxAttempts": 4, "maxNoProgress": 2,
+            "maxRuntimeMs": 3600000, "maxActiveFlows": 16
+          },
           "channel": {
             "agentId": "main", "accountId": "default", "workspaceId": "TFIXTURE1",
             "channelId": "CFIXTURE1", "botTokenEnvVar": "TASK_LOOP_SLACK_BOT_TOKEN"
