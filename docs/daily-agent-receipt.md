@@ -82,7 +82,26 @@ these optional fields to restore gateway-only reporting; retain existing send
 receipts and native reported history and mark the reduced coverage honestly.
 Do not reset the Magpie ledger to undo a reporting configuration. Source collection, synthetic
 tests, a production preview and an actual scheduled delivery are separate gates.
-Deployment and live acceptance of this follow-up are pending.
+PR #78 deployed as `262878681fa6` at 2026-11-13 02:44:06 UTC with all four
+services healthy. Private source configuration uses the actual receipt runner
+UID (1001 on this host); isolated export/config permissions remain 0600. Native
+backfill for November 5–11 accepted 94 records, then accepted 0 / skipped 94.
+Seven daily previews and the integrated sender preview passed; provider/channel
+configurations remained byte-for-byte unchanged. No correction was sent.
+
+The corrected week totals 479 attempts, 14,520,939 tokens and $1.0706050245 known
+estimated cost. Four unpriced records remain: three unresolved Bailian `auto`
+attempts and one zero-token attempt marked unpriced by the native ledger.
+The November 5 preview now includes OpenAI GPT-5.4 Mini and Codex auto-review;
+the November 6 preview verifies the superscript/footnote. Evidence is private
+under `runtime/daily-agent-receipt/coverage-preview/` and `coverage-refresh-*.json`.
+The previous private sender configuration is retained as a timestamped
+`config.before-coverage-*.json` for rollback. Restore it to disable supplemental
+collection; retain the append-only ledger and all delivery history.
+
+The original job completed successfully on November 12 at 09:00 LA and remains
+enabled for November 13 at 09:00 LA. First scheduled delivery with the expanded
+sources remains pending; manual preview is not scheduled-delivery acceptance.
 
 ## Existing gateway-only behavior and scope
 
