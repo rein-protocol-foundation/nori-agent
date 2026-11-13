@@ -1,5 +1,25 @@
 # Nori-Agent 开发、验证与部署记录
 
+## 2026-11-13 — SA-M2-01–06 / #58 原生继续执行核心
+
+负责人：Codex 主协调 / 运行时已核验 GPT-6.1 Sol High 实现 worker。
+**核心已实现 / 仅静态检查；未做产品验收。** 新增可选 `rein_continuation`，复用 native
+managed Flow 状态、session inventory、system wake 和既有 M1/native spawn 边界。完整目标与
+标准、scope revision、持久停止意图、真实 accepted run 关联、次数/期限/无进展限制、结果复核与
+缺项补充、重启协调均已有代码。同 owner/audience 可合并回复，每个待处理 Flow 均须列出。
+终态报告在原生保留期内可重启重放，收件状态明确为 pending/uncertain。
+
+检查：三个运行时 `.mjs` 语法检查、TypeScript transpile 语法诊断、修改 JSON 解析、
+`node scripts/check.mjs` 与 `git diff --check` 通过。仅静态检查，不是行为证据。本轮未运行或
+新增测试/探针/验收；未启动 Gateway、调用 Provider、连接真实 Slack、部署、发布或发送消息。
+历史合成探针结果不验证新增代码。
+
+剩余限制：SA-M2-06 自选保留期/显式删除不受支持（native 终态固定七天清理）；launch/stop
+无原子事务；ACP 期限仅在协调时检查，非定时硬终止；没有父回复收件证据，重放可能重复。
+详见[实现与限制](task-continuation.md)。产品勾选仍开放，不启动 M3。下一步：主协调静态审阅
+并交接限制；不启用生产，不声称验收完成。
+
+
 ## 2026-11-12 — SA-M2-01–06 / #58 原生继续执行接缝
 
 负责人：Codex 主协调（Astra High）及同一已核实 Sol High CLI worker。**阻塞；产品未实现**。

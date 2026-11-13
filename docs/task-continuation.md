@@ -1,4 +1,109 @@
-# Native task continuation: seam evidence and blockers
+# Native task continuation
+
+Tracking: SA-M2-01–06 / [#58](https://github.com/rein-protocol-foundation/nori-agent/issues/58).
+Updated 2026-11-13, America/Los_Angeles. Owner: Codex orchestrator / runtime-verified
+GPT-6.1 Sol High implementation worker. **CORE IMPLEMENTED / STATIC CHECKS ONLY**.
+Product acceptance remains open; SA-M2-06 selected retention/deletion remains unsupported.
+
+## Opt-in native implementation
+
+`plugins/rein-acp/continuation.mjs` adds a thin controller alongside M1. Enable
+`taskLoop: true` and `continuation.enabled: true`; add `rein_continuation` to the parent's
+existing tool policy. The [example](../config/slack-task-loop.example.json) leaves continuation
+disabled. Turning it off preserves the existing M1 task-loop implementation; it does not cancel
+accepted native work or delete native state. Re-enable to discover retained flows. Do not disable
+it while relying on automatic continuation or stop-intent reconciliation.
+
+No native channel, owner session, tool policy, memory or execution engine is replaced. State lives
+only in public `tasks.async.managedFlows.stateJson`; native Task/Flow storage, session inventory,
+system events/targeted `background-task` wakes and `sessions_spawn` remain authoritative. The
+upstream keyed-store trust gate is neither used nor bypassed. No vendor changes, DBOS, scheduler,
+separate history store, synthetic owner inventory or replacement sessions are introduced.
+
+`rein_continuation` provides:
+
+- `begin`: current trusted human intake records full goal/criteria, source session UUID and native
+  audience, runtime, scope revision and immutable attempt/deadline/no-progress limits. Defaults are
+  four attempts, two reviews without progress, one hour, and sixteen concurrent flows per owner;
+  operators can configure bounded values for new flows. Existing flow limits never reset.
+- `delegate`: prepares an exact scope-labelled assignment. The canonical native spawn hook records
+  launch custody before admission; accepted receipts retain actual run/session IDs. Native `runTask`
+  associates available canonical backing without replacing its identity. A missing receipt/backing
+  blocks retries; it never fabricates a run or infers a failed launch from an observation gap.
+- `status`: reads native evidence and reconciles runs, stop/change intent and deadlines. Native
+  cancellation plus terminal `waitForRun` evidence is required before replacement readiness.
+- `review`: compares current-scope criteria with actual settled terminal evidence. A semantic model
+  review records result/gaps/effect certainty. Complete requires succeeded native backing, no gaps
+  and known effects; continue permits a bounded supplement for concrete gaps. Uncertain effects or
+  exhausted limits produce a partial handoff rather than another launch. No-progress evidence uses
+  native summary fingerprints as well as the reviewer's explicit progress assessment.
+- `stop` / `change`: persist stop intent before cancellation. Change advances scope immediately,
+  retires unlaunched old assignments and preserves all counters/deadline. Old attempt evidence stays
+  associated with its old revision; a previous report cannot become success for the revised goal.
+
+The existing M1 ACP gate still enforces the fixed harness/cwd and one-shot arguments. Managed
+run controls cannot bypass durable intent through raw stop/steer; controls for identifiable unmanaged
+M1 runs remain available. Native children retain their inherited tool surface.
+
+## Recovery, audience and delivery
+
+Production discovery uses `agent.session.listSessionEntries({agentId, readOnly:true})`, whose
+public rows contain `{sessionKey, entry}`. Only this controller's native managed flows with the
+configured account/channel audience and matching saved source session UUID are visible. Current
+human controls recheck the current member; senderless background work rechecks the saved source's
+current trusted membership without adding a fictional sender to the native wake. Changed session
+UUIDs, missing native backing and unavailable authority fail closed. Business-tool authority is
+still checked by its own backend boundary.
+
+Startup shares source-authority lookups only inside that hook, groups one native hint/wake per
+owner and reads no transcript/history. Admission similarly prepares the complete authorized flow
+inventory with parallel per-source checks; it does not wait for cancellation inside the admission
+hook. The model must call current `status` to reconcile before review/work. Durable flow inventory
+is the source of pending task results when host events coalesce or hints disappear. There is no
+per-flow serialized wake queue.
+
+The user accepts a combined reply within the same native owner/audience. Every pending flow must
+remain represented with its identity, scope, result and gaps; thread is a preferred reply route,
+not a separate owner boundary. The adapter does not claim each original thread received the
+combined answer. It never marks a report delivered from `agent_end`. Completed, stopped and limited
+reports remain `pending_or_uncertain` and are included in restart recovery while native retention
+keeps them. This offers at-least-once replay and can repeat reports; exactly-once parent delivery
+is not established by the public evidence available here.
+
+## Remaining native limitations
+
+- **SA-M2-06 is unsupported:** public managed Flows expose no selected retention or explicit delete
+  API, and terminal cleanup is fixed at seven days. No duration was selected and no extended
+  retention is simulated by keeping completed flows active. Retrieval after native cleanup is
+  unavailable. This requirement is still open; a supported upstream retention/deletion contract is
+  needed. Retained summaries/links and user deletion acceptance are not claimed.
+- Native launch and flow revision are not one atomic transaction. The canonical pre-launch hook
+  rechecks scope/stop after reservation; a stop racing native admission can still admit work before
+  the accepted receipt is reconciled and cancelled. A crash before receipt persistence leaves an
+  unknown outcome and blocks retry. This is not proof of zero post-stop execution or zero effects.
+- Research native `runTimeoutSeconds` is capped by the remaining deadline. ACP's M1 public launch
+  surface has no equivalent timeout argument in this adapter; its deadline is enforced when
+  native events/status/restart reconciliation occurs, not by a hard wall-clock shutdown timer.
+  Native cancellation/settlement uncertainty remains visible. No scheduler was added to hide this.
+- Semantic criteria/progress review is model-dependent. Static checks cannot establish successful
+  real-model supplementation, cancellation races, restart recovery or real-user delivery. All
+  product boxes stay open. Prior synthetic seam evidence below is historical evidence only.
+
+## Verification and handoff — 2026-11-13
+
+Only necessary static checks are authorized for this increment. Node syntax checks for the three
+runtime `.mjs` files, repository scaffold checks and `git diff --check` passed. JSON parsing and
+TypeScript syntax checking are recorded in the dated handoff indexes when finalized. No tests,
+probes, Gateway/model runs, acceptance, production access, publishing, deployment or real sends
+were performed for this increment. No tests were added. Existing historical probe/test results
+below do not validate the new implementation.
+
+Next: parent static review of this core and explicit review of the unresolved native retention,
+launch-atomicity, ACP deadline and delivery-receipt limitations. M3 remains out of scope.
+
+---
+
+# Historical native seam evidence — 2026-11-12
 
 Tracking: SA-M2-01–06 / [#58](https://github.com/rein-protocol-foundation/nori-agent/issues/58).
 Date: 2026-11-12, America/Los_Angeles. Owner: Codex orchestrator (runtime-verified Astra

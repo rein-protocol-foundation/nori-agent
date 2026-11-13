@@ -1,5 +1,27 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-13 — SA-M2-01–06 / #58 native continuation core
+
+Owner: Codex orchestrator / runtime-verified GPT-6.1 Sol High implementation worker.
+**CORE IMPLEMENTED / STATIC CHECKS ONLY; no product acceptance.** Added opt-in
+`rein_continuation` using native managed Flow state, session inventory, system wakes and existing
+M1/native spawn controls. Durable goals/criteria, scope revision, stop intent, accepted run links,
+attempt/deadline/no-progress bounds, semantic review/supplement and restart reconciliation are
+implemented. Same-owner/audience replies may combine flows; pending terminal reports replay while
+native retention keeps them, with receipt explicitly pending/uncertain.
+
+Checks: three runtime `.mjs` syntax checks, TypeScript transpile syntax diagnostics, changed JSON
+parsing, `node scripts/check.mjs` and `git diff --check` passed. These are static checks, not
+behavioral evidence. No tests/probes/acceptance were run or added; no Gateway, provider, real
+Slack, deployment, publishing or external sends. Prior synthetic evidence is historical only.
+
+Remaining: SA-M2-06 selected retention/deletion unsupported (native terminal cleanup fixed at seven
+days); launch/stop has no atomic native transaction; ACP deadline is reconciliation-time rather
+than hard timed termination; pending reports may repeat because parent receipt is not established.
+[Detailed contract and limitations](task-continuation.md). Product checkboxes stay open; M3 is
+out of scope. Next: parent review and handoff, without enabling production or claiming acceptance.
+
+
 ## 2026-11-12 — SA-M2-01–06 / #58 native continuation seams
 
 Owner: Codex orchestrator (Astra High), same verified Sol High CLI worker. **BLOCKED;

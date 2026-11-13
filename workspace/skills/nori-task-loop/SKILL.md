@@ -10,6 +10,59 @@ native tools and authenticated host context. Missing tools or authority are conc
 Keep task records and outputs in native private state and their authorized conversation, outside
 shared workspace references. Never copy transcripts, member data or credentials into this skill.
 
+## Optional durable continuation
+
+When the host exposes `rein_continuation`, use it for new background requests instead of the
+legacy flow below. The host keeps goals and limits in native managed Flows, with the same
+native owner/audience and existing native child sessions. This skill is not retained task storage.
+
+1. Call `begin` with the agreed full `goal`, `criteria` and native `runtime`. Report the returned
+   flow ID, immutable deadline/attempt/no-progress bounds and queued state. Do not create a new
+   flow to reset a stopped, limited or uncertain task's budgets. A new user request is distinct
+   from an autonomous supplement.
+2. Call `delegate` with the flow ID and a concrete `instruction`, then call native `sessions_spawn`
+   once with the exact returned `task` and recorded runtime. The host reserves this assignment
+   before launch, retains actual accepted run/session IDs and links available native backing.
+   Research keeps `cleanup="keep"` and default completion delivery; its timeout cannot exceed
+   the remaining deadline. ACP retains the configured M1 harness/cwd/arguments. Do not retry an
+   absent receipt or unknown native outcome. Accepted is not complete; canonical backing can lag.
+3. Finish intake promptly and handle unrelated conversation normally. On a child completion or
+   restart wake, first call `status` without a flow to read the current durable owner inventory.
+   Events may coalesce or omit hints; represent every pending flow, not only the last event.
+   Call `status` for each flow that requires reconciliation before review or more work.
+4. Check actual evidence against each flow's current full criteria and `scopeRevision`. Call
+   `review` with that revision, `outcome`, concise `evidence`, remaining `gaps`, truthful
+   `effects` (`none`, `confirmed`, or `unknown`) and whether evidence demonstrates `progress`.
+   Complete only when the current native run succeeded and every criterion is satisfied.
+   A child's success or a plausible answer alone is insufficient. Do not omit unknown eligibility.
+5. If criteria are incomplete and effects are known, use `outcome="continue"` with concrete gaps.
+   A ready result permits one bounded supplement through `delegate`, without another user
+   reminder. This preserves the same deadline and counters. Unknown external outcomes, exhausted
+   limits or pending cancellation forbid another launch. Report partial evidence and the exact gap.
+6. Use `stop` or `change` on the flow for a current user instruction. Change takes the complete
+   new goal/criteria, advances scope immediately, stops old work and waits for native settlement.
+   Only then may the same flow become ready; old results cannot complete new scope. Limits never
+   reset. A stopped terminal flow does not restart. Cancellation is not rollback: disclose performed
+   and uncertain actions, native cancellation failure and unconfirmed settlement.
+
+A combined reply may include several flows in the **same native owner/audience**, even when
+captured original threads differ. Name every flow and its current scope, outcome, evidence and
+remaining gaps. Never combine across accounts, channels, native sessions or private audiences.
+The captured route remains a native routing preference; do not claim every original thread got
+its own reply. Native parent report receipt remains pending/uncertain: success of an agent turn is
+not delivery evidence. Retained pending reports may replay after restart; acknowledge possible
+repetition rather than claiming exactly-once delivery.
+
+Research timeouts are bounded at native launch. ACP deadlines are checked on native events/status
+and recovery; this adapter has no timer and cannot promise hard wall-clock termination of ACP.
+A launch race can leave admitted effects uncertain; wait for evidence and never respawn blindly.
+Native terminal flows use upstream's fixed seven-day cleanup. Selected retention, explicit deletion
+and summaries surviving native cleanup are unsupported at this pin; do not promise them or store
+private history in workspace skills. Missing/expired artifacts are unavailable, not success.
+
+The remaining sections describe legacy M1 tools when continuation is absent, and unmanaged M1
+runs already in progress. Do not apply legacy replacement controls to managed continuation runs.
+
 ## Intake and delegation
 
 For a clear request, restate its goal and completion criteria without routine reconfirmation.

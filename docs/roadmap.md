@@ -1,5 +1,20 @@
 # Nori-Agent implementation roadmap
 
+## SA-M2-01–06 / #58 native continuation core — November 13, 2026
+
+**CORE IMPLEMENTED / STATIC CHECKS ONLY; product acceptance open.** Owner: Codex
+orchestrator / runtime-verified Sol High implementation worker. The opt-in managed Flow
+controller now stores full goals/criteria, durable scope/stop intent and bounds, accepted run
+links, current-owner inventory, native recovery wakes and criteria review/supplements. Same-owner,
+same-audience combined replies retain every pending flow. M1 remains the default.
+
+[Implementation and limits](task-continuation.md): native seven-day cleanup does not satisfy
+SA-M2-06 selected retention/deletion; atomic launch/stop, hard ACP deadlines and exactly-once
+parent delivery are not established. Static syntax/JSON/scaffold/diff checks only; no new tests,
+probes, acceptance, live operations or publication. Product boxes and M3 remain unchanged.
+Next: parent static review and explicit handoff of these native limitations.
+
+
 ## SA-M2-01–06 / #58 native seams — November 12, 2026
 
 Owner: Codex orchestrator / verified Sol High CLI worker. **BLOCKED; PRODUCT NOT IMPLEMENTED**.
