@@ -1,5 +1,35 @@
 # Nori-Agent implementation roadmap
 
+## Slack task-loop functional naming — November 12, 2026
+
+Owner: Codex orchestrator and verified Sol High worker. **IMPLEMENTED / LOCAL VERIFIED**.
+Six task-loop files, decoder symbols, fixture IDs/markers/env, imports, links and the
+`verify:slack-task-loop` command now use functional names. AGENTS.md records the naming rule.
+PRD SA-M1-01–05 and historical evidence paths remain for traceability; no milestone advancement.
+The first renamed native run (`nori-task-loop-8Q0JNO`) failed because an explicitly skipped
+pre-execution tool call counted as completed in the synthetic model. The fixture now excludes
+only that exact skip marker, while counting errors with uncertain effects to prevent blind retry.
+Production task-control logic is unchanged. Final checks: 20 targeted tests, scaffold/diff checks,
+and actual renamed native loader/Gateway run `nori-task-loop-5tplBg` passed. Earlier failed
+evidence remains retained. No vendor edits, live operations or deployment. Next: review this
+naming follow-up; real Slack acceptance remains separate. [Runbook](slack-task-loop.md).
+
+
+## SA-M1-01–05 / #60 native task loop — November 12, 2026
+
+Owner: Codex orchestrator, same verified Sol High CLI implementation worker. Native pin `4a11f89`.
+**IMPLEMENTED / LOCAL VERIFIED; real Slack/research/Codex product acceptance pending**.
+[Evidence and limits](slack-task-loop.md): native Task/Flow/session ownership, channel-independent
+skill and reversible additive ACP mode, without a new engine/store. 19 targeted units and final
+expanded native run `nori-m1-PzyVU6` pass: research change/stop, ACP pending/settled/failed
+cancellation, actual accepted/canonical IDs, member/revocation/foreign-scope controls and original
+thread delivery while ordinary chat continues. ACP task summaries and delayed canonical visibility
+are explicitly handled. Full suite: 1331 pass, 2 existing skips, 0 fail; existing ACP/Cron, loader
+and skill-discovery checks pass. Earlier failed runs remain documented. User-authorized publication is tracked in [PR #74](https://github.com/rein-protocol-foundation/nori-agent/pull/74).
+After merging main: 1343 tests pass, 3 conditional skips, 0 fail. Automatic code review of the
+implementation found no issues; current CI/review is on the PR. Next: finish checks and report;
+no merge/deployment/outreach or next task. Live acceptance remains separately gated. Product checkboxes and M0/M2/M3 remain unchanged.
+
 ## SA-OBS-02 / #68 daily receipt — November 12, 2026
 
 Owner: Codex. **DEPLOYED / ENABLED; manual native run and Slack image verified.**
