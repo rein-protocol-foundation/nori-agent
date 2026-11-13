@@ -220,3 +220,22 @@ test('CLI arguments match wrapper interface and reject duplicates, unknown optio
     { date: '2026-11-01', outputDir: '/tmp/r', timeZone: 'UTC', magpieUrl: 'http://localhost:3425' });
   for (const args of [['--date'], ['--unknown', 'x'], ['--date', 'a', '--date', 'b']]) assert.throws(() => parseReceiptArgs(args), /Usage:/);
 });
+
+
+test('identified failed attempts with explicit zero usage cost zero without hiding unknown usage', () => {
+  const failed = row({ model: 'deepseek-v4.1-flash', status: 499, in: 0, out: 0,
+    cache_read: 0, cache_write: 0, reasoning: 0, cost: 0, priced: false });
+  const summary = summarizeUsage([row({ model: failed.model }), failed], bounds);
+  assert.equal(summary.totals.requests, 2);
+  assert.equal(summary.totals.errors, 1);
+  assert.equal(summary.totals.knownCostUsd, 0.0123);
+  assert.equal(summary.totals.unpricedRequests, 0);
+  assert.doesNotMatch(renderReceiptSvg(summary), /unknown|Price unavailable|baseline-shift="super"/);
+  assert.equal(failed.priced, false); // Never mutate the underlying ledger record.
+  for (const extra of [{model: 'auto'}, {model: 'provider/auto'}, {model: undefined},
+    {cache_read: undefined}, {cache_write: undefined}, {in: 1}, {out: 1},
+    {cache_read: 1}, {cache_write: 1}, {reasoning: 1}, {status: 200}, {cost: 0.1}]) {
+    assert.equal(summarizeUsage([{...failed, ...extra}], bounds).totals.unpricedRequests, 1);
+  }
+  assert.equal(summarizeUsage([{...failed, model: 'auto', served: 'deepseek-v4.1-flash'}], bounds).totals.unpricedRequests, 0);
+});

@@ -179,3 +179,7 @@ or an unset named variable now reads `foundation_db_config_invalid` or
 These are code interfaces, not
 schema, so they need no migration. The earlier stage-prefixed compatibility views and RPC wrappers
 have been removed, so the stable `<env>_rein_*` names are the only interface in the linked schema.
+
+SA-OBS-02 zero-usage follow-up (2026-11-13, Codex): LOCAL VERIFIED, 35/35 receipt/source
+tests and scaffold/diff passed. Identified failed zero-usage attempts count as $0;
+unknown models/missing counters/nonzero usage remain unknown. Production pending.
