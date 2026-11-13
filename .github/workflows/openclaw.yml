@@ -128,6 +128,10 @@ jobs:
         env:
           REIN_RUN_NATIVE_BAILIAN_PRICING: '1'
         run: node --test tests/bailian-receipt-pricing-native.test.mjs
+      - name: Verify native reported usage pricing and restart deduplication
+        env:
+          REIN_RUN_NATIVE_USAGE_SOURCES: '1'
+        run: node --test tests/nori-usage-native.test.mjs
       - name: Verify project-local Magpie configuration UI without inference
         env:
           REIN_RUN_NATIVE_MAGPIE_UI: '1'

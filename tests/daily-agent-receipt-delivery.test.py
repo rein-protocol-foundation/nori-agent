@@ -53,6 +53,75 @@ class DeliveryTests(unittest.TestCase):
         self.assertEqual(len(self.commands), 1)
         self.assertFalse(list((self.root / 'state').glob('*.json')))
 
+    def test_isolated_export_precedes_render_and_uses_exact_day_bounds(self):
+        target = self.root / 'imports' / 'acp.json'
+        self.config.update(sourcesConfig='/private/sources.json', sourceExports=[{
+            'user': 'nori-acp-pilot', 'nodeExecutable': '/node',
+            'configPath': '/private/export.json', 'outputPath': str(target)}])
+        def run(args, **kwargs):
+            if args[0] == 'sudo':
+                self.commands.append(args)
+                self.assertEqual(args[:6], ['sudo', '-n', '-u', 'nori-acp-pilot', '--', '/node'])
+                self.assertEqual(args[6:9], ['--input-type=module', '-', 'export'])
+                self.assertIn('exportNoriUsage', kwargs['input'])
+                self.assertEqual(kwargs['cwd'], '/')
+                self.assertEqual(args[args.index('--start') + 1], '2026-11-11T08:00:00+00:00')
+                self.assertEqual(args[args.index('--end') + 1], '2026-11-12T08:00:00+00:00')
+                return subprocess.CompletedProcess(args, 0, '{"schemaVersion":1,"rows":[]}', '')
+            self.assertTrue(target.exists())
+            self.assertEqual(target.stat().st_mode & 0o777, 0o600)
+            self.assertIn('--sources-config', args)
+            return self.run_command(args, **kwargs)
+        result = delivery.run_receipt(self.config, now=self.now, run=run)
+        self.assertEqual(result['status'], 'preview')
+        self.assertEqual(len(self.commands), 2)
+
+    def test_failed_export_does_not_render_or_reuse_old_data(self):
+        self.config.update(sourcesConfig='/private/sources.json', sourceExports=[{
+            'user': 'nori-acp-pilot', 'nodeExecutable': '/node',
+            'configPath': '/private/export.json', 'outputPath': str(self.root / 'acp.json')}])
+        def run(args, **kwargs):
+            self.commands.append(args)
+            return subprocess.CompletedProcess(args, 1, '', 'private failure')
+        with self.assertRaisesRegex(RuntimeError, 'export failed'):
+            delivery.run_receipt(self.config, now=self.now, send=True, run=run)
+        self.assertEqual(len(self.commands), 1)
+        self.assertFalse(list((self.root / 'state').glob('*.json')))
+
+    def test_export_interval_preserves_dst_fall_back_day(self):
+        config = {'sourcesConfig': '/private/sources.json', 'sourceExports': [{
+            'user': 'nori-acp-pilot', 'nodeExecutable': '/node',
+            'configPath': '/private/export.json', 'outputPath': str(self.root / 'acp.json')}]}
+        def run(args, **kwargs):
+            self.assertEqual(args[args.index('--start') + 1], '2026-11-01T07:00:00+00:00')
+            self.assertEqual(args[args.index('--end') + 1], '2026-11-02T08:00:00+00:00')
+            return subprocess.CompletedProcess(args, 0, '{"schemaVersion":1,"rows":[]}', '')
+        delivery.refresh_source_exports(config, dt.date(2026, 11, 1), 'America/Los_Angeles', run)
+
+    def test_native_refresh_is_explicit_and_precedes_render(self):
+        self.config.update(sourcesConfig='/private/sources.json', refreshSources=True)
+        def run(args, **kwargs):
+            if 'refresh' in args:
+                self.commands.append(args)
+                self.assertIn('--sources-config', args)
+                self.assertEqual(args[args.index('--start') + 1], '2026-11-11T08:00:00+00:00')
+                return subprocess.CompletedProcess(args, 0, '{"accepted":2,"skipped":0}', '')
+            self.assertEqual(len(self.commands), 1)
+            return self.run_command(args, **kwargs)
+        result = delivery.run_receipt(self.config, now=self.now, run=run)
+        self.assertEqual(result['status'], 'preview')
+        self.assertEqual(len(self.commands), 2)
+
+    def test_native_refresh_failure_stops_before_send_intent(self):
+        self.config.update(sourcesConfig='/private/sources.json', refreshSources=True)
+        def run(args, **kwargs):
+            self.commands.append(args)
+            return subprocess.CompletedProcess(args, 1, '', 'private failure')
+        with self.assertRaisesRegex(RuntimeError, 'refresh failed'):
+            delivery.run_receipt(self.config, now=self.now, send=True, run=run)
+        self.assertEqual(len(self.commands), 1)
+        self.assertFalse(list((self.root / 'state').glob('*.json')))
+
     def test_confirmed_receipt_survives_restart_without_resending(self):
         self.assertEqual(self.invoke(send=True)['status'], 'sent')
         self.assertIn('--media', self.commands[-1])

@@ -1,5 +1,28 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-12 — SA-OBS-02 usage coverage correction
+
+Owner: Codex. **IMPLEMENTED / TARGETED VERIFIED; not deployed.** The operator traced the OpenAI
+dashboard comparison to local OpenCode, not Nori. Read-only SQLite/zstd and
+isolated ACP inspection nevertheless confirmed real omissions: direct Qwen
+requests across Nori profiles and Codex runs under the dedicated ACP account.
+No account-wide dashboard total is imported and native catalog rates remain
+unchanged. Three historical Bailian auto records lack actual model identity;
+unknown costs remain explicit with a superscript marker on the known subtotal.
+
+Implementation adds optional configured profile registries, direct usage and
+owned Codex imports, with sanitized isolated-account exports and source-aware
+deduplication. The sender preserves native scheduling and delivery state; failed
+exports stop before generation or sending. Checks: Node 43/43, nested sender
+Python 17/17, native Magpie pricing/restart/stdin-export integration 1/1, scaffold
+and diff passed. A sanitized metadata replay matched 94 missing calls and
+1,614,503 tokens; all seven live agent databases had zero archives at audit time.
+The first full run exposed an existing worker fixture URL-encoding bug in paths
+with spaces; using fileURLToPath restored its 8/8 test pass. Final full gates after
+integrating current main, production preview and acceptance remain pending.
+No product milestone advances.
+See [runbook and rollback](daily-agent-receipt.md).
+
 ## 2026-11-12 — SA-OBS-02 Provider receipt layout
 
 Owner: Codex. Status: **DEPLOYED / MANUAL LIVE VERIFIED**. User selected Day Card

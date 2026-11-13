@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, readFileSync, statSync, chmodSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createUsageLedger, usageIdentity } from '../plugins/rein-router/usage-limits.mjs';
 const limits = { perUserPerMinute: 2, perConversationPerMinute: 3,
   perUserConcurrent: 1, perConversationConcurrent: 2, maxConcurrent: 3,
@@ -117,7 +118,7 @@ test('simultaneous native processes atomically admit one run for a single sender
     const timer = setTimeout(() => reject(new Error('admission workers timed out')), 15000);
     const finish = error => { clearTimeout(timer); if (error) reject(error); else resolve(); };
     for (let index = 0; index < 6; index++) {
-      const worker = spawn(process.execPath, [new URL('./fixtures/usage-admission-worker.mjs', import.meta.url).pathname, f.stateDir, `run-${index}`],
+      const worker = spawn(process.execPath, [fileURLToPath(new URL('./fixtures/usage-admission-worker.mjs', import.meta.url)), f.stateDir, `run-${index}`],
         { stdio: ['pipe', 'pipe', 'pipe'] }); workers.push(worker); worker.stderr.resume();
       worker.on('error', finish);
       createInterface({ input: worker.stdout }).on('line', line => {

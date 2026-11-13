@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // Read-only Magpie ledger reporting. No prompts, accounts, sessions or request IDs
 // leave the collector; the artifact schema is an explicit aggregate allowlist.
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { collectNoriUsageSources } from './nori-usage-sources.mjs';
 import { receiptIcon, providerIconName, modelIconName } from './daily-agent-receipt-icons.mjs';
 
 const DAY = 86_400_000;
@@ -69,7 +70,7 @@ function safeRow(row) {
   if ((row.source !== undefined && !['', 'log', 'reported'].includes(row.source)) ||
       (row.rejected !== undefined && typeof row.rejected !== 'boolean')) throw new Error('Malformed Magpie source');
   return { time: Date.parse(row.t), agent: label(row.agent, 'Unknown agent'), provider: label(row.provider, 'Unknown provider'),
-    model: label(row.model, 'Unknown model'), input, output, cacheRead, cacheWrite, reasoning,
+    model: label(/^(?:auto|.*\/auto)$/i.test(row.model ?? '') && typeof row.served === 'string' && !/^(?:auto|.*\/auto)$/i.test(row.served) ? row.served : row.model, 'Unknown model'), input, output, cacheRead, cacheWrite, reasoning,
     cacheMissing: row.cache_read === undefined || row.cache_write === undefined,
     error: status >= 400 || Boolean(row.err), priced: row.priced, cost: row.cost,
     gateway: !row.source && !row.rejected && !(row.provider === '' && status >= 400) };
@@ -146,10 +147,10 @@ async function readPage(response, maxBytes) {
 }
 /** Fetch complete bounded pagination; fail rather than produce a truncated report. */
 export async function collectMagpieUsage({ date, timeZone = DEFAULT_TIMEZONE, now, magpieUrl = 'http://127.0.0.1:3425',
-  fetchImpl = globalThis.fetch, pageSize = 500, maxPages = 100, maxRows = 50_000, timeoutMs = 15_000, maxPageBytes = 8_000_000 } = {}) {
+  fetchImpl = globalThis.fetch, sourcesConfig, pageSize = 500, maxPages = 100, maxRows = 50_000, timeoutMs = 15_000, maxPageBytes = 8_000_000 } = {}) {
   for (const [k, v] of Object.entries({ pageSize, maxPages, maxRows, timeoutMs, maxPageBytes })) if (!Number.isSafeInteger(v) || v <= 0) throw new Error(`Invalid ${k}`);
   const bounds = calendarDayBounds({ date, timeZone, now }), origin = loopbackUrl(magpieUrl);
-  const rows = [], identities = new Set(); let total;
+  const rows = [], identities = new Set(), gatewayResponseIds = []; let total;
   for (let pageNumber = 0; pageNumber < maxPages; pageNumber++) {
     const url = new URL('/v1/magpie/usage/requests', origin);
     url.search = new URLSearchParams({ period: bounds.queryPeriod, limit: String(pageSize), offset: String(rows.length), via: 'through' });
@@ -169,6 +170,7 @@ export async function collectMagpieUsage({ date, timeZone = DEFAULT_TIMEZONE, no
     if (total > maxRows || rows.length + page.rows.length > total) throw new Error('Magpie usage exceeds row bound or total');
     // Detect repeated pages using ephemeral identities; never export these fields.
     for (const row of page.rows) {
+      if (row && typeof row.response_id === 'string' && row.response_id && !row.source) gatewayResponseIds.push({ provider: row.provider, responseId: row.response_id });
       if (row && typeof row.rid === 'string' && row.rid) {
         const identity = JSON.stringify([row.rid, row.t, row.provider, row.model, row.status, row.tries, row.handed_on]);
         if (identities.has(identity)) throw new Error('Magpie usage pagination contains duplicate attempts');
@@ -177,7 +179,18 @@ export async function collectMagpieUsage({ date, timeZone = DEFAULT_TIMEZONE, no
     }
     // Sanitize immediately; raw request metadata is never retained between pages.
     rows.push(...page.rows.map(safeRow));
-    if (rows.length === total) return summarizeSafe(rows, bounds);
+    if (rows.length === total) {
+      if (!sourcesConfig) return summarizeSafe(rows, bounds);
+      const config = typeof sourcesConfig === 'string' ? JSON.parse(await readFile(resolve(sourcesConfig), 'utf8')) : sourcesConfig;
+      const supplemental = await collectNoriUsageSources({ config, bounds, magpieUrl, fetchImpl, gatewayResponseIds, now });
+      const summary = summarizeSafe([...rows, ...supplemental.rows.map(safeRow)], bounds);
+      summary.requestBasis = 'Gateway attempts plus observed native direct/owned ACP usage events';
+      summary.coverage.source = 'Magpie gateway plus explicitly configured Nori sources';
+      summary.coverage.directAcp = 'Configured owned ACP sources included; unavailable/unconfigured sources remain outside coverage';
+      summary.coverage.attribution = 'Native owner IDs for supplemental rows; gateway rows retain Magpie client attribution';
+      summary.coverage.supplemental = supplemental.coverage;
+      return summary;
+    }
     if (page.rows.length === 0) throw new Error('Magpie usage pagination truncated');
   }
   throw new Error('Magpie usage pagination exceeds page bound');
@@ -203,6 +216,7 @@ function wrapped(value, columns) {
  * Uses its compact paper/cost-row composition; does not execute the stock Canvas plugin.
  */
 export function renderReceiptSvg(summary) {
+  const incompleteCoverage = summary.coverage.supplemental && !summary.coverage.supplemental.complete;
   const t = summary.totals, width = 720, paperLeft = 60, paperRight = 660, left = 92, right = 628;
   const ink = '#1f1d20', muted = '#76736e';
   let y = 103; const body = [];
@@ -228,10 +242,13 @@ export function renderReceiptSvg(summary) {
     y += nested ? 5 : 6; body.push('</g>');
   };
   center('DAILY AI STATEMENT', 31, 700);
-  center('Nori · routed through Magpie', 13);
+  center(summary.coverage.supplemental ? 'Nori · priced by Magpie' : 'Nori · routed through Magpie', 13);
   y += 9; pair('DATE', summary.date, 14); pair('TIMEZONE', summary.timeZone, 13);
   rule(); center('TOTAL ESTIMATED USD', 14); y += 29;
-  center(t.requests > 0 && t.pricedRequests === 0 ? 'PRICE UNAVAILABLE' : costLabel(t), t.pricedRequests === 0 && t.requests ? 30 : 43, 700);
+  // The total is the known subtotal. A raised marker signals an incomplete
+  // price mapping without appending an unknown amount to the headline.
+  body.push(`<text data-total-estimate="true" x="${width / 2}" y="${y}" font-size="43" fill="${ink}" text-anchor="middle" font-weight="700"><tspan>${xml(usd(t.knownCostUsd))}</tspan>${t.unpricedRequests || incompleteCoverage ? '<tspan baseline-shift="super" font-size="60%">*</tspan>' : ''}</text>`);
+  y += 57;
   center('Magpie catalog estimate · not a bill', 12);
   center('Subscription charges are not calculated here.', 11, 400, muted);
   rule(); pair('REQUESTS / ATTEMPTS', count(t.requests)); pair('ERRORS', count(t.errors));
@@ -242,7 +259,7 @@ export function renderReceiptSvg(summary) {
     if (!modelsByProvider.has(model.provider)) modelsByProvider.set(model.provider, []);
     modelsByProvider.get(model.provider).push(model);
   }
-  if (!providers.length) { text('No gateway usage recorded', left, y, 15); y += 28; }
+  if (!providers.length) { text(summary.coverage.supplemental ? 'No usage recorded in selected sources' : 'No gateway usage recorded', left, y, 15); y += 28; }
   for (const provider of providers) {
     costRow(provider.provider, costLabel(provider), providerIconName(provider.provider), false);
     const models = [...(modelsByProvider.get(provider.provider) ?? [])].sort((a, b) => b.knownCostUsd - a.knownCostUsd || (a.model < b.model ? -1 : a.model > b.model ? 1 : 0));
@@ -253,7 +270,10 @@ export function renderReceiptSvg(summary) {
   pair('UNCACHED INPUT', count(t.inputTokens)); pair('OUTPUT (REASONING INCLUDED)', count(t.outputTokens));
   pair('CACHE HIT RATE', t.cacheReadPercent === null ? 'Unknown / no input' : `${t.cacheReadPercent.toFixed(1)}%`);
   pair('UNPRICED REQUESTS', count(t.unpricedRequests));
-  rule(); center('Gateway only · direct ACP outside coverage', 11);
+  rule();
+  if (t.unpricedRequests) center(`* Known subtotal only; excludes ${count(t.unpricedRequests)} unpriced ${t.unpricedRequests === 1 ? 'request' : 'requests'}.`, 11);
+  if (incompleteCoverage) center('* Source coverage incomplete; totals omit unavailable usage.', 10);
+  center(summary.coverage.supplemental ? (summary.coverage.supplemental.complete ? 'Gateway + configured Nori direct / owned ACP sources' : 'Source coverage incomplete · see JSON evidence') : 'Gateway only · direct ACP outside coverage', 10);
   center(`${summary.interval.hours}-hour local day · retries count as attempts`, 11, 400, muted);
   y += 5; center('Day Card-derived · design inspired by nowdex.app', 10, 400, muted);
   const bottom = y + 12, height = bottom + 58;
@@ -280,10 +300,10 @@ export async function writeDailyReceipt(options = {}) {
   return paths;
 }
 export function parseReceiptArgs(args) {
-  const options = {}, names = { '--date': 'date', '--output-dir': 'outputDir', '--magpie-url': 'magpieUrl', '--timezone': 'timeZone' };
+  const options = {}, names = { '--date': 'date', '--output-dir': 'outputDir', '--magpie-url': 'magpieUrl', '--timezone': 'timeZone', '--sources-config': 'sourcesConfig' };
   for (let i = 0; i < args.length; i++) {
     const key = names[args[i]];
-    if (!key || options[key] !== undefined || !args[i + 1] || args[i + 1].startsWith('--')) throw new Error('Usage: daily-agent-receipt.mjs [--date YYYY-MM-DD] [--output-dir PATH] [--magpie-url http://127.0.0.1:3425] [--timezone America/Los_Angeles]');
+    if (!key || options[key] !== undefined || !args[i + 1] || args[i + 1].startsWith('--')) throw new Error('Usage: daily-agent-receipt.mjs [--date YYYY-MM-DD] [--output-dir PATH] [--magpie-url http://127.0.0.1:3425] [--timezone America/Los_Angeles] [--sources-config PATH]');
     options[key] = args[++i];
   }
   return options;
