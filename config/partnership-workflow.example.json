@@ -1,0 +1,25 @@
+{
+  "plugins": {
+    "load": { "paths": ["/absolute/path/to/rein-agent/plugins/rein-partnership"] },
+    "entries": {
+      "rein-partnership": {
+        "enabled": false,
+        "hooks": { "allowConversationAccess": true },
+        "config": {
+          "enabled": false,
+          "channel": {
+            "agentId": "main",
+            "accountId": "default",
+            "workspaceId": "TFIXTURE1",
+            "channelId": "CFIXTURE1",
+            "botTokenEnvVar": "PARTNERSHIP_SLACK_BOT_TOKEN"
+          },
+          "from": "nori@example.invalid",
+          "testRecipients": ["test@example.invalid"],
+          "approvalTtlMs": 3600000,
+          "apiKeyEnvVar": "RESEND_API_KEY"
+        }
+      }
+    }
+  }
+}

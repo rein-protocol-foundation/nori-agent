@@ -1,5 +1,41 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-13 — SA-M3-01–05 / #59 partnership test workflow
+
+Owner: Codex (runtime-verified Astra Medium, explicit user override), one verified Sol High
+implementation worker. **IMPLEMENTED / LOCAL VERIFIED; product acceptance pending**. Clean base
+`3942608`, reused checkout on `tempest/partnership-test-workflow`. [Runbook and recovery](partnership-workflow.md).
+M1 #74 is merged. M2 #58 is owner-closed, but its final delivery evidence is not independently
+verified; the separate `48856e8` checkout has preserved uncommitted continuation work and its
+committed probe records blockers. No M1/M2 acceptance or unrelated completion was inferred.
+
+The optional plugin reuses public Lobster `2026.9.13`, trusted native Slack command identity and
+existing membership checks. One fixed template pauses on exact material; model-free human
+approval binds workspace/account/channel/session/thread, approver, task/version and checkpoint.
+A deterministic native preview precedes usable approval. Durable intent precedes the only Resend
+POST; unknown outcomes never retry automatically. Receipts distinguish accepted and delivered.
+The real restart probe exposed ephemeral plugin-capture template paths; immutable digest-keyed
+copies in private profile state now preserve native resume dependencies without vendor edits.
+
+Checks: 21/21 focused tests, full repository suite 1394 total / 1390 passed / 4 existing opt-in
+skips / 0 failed. Native `nori-partnership-qS7WYp` passes enabled/disabled loader inspection,
+actual ingress/commands, different-PID restart, exact approved send, cancellation, unauthorized/
+wrong-thread/duplicate/post-cancellation decisions and receipt reconciliation. Only one synthetic
+provider POST; decision commands invoke no model. Earlier fixture evidence-state and captured-path
+failures are retained in the runbook. No live transport/model/provider calls, production config,
+publish, merge or deployment. Real Slack approval, operator-designated real test recipient and
+deployed profile/provider evidence remain pending. Next: local review, then separately authorized
+live acceptance. Product checkboxes, M0 and AC01–AC20 remain unchanged.
+
+Final compatibility checks: existing `verify:plugin` passes all three native loader profiles;
+native discovery passes all nine workspace skills including `nori-partnership-draft`; scaffold,
+diff and clean tracked vendor checks pass. After the final interrupted-preview status clarification,
+the 21 focused tests pass again. Remote CI was not run at that handoff.
+
+Publication follow-up: the owner subsequently authorized committing, pushing and opening a PR.
+The branch base matches current `origin/main` (`3942608`); publication retains the local evidence
+above and leaves remote CI/review and live acceptance pending. Merge and deployment are not authorized.
+
 ## 2026-11-13 — SA-OBS-02 zero-usage failure accounting
 
 Owner: Codex. DEPLOYED / LIVE PREVIEW VERIFIED. Per operator instruction, identified-model failed
