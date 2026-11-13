@@ -1,0 +1,11 @@
+{
+  "sourceId": "nori-acp-pilot",
+  "codexRoots": [
+    {
+      "id": "nori-acp-pilot",
+      "root": "/var/lib/nori-acp-pilot/codex-home",
+      "originators": ["acpx"],
+      "providerAliases": { "pilot-openai": "openai" }
+    }
+  ]
+}

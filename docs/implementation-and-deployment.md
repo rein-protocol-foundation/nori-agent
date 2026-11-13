@@ -46,6 +46,50 @@ retention value was selected. Final parent checks are appended to the evidence r
 Next: review the minimal supported storage and per-event reply contracts, then continue #58.
 No vendor source changes, sidecar history platform, custom scheduler, push, PR, remote merge,
 deployment, real sends or M3 work. A local diagnostic commit is the handoff, not completion of #58.
+## 2026-11-13 — SA-OBS-02 zero-usage failure accounting
+
+Owner: Codex. DEPLOYED / LIVE PREVIEW VERIFIED. Per operator instruction, identified-model failed
+attempts with explicit zero token counters and zero recorded cost count as $0
+in receipts, even when native priced=false. Unknown models, missing counters and
+nonzero usage remain unknown; source ledger, rates and delivery state are unchanged.
+Checks: receipt/source tests 35/35; scaffold/diff and all PR #80 CI passed.
+Deployed `400019cf2b01` at 2026-11-13 09:41:23 UTC. Integrated November 6 preview:
+DeepSeek 121 attempts / 1 error / $0.3136786682 / zero unpriced; daily known cost
+unchanged at $0.3846581493, two unresolved auto records remain. Source coverage
+complete; no manual send. No milestone advancement.
+
+
+## 2026-11-12 — SA-OBS-02 usage coverage correction
+
+Owner: Codex. **DEPLOYED / LIVE PREVIEW VERIFIED.** The operator traced the OpenAI
+dashboard comparison to local OpenCode, not Nori. Read-only SQLite/zstd and
+isolated ACP inspection nevertheless confirmed real omissions: direct Qwen
+requests across Nori profiles and Codex runs under the dedicated ACP account.
+No account-wide dashboard total is imported and native catalog rates remain
+unchanged. Three historical Bailian auto records lack actual model identity;
+unknown costs remain explicit with a superscript marker on the known subtotal.
+
+Implementation adds optional configured profile registries, direct usage and
+owned Codex imports, with sanitized isolated-account exports and source-aware
+deduplication. The sender preserves native scheduling and delivery state; failed
+exports stop before generation or sending. Checks: Node 43/43, nested sender
+Python 17/17, native Magpie pricing/restart/stdin-export integration 1/1, scaffold
+and diff passed. A sanitized metadata replay matched 94 missing calls and
+1,614,503 tokens; all seven live agent databases had zero archives at audit time.
+The first full run exposed an existing worker fixture URL-encoding bug in paths
+with spaces; using fileURLToPath restored its 8/8 test pass. After integrating current main, the full suite passed: 1372 tests, 1368 pass,
+4 conditional skips, zero failures. The new native integration was also run
+explicitly and passed. PR #78 passed all CI and deployed as `262878681fa6` at
+2026-11-13 02:44:06 UTC; all four services are healthy. Live native refresh accepted
+94 records, then accepted 0 / skipped 94 on repeat. Seven daily previews total
+479 attempts, 14,520,939 tokens and $1.0706050245 known estimated cost, with four
+unpriced records. The protected-account exporter and integrated sender preview
+passed. Provider/channel configuration equality checks passed; no price or routing
+change. Existing delivery records and images remain intact; no correction was sent.
+The existing 09:00 LA job ran successfully on November 12 and remains enabled for
+November 13. First scheduled delivery using the expanded sources is pending.
+No product milestone advances.
+See [runbook and rollback](daily-agent-receipt.md).
 
 ## 2026-11-12 — Slack task-loop functional naming
 

@@ -62,6 +62,16 @@ no merge/deployment/outreach or next task. Live acceptance remains separately ga
 
 ## SA-OBS-02 / #68 daily receipt — November 12, 2026
 
+Coverage follow-up (Codex, 2026-11-12): **DEPLOYED / LIVE PREVIEW VERIFIED**. Audit confirmed missing
+direct Qwen and isolated Nori ACP usage in the gateway-only receipt. The operator
+identified the compared OpenAI dashboard spend as unrelated local OpenCode usage.
+Optional all-agent/profile collection, owned ACP exports and incomplete subtotal
+marking preserve native prices and delivery history. Full suite: 1368 pass / 4
+conditional skips / zero failures; native integration 1/1. PR #78 CI passed and
+deployed `262878681fa6`. Native backfill added 94 records; repeat skipped all 94.
+Seven daily previews and integrated sender preview passed; prices unchanged.
+First scheduled delivery with expanded sources remains pending. No product milestone advances.
+
 Owner: Codex. **DEPLOYED / ENABLED; manual native run and Slack image verified.**
 [PR #72](https://github.com/rein-protocol-foundation/nori-agent/pull/72) passed all CI,
 merged and deployed as `831093f8bba3` on 2026-11-12 at 09:19:57 UTC.
@@ -152,3 +162,8 @@ allocation, competing proposals and the weighted round model; they do not block 
 - [ ] AC20: end-to-end zero-budget and funded event rehearsals, including outcomes and settlement records.
 
 P1 adds recurring communities, contributor growth, matching, feedback analysis and authorized social image/text publishing. P2 adds the second chat platform, cross-platform identity, multi-region coordination and governance evolution. No video, autonomous payments, signing, token issuance or on-chain voting in P0.
+
+SA-OBS-02 follow-up (2026-11-13, Codex): explicit zero-usage failures for identified
+models now count as $0 in receipts. DEPLOYED / LIVE PREVIEW VERIFIED: 35 tests,
+scaffold/diff and PR #80 CI passed; deployed `400019cf2b01`. November 6 preview
+retains cost and error count, with zero unpriced DeepSeek records; no milestone advancement.

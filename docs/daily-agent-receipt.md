@@ -4,7 +4,108 @@ Owner: Codex. Date: 2026-11-12, America/Los_Angeles.
 This is the daily receipt slice of #68, not completion of channel attribution,
 Axiom dashboards or allowance alerts. Apply through a dedicated PR.
 
-## Behavior and scope
+## Coverage correction under verification — November 12, 2026
+
+The original gateway-only receipt is **not total Nori usage**. A read-only audit
+of all registered agent databases in the Slack, Discord and director-pilot
+profiles found direct Qwen calls outside Magpie. The isolated ACP account also
+has Codex usage outside both Magpie and ordinary OpenClaw assistant usage rows.
+The OpenAI account screenshot originally compared with the weekly receipt was
+confirmed by the operator to be **local OpenCode usage**, not Nori. Do not import
+account-wide totals or unrelated CLI/development usage into Nori receipts.
+
+The follow-up keeps existing prices and the Provider → model layout. Unknown
+items remain explicit; the total displays the known subtotal with a superscript
+`*` and an exclusion footnote. Historical Bailian `auto` rows that contain no
+actual served-model identity cannot be assigned a guessed model or price. A
+separate failed, zero-token request is counted as $0 under the operator-approved
+reporting policy: identified model, failed request, explicit zero input/output/cache
+counters, zero reasoning and zero recorded cost. Missing counters, unresolved
+models and nonzero usage remain unpriced. The source ledger is not rewritten.
+
+The optional `--sources-config` supplements gateway records using explicit
+trusted profile roots and their native `agent_databases` registries, rather than
+a fixed list of agents or a channel filter. See
+[source configuration](../config/nori-usage-sources.example.json). A profile root
+is the OpenClaw state root: its registry is `state/openclaw.sqlite`. Do not point
+it at a backup, release copy or generic home directory. Database reads are
+read-only, including compressed transcript payloads. Gateway-routed transcript
+usage must not be added a second time. An explicit refresh submits only owned,
+deduplicated direct requests to Magpie's native reported-usage API, omitting
+cost so Magpie applies its own catalog and configuration. Stable opaque request
+IDs make retries idempotent. The report reads only the exact owned request-ID
+set, not all reported/log usage. No prices or duplicate pricer are embedded in
+receipt code. A native offline check confirmed historical GPT-5.4 Mini and Codex
+auto-review price correctly even when absent from the current model picker.
+
+Native aggregate usage APIs do not supply the per-call identity needed for this
+cross-source accounting join, and do not cover the separate isolated Codex home.
+The bounded metadata reader therefore follows the pinned native SQLite/journal
+formats. It does not modify OpenClaw, restore archived conversations, replace
+channels or disable memory. Reset/deleted and cold archives require verified
+checksums and the same identity deduplication as current rows. Unsupported,
+unreadable or conflicting evidence is a coverage gap, not zero usage.
+
+Codex roots require explicit Nori ownership and the expected `acpx` originator.
+Standalone Codex/OpenCode calls are excluded. The isolated ACP account retains
+its private transcript permissions. Its exporter emits only usage metadata and
+opaque deduplication keys; no prompts, responses or raw session IDs leave the
+account. See [export configuration](../config/nori-codex-usage-export.example.json).
+The sender's optional `sourceExports` invokes this fixed exporter as the named
+account with `sudo -n -u`, feeds the fixed repository exporter to Node over stdin,
+captures sanitized stdout and atomically writes a 0600
+import file owned by the receipt runner. It does not grant new sudo rights or
+relax transcript or checkout ACLs. The isolated account uses its already-installed
+Node binary; no second copy of the exporter is installed. Export failure stops generation before sending; imports
+must match the requested interval, expected owner and freshness limit.
+
+Example optional fields in the private sender configuration:
+
+```json
+{
+  "sourcesConfig": "/home/ubuntu/rein-agent/runtime/daily-agent-receipt/sources.json",
+  "refreshSources": true,
+  "sourceExports": [{
+    "user": "nori-acp-pilot",
+    "nodeExecutable": "/opt/nori-acp-pilot/node",
+    "configPath": "/var/lib/nori-acp-pilot/usage-export.json",
+    "outputPath": "/home/ubuntu/rein-agent/runtime/daily-agent-receipt/imports/acp.json"
+  }]
+}
+```
+
+`refreshSources: true` explicitly enables local accounting writes before
+rendering, including sender previews. Calling the renderer directly remains
+read-only; use it for a preview without ingestion. Refresh failures stop before
+delivery. No provider request, route selection or price-setting change is needed.
+
+The native daily schedule and durable delivery keys remain unchanged. Remove
+these optional fields to restore gateway-only reporting; retain existing send
+receipts and native reported history and mark the reduced coverage honestly.
+Do not reset the Magpie ledger to undo a reporting configuration. Source collection, synthetic
+tests, a production preview and an actual scheduled delivery are separate gates.
+PR #78 deployed as `262878681fa6` at 2026-11-13 02:44:06 UTC with all four
+services healthy. Private source configuration uses the actual receipt runner
+UID (1001 on this host); isolated export/config permissions remain 0600. Native
+backfill for November 5–11 accepted 94 records, then accepted 0 / skipped 94.
+Seven daily previews and the integrated sender preview passed; provider/channel
+configurations remained byte-for-byte unchanged. No correction was sent.
+
+The corrected week totals 479 attempts, 14,520,939 tokens and $1.0706050245 known
+estimated cost. Four unpriced records remain: three unresolved Bailian `auto`
+attempts and one zero-token attempt marked unpriced by the native ledger.
+The November 5 preview now includes OpenAI GPT-5.4 Mini and Codex auto-review;
+the November 6 preview verifies the superscript/footnote. Evidence is private
+under `runtime/daily-agent-receipt/coverage-preview/` and `coverage-refresh-*.json`.
+The previous private sender configuration is retained as a timestamped
+`config.before-coverage-*.json` for rollback. Restore it to disable supplemental
+collection; retain the append-only ledger and all delivery history.
+
+The original job completed successfully on November 12 at 09:00 LA and remains
+enabled for November 13 at 09:00 LA. First scheduled delivery with the expanded
+sources remains pending; manual preview is not scheduled-delivery acceptance.
+
+## Existing gateway-only behavior and scope
 
 At **09:00 America/Los_Angeles**, a native OpenClaw command automation renders
 the **previous local calendar day** and sends its PNG to **#nori-alerts**
