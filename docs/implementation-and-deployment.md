@@ -25,6 +25,8 @@ model-selected reactions and other conversation types were not retested; this is
 or product acceptance. Next: observe the next normal mention for end-to-end acknowledgement
 behavior. No product milestone advances. Local scaffold and diff checks passed;
 no code tests were required for this OAuth-only repair.
+Documentation follow-up: acceptance records use the functional filename `acceptance-evidence.md`;
+repository links and the development instructions were updated without changing acceptance status.
 [Slack method/scope requirement](https://docs.slack.dev/reference/methods/reactions.add/).
 
 ## 2026-11-13 — #82 review: unmanaged M1 replacement compatibility
@@ -579,7 +581,7 @@ most one canonical article and a separate `post_article_link` backlink intent; a
 are audited with `finance.approve_adjust`; unresolved overspend must recover in the fixed order
 “authorize a higher limit (`finance.approve`) → add reservation (`finance.reserve`) → record payment
 → settle.” These rules moved with `activities.ts` to later work and are unreachable in the recorded
-runtime. They remain future requirements in the PRD and [P0 acceptance matrix](p0-acceptance-matrix.md).
+runtime. They remain future requirements in the PRD and [acceptance evidence](acceptance-evidence.md).
 
 ## P0 v0.1 vertical slice: scope and status
 
@@ -1011,4 +1013,4 @@ rehearsals used real test Slack and linked DEV tables (see the
 build, made zero PROD business writes, and did not establish a post-rename real Slack rerun of the
 recorded PR head.
 
-See the [AC01–AC20 acceptance matrix](p0-acceptance-matrix.md) for complete evidence and remaining gates.
+See the [AC01–AC20 acceptance matrix](acceptance-evidence.md) for complete evidence and remaining gates.

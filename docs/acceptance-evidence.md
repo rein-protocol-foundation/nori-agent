@@ -1,4 +1,4 @@
-# P0 acceptance evidence matrix
+# Acceptance evidence
 
 | Task / date / owner | Status and evidence | Pending acceptance / next step |
 | --- | --- | --- |

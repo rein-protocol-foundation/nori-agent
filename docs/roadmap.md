@@ -142,7 +142,7 @@ PR head carries the renamed interfaces with unit and loader-level validation onl
 Slack retest; `prod_*` tables are untouched and the production migration and release gates remain.
 See the [v0.1 governance acceptance record](governance-acceptance-2026-09-28.md).
 
-For a requirement-by-requirement status, see the [P0 acceptance matrix](p0-acceptance-matrix.md).
+For a requirement-by-requirement status, see the [acceptance evidence](acceptance-evidence.md).
 
 Discord onboarding conversation content now ships in the workspace, separately from the v0.1
 governance slice: optional introductions, peer discussion, free learning resources, public in-person

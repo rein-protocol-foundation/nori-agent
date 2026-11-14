@@ -19,6 +19,8 @@ active，线上 tracked checkout 干净；无需替换凭据、重启、部署�
 复现的 API 权限错误已解除，无剩余阻塞。未复测自动确认表情的时机、模型主动选择表情或
 其他会话类型，不代表 C02 或产品完整验收；下一步观察正常提及时的端到端确认行为。
 不推进产品里程碑。本地 scaffold 与 diff 检查通过；仅 OAuth 配置修复，无需代码测试。
+文档命名跟进：验收证据采用按用途命名的 `acceptance-evidence.md`，仓库链接与开发说明
+已同步更新，验收状态不变。
 [Slack 方法与权限要求](https://docs.slack.dev/reference/methods/reactions.add/)。
 
 ## 2026-11-13 — #82 review：非托管 M1 任务替换兼容性
@@ -406,7 +408,7 @@ v0.1 方向已落地 14 个工具，且**只在显式 `foundationDb` 配置块�
 
 对 PRD R08 补充了一个实际运营中的边界：标成“零申请额”但仍要求报销的提案，应先补足金额，再进入董事评选；不能误走零预算快速通道。这一说明已同步到中英文 PRD。文章事实确认必须由活动负责人执行且依赖服务端提供的 Contributor 资格查询这一规则，随活动核心一并改到后续 PR；对应的要求仍保留在 PRD 与验收矩阵中作为后续范围。
 
-活动核心的确定性边界**不属于本 PR**：任务完成自动取消追办提醒、`timezone_required` 提醒派发、每活动至多一篇规范文章与独立 `post_article_link` 回链意图、`finance.approve_adjust` 额度调整审计，以及未决超支必须按「授权提高上限（`finance.approve`）→ 补预留（`finance.reserve`）→ 记录付款 → 结算」固定顺序恢复等规则，随 `activities.ts` 一并改到后续 PR，目前在当前运行时不可达。这些要求仍保留在 PRD 与 [P0 验收矩阵](p0-acceptance-matrix.md) 中作为后续范围。
+活动核心的确定性边界**不属于本 PR**：任务完成自动取消追办提醒、`timezone_required` 提醒派发、每活动至多一篇规范文章与独立 `post_article_link` 回链意图、`finance.approve_adjust` 额度调整审计，以及未决超支必须按「授权提高上限（`finance.approve`）→ 补预留（`finance.reserve`）→ 记录付款 → 结算」固定顺序恢复等规则，随 `activities.ts` 一并改到后续 PR，目前在当前运行时不可达。这些要求仍保留在 PRD 与 [验收证据](acceptance-evidence.md) 中作为后续范围。
 
 ## P0 v0.1 纵向切片：范围与现状
 
@@ -600,4 +602,4 @@ AC09、AC14 的外部频道/网站唯一性、AC16 的真实频道私密隔离�
 
 这些结果仍然只是本地与加载器级证据，不含真实聊天或生产验收。合成演练另在真实测试 Slack 工作区与已链接的 `dev_*` 表集上留下过提供方证据（见 [v0.1 治理验收记录（2026-09-28）](governance-acceptance-2026-09-28.md)），但那是改名前的构建、`prod_*` 业务写入为 0，且当前 PR head 改名后尚未在真实 Slack 重跑。
 
-完整的逐项证据与尚缺验收见 [AC01–AC20 验收矩阵](p0-acceptance-matrix.md)。
+完整的逐项证据与尚缺验收见 [AC01–AC20 验收矩阵](acceptance-evidence.md)。
