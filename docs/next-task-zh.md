@@ -158,4 +158,4 @@
 - [产品需求文档](PRD-agent-community-operations-zh.md) 的 US01「新成员找到参与方式」就是这条路的原型。
 - [验收记录](governance-acceptance-2026-09-28.md) 记着这十个用例各自的结果，包括没通过的那一个；更细的原始证据只保存在本地 `runtime/` 目录，不入库。
 - [开发、验证与部署记录](implementation-and-deployment-zh.md) 写的是当前实现边界与部署状态。
-- [P0 验收矩阵](p0-acceptance-matrix.md) 和[实施路线图](roadmap.md) 记录的是完整的验收范围，这一轮先把它们放在一边。
+- [验收证据](acceptance-evidence.md) 和[实施路线图](roadmap.md) 记录的是完整的验收范围，这一轮先把它们放在一边。

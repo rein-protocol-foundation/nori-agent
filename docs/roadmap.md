@@ -1,5 +1,13 @@
 # Nori-Agent implementation roadmap
 
+## Slack reaction permission maintenance / #77 / C02 support — November 13, 2026
+
+Owner: Codex. **LIVE API VERIFIED; configuration-only**. Existing Nori reauthorized with only
+`reactions:write` added. Reproduced `missing_scope` before repair; same deployed credential then
+passed add/read-back/remove/cleanup on an existing message. No restart or deployment.
+Automatic acknowledgement/model-selected reaction acceptance remains untested; observe the next
+normal mention. No milestone advancement. [Evidence](implementation-and-deployment.md).
+
 ## #82 / SA-M2 compatibility review — November 13, 2026
 
 Owner: Codex. Fixed unmanaged M1 change/replacement admission while continuation is enabled,
@@ -134,7 +142,7 @@ PR head carries the renamed interfaces with unit and loader-level validation onl
 Slack retest; `prod_*` tables are untouched and the production migration and release gates remain.
 See the [v0.1 governance acceptance record](governance-acceptance-2026-09-28.md).
 
-For a requirement-by-requirement status, see the [P0 acceptance matrix](p0-acceptance-matrix.md).
+For a requirement-by-requirement status, see the [acceptance evidence](acceptance-evidence.md).
 
 Discord onboarding conversation content now ships in the workspace, separately from the v0.1
 governance slice: optional introductions, peer discussion, free learning resources, public in-person

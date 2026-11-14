@@ -1,5 +1,34 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-13 — Slack emoji reaction permission repair / #77 / C02 support
+
+Owner: Codex. **LIVE API VERIFIED; configuration-only maintenance** (America/Los_Angeles).
+Using the deployed bot credential, `reactions.add` failed with `missing_scope`, explicitly
+requiring `reactions:write`. Added only that Bot Token Scope to the existing Nori app and,
+after the operator confirmed the authorization form's terms, completed workspace reauthorization.
+The existing `incoming-webhook` scope required a channel selection; the operator confirmed
+`#nori-alerts`, where Slack recorded an integration-added notice. No webhook secret was copied.
+
+The unchanged deployed credential then passed `auth.test` with the same bot identity and
+`reactions:write` in `x-oauth-scopes`. On the same existing operator message, adding `eyes`
+returned `ok: true`; read-back through existing `conversations.history` permissions confirmed
+the bot's reaction. Removal returned `ok: true`, and read-back confirmed cleanup. No
+`reactions:read` or other scope was added. Slack service remained active with the same PID;
+the live tracked checkout stayed clean. No credential replacement, restart, code deployment
+or new test message was needed. Rollback: remove the added scope and reauthorize if required;
+this restores the original reaction failure.
+
+The operator subsequently reported that the repair succeeded. This is operator-reported
+confirmation, separate from the API evidence above. No blocker remains for the reproduced
+API permission failure. Automatic acknowledgement timing,
+model-selected reactions and other conversation types were not retested; this is not full C02
+or product acceptance. Next: observe the next normal mention for end-to-end acknowledgement
+behavior. No product milestone advances. Local scaffold and diff checks passed;
+no code tests were required for this OAuth-only repair.
+Documentation follow-up: acceptance records use the functional filename `acceptance-evidence.md`;
+repository links and the development instructions were updated without changing acceptance status.
+[Slack method/scope requirement](https://docs.slack.dev/reference/methods/reactions.add/).
+
 ## 2026-11-13 — #82 review: unmanaged M1 replacement compatibility
 
 Owner: Codex. Addressed review comment 4561989210: continuation now accepts the exact
@@ -552,7 +581,7 @@ most one canonical article and a separate `post_article_link` backlink intent; a
 are audited with `finance.approve_adjust`; unresolved overspend must recover in the fixed order
 “authorize a higher limit (`finance.approve`) → add reservation (`finance.reserve`) → record payment
 → settle.” These rules moved with `activities.ts` to later work and are unreachable in the recorded
-runtime. They remain future requirements in the PRD and [P0 acceptance matrix](p0-acceptance-matrix.md).
+runtime. They remain future requirements in the PRD and [acceptance evidence](acceptance-evidence.md).
 
 ## P0 v0.1 vertical slice: scope and status
 
@@ -984,4 +1013,4 @@ rehearsals used real test Slack and linked DEV tables (see the
 build, made zero PROD business writes, and did not establish a post-rename real Slack rerun of the
 recorded PR head.
 
-See the [AC01–AC20 acceptance matrix](p0-acceptance-matrix.md) for complete evidence and remaining gates.
+See the [AC01–AC20 acceptance matrix](acceptance-evidence.md) for complete evidence and remaining gates.

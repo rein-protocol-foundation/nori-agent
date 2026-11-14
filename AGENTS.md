@@ -39,7 +39,7 @@ explicit user requests still apply. It governs repository development, not Nori'
   `model="gpt-6.1-sol"`, `reasoning_effort="high"` or `"low"`, and `fork_turns="none"`
   with the corresponding role instructions. Verify that fallback too. If model selection cannot
   be enforced, report the limitation and stop delegated work; never silently substitute Astra.
-- Track PRD milestones in `docs/roadmap.md`, acceptance evidence in `docs/p0-acceptance-matrix.md`,
+- Track PRD milestones in `docs/roadmap.md`, acceptance evidence in `docs/acceptance-evidence.md`,
   and dated verification/handoff notes in `docs/implementation-and-deployment.md` (maintaining its
   Chinese counterpart). Record task/PRD ID, status, owner, checks and results, blockers, and next step.
   Configuration-only work does not advance product milestones.
