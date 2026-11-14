@@ -1,5 +1,26 @@
 # Nori-Agent 开发、验证与部署记录
 
+## 2026-11-13 — Slack 表情回复权限修复 / #77 / C02 支持
+
+负责人：Codex。**线上 API 已验证；仅权限配置维护**，日期按 America/Los_Angeles。
+线上现有 Bot 凭据调用 `reactions.add` 返回 `missing_scope`，明确缺少 `reactions:write`。
+仅为现有 Nori 应用增加这一 Bot Token Scope；用户确认授权页条款后，完成工作区重新授权。
+原有 `incoming-webhook` 权限要求选择频道，用户确认使用已加入的 `#nori-alerts`；
+Slack 生成了 integration-added 系统通知，未复制 webhook 密钥。
+
+原线上凭据随后通过 `auth.test`，Bot 身份一致，`x-oauth-scopes` 已含新增权限。
+对同一条既有管理员消息添加 `eyes` 返回 `ok: true`；使用原有
+`conversations.history` 权限回读，确认表情属于 Nori。移除同样返回 `ok: true`，
+再次回读确认清理完成。未增加 `reactions:read` 或其他权限。Slack 服务 PID 未变且保持
+active，线上 tracked checkout 干净；无需替换凭据、重启、部署或发送新测试消息。
+回退方式：移除新增 scope，并按 Slack 要求重新授权；回退会恢复原表情权限失败。
+
+用户随后确认「修复成功」；该确认作为用户反馈，与上述 API 实测证据分别记录。
+复现的 API 权限错误已解除，无剩余阻塞。未复测自动确认表情的时机、模型主动选择表情或
+其他会话类型，不代表 C02 或产品完整验收；下一步观察正常提及时的端到端确认行为。
+不推进产品里程碑。本地 scaffold 与 diff 检查通过；仅 OAuth 配置修复，无需代码测试。
+[Slack 方法与权限要求](https://docs.slack.dev/reference/methods/reactions.add/)。
+
 ## 2026-11-13 — #82 review：非托管 M1 任务替换兼容性
 
 负责人：Codex。修复 review 4561989210：原有 M1 hook 确认取消与运行结算后，continuation

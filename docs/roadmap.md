@@ -1,5 +1,13 @@
 # Nori-Agent implementation roadmap
 
+## Slack reaction permission maintenance / #77 / C02 support — November 13, 2026
+
+Owner: Codex. **LIVE API VERIFIED; configuration-only**. Existing Nori reauthorized with only
+`reactions:write` added. Reproduced `missing_scope` before repair; same deployed credential then
+passed add/read-back/remove/cleanup on an existing message. No restart or deployment.
+Automatic acknowledgement/model-selected reaction acceptance remains untested; observe the next
+normal mention. No milestone advancement. [Evidence](implementation-and-deployment.md).
+
 ## #82 / SA-M2 compatibility review — November 13, 2026
 
 Owner: Codex. Fixed unmanaged M1 change/replacement admission while continuation is enabled,
