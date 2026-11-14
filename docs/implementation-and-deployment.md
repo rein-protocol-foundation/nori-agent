@@ -1,5 +1,22 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-13 — PR #83 CI follow-up / SA-M1-01–05 compatibility
+
+Owner: Codex. **LOCAL VERIFIED; remote CI/review pending**.
+Run `43525515709` failed the existing Slack task-loop assertion that an old ACP result cannot
+satisfy replacement scope. Local `nori-task-loop-WcMVwe` reproduced it: the native task remained
+cancelled, but the model prompt lacked the old-scope restriction. Native lifecycle inspection and
+trace confirmed prompt assembly precedes `before_agent_run`. The task-loop prompt hook now reads
+the owner-bound native task directly; the plugin wrapper awaits it. Admission and tool gates remain
+in place. The regression fixture waits for a standalone cancelled report before requesting the
+replacement, so coalescing cannot hide this ordering defect. No vendored code changed.
+
+Checks so far: 21/21 task-loop tests; full suite 1397 total / 1393 passed / 4 existing conditional
+skips / 0 failures; scaffold and diff checks passed. The earlier CI/local failure is retained above.
+Native probes `nori-task-loop-bQmAto` and strengthened `nori-task-loop-VDTCWA` pass; the latter
+requires an independently delivered cancelled report before replacement. Product acceptance and
+live operations remain unchanged. Next: push and follow latest-head CI and review on PR #83.
+
 ## 2026-11-13 — SA-M3-01–05 / #59 partnership test workflow
 
 Owner: Codex (runtime-verified Astra Medium, explicit user override), one verified Sol High

@@ -1,5 +1,11 @@
 # Nori-Agent implementation roadmap
 
+## PR #83 CI compatibility follow-up — November 13, 2026
+
+SA-M1-01–05 / #60; owner Codex. Prompt-before-admission cancellation guard corrected;
+21 targeted tests and full suite 1393 pass / 4 skips / 0 failures. Native probes
+`bQmAto` / `VDTCWA` pass; latest-head CI/review pending; no product milestone advancement. [Dated evidence](implementation-and-deployment.md).
+
 ## SA-M3-01–05 / #59 — November 13, 2026
 
 Owner: Codex Astra Medium with verified Sol High implementation. **IMPLEMENTED / LOCAL VERIFIED;

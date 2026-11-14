@@ -32,8 +32,8 @@ export default definePluginEntry({
         await continuation?.beforeAgentRun(event, ctx);
         return admitted;
       }, { priority: 200, timeoutMs: continuation ? DEVELOPMENT_AUTH_TIMEOUT_MS * 3 + 5000 : DEVELOPMENT_AUTH_TIMEOUT_MS + 1000 });
-      api.on('before_prompt_build', (event, ctx) => {
-        const base = runtime.beforePromptBuild(event, ctx), extra = continuation?.beforePromptBuild(event, ctx);
+      api.on('before_prompt_build', async (event, ctx) => {
+        const base = await runtime.beforePromptBuild(event, ctx), extra = continuation?.beforePromptBuild(event, ctx);
         return extra ? { ...base, prependContext: [base?.prependContext, extra.prependContext].filter(Boolean).join('\n') } : base;
       });
       api.on('before_tool_call', async (event, ctx) => {
