@@ -54,7 +54,11 @@ export default definePluginEntry({ id: 'task-loop-task-fixture', name: 'Local Sl
     } });
   }, stop() { for (const hold of holds.values()) hold.release(); releaseResearch(); unregisterAcpRuntimeBackend('task-loop-acp-fixture'); globalThis.fetch = originalFetch; } });
   api.on('reply_dispatch', tryDispatchAcpReplyHook, { eligibleDispatchKinds: ['acp'] });
-  api.on('before_agent_run', (_event, ctx) => {
+  api.on('before_agent_run', async (_event, ctx) => {
+    if (ctx.inputProvenance?.sourceSessionKey) {
+      const task = await api.runtime.tasks.async.runs.bindSession({ sessionKey: ctx.sessionKey, agentId: ctx.agentId }).resolve(ctx.inputProvenance.sourceSessionKey);
+      (state.completionTasks ??= []).push({ runId: ctx.runId, task });
+    }
     state.runs.push({ runId: ctx.runId, sessionKey: ctx.sessionKey, modelProvider: ctx.modelProviderId, modelId: ctx.modelId, senderId: ctx.senderId, trigger: ctx.trigger, provenance: ctx.inputProvenance }); save();
   });
   api.on('after_tool_call', (event, ctx) => { state.tools.push({ name: event.toolName, params: event.params, result: event.result, error: event.error, runId: ctx.runId, sessionKey: ctx.sessionKey }); save(); });
@@ -114,6 +118,10 @@ export default definePluginEntry({ id: 'task-loop-task-fixture', name: 'Local Sl
         await dispatch('TASK_LOOP_ACP_CHANGE_PENDING', { sender: 'UBOB0001' });
         for (const hold of holds.values()) if (hold.slow) hold.release();
         await waitFor(() => state.backend.some(s => s.event === 'settled'), 'ACP cleanup settlement');
+        // Exercise a standalone late completion, not only a notification coalesced
+        // into the next human turn (which previously hid prompt-hook ordering bugs).
+        const oldRun = state.tools.find(t => t.name === 'sessions_spawn' && t.params?.label === 'task-loop-acp-slow' && t.result?.details?.status === 'accepted')?.result.details;
+        await waitFor(() => state.sent.some(s => s.background && s.text.includes('TASK_LOOP_CANCELLED_REPORT') && s.text.includes(oldRun.childSessionKey)), 'cancelled ACP report before replacement');
         await dispatch('TASK_LOOP_ACP_CHANGE_SETTLED');
         await waitFor(() => state.backend.some(s => s.event === 'start' && s.text.includes('User-directed replacement')), 'replacement native admission');
         await dispatch('TASK_LOOP_ACP_REPLACEMENT_STATUS');

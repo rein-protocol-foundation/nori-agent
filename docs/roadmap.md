@@ -1,5 +1,24 @@
 # Nori-Agent implementation roadmap
 
+## PR #83 CI compatibility follow-up — November 13, 2026
+
+SA-M1-01–05 / #60; owner Codex. Prompt-before-admission cancellation guard corrected;
+21 targeted tests and full suite 1393 pass / 4 skips / 0 failures. Native probes
+`bQmAto` / `VDTCWA` pass; latest-head CI/review pending; no product milestone advancement. [Dated evidence](implementation-and-deployment.md).
+
+## SA-M3-01–05 / #59 — November 13, 2026
+
+Owner: Codex Astra Medium with verified Sol High implementation. **IMPLEMENTED / LOCAL VERIFIED;
+product acceptance pending**. [Runbook, failures and evidence](partnership-workflow.md): optional
+fixed Lobster workflow, exact native preview, host-bound human Slack approval, designated test
+recipients, durable send claim and read-only receipt reconciliation. Native checkpoint/template
+survives actual Gateway restart; stale/duplicate/cancelled/unauthorized decisions do not send.
+21 targeted tests pass; full suite 1390 passed / 4 conditional skips / 0 failed; actual pinned
+loader/ingress/command/restart fixture `nori-partnership-qS7WYp` passes with synthetic transports.
+M1 PR #74 is merged. M2 #58 is owner-closed but its final delivery evidence remains unverified;
+separate uncommitted M2 work was preserved. No M1/M2 live acceptance is inferred. Next: review
+local source and separately authorize deployed-profile/live Slack/designated-test-recipient
+acceptance. No publication, merge, deployment or real send; M0 and AC01–AC20 unchanged.
 ## #82 / SA-M2 compatibility review — November 13, 2026
 
 Owner: Codex. Fixed unmanaged M1 change/replacement admission while continuation is enabled,

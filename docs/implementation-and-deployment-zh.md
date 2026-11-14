@@ -1,5 +1,50 @@
 # Nori-Agent 开发、验证与部署记录
 
+## 2026-11-13 — PR #83 CI 跟进 / SA-M1-01–05 兼容性
+
+负责人：Codex。**本地验证通过；远端 CI/review 待完成**。
+CI `43525515709` 在既有 Slack 任务循环的“旧 ACP 结果不能完成新范围”断言失败。
+本地 `nori-task-loop-WcMVwe` 复现：原生任务仍为 cancelled，但模型提示缺少旧范围限制。
+原生生命周期源码与追踪确认，提示构建先于 `before_agent_run`。任务循环提示钩子现直接
+读取绑定 owner 的原生任务，插件包装层等待异步结果；保留准入及工具限制。回归夹具在
+请求替代任务前等待独立的取消报告，避免通知合并掩盖顺序缺陷。未修改 vendor。
+
+已完成检查：任务循环 21/21；全量 1397 项／1393 通过／4 项既有条件跳过／0 失败；
+scaffold 与 diff 检查通过。保留上述 CI/本地失败证据。产品验收及真实操作状态不变。
+原生探针 `nori-task-loop-bQmAto` 及加强后的 `nori-task-loop-VDTCWA` 均通过；后者要求
+替代任务前独立送达取消报告。下一步：推送修复，跟进 PR #83 最新提交的 CI 与 review。
+
+## 2026-11-13 — SA-M3-01–05 / #59 合作邮件测试工作流
+
+负责人：Codex（运行时核实 Astra Medium，遵循用户明确覆盖），一名已核实 Sol High 实现代理。
+**已实现／本地验证通过；产品验收待完成**。从干净 `3942608` 复用当前 checkout，分支
+`tempest/partnership-test-workflow`。[运行手册、失败证据与恢复](partnership-workflow.md)。
+M1 #74 已合并；M2 #58 按负责人确认关闭，但最终交付证据仍未独立核实。其独立 `48856e8`
+checkout 的未提交 continuation 改动保持原样，已提交探针记录仍列有阻塞，不推定 M1/M2 验收完成。
+
+可选插件复用公开 Lobster `2026.9.13`、原生 Slack 命令身份和现有即时成员资格检查。
+唯一固定模板在精确材料处暂停；人工命令绕过模型，绑定 workspace/account/channel/session/thread、
+审批人、任务版本与 checkpoint。受限原生投递先展示完整草稿，再允许审批。唯一 Resend POST
+之前持久化发送意图，未知结果禁止自动重试，区分 API 接受与已送达。真实重启发现插件捕获目录中的
+模板路径失效；现将按摘要固定的模板副本保存在私有状态目录，与 checkpoint 一同恢复，未改 vendor。
+
+检查：定向 21/21 通过；全仓 1394 项／1390 通过／4 项既有 opt-in 跳过／0 失败。原生演练
+`nori-partnership-qS7WYp` 通过启用/禁用 loader、真实 ingress/命令、不同 PID 重启、精确版本发送、
+取消、未授权/错误线程/重复/取消后审批拒绝及回执核对；仅发生一次合成 Provider POST，审批不调用模型。
+先前夹具证据覆盖和模板路径失败保留在运行手册。未调用真实 Slack/模型/邮件 Provider，未改生产配置、
+发布、合并或部署。真实 Slack 人工审批、操作员指定的真实测试收件人及部署配置/Provider 验收待授权。
+下一步：本地审阅，再单独授权真实验收；产品复选框、M0 与 AC01–AC20 不变。
+
+最终兼容性检查：既有 `verify:plugin` 三种原生 loader profile 均通过；九个 workspace skill 原生发现
+均通过，包含 `nori-partnership-draft`；scaffold、diff 与 vendor 跟踪源码未改检查通过。最后补充审批
+预览中断状态的明确阻塞说明后，21 项定向测试再次全过。该次交接尚未运行远端 CI。
+
+发布跟进：负责人授权提交、推送并创建 [PR #83](https://github.com/rein-protocol-foundation/nori-agent/pull/83)，
+实现提交为 `92f5773`。首次检查基线 `3942608` 后，M2 PR #82 并行合并为 `50b1275`；本分支同步该更新，
+冲突保留双方文档与两条验证命令。[M2 运行手册](task-continuation.md)现已有交付记录，取代上方最初
+“交付证据未核实”的观测；M2 产品限制及真实验收仍未完成。远端 CI/review 待完成，未授权将 PR 合入 main 或部署。
+同步后全仓回归：1396 项／1392 通过／4 项条件跳过／0 失败，scaffold 与暂存差异检查通过；不据此宣称 M2 真实验收。
+
 ## 2026-11-13 — #82 review：非托管 M1 任务替换兼容性
 
 负责人：Codex。修复 review 4561989210：原有 M1 hook 确认取消与运行结算后，continuation
