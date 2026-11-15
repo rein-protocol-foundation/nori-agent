@@ -52,7 +52,7 @@ The initial governance workflow is:
 
 Real payments, fund reservations, automatic role grants, and the full activity-to-publication workflow are not enabled. The Agent accesses organizational data through the backend API and holds no database credentials.
 
-For dated evidence and outstanding checks, read the [implementation record](docs/implementation-and-deployment.md), [acceptance matrix](docs/p0-acceptance-matrix.md), and [roadmap](docs/roadmap.md).
+For dated evidence and outstanding checks, read the [implementation record](docs/implementation-and-deployment.md), [acceptance evidence](docs/acceptance-evidence.md), and [roadmap](docs/roadmap.md).
 
 ## Quick start
 
@@ -116,7 +116,7 @@ Keep the console running alongside OpenClaw. Configure providers and models in M
 | Community workflows | [Discord onboarding](docs/discord-onboarding.md) · [Community discovery](docs/community-discovery.md) |
 | Identity and privacy | [Conversation identity](docs/conversation-identity.md) · [Channel isolation](docs/channel-user-isolation.md) |
 | Architecture and integration | [Architecture](docs/architecture.md) · [Integration contracts](docs/integration-contracts.md) · [OpenClaw updates](docs/upstream.md) |
-| Implementation evidence | [Development and deployment](docs/implementation-and-deployment.md) · [Acceptance matrix](docs/p0-acceptance-matrix.md) |
+| Implementation evidence | [Development and deployment](docs/implementation-and-deployment.md) · [Acceptance evidence](docs/acceptance-evidence.md) |
 | Foundation context | [Mission and governance blueprint](PROJECT.md) · [Source provenance](docs/provenance.md) |
 | Trusted Slack development | [Host access, accident guard and Discord boundaries](docs/trusted-slack-host-access.md) |
 
