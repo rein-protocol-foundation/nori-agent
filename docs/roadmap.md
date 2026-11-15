@@ -210,3 +210,11 @@ SA-OBS-02 follow-up (2026-11-13, Codex): explicit zero-usage failures for identi
 models now count as $0 in receipts. DEPLOYED / LIVE PREVIEW VERIFIED: 35 tests,
 scaffold/diff and PR #80 CI passed; deployed `400019cf2b01`. November 6 preview
 retains cost and error count, with zero unpriced DeepSeek records; no milestone advancement.
+
+## Documentation auto-pull — November 14, 2026
+
+Task DOCS-AUTO-PULL; owner Codex. IMPLEMENTED / local verification; installed-controller
+rollout pending. Known non-runtime docs fast-forward without build/restart/report; full
+current-to-target diff keeps code, workspace policies and skills on the deployment path.
+Source-sync journal preserves recovery and build-cache continuity. Configuration/maintenance
+work only; no product milestone advancement. [Runbook](auto-update-zh.md#纯文档自动拉取).

@@ -38,6 +38,34 @@ class SourceFetchError(UpdateError):
     """Source acquisition failed before the candidate could be compiled."""
 
 
+def documentation_path(name):
+    """Only known non-runtime documentation; Markdown in workspace is executable policy."""
+    parts = name.split('/')
+    if any(part in ('', '.', '..') for part in parts):
+        return False
+    if name in ('README.md', 'README-zh.md', 'CONTRIBUTING.md', 'PROJECT.md'):
+        return True
+    return (parts[0] == 'docs' and len(parts) > 1 and
+            Path(name).suffix.lower() in ('.md', '.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg'))
+
+
+def documentation_diff(raw, preserve):
+    """Parse NUL-delimited raw Git diff; reject symlinks, executables and unknown paths."""
+    fields = raw.split('\0')
+    if fields[-1] == '':
+        fields.pop()
+    if len(fields) % 2:
+        return False
+    for header, name in zip(fields[::2], fields[1::2]):
+        match = re.fullmatch(r':(000000|100644) (000000|100644) [0-9a-f]{40} [0-9a-f]{40} ([AMD])', header)
+        if not match or not documentation_path(name):
+            return False
+        if any(name == item or name.startswith(item.rstrip('/') + '/') or
+               item.startswith(name + '/') for item in preserve):
+            return False
+    return True
+
+
 def atomic_json(path, value):
     path = Path(path)
     temporary = path.with_suffix('.tmp')
@@ -224,6 +252,42 @@ class Host:
             raise UpdateError('checkout_has_local_changes')
         if self.git(root, 'submodule', 'foreach', '--quiet', 'git status --porcelain --untracked-files=normal'):
             raise UpdateError('upstream_has_local_changes')
+
+    def documentation_only(self, previous, target, fetch=True):
+        if not all(re.fullmatch('[a-f0-9]{40}', value) for value in (previous, target)):
+            raise UpdateError('invalid_source_revision')
+        if fetch:
+            self.fetch_source(['git', '-C', self.root, '-c', 'core.hooksPath=/dev/null',
+                               'fetch', '--no-tags', '--no-recurse-submodules',
+                               self.config['repository'], target], timeout=300)
+        # A missing ancestry proof (including shallow history) falls back to deployment.
+        try:
+            self.git(self.root, 'merge-base', '--is-ancestor', previous, target)
+        except UpdateError:
+            return False
+        raw = self.git(self.root, 'diff', '--raw', '--no-abbrev', '-z', '--no-renames',
+                       '--no-ext-diff', '--no-textconv', previous, target, '--')
+        return documentation_diff(raw, self.config.get('preserve', []))
+
+    def sync_documentation(self, previous, target):
+        if self.revision(self.root) != previous:
+            raise UpdateError('source_revision_changed')
+        self.ensure_clean(self.root)
+        if not self.documentation_only(previous, target, fetch=False):
+            raise UpdateError('source_sync_requires_documentation_only')
+        # Do not run deployment-checkout hooks, recurse into upstream, or autostash edits.
+        self.git(self.root, '-c', 'core.hooksPath=/dev/null', '-c', 'submodule.recurse=false',
+                 'merge', '--ff-only', '--no-edit', '--no-autostash', target)
+        if self.revision(self.root) != target:
+            raise UpdateError('source_sync_revision_mismatch')
+        self.ensure_clean(self.root)
+
+    def carry_artifacts(self, previous, target):
+        manifest = read_json(self.artifact_record(previous))
+        if manifest:
+            # Source-only sync does not modify artifacts. The normal restore path still
+            # verifies their identity and full fingerprint before any later cache reuse.
+            atomic_json(self.artifact_record(target), manifest)
 
     def active(self):
         for service in self.config['services']:
@@ -465,6 +529,14 @@ class Updater:
             previous = read_json(self.status, {}).get('previous')
             if previous:
                 values['previous'] = previous
+        if state == 'updated':
+            values['runtimeRevision'] = values['revision']
+        elif state == 'rolled_back':
+            values['runtimeRevision'] = values['restoredRevision']
+        elif 'runtimeRevision' not in values:
+            runtime = read_json(self.status, {}).get('runtimeRevision')
+            if runtime:
+                values['runtimeRevision'] = runtime
         value = {'state': state, 'at': timestamp(), **values}
         atomic_json(self.status, value)
         print(json.dumps(value), flush=True)
@@ -596,10 +668,38 @@ class Updater:
                               'previousRevision': transaction['previousRevision'],
                               'deployedAt': transaction['deployedAt']})
 
+    def finish_source_sync(self, transaction):
+        previous, target = transaction['previousRevision'], transaction['target']
+        current = self.host.revision(self.host.root)
+        if current not in (previous, target):
+            raise UpdateError('source_sync_revision_changed; manual_recovery_required')
+        self.host.ensure_clean(self.host.root)
+        self.host.active()
+        self.host.health()
+        if not self.host.documentation_only(previous, target, fetch=False):
+            raise UpdateError('source_sync_diff_changed; manual_recovery_required')
+        if current == previous:
+            self.host.sync_documentation(previous, target)
+        self.host.carry_artifacts(previous, target)
+        self.record('source_synced', revision=target, previousRevision=previous,
+                    runtimeRevision=transaction['runtimeRevision'])
+        self.journal.unlink()
+
+    def sync_documentation(self, previous, target):
+        last = read_json(self.status, {})
+        runtime = last.get('runtimeRevision') or previous
+        transaction = {'phase': 'source_sync', 'previousRevision': previous,
+                       'target': target, 'runtimeRevision': runtime, 'at': timestamp()}
+        atomic_json(self.journal, transaction)
+        self.finish_source_sync(transaction)
+
     def recover(self):
         transaction = read_json(self.journal)
         if not transaction:
             return False
+        if transaction['phase'] == 'source_sync':
+            self.finish_source_sync(transaction)
+            return True
         if transaction['phase'] == 'committed':
             if 'deploymentId' in transaction:
                 self.queue_report(transaction)
@@ -687,6 +787,13 @@ class Updater:
             self.host.ensure_clean(self.host.root)
             self.host.active()  # Respect operator-paused services instead of reviving them.
             self.host.health()  # Prove probe/auth compatibility before building or stopping anything.
+            previous = self.host.revision(self.host.root)
+            if self.host.documentation_only(previous, revision):
+                if self.host.latest() != revision:
+                    self.record('superseded', revision=revision)
+                    return
+                self.sync_documentation(previous, revision)
+                return
             if self.host.root.stat().st_dev != self.host.releases.stat().st_dev:
                 raise UpdateError('releases_must_share_the_live_filesystem')
             required = self.required_build_bytes()

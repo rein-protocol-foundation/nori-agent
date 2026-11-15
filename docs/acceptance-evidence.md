@@ -205,3 +205,15 @@ tests and scaffold/diff passed. Identified failed zero-usage attempts count as $
 unknown models/missing counters/nonzero usage remain unknown. PR #80 CI passed;
 deployed `400019cf2b01`. November 6 integrated preview: DeepSeek 121 attempts,
 1 error, zero unpriced; unchanged $0.3136786682. No manual send.
+
+## DOCS-AUTO-PULL — November 14, 2026
+
+Verification: 82 Python tests passed (22 new real-Git source-sync tests), plus scaffold
+and whitespace checks. Production acceptance remains pending.
+
+Owner Codex. Local real-Git fixtures cover shallow checkout, docs add/edit/delete/rename,
+unchanged runtime file inode/private state, skipped hooks, no build/restart/report, source/runtime
+revision distinction, retries, duplicate/empty queue, interruptions before/after fast-forward,
+concurrent edits, accumulated runtime changes and later code deployment. Existing updater,
+webhook, storage and rollback regression tests remain required. Live controller installation
+and production merged-docs acceptance pending; no AC01–AC20 advancement.
