@@ -2,7 +2,7 @@
 
 ## #58 continuation restart repair — November 15, 2026
 
-Owner: Codex with verified Sol High implementation. In progress: preserve prepared assignment on invalid native taskName; reconcile provisional subagent cancellation through the public native API; permit authorized current managed completion review through the M1 report-only boundary. Prior failed live evidence retained. Focused regression, full suite, PR checks and live Slack/restart evidence pending. User authorized PR merge, deployment and scoped live test; no product milestone advancement before evidence.
+Owner: Codex with verified Sol High implementation. In progress: preserve prepared assignment on invalid native taskName; reconcile provisional subagent cancellation through the public native API; permit authorized current managed completion review through the M1 report-only boundary. Prior failed live evidence retained. 29 targeted tests and scaffold/diff checks pass. Full run: 1383 passed / 4 skipped; missing local Lobster dependency caused one file import failure, repaired by frozen install; that file then passed all 18 cases. Native fixture failed SQLite worker cleanup; existing native config excluded selected tests. PR #87 CI and live Slack/restart evidence pending. User authorized PR merge, deployment and scoped live test; no product milestone advancement before evidence.
 
 ## NORI-BRANDING — November 14, 2026
 

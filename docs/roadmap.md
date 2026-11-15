@@ -2,7 +2,7 @@
 
 ## #58 restart repair — November 15, 2026
 
-Owner: Codex / Sol High. IN PROGRESS: invalid-handle recovery, durable cancellation settlement and managed completion review. Local checks, PR merge and Slack/OCI restart acceptance pending; previous failed observation retained. See [live evidence](task-continuation-live-2026-11-14.md).
+Owner: Codex / Sol High. IN PROGRESS: invalid-handle recovery, durable cancellation settlement and managed completion review. 29 focused checks and aggregate 1401 repository cases pass (4 skips, dependency repaired); PR #87 merge and Slack/OCI restart acceptance pending; previous failed observation retained. See [live evidence](task-continuation-live-2026-11-14.md).
 
 ## NORI-BRANDING / Slack reply coverage — November 14, 2026
 
