@@ -1077,3 +1077,23 @@ build, made zero PROD business writes, and did not establish a post-rename real 
 recorded PR head.
 
 See the [AC01–AC20 acceptance matrix](acceptance-evidence.md) for complete evidence and remaining gates.
+
+## DOCS-AUTO-PULL — November 14, 2026
+
+Verification: 82 Python tests passed (22 new real-Git source-sync tests), plus scaffold
+and whitespace checks. Production acceptance remains pending.
+
+Owner: Codex. The updater now inspects the full current-checkout-to-target Git diff. Only
+known ordinary documentation files fast-forward in place, preserving runtime files/private
+state and the validated-artifact cache index. No build, restart or deployment report is issued
+for this path. Unknown paths, workspace Markdown, code/configuration, nonregular files and
+non-fast-forward targets retain normal deployment. A durable source-sync journal supports
+retry/recovery without resetting concurrent edits; receipts distinguish `source_synced` from
+`updated` and status keeps source/runtime revisions separate.
+
+Local real-Git and existing updater regression verification recorded with the PR. No live
+controller installation, application deployment, merge or Slack send was performed. The
+controller is outside the application checkout: install the reviewed version under its lock
+with a backup and no active transaction before expecting live behavior. Next: CI/review,
+then authorized controller installation and a merged documentation-only PR acceptance.
+No product milestone advancement. [Runbook](auto-update-zh.md#纯文档自动拉取).

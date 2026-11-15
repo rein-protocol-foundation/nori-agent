@@ -46,6 +46,9 @@ class FakeHost:
         if self.dirty:
             raise module.UpdateError('checkout_has_local_changes')
 
+    def documentation_only(self, previous, target, fetch=True):
+        return False
+
     def active(self):
         self.events.append('active')
 
