@@ -1,5 +1,9 @@
 # Nori-Agent implementation roadmap
 
+## #58 final-review follow-up — November 15, 2026
+
+Owner: Codex. PR #87 deployed: two-task restart supplement VERIFIED live; final delivery NOT ACCEPTED. Follow-up repairs successful terminal receipts accompanied by stale working liveness. [Evidence and next test](task-continuation-live-2026-11-15.md).
+
 ## #58 restart repair — November 15, 2026
 
 Owner: Codex / Sol High. IN PROGRESS: invalid-handle recovery, durable cancellation settlement and managed completion review. 29 focused checks and aggregate 1401 repository cases pass (4 skips, dependency repaired); PR #87 merge and Slack/OCI restart acceptance pending; previous failed observation retained. See [live evidence](task-continuation-live-2026-11-14.md).

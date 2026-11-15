@@ -1,5 +1,9 @@
 # Nori-Agent 开发、验证与部署记录
 
+## #58 成功任务结束判断补修 — 2026-11-15
+
+负责人：Codex / Sol High。PR #87 七项 CI 通过并合并，e279e91 已部署。同一 owner 实测确认错误名称纠正、两个中断任务自动补跑成功；最终 review 被仍为 working 的滞后 livenessState 阻塞，原生实际已返回成功终态回执。补修及重新实测待完成；[证据](task-continuation-live-2026-11-15.md)。
+
 ## #58 任务续办重启修复 — 2026-11-15
 
 负责人：Codex / 已验证 Sol High 实现。进行中：原生 taskName 校验失败保留 prepared；通过原生公开 API 确认临时取消状态；允许当前获授权的 managed attempt 经过 M1 报告边界执行 review。保留此前失败实测证据。29 项针对性检查、scaffold/diff 通过。全量 1383 通过 / 4 跳过，1 文件因本地缺少已声明 Lobster 依赖导入失败；冻结锁文件安装后，该文件 18 项全部通过。原生夹具遇 SQLite worker 清理失败，现有原生测试配置排除了目标测试，均不计通过。PR #87 CI 及 Slack/重启实测待完成。用户已授权提交、合并、部署及限定实测；验收证据产生前不推进里程碑。

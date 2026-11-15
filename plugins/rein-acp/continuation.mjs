@@ -15,6 +15,17 @@ const last = state => state.attempts.at(-1);
 // public cancel API promotes it only after checking the owning run tree.
 const provisionalKill = task => task?.runtime === 'subagent' && task.status === 'cancelled' && task.error === 'Subagent run killed.';
 const settlementKey = task => digest([task.id, task.runId, task.childSessionKey, task.runtime, task.status, task.endedAt, task.error ?? null]);
+// Native agent.wait publishes the producer's exact-run receipt/reply only after
+// execution and RPC publication settle. Its liveness label can remain "working"
+// after a normal stop; that label alone must not override the published receipt.
+const publishedTerminalReceipt = (task, run) => {
+  const receipt = run?.terminalReceipt, reply = run?.terminalReply;
+  return task.runtime === 'subagent' && task.status === 'succeeded' && Number.isFinite(task.endedAt) &&
+    run?.status === 'ok' && run.runId === task.runId && run.stopReason === 'stop' && run.livenessState === 'working' &&
+    receipt?.runId === task.runId && string(receipt.sessionId, 1024) && string(receipt.turnId, 1024) &&
+    ((receipt.terminalDisposition === 'visible' && reply?.disposition === 'visible' && string(reply.text, Infinity)) ||
+      (receipt.terminalDisposition === 'not-visible' && ['silent', 'empty'].includes(reply?.disposition)));
+};
 
 /** Thin native Flow controller. No timers, execution engine, transcript store or delivery ledger. */
 export function createTaskContinuation({ config, tasks, subagent, system, session, authorize, isNativeChild, confirmedReplacement = () => undefined, clock = Date.now, logger }) {
@@ -71,9 +82,10 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
     }
     try {
       const run = await subagent.waitForRun({ runId: task.runId, timeoutMs: 1000 });
+      const receiptConfirmed = publishedTerminalReceipt(task, run);
       if (['ok', 'error'].includes(run?.status) && Number.isFinite(run.endedAt) && !run.yielded && !run.pendingError &&
-          (!run.livenessState || run.livenessState === 'finished') && !provisionalKill(task)) {
-        attempt.settlement = { key: settlementKey(task), source: 'native_wait', endedAt: run.endedAt, at: clock() };
+          (!run.livenessState || run.livenessState === 'finished' || receiptConfirmed) && !provisionalKill(task)) {
+        attempt.settlement = { key: settlementKey(task), source: receiptConfirmed ? 'native_terminal_receipt' : 'native_wait', endedAt: run.endedAt, at: clock() };
         return true;
       }
     } catch { /* A missing process-local wait snapshot is not terminal evidence. */ }
