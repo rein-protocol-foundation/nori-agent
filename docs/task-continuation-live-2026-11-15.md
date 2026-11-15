@@ -1,6 +1,7 @@
 # Continuation repair live test — November 15, 2026
 
-Tracking #58 / PR #87. Owner: Codex. **Partial: restart supplement passed; final review failed.**
+Tracking #58 / PRs #87–#90. Owner: Codex. **FINAL SCOPED LIVE ACCEPTANCE PASSED.**
+Earlier failed runs are preserved below; the final run verifies complete Flow closure and actual Slack delivery.
 User authorized repair, PR merge, deployment, real Slack/restart test and completion.
 
 PR #87 merged as `e279e9105d877cb4b41f839a0348a1d145e3dbc1` after seven CI checks
@@ -66,3 +67,42 @@ Both remained review. This exposes the success-before-parent-review crash window
 a passing final closure test. Explicit stop requested, no active child tasks, config restoration
 initiated. Durable successful terminal authority must be checked against pinned native lifecycle
 before adding a fallback; active/yielded/uncertain execution must not be treated as settled.
+
+## Final run on PR #90 — PASS
+
+PR #90 merged as `ca5a3849e3173d258b1656575b420c8af7808165` after seven green CI
+checks and no unresolved review threads. OCI updated21:10:16UTC. Test configuration passed
+native validation and Socket connected21:14:16.
+[One request](https://reinprotocolf-e2q1425.slack.com/archives/C0C4L0YN814/p1794777277481519)
+created two independent flows in the same owner `agent:main:slack:channel:c0c4l0yn814`.
+
+| Task | Flow | First run | Supplement run | Final state |
+| --- | --- | --- | --- | --- |
+| A: Python sum1..100 | db486993-57a5-4ec4-b44a-6b98adb0b34f | f0272a41-4ade-450c-b1b2-61ee44f8641a | cd34adba-d1fa-4960-84f3-62ec5715b61b | succeeded / complete |
+| B: SHA-256 of fixed ASCII input | ff9be044-0b64-4dbe-a4d0-947dafe5ac16 | 9bf18435-aa78-4bd8-91b5-0721ef6e68ad | 5fadbecf-1539-43da-81bd-8d20a6aa4a3f | succeeded / complete |
+
+Both accepted before the21:15:39UTC restart (464506→465054). Both sleep commands were
+interrupted, so children returned missing-work evidence without computing. Their turns ended
+succeeded during drain; new Socket connected21:16:15. Parent recovery used persisted
+`native_succeeded_record` proof and reviewed continue, then both attempt2 calculations
+ran without a human continue prompt. Final settlement source was `native_terminal_receipt`.
+
+Transcript read-back confirmed B's uppercase handle was rejected before admission and corrected
+on the same prepared assignment. A's injected `complete` plus `gaps=无未完成项` was rejected
+with `rein_continuation_complete_gaps_invalid`; omission of gaps completed the same Flow.
+No new Flow or extra calculation attempt was used for either parameter correction.
+
+At21:17:42UTC, [one actual Slack bot reply](https://reinprotocolf-e2q1425.slack.com/archives/C0C4L0YN814/p1794777462253009)
+delivered both results and succeeded/complete statuses. Independently checked:
+- A: `5050`.
+- B: `4cef9b8e97c47726021695c5a5398eec8fd76ea8b60642a0e95da465a152bed1`
+  for `nori-recovery-final-20261115` (28 ASCII bytes, no newline).
+
+No active native tasks remained. Original configuration restored after the observation;
+private backups and runtime histories remain outside the repository. No vendor modification,
+DBOS, new scheduler or business-data mutation was introduced.
+
+Scope: real same-owner multi-task restart recovery, parameter correction, bounded supplements,
+complete Flow closure and observed merged Slack delivery passed. Earlier research run separately
+verified actual six-item A/B content delivery. This is not an exactly-once delivery guarantee,
+universal provider/crash guarantee, or completion of unsupported retention/delete scope.

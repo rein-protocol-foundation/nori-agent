@@ -1,5 +1,9 @@
 # Nori-Agent implementation roadmap
 
+## #58 scoped live acceptance — November 15, 2026
+
+Owner: Codex / Sol High. PASS: real same-owner two-task OCI restart, automatic supplements, recoverable invalid parameters, succeeded/complete closure and actual merged Slack delivery. PRs #87–#90 merged; final tested code ca5a384. Configuration restored; no active tasks. [Evidence](task-continuation-live-2026-11-15.md). Native delivery/retention limits remain; no broader product milestone implied.
+
 ## #58 successful-drain recovery — November 15, 2026
 
 Owner: Codex. PR #89 live test exposed successful child completion before parent review/restart, leaving wait cache absent. Native successful terminal authority verified; narrow durable-success fallback and closure retest in progress. Earlier cancelled-run supplements and actual research delivery remain verified.

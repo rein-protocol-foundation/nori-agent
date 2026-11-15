@@ -1,5 +1,9 @@
 # Nori-Agent 开发、验证与部署记录
 
+## #58 限定真实验收通过 — 2026-11-15
+
+负责人：Codex / 已验证 Sol High 实现。PR #87–#90 各七项 CI 通过、无未解决 finding 后合并。最终部署 ca5a384：同一 owner 两任务经 OCI 实际重启打断，无人工继续自动恢复；非法启动/复核参数在原 Flow 纠正；两项均 succeeded/complete。已从 Slack 读回合并结果并独立核算。原配置已恢复，无活跃原生任务，历史保留。[完整证据及先前失败](task-continuation-live-2026-11-15.md)。#58 已更新；不声称 exactly-once、任意崩溃覆盖或 retention/delete 完成。
+
 ## #58 排空期间成功终态恢复 — 2026-11-15
 
 负责人：Codex / Sol High。PR #89 七项 CI 通过并部署。实测出现另一时序：子任务在排空期间成功结束，父任务复核前重启，易失 wait 缓存返回 timeout。已核实原生成功终态在执行及完成捕获结束后、经 owner fencing 写入，排除 sessions_yield。窄范围持久成功终态回退及最终复测进行中，之前真实 A/B 研究投递证据保留。[证据](task-continuation-live-2026-11-15.md)。

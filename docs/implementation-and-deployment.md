@@ -1,5 +1,9 @@
 # Nori-Agent development, verification and deployment record
 
+## #58 scoped live acceptance PASS — November 15, 2026
+
+Owner: Codex / verified Sol High implementation. PRs #87–#90 merged after seven green CI checks each and no unresolved findings. Final deployed ca5a384: same-owner A/B interrupted by actual OCI restart, recovered without human continue, corrected invalid spawn/review inputs in the same Flows, and both reached succeeded/complete. Actual merged Slack results independently checked. Original config restored; no active native tasks; histories retained. [Full evidence including failed attempts](task-continuation-live-2026-11-15.md). #58 updated; no exactly-once, arbitrary-crash or retention/delete claim.
+
 ## #58 durable success during drain — November 15, 2026
 
 Owner: Codex / Sol High. PR #89 deployed with seven green checks. A deterministic live restart hit a distinct window: child turns succeeded during graceful drain, before parent review, then volatile agent.wait timed out after restart. Verified pinned native lifecycle only publishes owner-fenced successful tasks after execution and completion capture settle, excluding sessions_yield. Narrow durable-success fallback and final retest in progress. Prior actual A/B research delivery remains verified. [Evidence](task-continuation-live-2026-11-15.md).
