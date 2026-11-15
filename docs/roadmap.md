@@ -1,5 +1,9 @@
 # Nori-Agent implementation roadmap
 
+## #58 successful-drain recovery — November 15, 2026
+
+Owner: Codex. PR #89 live test exposed successful child completion before parent review/restart, leaving wait cache absent. Native successful terminal authority verified; narrow durable-success fallback and closure retest in progress. Earlier cancelled-run supplements and actual research delivery remain verified.
+
 ## #58 delivery observed; closure correction — November 15, 2026
 
 Owner: Codex. Two-task restart and actual merged Slack delivery VERIFIED on #88. Flow closure still needs correcting invalid complete/gaps input.40 focused tests pass; final closure retest pending. [Evidence](task-continuation-live-2026-11-15.md).

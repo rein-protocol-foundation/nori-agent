@@ -1,5 +1,9 @@
 # Nori-Agent 开发、验证与部署记录
 
+## #58 排空期间成功终态恢复 — 2026-11-15
+
+负责人：Codex / Sol High。PR #89 七项 CI 通过并部署。实测出现另一时序：子任务在排空期间成功结束，父任务复核前重启，易失 wait 缓存返回 timeout。已核实原生成功终态在执行及完成捕获结束后、经 owner fencing 写入，排除 sessions_yield。窄范围持久成功终态回退及最终复测进行中，之前真实 A/B 研究投递证据保留。[证据](task-continuation-live-2026-11-15.md)。
+
 ## #58 最终复核参数纠错 — 2026-11-15
 
 负责人：Codex / Sol High。PR #88 七项 CI 通过并部署。两任务重启实测已自动投递完整 A/B 结果，但 complete 同时填写“无未完成项”的 gaps 导致 Flow 错误失败。补修在消耗复核/预算前拒绝矛盾参数；40 项针对性检查及语法/scaffold/diff 通过。正确收尾实测待完成。[证据](task-continuation-live-2026-11-15.md)。

@@ -88,6 +88,19 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
         attempt.settlement = { key: settlementKey(task), source: receiptConfirmed ? 'native_terminal_receipt' : 'native_wait', endedAt: run.endedAt, at: clock() };
         return true;
       }
+      // At this pin, canonical native subagent success is committed only after
+      // execution end and completion capture, excluding sessions_yield, under a
+      // current execution-owner fence. Unlike provisional cancellation, it is a
+      // durable terminal fact even if restart/expiry removed agent.wait's cache.
+      // A summary is optional; criteria/effects still require the explicit review.
+      // Only absence of an observation qualifies. Active, yielded, pending or
+      // conflicting wait metadata must not be overridden by a task projection.
+      const missingObservation = run == null || (run.status === 'timeout' && Object.entries(run).every(([key, value]) =>
+        value == null || key === 'status' || (key === 'runId' && value === task.runId)));
+      if (task.runtime === 'subagent' && task.status === 'succeeded' && Number.isFinite(task.endedAt) && missingObservation) {
+        attempt.settlement = { key: settlementKey(task), source: 'native_succeeded_record', endedAt: task.endedAt, at: clock() };
+        return true;
+      }
     } catch { /* A missing process-local wait snapshot is not terminal evidence. */ }
     if (!provisionalKill(task)) return false;
     try {
