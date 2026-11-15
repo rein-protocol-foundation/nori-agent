@@ -11,6 +11,10 @@ const unwrap = event => event.toolName === 'tool_call'
 const output = details => ({ content: [{ type: 'text', text: JSON.stringify(details) }], details });
 const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const last = state => state.attempts.at(-1);
+// Native task cancellation uses this exact marker for a provisional kill. The
+// public cancel API promotes it only after checking the owning run tree.
+const provisionalKill = task => task?.runtime === 'subagent' && task.status === 'cancelled' && task.error === 'Subagent run killed.';
+const settlementKey = task => digest([task.id, task.runId, task.childSessionKey, task.runtime, task.status, task.endedAt, task.error ?? null]);
 
 /** Thin native Flow controller. No timers, execution engine, transcript store or delivery ledger. */
 export function createTaskContinuation({ config, tasks, subagent, system, session, authorize, isNativeChild, confirmedReplacement = () => undefined, clock = Date.now, logger }) {
@@ -55,12 +59,36 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
     return task?.ownerKey === flow.ownerKey && task.scope === 'session' && task.runId === attempt.runId &&
       task.childSessionKey === attempt.childSessionKey && task.runtime === flow.stateJson.runtime ? task : undefined;
   };
-  const settled = async runId => {
-    if (!runId) return false;
+  const settled = async (flow, task, attempt, cfg) => {
+    if (!task?.runId || !terminalRun(task.status)) return false;
+    if (attempt.settlement?.key === settlementKey(task) && !provisionalKill(task)) return true;
+    // The native cancel owner persists this exact promoted marker after run-tree
+    // confirmation. It also closes a crash gap before our Flow receipt is saved;
+    // other terminal projections (including successful runs) are not a fallback.
+    if (task.runtime === 'subagent' && task.status === 'cancelled' && task.error === 'Cancelled by operator.' && Number.isFinite(task.endedAt)) {
+      attempt.settlement = { key: settlementKey(task), source: 'native_cancel_record', endedAt: task.endedAt, at: clock() };
+      return true;
+    }
     try {
-      const run = await subagent.waitForRun({ runId, timeoutMs: 1000 });
-      return ['ok', 'error'].includes(run?.status) && Number.isFinite(run.endedAt) && !run.yielded &&
-        (!run.livenessState || run.livenessState === 'finished');
+      const run = await subagent.waitForRun({ runId: task.runId, timeoutMs: 1000 });
+      if (['ok', 'error'].includes(run?.status) && Number.isFinite(run.endedAt) && !run.yielded && !run.pendingError &&
+          (!run.livenessState || run.livenessState === 'finished') && !provisionalKill(task)) {
+        attempt.settlement = { key: settlementKey(task), source: 'native_wait', endedAt: run.endedAt, at: clock() };
+        return true;
+      }
+    } catch { /* A missing process-local wait snapshot is not terminal evidence. */ }
+    if (!provisionalKill(task)) return false;
+    try {
+      const receipt = await tasks.runs.bindSession({ sessionKey: flow.ownerKey, agentId: config.channel.agentId }).cancel({ taskId: task.id, cfg });
+      const observed = await nativeTask(flow);
+      if (receipt?.cancelled !== true || receipt.task?.ownerKey !== flow.ownerKey || receipt.task?.scope !== 'session' ||
+          observed?.id !== task.id || observed.status !== 'cancelled' || observed.error !== 'Cancelled by operator.' ||
+          !Number.isFinite(observed.endedAt) || settlementKey(receipt.task) !== settlementKey(observed)) return false;
+      attempt.nativeStatus = observed.status;
+      attempt.evidence = { progress: observed.progressSummary ?? null, result: observed.terminalSummary ?? null,
+        error: observed.error ?? null, deliveryStatus: observed.deliveryStatus };
+      attempt.settlement = { key: settlementKey(observed), source: 'native_cancel', endedAt: observed.endedAt, at: clock() };
+      return true;
     } catch { return false; }
   };
   async function reconcile(flow, cfg) {
@@ -96,7 +124,7 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
           catch { state.notice = 'Native cancellation failed; execution may still be active.'; }
         }
         const observed = await nativeTask(flow);
-        if (terminalRun(observed?.status) && await settled(attempt.runId)) {
+        if (terminalRun(observed?.status) && await settled(flow, observed, attempt, cfg)) {
           attempt.nativeStatus = observed.status;
           state.phase = state.pendingChange ? 'changed' : 'stopped';
           if (state.pendingChange) {
@@ -104,7 +132,10 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
             state.pendingChange = null; state.stopRequested = null; state.phase = 'ready'; attempt.reviewed = true;
           }
         } else state.phase = 'cancellation_pending';
-      } else if (!attempt.reviewed) state.phase = terminalRun(task.status) ? 'review' : 'running';
+      } else if (!attempt.reviewed) {
+        state.phase = terminalRun(task.status) ? 'review' : 'running';
+        if (terminalRun(task.status)) await settled(flow, task, attempt, cfg);
+      }
     } else if (state.stopRequested) {
       state.phase = ['prepared', 'retired'].includes(attempt?.phase) || !attempt ? (state.pendingChange ? 'ready' : 'stopped') : 'outcome_unknown';
       if (state.pendingChange && state.phase === 'ready') {
@@ -129,6 +160,21 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
     return turn;
   };
   return {
+    // M1's unmanaged cancellation reports must not remove the tools needed to
+    // review a current managed attempt interrupted by the host. A saved goal is
+    // insufficient: require current owner, audience, authority and exact backing.
+    async isCurrentAttempt(task, ctx) {
+      if (!selected(ctx) || task?.ownerKey !== ctx.sessionKey || task.scope !== 'session' || !task.runId) return false;
+      for (const flow of await ownList(ctx.sessionKey)) {
+        const state = flow.stateJson, attempt = last(state);
+        if (terminalFlow(flow) || state.stopRequested || state.pendingChange || clock() >= state.deadlineAt ||
+            attempt?.scopeRevision !== state.scopeRevision || attempt?.runId !== task.runId ||
+            attempt?.childSessionKey !== task.childSessionKey || state.runtime !== task.runtime) continue;
+        await sourceCurrent(flow, ctx);
+        return true;
+      }
+      return false;
+    },
     async beforeAgentRun(_event, ctx) {
       if (!selected(ctx) || !ctx.runId || !ctx.sessionKey) return;
       const human = !!developmentChannelFor({ developmentChannels: [config.channel] }, ctx);
@@ -192,6 +238,12 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
       if (state.stopRequested || clock() >= state.deadlineAt || attempt.scopeRevision !== state.scopeRevision ||
           (tool.params?.runtime ?? 'subagent') !== state.runtime || (tool.params?.mode ?? 'run') !== 'run')
         return { block: true, blockReason: 'Flow stopped, expired, changed scope or runtime; inspect durable status.' };
+      // Native sessions_spawn rejects these handles before starting any effects. Validate
+      // before reserving launch custody so a corrected handle can use this assignment.
+      // Keep the native case-sensitive contract; silently renaming a target changes it.
+      const taskName = typeof tool.params?.taskName === 'string' ? tool.params.taskName.trim() : undefined;
+      if (taskName && (!/^[a-z][a-z0-9_-]{0,63}$/.test(taskName) || ['all', 'last'].includes(taskName)))
+        return { block: true, blockReason: 'Invalid taskName. Use 1-64 lowercase characters matching [a-z][a-z0-9_-]*, excluding all and last, or omit it. The assignment remains prepared; correct the handle and spawn once.' };
       // Compact dispatch is checked again at the canonical hook, where custody is reserved.
       if (event.toolName === 'tool_call') return;
       if (!ctx.toolCallId) return { block: true, blockReason: 'Native launch invocation identity unavailable.' };
@@ -308,7 +360,7 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
               attempt?.scopeRevision !== state.scopeRevision || !['complete', 'continue', 'blocked'].includes(args.outcome) || !string(args.evidence) || !['none', 'confirmed', 'unknown'].includes(args.effects))
             throw Error('rein_continuation_current_scope_review_required');
           const task = await nativeTask(flow);
-          if (!terminalRun(task?.status) || !await settled(task.runId)) throw Error('rein_continuation_run_not_settled');
+          if (!terminalRun(task?.status) || !await settled(flow, task, attempt, config.hostConfig)) throw Error('rein_continuation_run_not_settled');
           await assert(flow);
           const evidenceKey = digest([task.terminalSummary ?? null, task.progressSummary ?? null]);
           state.noProgress = args.progress === true && state.lastEvidenceKey !== evidenceKey ? 0 : state.noProgress + 1;

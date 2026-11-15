@@ -14,9 +14,11 @@ export default definePluginEntry({
     const authorize = createSlackDevelopmentAuthorizer({ config: { developmentChannels: [config.channel] } });
     if (api.pluginConfig?.taskLoop === true) {
       assertTaskLoopRuntimeConfig(config, api.config);
+      let continuation;
       const runtime = createTaskLoop({ config, authorize, tasks: api.runtime.tasks, subagent: api.runtime.subagent,
+        isCurrentContinuation: (task, ctx) => continuation?.isCurrentAttempt(task, ctx) ?? false,
         isNativeChild: ctx => isSubagentSessionKey(ctx.sessionKey) || isAcpSessionKey(ctx.sessionKey) });
-      const continuation = config.continuation ? createTaskContinuation({ config: { ...config, hostConfig: api.config }, authorize,
+      continuation = config.continuation ? createTaskContinuation({ config: { ...config, hostConfig: api.config }, authorize,
         tasks: api.runtime.tasks, subagent: api.runtime.subagent, system: api.runtime.system, session: api.runtime.agent.session,
         isNativeChild: ctx => isSubagentSessionKey(ctx.sessionKey) || isAcpSessionKey(ctx.sessionKey),
         confirmedReplacement: runtime.confirmedReplacement, logger: api.logger }) : undefined;
