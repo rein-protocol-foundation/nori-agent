@@ -59,17 +59,22 @@ v0.6 保留原有用户行为，新增已有 ACP 复用与最小 change/stop 的
 | [ ] | SA-M2-04 | 取消后不再委派；原生取消未完成/失败如实报告，迟到结果不重开任务 | CORE IMPLEMENTED / STATIC ONLY；持久 stop、native cancel + settlement；无原子 launch/stop，竞争窗口与副作用不作零发生保证 |
 | [ ] | SA-M2-05 | 次数/runtime/无进展上限跨重启与再次委派保持，输出部分结果与缺口 | CORE IMPLEMENTED / STATIC ONLY；次数/期限/无进展跨 scope 保留，部分报告；research 原生 timeout 有界，ACP 期限仅协调时检查；未验收 |
 | [ ] | SA-M2-06 | native run 清理后，授权用户可按选定期限检索最小摘要/链接；期限（原 30 天）待定，显式删除优先 | UNSUPPORTED / #58；native Flow 固定七天清理，无 public 自选期限/显式 delete；不模拟额外保留，不声称产品完成 |
-| [ ] | SA-M3-01 | 真实 Slack：准备→展示精确草稿/测试收件人→审批暂停→继续或取消→报告 | NOT STARTED / #59 |
-| [ ] | SA-M3-02 | 决定绑定 approver/task/checkpoint/material；未授权、过期、重复、取消后批准不发送 | NOT STARTED / #59 |
-| [ ] | SA-M3-03 | 仅向指定测试收件人发送获批版本并记录回执，区分 API 接受与已送达 | NOT STARTED / #59 |
-| [ ] | SA-M3-04 | 审批暂停后重启仍关联同一 checkpoint；缺失或发送结果未知时阻塞而非盲重放 | NOT STARTED / #59 |
-| [ ] | SA-M3-05 | 验证实际 Lobster 安装、可信执行入口、审批监听与 acknowledgment，不削弱公共隔离 | NOT STARTED / #59 |
+| [ ] | SA-M3-01 | 真实 Slack：准备→展示精确草稿/测试收件人→审批暂停→继续或取消→报告 | 本地原生合成 ingress/命令/展示/报告通过；真实 Slack 待验收 / [#59 证据](partnership-workflow.md) |
+| [ ] | SA-M3-02 | 决定绑定 approver/task/checkpoint/material；未授权、过期、重复、取消后批准不发送 | 本地绑定、线程隔离、撤权、过期、重复与取消测试通过；真实验收待完成 / #59 |
+| [ ] | SA-M3-03 | 仅向指定测试收件人发送获批版本并记录回执，区分 API 接受与已送达 | 合成 Provider 精确请求及只读回执核对通过；未发真实邮件 / #59 |
+| [ ] | SA-M3-04 | 审批暂停后重启仍关联同一 checkpoint；缺失或发送结果未知时阻塞而非盲重放 | 不同 Gateway PID 原生恢复通过；持久模板修复、缺失/未知阻塞测试通过 / #59 |
+| [ ] | SA-M3-05 | 验证实际 Lobster 安装、可信执行入口、审批监听与 acknowledgment，不削弱公共隔离 | 本地 pinned core/插件启停/人工命令/原线程 acknowledgment 通过；部署 profile 待验收 / #59 |
 
 2026-11-13 更新：#58 原生核心已编码，仅静态检查；产品框不勾选。SA-M2-06、原子 launch/stop、ACP 硬期限及父回复收件仍有限制，详见实现说明。负责人：Codex 主协调 / 已核验 Sol High；下一步主协调静态审阅，不启动 M3。
 
 历史 2026-11-12：#58 已获本地开发授权；实际 native 探针发现存储信任与多线程回复接缝阻塞，产品尚未实现，以上接缝证据不勾选完成。负责人：Codex 主协调 / Sol High；下一步审阅最小上游接口方案后继续 #58，不启动 M3。
 
 依赖基线（v0.6）：M0 独立；M2 依赖 M1；M3 保留 M1/M2 依赖且首轮必要性待定。内部试点验证自己的 owner/audience、私有存储、回复、执行与 Provider 边界；仅记录实际触及的 M0 依赖。本轮不执行功能开发。
+
+2026-11-13 #59 开发补记：用户已另行授权 M3 本地实现，上述“本轮不执行功能开发”指 v0.6 历史文档修订。
+M3 现为已实现／本地验证通过，产品复选框保持未勾选。M1 #74 已合并，真实验收仍独立；M2 #58 按负责人
+确认开发完成而关闭，但最终交付证据仍未独立核实，独立 checkout 未提交工作已保留，不能由关闭状态推定验收。
+负责人：Codex Astra Medium / 已核实 Sol High；下一步本地审阅及单独授权真实环境验收。见 [运行手册](partnership-workflow.md)。
 
 ## 实现方式与任务映射
 

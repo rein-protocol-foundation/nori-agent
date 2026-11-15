@@ -66,8 +66,16 @@ export function createTaskLoop({ config, authorize, tasks, subagent, isNativeChi
         return { outcome: 'block', reason: 'rein_task_membership_required', message: 'Current trusted private-channel membership could not be verified.' };
       turns.set(ctx.runId, { kind: 'interactive', source: { ...ctx }, at: clock() });
     },
-    beforePromptBuild(_event, ctx) {
+    async beforePromptBuild(_event, ctx) {
       if (!selected(ctx) || isNativeChild(ctx)) return;
+      // Native prompt assembly precedes before_agent_run. Read authoritative state
+      // here as well; admission-time bookkeeping cannot protect this first prompt.
+      const provenance = ctx.inputProvenance;
+      if (provenance?.kind === 'inter_session' && ['subagent_announce', 'subagent_settle'].includes(provenance.sourceTool) &&
+          provenance.sourceSessionKey && ctx.sessionKey) {
+        const task = await tasks.async.runs.bindSession({ sessionKey: ctx.sessionKey, agentId: ctx.agentId }).resolve(provenance.sourceSessionKey);
+        if (task?.ownerKey === ctx.sessionKey && task.status === 'cancelled') reports.set(ctx.runId, task);
+      }
       const old = reports.get(ctx.runId);
       if (old) return { toolsAllow: [], prependContext: `CANCELLED / OLD-SCOPE REPORT for native task ${old.id}, run ${old.runId}. This incoming result cannot satisfy a revised goal. Report available partial results and performed or uncertain external actions from the native evidence and incoming result, clearly labeled cancelled/old scope. Cancellation is not rollback; absence of evidence is uncertainty. Send this report through the existing captured original destination. Do not launch, resume, retry or change work. Native progress: ${JSON.stringify(old.progressSummary ?? null)}; terminal summary: ${JSON.stringify(old.terminalSummary ?? null)}; diagnostic: ${JSON.stringify(old.error ?? null)}.` };
       return { prependContext: `${config.continuation ? 'Native continuation is enabled: use rein_continuation durable goals, review, stop/change and bounded supplements. Combined same-owner/audience replies may represent multiple flows; original thread delivery is not a per-flow guarantee. Legacy rein_task replacement instructions below apply to unmanaged tasks only. ' : ''}For background work follow the nori-task-loop skill. Research uses native sessions_spawn runtime="subagent", mode="run", cleanup="keep", with completionTarget omitted: retain default external original-thread delivery through parent review. ACP uses fixed agentId=${JSON.stringify(config.harnessAgentId)}, cwd=${JSON.stringify(config.cwd)}, mode="run", thread=false, streamTo="parent"; cwd is not an OS security boundary. Native tasks belong to the originating session/audience, not an individual speaker in a shared private channel. Resolve actual runId via rein_task status for canonical task ID. If native acceptance precedes task-record visibility, report the actual accepted run/session and unavailable canonical record; resolve on the next authorized status request or completion, never respawn or invent an ID. Use rein_task stop/change for confirmed cancellation plus replacement; pending/failed cancellation forbids replacement. Report results against current criteria in the original authorized thread. Cancelled/old-scope outcomes must disclose available partial evidence and performed/uncertain actions, never complete the revised goal. Never describe synthetic or missing evidence as verified.` };

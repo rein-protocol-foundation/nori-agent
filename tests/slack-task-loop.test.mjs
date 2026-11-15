@@ -114,7 +114,7 @@ test('cancelled completion remains a report with partial/uncertain action eviden
   const reply = { ...f.src, senderId: undefined, inputProvenance: { kind: 'inter_session', sourceTool: 'subagent_announce', sourceSessionKey: f.native.childSessionKey } };
   const gate = await f.runtime.beforeAgentRun({}, reply);
   assert.equal(gate, undefined, 'normal native completion delivery is not rejected/retried');
-  const prompt = f.runtime.beforePromptBuild({}, reply);
+  const prompt = await f.runtime.beforePromptBuild({}, reply);
   assert.deepEqual(prompt.toolsAllow, []); assert.match(prompt.prependContext, /CANCELLED \/ OLD-SCOPE REPORT/);
   assert.match(prompt.prependContext, /Artifact prepared; external send outcome uncertain/);
   assert.match(prompt.prependContext, /cannot satisfy a revised goal/);
@@ -211,10 +211,10 @@ test('shared runtime isolates genuinely concurrent turns and atomically admits o
   assert.equal((await invoke(b, 'status-again', { action: 'status', task: 'run-1' })).status, 'running');
 });
 
-test('instructed research receipt preserves default parent review delivery instead of parent-only silence', () => {
+test('instructed research receipt preserves default parent review delivery instead of parent-only silence', async () => {
   const skill = readFileSync(new URL('../workspace/skills/nori-task-loop/SKILL.md', import.meta.url), 'utf8');
   assert.ok(!skill.includes('completionTarget="parent"')); assert.match(skill, /Do not select parent-only silent delivery/);
-  const f = fixture(); assert.match(f.runtime.beforePromptBuild({}, f.src).prependContext, /completionTarget omitted/);
+  const f = fixture(); assert.match((await f.runtime.beforePromptBuild({}, f.src)).prependContext, /completionTarget omitted/);
 });
 
 
@@ -252,4 +252,22 @@ test('synthetic step accounting retries only an explicit native pre-execution sk
   assert.equal(countTaskLoopToolResults(messages, 0), 1);
   messages.push({ role: 'tool', content: 'Error: outcome unknown' });
   assert.equal(countTaskLoopToolResults(messages, 0), 2);
+});
+
+
+test('native prompt-before-admission order protects late cancelled completions without relying on turn memory', async () => {
+  for (const sourceTool of ['subagent_announce', 'subagent_settle']) {
+    const f = fixture({ task: { status: 'cancelled' } });
+    const ctx = { ...f.src, senderId: undefined, inputProvenance: { kind: 'inter_session', sourceTool, sourceSessionKey: f.native.childSessionKey } };
+    const prompt = await f.runtime.beforePromptBuild({}, ctx);
+    assert.deepEqual(prompt.toolsAllow, []);
+    assert.match(prompt.prependContext, /CANCELLED \/ OLD-SCOPE REPORT/);
+    assert.equal(await f.runtime.beforeAgentRun({}, ctx), undefined);
+    assert.equal((await f.runtime.beforeToolCall({ toolName: 'exec', params: {} }, toolContext(ctx))).block, true);
+    f.runtime.agentEnd({}, ctx);
+    f.native.status = 'succeeded';
+    const next = await f.runtime.beforePromptBuild({}, { ...ctx, runId: 'fresh-completion' });
+    assert.equal(next.toolsAllow, undefined, 'current successful work retains native capabilities');
+    assert.doesNotMatch(next.prependContext, /CANCELLED \/ OLD-SCOPE REPORT/);
+  }
 });

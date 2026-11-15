@@ -1,0 +1,11 @@
+{
+  "name": "@rein-protocol/openclaw-rein-partnership",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "files": ["index.ts", "workflow.mjs", "store.mjs", "native.mjs", "mail.mjs", "openclaw.plugin.json", "partnership-test-send.lobster"],
+  "dependencies": { "@clawdbot/lobster": "2026.9.13" },
+  "devDependencies": { "openclaw": "link:../../vendor/openclaw" },
+  "peerDependencies": { "openclaw": "2026.9.5" },
+  "openclaw": { "extensions": ["./index.ts"], "compat": { "pluginApi": ">=2026.9.5", "minGatewayVersion": "2026.9.5" } }
+}

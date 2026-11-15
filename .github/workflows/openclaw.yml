@@ -64,6 +64,8 @@ jobs:
         run: pnpm verify:director-acp
       - name: Verify Slack task loop with local native fixtures
         run: pnpm verify:slack-task-loop
+      - name: Verify partnership approvals and restart with local native fixtures
+        run: pnpm verify:partnership-workflow
       - name: Confirm upstream tracked files remain unchanged
         if: always()
         run: test -z "$(git -C vendor/openclaw status --porcelain)"
