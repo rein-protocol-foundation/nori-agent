@@ -51,3 +51,18 @@ therefore still failed. Follow-up validation must reject contradictory input bef
 review/budgets or terminalizing the Flow, allowing the model to correct the same invocation.
 No semantic parsing of free-text gaps is appropriate. Original config restoration initiated
 20:33:49UTC; no active child tasks remained. Existing results and histories preserved.
+
+## Third run on PR #89 — successful drain before parent review
+
+PR #89 merged as `7710ab62c5797c9a9c4c56a8438b0da52bce8e39` after seven green CI
+checks, deployed20:47:27UTC. [Deterministic two-task request](https://reinprotocolf-e2q1425.slack.com/archives/C0C4L0YN814/p1794775894597109)
+created flows `b89670be-aa9a-48c4-a131-245def93165c` and `0cf4ddb4-fa0f-44ca-924a-14b5f788c1ed`.
+Both accepted before restart20:53:11UTC (460316→460953). Unlike the prior runs, both
+child turns ended succeeded during drain at20:53:21, before the new Socket connected20:53:50.
+The owner recovered to review, but no settlement had been saved before shutdown. Native
+agent.wait for `8cbae81f-ab07-4c46-b854-79e05172bee2` returned only status=timeout after
+restart, despite canonical and managed tasks retaining succeeded+finite endedAt+no error.
+Both remained review. This exposes the success-before-parent-review crash window; it is not
+a passing final closure test. Explicit stop requested, no active child tasks, config restoration
+initiated. Durable successful terminal authority must be checked against pinned native lifecycle
+before adding a fallback; active/yielded/uncertain execution must not be treated as settled.

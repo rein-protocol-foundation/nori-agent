@@ -211,7 +211,7 @@ test('working liveness still blocks mismatched, partial, yielded and unpublished
 });
 
 test('failed, incomplete and mismatched cancellation cannot establish durable settlement', async () => {
-  for (const cancellation of ['failed', 'throws', 'provisional', 'foreign-receipt', 'missing-endedAt', 'succeeded-race']) {
+  for (const cancellation of ['failed', 'throws', 'provisional', 'foreign-receipt', 'missing-endedAt']) {
     const f = fixture(); f.dependencies.subagent.waitForRun = async () => ({ status: 'timeout' });
     f.tasks.runs.bindSession = () => ({ cancel: async () => {
       const task = f.native.get('native-task');
@@ -219,7 +219,6 @@ test('failed, incomplete and mismatched cancellation cannot establish durable se
       if (cancellation === 'failed') return { found: true, cancelled: false, reason: 'descendant still active' };
       if (!['provisional', 'foreign-receipt'].includes(cancellation)) task.error = 'Cancelled by operator.';
       if (cancellation === 'missing-endedAt') delete task.endedAt;
-      if (cancellation === 'succeeded-race') task.status = 'succeeded';
       return { found: true, cancelled: true, task: { ...task, ...(cancellation === 'foreign-receipt' ? { runId: 'other-run' } : {}) } };
     } });
     await f.restart(); const prepared = await f.prepare(); await f.accept(prepared, { error: 'Subagent run killed.' });
@@ -228,6 +227,74 @@ test('failed, incomplete and mismatched cancellation cannot establish durable se
       outcome: 'continue', evidence: 'No settled execution proof', gaps: 'Research incomplete', effects: 'none' }), /run_not_settled/);
     assert.equal(f.flows.get(prepared.flowId).stateJson.attempts[0].settlement, undefined);
     assert.equal((await f.spawn(prepared)).gate.block, true);
+  }
+});
+
+test('native success committed during drain survives restart before review or wait proof is saved', async () => {
+  for (const observation of [undefined, { status: 'timeout' }, { runId: 'native-run', status: 'timeout' }]) {
+    const f = fixture(); await f.restart(); const prepared = await f.prepare();
+    const task = await f.accept(prepared, { status: 'running', endedAt: undefined });
+    // The native execution owner commits success during drain. No parent status
+    // or review runs before the process ends, and the new wait cache is empty.
+    Object.assign(task, { status: 'succeeded', endedAt: 100, terminalSummary: null, terminalOutcome: null });
+    assert.equal(f.flows.get(prepared.flowId).stateJson.attempts[0].settlement, undefined);
+    f.dependencies.subagent.waitForRun = async () => observation;
+    await f.restart();
+    const reviewed = await f.call({ action: 'review', flow: prepared.flowId, scopeRevision: 1, outcome: 'continue',
+      evidence: 'Native execution ended; comparison still needs eligibility', gaps: 'Eligibility evidence', effects: 'none', progress: true });
+    assert.equal(reviewed.phase, 'ready'); assert.equal(reviewed.attempts[0].settlement.source, 'native_succeeded_record');
+    const supplement = await f.call({ action: 'delegate', flow: prepared.flowId, instruction: 'Supply the missing eligibility evidence' });
+    const launch = await f.spawn(supplement);
+    Object.assign(task, { runId: 'supplement-run', childSessionKey: 'agent:main:subagent:supplement', terminalSummary: 'Eligibility verified' });
+    await f.runtime.afterToolCall({ ...launch.event, result: { details: { status: 'accepted', runId: task.runId, childSessionKey: task.childSessionKey } } }, launch.ctx);
+    f.dependencies.subagent.waitForRun = async () => ({ status: 'timeout' });
+    const complete = await f.call({ action: 'review', flow: prepared.flowId, scopeRevision: 1, outcome: 'complete',
+      evidence: 'All requested criteria verified across retained results and supplement', effects: 'none', progress: true });
+    assert.equal(complete.phase, 'complete'); assert.equal(complete.attempts.length, 2);
+    assert.equal(complete.deadlineAt, reviewed.deadlineAt); assert.equal(f.cancellations(), 0);
+  }
+});
+
+test('durable native success can complete directly without relaunch while retaining scope and effects guards', async () => {
+  const f = fixture(); await f.restart(); const prepared = await f.prepare();
+  const task = await f.accept(prepared, { status: 'running', endedAt: undefined });
+  Object.assign(task, { status: 'succeeded', endedAt: 100, terminalSummary: null, terminalOutcome: null });
+  f.dependencies.subagent.waitForRun = async () => ({ runId: task.runId, status: 'timeout' });
+  await f.restart();
+  const review = { action: 'review', flow: prepared.flowId, scopeRevision: 1, outcome: 'complete',
+    evidence: 'Native result meets all current criteria', effects: 'none', progress: true };
+  await assert.rejects(f.call({ ...review, scopeRevision: 2 }), /current_scope_review_required/);
+  await assert.rejects(f.call({ ...review, effects: 'unknown' }), /complete_effects_unknown/);
+  assert.equal(f.flows.get(prepared.flowId).stateJson.phase, 'review');
+  const complete = await f.call(review);
+  assert.equal(complete.phase, 'complete'); assert.equal(complete.attempts.length, 1);
+  assert.equal(complete.attempts[0].settlement.source, 'native_succeeded_record');
+  assert.equal(complete.report.delivery, 'pending_or_uncertain');
+  assert.equal((await f.spawn(prepared)).gate.block, true); assert.equal(f.cancellations(), 0);
+});
+
+test('durable success never overrides contradictory wait evidence or unbound native task backing', async () => {
+  for (const wait of [{ status: 'pending' }, { status: 'error' }, { status: 'timeout', yielded: true },
+    { status: 'timeout', pendingError: true }, { status: 'timeout', livenessState: 'working' },
+    { status: 'timeout', livenessState: 'paused' }, { status: 'timeout', timeoutPhase: 'queue' },
+    { status: 'timeout', providerStarted: true }, { status: 'timeout', startedAt: 10 },
+    { status: 'timeout', error: 'retry pending' }, { status: 'timeout', runId: 'other-run' }]) {
+    const f = fixture(); f.dependencies.subagent.waitForRun = async () => wait;
+    await f.restart(); const prepared = await f.prepare(); await f.accept(prepared, { status: 'succeeded' });
+    await assert.rejects(f.call({ action: 'review', flow: prepared.flowId, scopeRevision: 1,
+      outcome: 'complete', evidence: 'Only a conflicting native projection', effects: 'none' }), /run_not_settled/);
+    assert.equal(f.flows.get(prepared.flowId).stateJson.attempts[0].settlement, undefined);
+  }
+  for (const patch of [{ status: 'failed' }, { status: 'lost' }, { status: 'cancelled' }, { endedAt: undefined },
+    { ownerKey: 'agent:main:other' }, { childSessionKey: 'agent:main:subagent:foreign' }, { runtime: 'acp' }]) {
+    const f = fixture(); await f.restart(); const prepared = await f.prepare();
+    const task = await f.accept(prepared, { status: 'running', endedAt: undefined });
+    Object.assign(task, { status: 'succeeded', endedAt: 100 }, patch);
+    f.dependencies.subagent.waitForRun = async () => ({ status: 'timeout' });
+    await f.restart();
+    await assert.rejects(f.call({ action: 'review', flow: prepared.flowId, scopeRevision: 1,
+      outcome: 'complete', evidence: 'No bound durable success proof', effects: 'none' }), /run_not_settled|current_scope_review_required/);
+    assert.equal(f.flows.get(prepared.flowId).stateJson.attempts[0].settlement, undefined);
   }
 });
 

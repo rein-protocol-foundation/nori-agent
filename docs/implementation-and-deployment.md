@@ -1,5 +1,9 @@
 # Nori-Agent development, verification and deployment record
 
+## #58 durable success during drain — November 15, 2026
+
+Owner: Codex / Sol High. PR #89 deployed with seven green checks. A deterministic live restart hit a distinct window: child turns succeeded during graceful drain, before parent review, then volatile agent.wait timed out after restart. Verified pinned native lifecycle only publishes owner-fenced successful tasks after execution and completion capture settle, excluding sessions_yield. Narrow durable-success fallback and final retest in progress. Prior actual A/B research delivery remains verified. [Evidence](task-continuation-live-2026-11-15.md).
+
 ## #58 final-review input correction — November 15, 2026
 
 Owner: Codex / Sol High. PR #88 deployed after seven green CI checks. Real two-task restart delivered both complete research results automatically in Slack, but complete reviews with textual no-gaps failed Flow closure. Follow-up rejects contradictory completion fields before consuming review/budgets; 40 targeted tests plus syntax/scaffold/diff pass. Fresh closure acceptance pending. [Evidence](task-continuation-live-2026-11-15.md).

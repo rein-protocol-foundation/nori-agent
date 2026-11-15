@@ -284,7 +284,12 @@ observations in the Flow. For the pinned native provisional `Subagent run killed
 it uses the public owner-bound task cancellation API, verifies the returned and freshly
 resolved task identity, and retains the confirmed cancellation. The native persisted
 `Cancelled by operator.` terminal marker closes the gap if restart occurs before the Flow
-receipt is saved. Other terminal statuses do not bypass missing settlement evidence.
+receipt is saved. Failed, lost and provisional cancellation do not bypass missing settlement evidence.
+The pinned native success path commits owner-fenced `succeeded` with an end time only after
+execution and completion capture settle (excluding sessions_yield). This durable subagent
+success can replace an absent process-local wait cache; explicit pending, yielded or conflicting
+wait evidence still blocks. Execution success does not establish goal completion: current
+criteria, evidence, known effects and valid review input remain required.
 
 Invalid native task handles are rejected before launch admission, leaving the exact prepared
 assignment reusable after correction. Unknown native errors and missing receipts still block
