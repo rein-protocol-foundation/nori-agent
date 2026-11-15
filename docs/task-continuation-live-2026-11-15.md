@@ -28,3 +28,26 @@ terminalReply, **alongside livenessState=working**. The old liveness gate wrongl
 terminal completion evidence. This test is not a final-delivery pass. An explicit
 [stop request](https://reinprotocolf-e2q1425.slack.com/archives/C0C4L0YN814/p1794773151661239)
 requested cleanup; parent stop processing was delayed by repeated review failures. Both child runs ended successfully, no native active tasks remained. Original config was restored (PID453048); results and histories retained. Follow-up: 38 targeted tests pass for terminal receipt validation and existing controls. New PR and fresh live test pending.
+
+## Second run on PR #88 — delivery observed, Flow closure mismatch
+
+PR #88 merged as `cca4adbc5eca64c58bf86cfb0e0e57cfcda99d71`, seven CI checks passed,
+OCI updated20:21:46UTC; Socket ready20:25:35.
+[Fresh request](https://reinprotocolf-e2q1425.slack.com/archives/C0C4L0YN814/p1794774374087459)
+created A `50a32f95-3a3d-40f7-88b7-b2d23f528608` and B `b4e847f6-1998-4b87-a89a-6a4d15887719`
+in the same channel owner. Both accepted before restart20:27:45UTC (455787→456602);
+drain aborted them20:29:01 and Socket reconnected20:29:29. Without human continuation,
+attempt2 runs `9de3bf92-5650-4c76-8604-100e96350e6c` (A) and
+`fff52fc4-48bf-4446-89cf-c7828d977638` (B) started and succeeded.
+
+The native terminal receipt fix worked: persisted settlement source `native_terminal_receipt`.
+At20:33:14UTC the bot delivered [one combined six-item research reply](https://reinprotocolf-e2q1425.slack.com/archives/C0C4L0YN814/p1794774794605569)
+with sources, eligibility/quotas/deadlines and explicitly unknown details. Neither task was omitted.
+This is actual automatic Slack delivery evidence, not inferred from agent_end.
+
+Both final reviews supplied `outcome=complete` but nonempty `gaps` saying no unfinished items.
+The controller saved a complete report but failed each Flow as limited. Full lifecycle closure
+therefore still failed. Follow-up validation must reject contradictory input before consuming
+review/budgets or terminalizing the Flow, allowing the model to correct the same invocation.
+No semantic parsing of free-text gaps is appropriate. Original config restoration initiated
+20:33:49UTC; no active child tasks remained. Existing results and histories preserved.

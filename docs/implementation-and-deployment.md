@@ -1,5 +1,9 @@
 # Nori-Agent development, verification and deployment record
 
+## #58 final-review input correction — November 15, 2026
+
+Owner: Codex / Sol High. PR #88 deployed after seven green CI checks. Real two-task restart delivered both complete research results automatically in Slack, but complete reviews with textual no-gaps failed Flow closure. Follow-up rejects contradictory completion fields before consuming review/budgets; 40 targeted tests plus syntax/scaffold/diff pass. Fresh closure acceptance pending. [Evidence](task-continuation-live-2026-11-15.md).
+
 ## #58 successful-run settlement follow-up — November 15, 2026
 
 Owner: Codex / Sol High. PR #87 merged, seven CI checks passed, deployed e279e91. Same-owner live test verified invalid-name correction and automatic supplement for BOTH interrupted tasks. Final review blocked because native wait returned a valid successful terminal receipt with stale livenessState=working. Follow-up repair and fresh live test pending; [evidence](task-continuation-live-2026-11-15.md).

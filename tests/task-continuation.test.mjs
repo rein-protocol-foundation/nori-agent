@@ -144,6 +144,44 @@ test('published exact-run receipt settles successful native work despite stale w
   }
 });
 
+test('complete review rejects every nonempty gaps value without consuming review or budgets, then accepts a correction', async () => {
+  for (const correctedGaps of [undefined, '', '   ']) {
+    const f = fixture(); await f.restart(); const prepared = await f.prepare();
+    await f.accept(prepared, { status: 'succeeded', terminalSummary: 'Three sourced tools' });
+    f.flows.get(prepared.flowId).stateJson.noProgress = 1;
+    const before = structuredClone(f.flows.get(prepared.flowId));
+    const review = { action: 'review', flow: prepared.flowId, scopeRevision: 1,
+      outcome: 'complete', evidence: 'All requested comparisons are present', effects: 'none', progress: true };
+    for (const gaps of ['无未完成项；各国用户上限、验证合作方、审核时长与免费升级期限均标为未知。', 'none', 'No gaps', 'Missing sources']) {
+      await assert.rejects(f.call({ ...review, gaps }), /omit gaps or use an empty string.*choose outcome=continue/);
+      assert.deepEqual(f.flows.get(prepared.flowId), before);
+    }
+    await f.restart();
+    const corrected = await f.call({ ...review, ...(correctedGaps === undefined ? {} : { gaps: correctedGaps }) });
+    assert.equal(corrected.phase, 'complete'); assert.equal(corrected.nativeStatus, 'succeeded');
+    assert.equal(corrected.noProgress, 0); assert.equal(corrected.attempts.length, 1);
+    assert.equal(corrected.deadlineAt, before.stateJson.deadlineAt);
+    assert.equal(corrected.report.gaps, null); assert.equal(corrected.report.outcome, 'complete');
+  }
+});
+
+test('unsupported complete outcomes leave review intact for a truthful blocked or continuing review', async () => {
+  for (const variation of ['unknown-effects', 'failed', 'cancelled', 'blocked']) {
+    const f = fixture(); await f.restart(); const prepared = await f.prepare();
+    await f.accept(prepared, { status: ['failed', 'cancelled'].includes(variation) ? variation : 'succeeded',
+      terminalSummary: 'Available partial result', ...(variation === 'blocked' ? { terminalOutcome: 'blocked' } : {}) });
+    const before = structuredClone(f.flows.get(prepared.flowId));
+    const review = { action: 'review', flow: prepared.flowId, scopeRevision: 1, outcome: 'complete',
+      evidence: 'Available result only', effects: variation === 'unknown-effects' ? 'unknown' : 'none', progress: true };
+    await assert.rejects(f.call(review), /complete_effects_unknown|complete_native_outcome_invalid/);
+    assert.deepEqual(f.flows.get(prepared.flowId), before);
+    assert.equal(before.stateJson.phase, 'review'); assert.equal(before.stateJson.report, null);
+    const corrected = await f.call({ ...review, outcome: 'blocked', gaps: 'Completion cannot be established' });
+    assert.equal(corrected.phase, variation === 'unknown-effects' ? 'outcome_unknown' : 'limited');
+    assert.equal(corrected.report.outcome, 'blocked'); assert.equal(corrected.nativeStatus, 'failed');
+  }
+});
+
 test('working liveness still blocks mismatched, partial, yielded and unpublished terminal receipts', async () => {
   const cases = [
     { runId: 'foreign-run' }, { status: 'pending' }, { status: 'timeout' }, { status: 'error' },
