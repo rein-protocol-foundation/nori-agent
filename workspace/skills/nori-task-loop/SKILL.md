@@ -38,6 +38,10 @@ native owner/audience and existing native child sessions. This skill is not reta
    `effects` (`none`, `confirmed`, or `unknown`) and whether evidence demonstrates `progress`.
    Complete only when the current native run succeeded and every criterion is satisfied.
    A child's success or a plausible answer alone is insufficient. Do not omit unknown eligibility.
+   For `outcome="complete"`, omit `gaps` or use an empty string; never put "none" or
+   "no unfinished items" in that field. Put permitted unknown factual details in `evidence`.
+   Nonempty `gaps` means unfinished criteria and requires `continue` or `blocked`.
+   If review rejects contradictory parameters, correct them on the same Flow; do not recreate it.
 5. If criteria are incomplete and effects are known, use `outcome="continue"` with concrete gaps.
    A ready result permits one bounded supplement through `delegate`, without another user
    reminder. This preserves the same deadline and counters. Unknown external outcomes, exhausted

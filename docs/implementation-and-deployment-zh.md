@@ -1,5 +1,9 @@
 # Nori-Agent 开发、验证与部署记录
 
+## #58 最终复核参数纠错 — 2026-11-15
+
+负责人：Codex / Sol High。PR #88 七项 CI 通过并部署。两任务重启实测已自动投递完整 A/B 结果，但 complete 同时填写“无未完成项”的 gaps 导致 Flow 错误失败。补修在消耗复核/预算前拒绝矛盾参数；40 项针对性检查及语法/scaffold/diff 通过。正确收尾实测待完成。[证据](task-continuation-live-2026-11-15.md)。
+
 ## #58 成功任务结束判断补修 — 2026-11-15
 
 负责人：Codex / Sol High。PR #87 七项 CI 通过并合并，e279e91 已部署。同一 owner 实测确认错误名称纠正、两个中断任务自动补跑成功；最终 review 被仍为 working 的滞后 livenessState 阻塞，原生实际已返回成功终态回执。补修及重新实测待完成；[证据](task-continuation-live-2026-11-15.md)。

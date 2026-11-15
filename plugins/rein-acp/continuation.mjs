@@ -371,9 +371,18 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
           if (args.action !== 'review' || state.phase !== 'review' || args.scopeRevision !== state.scopeRevision ||
               attempt?.scopeRevision !== state.scopeRevision || !['complete', 'continue', 'blocked'].includes(args.outcome) || !string(args.evidence) || !['none', 'confirmed', 'unknown'].includes(args.effects))
             throw Error('rein_continuation_current_scope_review_required');
+          // Completion fields are a contract, not prose to interpret. Let the
+          // reviewer correct contradictory input before consuming a review or
+          // writing a completion report that the native evidence cannot support.
+          if (args.outcome === 'complete' && args.gaps?.trim())
+            throw Error('rein_continuation_complete_gaps_invalid: omit gaps or use an empty string if no criteria are missing; choose outcome=continue for actual gaps. The flow remains in review.');
+          if (args.outcome === 'complete' && args.effects === 'unknown')
+            throw Error('rein_continuation_complete_effects_unknown: completion requires known effects; choose outcome=blocked to report uncertain effects. The flow remains in review.');
           const task = await nativeTask(flow);
           if (!terminalRun(task?.status) || !await settled(flow, task, attempt, config.hostConfig)) throw Error('rein_continuation_run_not_settled');
           await assert(flow);
+          if (args.outcome === 'complete' && (task.status !== 'succeeded' || task.terminalOutcome === 'blocked'))
+            throw Error('rein_continuation_complete_native_outcome_invalid: completion requires a succeeded, unblocked native task; choose outcome=continue for actual gaps or outcome=blocked for a handoff. The flow remains in review.');
           const evidenceKey = digest([task.terminalSummary ?? null, task.progressSummary ?? null]);
           state.noProgress = args.progress === true && state.lastEvidenceKey !== evidenceKey ? 0 : state.noProgress + 1;
           state.lastEvidenceKey = evidenceKey;

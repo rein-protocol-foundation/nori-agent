@@ -1,5 +1,9 @@
 # Nori-Agent implementation roadmap
 
+## #58 delivery observed; closure correction — November 15, 2026
+
+Owner: Codex. Two-task restart and actual merged Slack delivery VERIFIED on #88. Flow closure still needs correcting invalid complete/gaps input.40 focused tests pass; final closure retest pending. [Evidence](task-continuation-live-2026-11-15.md).
+
 ## #58 final-review follow-up — November 15, 2026
 
 Owner: Codex. PR #87 deployed: two-task restart supplement VERIFIED live; final delivery NOT ACCEPTED. Follow-up repairs successful terminal receipts accompanied by stale working liveness. [Evidence and next test](task-continuation-live-2026-11-15.md).
