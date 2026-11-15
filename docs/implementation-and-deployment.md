@@ -1,5 +1,9 @@
 # Nori-Agent development, verification and deployment record
 
+## #58 continuation restart repair — November 15, 2026
+
+Owner: Codex with verified Sol High implementation. In progress: preserve prepared assignment on invalid native taskName; reconcile provisional subagent cancellation through the public native API; permit authorized current managed completion review through the M1 report-only boundary. Prior failed live evidence retained. Focused regression, full suite, PR checks and live Slack/restart evidence pending. User authorized PR merge, deployment and scoped live test; no product milestone advancement before evidence.
+
 ## NORI-BRANDING — November 14, 2026
 
 Verification follow-up: native Router browser smoke passed (synthetic providers); live Slack
@@ -111,6 +115,14 @@ unverified-delivery observation above; M2 product limitations and live acceptanc
 Remote CI/review remain pending. No PR merge into main or deployment is authorized.
 After synchronization, the full suite passes: 1396 total / 1392 passed / 4 conditional skips /
 0 failures; scaffold and staged diff checks pass. This regression does not establish M2 live acceptance.
+## 2026-11-14 — #58 authorized live restart observation
+
+Owner: Codex. Partial observation, not acceptance. Real Slack A/B tasks and OCI restart on
+`87416cc7`: A was interrupted, B lacked an accepted receipt before restart; automatic combined
+status reply reached Slack. Delayed ingress/follow-ups created different owners and an extra flow,
+so same-owner coalescence was not tested. Missing review revision, overclaimed unknown outcome
+and pending cancellation remain. All test stop intents persisted; original config restored.
+[Evidence and next steps](task-continuation-live-2026-11-14.md). No source fix or milestone advancement.
 
 ## 2026-11-13 — #82 review: unmanaged M1 replacement compatibility
 

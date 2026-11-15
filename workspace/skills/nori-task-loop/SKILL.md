@@ -23,6 +23,9 @@ native owner/audience and existing native child sessions. This skill is not reta
 2. Call `delegate` with the flow ID and a concrete `instruction`, then call native `sessions_spawn`
    once with the exact returned `task` and recorded runtime. The host reserves this assignment
    before launch, retains actual accepted run/session IDs and links available native backing.
+   If supplying `taskName`, use 1–64 characters matching `[a-z][a-z0-9_-]*`; otherwise omit it.
+   A host rejection before admission leaves the assignment prepared: correct the rejected parameter
+   and reuse that exact assignment. Do not treat an unknown native outcome as a validation rejection.
    Research keeps `cleanup="keep"` and default completion delivery; its timeout cannot exceed
    the remaining deadline. ACP retains the configured M1 harness/cwd/arguments. Do not retry an
    absent receipt or unknown native outcome. Accepted is not complete; canonical backing can lag.

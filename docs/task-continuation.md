@@ -275,3 +275,19 @@ Native source references (relative to `vendor/openclaw`):
 `src/infra/system-events.ts`, `src/infra/heartbeat-runner-prompt.ts`,
 `src/infra/heartbeat-runner-execution.ts`, `src/tasks/task-flow-maintenance-policy.ts`,
 `docs/plugins/sdk-runtime/state-and-system.md` and `docs/plugins/sdk-runtime/background-work.md`.
+
+### Restart settlement repair (November 15, 2026)
+
+Native `agent.wait` retains process-local observations, so a timeout after restart is not
+proof of continued execution or completion. The controller retains successful settlement
+observations in the Flow. For the pinned native provisional `Subagent run killed.` state,
+it uses the public owner-bound task cancellation API, verifies the returned and freshly
+resolved task identity, and retains the confirmed cancellation. The native persisted
+`Cancelled by operator.` terminal marker closes the gap if restart occurs before the Flow
+receipt is saved. Other terminal statuses do not bypass missing settlement evidence.
+
+Invalid native task handles are rejected before launch admission, leaving the exact prepared
+assignment reusable after correction. Unknown native errors and missing receipts still block
+retry. M1 permits tools for a verified current continuation attempt; stopped, changed,
+expired, foreign and unauthorized attempts retain report-only handling. These checks do not
+establish exactly-once external effects or final Slack delivery; live evidence is separate.

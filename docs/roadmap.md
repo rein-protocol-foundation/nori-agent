@@ -1,5 +1,9 @@
 # Nori-Agent implementation roadmap
 
+## #58 restart repair — November 15, 2026
+
+Owner: Codex / Sol High. IN PROGRESS: invalid-handle recovery, durable cancellation settlement and managed completion review. Local checks, PR merge and Slack/OCI restart acceptance pending; previous failed observation retained. See [live evidence](task-continuation-live-2026-11-14.md).
+
 ## NORI-BRANDING / Slack reply coverage — November 14, 2026
 
 Owner: Codex. Configuration-only live fix: all 17 visible active Slack channels are
@@ -37,6 +41,13 @@ M1 PR #74 is merged. M2 #58 is owner-closed but its final delivery evidence rema
 separate uncommitted M2 work was preserved. No M1/M2 live acceptance is inferred. Next: review
 local source and separately authorize deployed-profile/live Slack/designated-test-recipient
 acceptance. No publication, merge, deployment or real send; M0 and AC01–AC20 unchanged.
+## #58 live observation — November 14, 2026
+
+Owner: Codex. PARTIAL / NOT ACCEPTED: authorized Slack/OCI restart produced an automatic
+A/B status reply, but B launch was unknown, A interrupted and same-owner coverage was invalidated
+by thread follow-ups. Stop intents saved and original config restored. Next: diagnose launch,
+settlement and uncertainty reporting before another scoped test. [Evidence](task-continuation-live-2026-11-14.md).
+
 ## #82 / SA-M2 compatibility review — November 13, 2026
 
 Owner: Codex. Fixed unmanaged M1 change/replacement admission while continuation is enabled,

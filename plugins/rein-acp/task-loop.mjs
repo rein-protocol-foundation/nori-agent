@@ -26,7 +26,7 @@ export function assertTaskLoopRuntimeConfig(config, host) {
 }
 
 /** Native records remain authoritative. This module retains only current tool-invocation custody. */
-export function createTaskLoop({ config, authorize, tasks, subagent, isNativeChild = () => false, clock = Date.now, timeoutMs = DEVELOPMENT_AUTH_TIMEOUT_MS }) {
+export function createTaskLoop({ config, authorize, tasks, subagent, isNativeChild = () => false, isCurrentContinuation = async () => false, clock = Date.now, timeoutMs = DEVELOPMENT_AUTH_TIMEOUT_MS }) {
   const turns = new Map(), calls = new Map(), reports = new Map();
   const selected = ctx => ctx.agentId === config.channel.agentId;
   const membership = async source => {
@@ -41,6 +41,10 @@ export function createTaskLoop({ config, authorize, tasks, subagent, isNativeChi
   const validTurn = (turn, ctx) => turn && clock() - turn.at < 3_600_000 && ctx.sessionKey === turn.source.sessionKey &&
     ctx.requester?.senderId === turn.source.senderId && ctx.requester?.channel === turn.source.channel &&
     ctx.requester?.accountId === turn.source.accountId && !ctx.abortSignal?.aborted;
+  const continuationCurrent = async (task, ctx) => {
+    try { return await isCurrentContinuation(task, ctx) === true; }
+    catch { return false; }
+  };
   return {
     async beforeAgentRun(_event, ctx) {
       if (!selected(ctx) || !text(ctx.runId, 512) || !text(ctx.sessionKey, 1024)) return;
@@ -51,7 +55,7 @@ export function createTaskLoop({ config, authorize, tasks, subagent, isNativeChi
       if (provenance?.kind === 'inter_session' && ['subagent_announce', 'subagent_settle'].includes(provenance.sourceTool) &&
           provenance.sourceSessionKey && ctx.sessionKey) {
         const task = await tasks.async.runs.bindSession({ sessionKey: ctx.sessionKey, agentId: ctx.agentId }).resolve(provenance.sourceSessionKey);
-        if (task?.ownerKey === ctx.sessionKey && task.status === 'cancelled') reports.set(ctx.runId, task);
+        if (task?.ownerKey === ctx.sessionKey && task.status === 'cancelled' && !await continuationCurrent(task, ctx)) reports.set(ctx.runId, task);
       }
       if (isNativeChild(ctx) || (!human(ctx) && (ctx.trigger || provenance))) {
         turns.set(ctx.runId, { kind: 'native', source: { ...ctx }, at: clock() }); return;
@@ -74,7 +78,7 @@ export function createTaskLoop({ config, authorize, tasks, subagent, isNativeChi
       if (provenance?.kind === 'inter_session' && ['subagent_announce', 'subagent_settle'].includes(provenance.sourceTool) &&
           provenance.sourceSessionKey && ctx.sessionKey) {
         const task = await tasks.async.runs.bindSession({ sessionKey: ctx.sessionKey, agentId: ctx.agentId }).resolve(provenance.sourceSessionKey);
-        if (task?.ownerKey === ctx.sessionKey && task.status === 'cancelled') reports.set(ctx.runId, task);
+        if (task?.ownerKey === ctx.sessionKey && task.status === 'cancelled' && !await continuationCurrent(task, ctx)) reports.set(ctx.runId, task);
       }
       const old = reports.get(ctx.runId);
       if (old) return { toolsAllow: [], prependContext: `CANCELLED / OLD-SCOPE REPORT for native task ${old.id}, run ${old.runId}. This incoming result cannot satisfy a revised goal. Report available partial results and performed or uncertain external actions from the native evidence and incoming result, clearly labeled cancelled/old scope. Cancellation is not rollback; absence of evidence is uncertainty. Send this report through the existing captured original destination. Do not launch, resume, retry or change work. Native progress: ${JSON.stringify(old.progressSummary ?? null)}; terminal summary: ${JSON.stringify(old.terminalSummary ?? null)}; diagnostic: ${JSON.stringify(old.error ?? null)}.` };
