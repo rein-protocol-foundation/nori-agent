@@ -96,6 +96,6 @@ if(mode==='initial-sync'){
       assert.equal(alive(nativePid), false, 'detached native gateway must be reaped');
       assert.equal(await listening(gatewayPort), false, 'gateway port must close');
       assert.equal(existsSync(lock), false, 'managed profile lock must be released');
-      assert.ok(!output.includes('OpenClaw Router:'), 'cancelled startup must not announce an active Console');
+      assert.ok(!output.includes('Nori Router:'), 'cancelled startup must not announce an active Console');
     });
 }

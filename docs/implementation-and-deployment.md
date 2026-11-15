@@ -1,5 +1,25 @@
 # Nori-Agent development, verification and deployment record
 
+## NORI-BRANDING — November 14, 2026
+
+Verification follow-up: native Router browser smoke passed (synthetic providers); live Slack
+readiness returned HTTP 200/ready and configuration comparison proved only the requested
+channel entry changed.
+
+Owner: Codex. Authorized live configuration fix adds the deployment channel to the
+existing Slack reply allowlist (16 → 17); bot/user inventories agree, all bot memberships
+confirmed. A private backup preceded atomic replacement under the updater lock;
+configuration hot reload and Socket Mode reconnection were observed. Existing sender
+restrictions and mention gates preserved. No application deployment or chat send.
+Project-owned Router/host-guard copy now uses Nori locally; 51 targeted tests pass.
+Native Slack denial is hardcoded upstream before reply hooks: full branding remains
+blocked on the [proposed public presentation interface](nori-branding.md). Next:
+upstream interface review, normal source deployment, then real-user acceptance.
+PR #84 deployed because every merged main PR triggers deployment; docs-only filtering
+is absent. Existing unrelated checkout edits were preserved.
+
+
+
 ## 2026-11-13 — Slack emoji reaction permission repair / #77 / C02 support
 
 Owner: Codex. **LIVE API VERIFIED; configuration-only maintenance** (America/Los_Angeles).

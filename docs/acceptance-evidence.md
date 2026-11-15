@@ -1,5 +1,19 @@
 # Acceptance evidence
 
+## NORI-BRANDING — November 14, 2026
+
+Verification follow-up: native Router browser smoke passed (synthetic providers); live Slack
+readiness returned HTTP 200/ready and configuration comparison proved only the requested
+channel entry changed.
+
+Owner: Codex. Live inventories agree on 17 active channels; bot membership confirmed
+for all. Missing deployment-channel entry added with mention gate; reload and socket
+reconnection observed. Real-user reply acceptance pending; no test message sent.
+Local Router/host-guard tests: 51 passed, 0 failed/skipped. Native denial branding
+is not implemented; see [extension proposal and scope](nori-branding.md).
+No AC01–AC20 milestone advancement.
+
+
 | Task / date / owner | Status and evidence | Pending acceptance / next step |
 | --- | --- | --- |
 | Slack reaction permission / #77 / C02 support; 2026-11-13; Codex | **LIVE API VERIFIED / CONFIGURATION ONLY**. Reproduced `missing_scope`; added only `reactions:write` and completed operator-confirmed reauthorization. Same deployed credential and bot identity passed add/read-back/remove/cleanup; service PID unchanged. [Evidence](implementation-and-deployment.md). | Automatic acknowledgement timing, model-selected reactions and other conversation types not retested. Observe next normal mention; no C02, AC01–AC20 or product milestone advancement. |
