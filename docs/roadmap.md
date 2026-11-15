@@ -1,5 +1,14 @@
 # Nori-Agent implementation roadmap
 
+## NORI-BRANDING / Slack reply coverage — November 14, 2026
+
+Owner: Codex. Configuration-only live fix: all 17 visible active Slack channels are
+allowlisted; only the missing deployment channel was added. Router/host-guard naming
+updated locally; native denial branding remains blocked on an upstream presentation
+API. No product milestone advancement. [Scope and next steps](nori-branding.md).
+
+
+
 ## Slack reaction permission maintenance / #77 / C02 support — November 13, 2026
 
 Owner: Codex. **LIVE API VERIFIED; configuration-only**. Existing Nori reauthorized with only

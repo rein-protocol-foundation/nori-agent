@@ -17,7 +17,7 @@ export function createHostGuard({ protectedPaths, defaultCwd }) {
       root.startsWith(target === '/' ? '/' : target + '/'));
   };
   const blocked = () => ({ block: true, blockReason:
-    'Nori host guard: deletion of system files, OpenClaw core or core plugins is prohibited. Edit in place; do not bypass this guard. Ordinary project files remain writable.' });
+    'Nori host guard: deletion of system files, Nori runtime or core plugins is prohibited. Edit in place; do not bypass this guard. Ordinary project files remain writable.' });
   return event => {
     const args = event.params ?? {};
     const cwd = path.resolve(args.workdir ?? args.cwd ?? defaultCwd);

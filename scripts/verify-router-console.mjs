@@ -46,7 +46,7 @@ export async function verifyRouterConsole({ screenshots = false } = {}) {
     child=spawn(process.execPath,['--input-type=module','-e',code],{env:{...clean,REIN_CONSOLE_FIXTURE:root,HTTP_PROXY:proxy,HTTPS_PROXY:proxy,NO_PROXY:'127.0.0.1,localhost'},stdio:['ignore','pipe','pipe']});
     const link=await new Promise((ok,no)=>{
       let output='';const timeout=setTimeout(()=>no(new Error('native console startup timed out')),20000);
-      child.stdout.on('data',chunk=>{output+=chunk;const match=output.match(/OpenClaw Router: (http:\/\/127\.0\.0\.1:\d+\/\?k=[a-f0-9]+)/);if(match){clearTimeout(timeout);ok(match[1]);}});
+      child.stdout.on('data',chunk=>{output+=chunk;const match=output.match(/Nori Router: (http:\/\/127\.0\.0\.1:\d+\/\?k=[a-f0-9]+)/);if(match){clearTimeout(timeout);ok(match[1]);}});
       child.stderr.on('data',chunk=>{output+=chunk;});child.on('exit',()=>{clearTimeout(timeout);no(new Error('native console exited: '+output));});
     });
     const require=createRequire(new URL('../vendor/openclaw/package.json',import.meta.url));
@@ -60,7 +60,7 @@ export async function verifyRouterConsole({ screenshots = false } = {}) {
     await page.route('**/app.js', async route => { await appGate; await route.continue(); });
     await page.goto(link, { waitUntil: 'commit' });
     await page.locator('#rein-boot').waitFor({ state: 'visible' });
-    assert.match(await page.locator('#rein-boot').innerText(), /正在打开 OpenClaw Router/);
+    assert.match(await page.locator('#rein-boot').innerText(), /正在打开 Nori Router/);
     assert.equal(await page.locator('#view-agents').isVisible(), false);
     releaseApp();
     try { await page.waitForSelector('#rein-save',{state:'visible',timeout:12000}); } catch(e) { console.error('UI errors:',errors);console.error((await page.locator('body').innerText()).slice(0,2500));await page.screenshot({path:'/tmp/rein-router-console-debug.png',fullPage:true});throw e; }
@@ -96,9 +96,9 @@ export async function verifyRouterConsole({ screenshots = false } = {}) {
       await page.locator('#nav button[data-view="rein-router"]').click();
     }
     await page.getByRole('switch',{name:'确认 Demo Subscription 计费设置'}).click();
-    await page.getByRole('button',{name:'保存并连接 OpenClaw',exact:true}).click();
+    await page.getByRole('button',{name:'保存并连接 Nori',exact:true}).click();
     await page.waitForFunction(()=>document.querySelector('#rein-message')?.textContent.length>0,{},{timeout:12000});
-    assert.ok((await page.locator('#rein-message').innerText()).startsWith('已同步到 OpenClaw'),await page.locator('#rein-message').innerText());
+    assert.ok((await page.locator('#rein-message').innerText()).startsWith('已同步到 Nori'),await page.locator('#rein-message').innerText());
     const host=JSON.parse(await readFile(join(root,'runtime/openclaw/openclaw.json'),'utf8'));
     assert.equal(host.agents.defaults.model.primary,'rein-magpie/auto');
     assert.equal(host.plugins.entries['rein-router'].config.gateway.managed.mode,'console');

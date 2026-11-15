@@ -12,7 +12,7 @@ function fixture(target = "rein-router") {
     check,
     timeout,
     disconnected = false;
-  const status = { textContent: "正在打开 OpenClaw Router…" },
+  const status = { textContent: "正在打开 Nori Router…" },
     retry = { hidden: true };
   const router = { hidden: true, ready: false, hasAttribute: () => router.ready };
   const panel = {

@@ -1,17 +1,17 @@
 /* Magpie's native page kernel and UI kit; no duplicated provider editor. */
 magpie.plugin('rein-router', ctx => {
   ctx.slots.add('page', {
-    key: 'rein-router', title: 'OpenClaw Router',
-    html: `<div class="rein-console"><header class="rein-heading"><div><p class="rein-eyebrow">OPENCLAW × MAGPIE</p><h1>模型配置一次，任务自动选路</h1><p>Provider 与模型在 Magpie 管理。这里配置 OpenClaw 如何使用它们。</p></div><span class="rein-status" id="rein-sync">尚未连接</span></header>
-    <div class="rein-flow" aria-label="请求流程"><span>Discord / Slack</span><i>→</i><b>OpenClaw</b><i>→</i><span>路由策略</span><i>→</i><b>Magpie Providers</b></div>
+    key: 'rein-router', title: 'Nori Router',
+    html: `<div class="rein-console"><header class="rein-heading"><div><p class="rein-eyebrow">NORI × MAGPIE</p><h1>模型配置一次，任务自动选路</h1><p>Provider 与模型在 Magpie 管理。这里配置 Nori 如何使用它们。</p></div><span class="rein-status" id="rein-sync">尚未连接</span></header>
+    <div class="rein-flow" aria-label="请求流程"><span>Discord / Slack</span><i>→</i><b>Nori</b><i>→</i><span>路由策略</span><i>→</i><b>Magpie Providers</b></div>
     <div id="rein-message" role="status" aria-live="polite"></div>
     <section class="rein-section"><div class="rein-section-head"><div><h2>1. Provider 与模型</h2><p>直接来自 Magpie。新增或移除模型后，每 5 秒自动同步。</p></div><button type="button" class="text" id="rein-providers">管理 Providers ↗</button></div><div id="rein-catalog"></div></section>
     <section class="rein-section"><div class="rein-section-head"><div><h2>2. 任务路由与思考强度</h2><p>选择适合的模型；推荐值只是起点，可按实际效果调整。</p></div><button type="button" class="text" id="rein-recommend">使用推荐策略</button></div><div id="rein-policy"></div></section>
     <section class="rein-section"><div class="rein-section-head"><div><h2>3. Dynamic Router</h2><p>Jev 判断任务类型、复杂度及是否需要上下文，再选择模型与思考强度。</p></div></div><div id="rein-dynamic"></div></section>
     <section class="rein-section" id="rein-scoped-section" hidden><div class="rein-section-head"><div><h2>Agent 与频道生效策略</h2><p>频道覆盖 → 平台默认 → Agent 默认。空回退列表表示不回退；所有选择受 Agent 可用模型与付费边界约束。</p></div></div><div id="rein-scoped"></div></section>
-    <details class="rein-advanced"><summary>开发频道与回退顺序</summary><div id="rein-fallbacks"></div><label class="rein-field">旧版管理员模式名单（每行 channel/accountId/senderId）<textarea id="rein-admins" rows="3" placeholder="discord/default/YOUR_USER_ID"></textarea></label><p>此名单仅用于旧版管理员模式，不影响开发频道授权。开发频道按当前 Slack 成员身份核验，普通工作无需 Foundation 角色。</p><label class="rein-field">私有开发频道（每行 accountId/workspaceId/channelId/agentId）<textarea id="rein-dev-channels" rows="3" placeholder="default/T_WORKSPACE/C_CHANNEL/nori-development"></textarea></label><p>开发 Agent 必须配置独立沙箱。受限开发模型与自动化创建会核验当前成员；原生任务执行及工具权限由 OpenClaw 管理。</p></details>
-    <footer class="rein-save"><div><strong>连接到现有 OpenClaw</strong><p>保存后自动合并配置。首次连接后启动或重启 OpenClaw，后续目录变更自动更新。</p></div><div class="rein-actions"><button type="button" id="rein-pause" class="text" hidden>暂停路由</button><button type="button" id="rein-save" class="text primary">保存并连接 OpenClaw</button></div></footer>
-    <p class="rein-footnote">OpenClaw 就是你的 harness，无需连接 Magpie 的 Agents。手动选模型时使用 /model；自动模式使用 /model auto。</p></div>`,
+    <details class="rein-advanced"><summary>开发频道与回退顺序</summary><div id="rein-fallbacks"></div><label class="rein-field">旧版管理员模式名单（每行 channel/accountId/senderId）<textarea id="rein-admins" rows="3" placeholder="discord/default/YOUR_USER_ID"></textarea></label><p>此名单仅用于旧版管理员模式，不影响开发频道授权。开发频道按当前 Slack 成员身份核验，普通工作无需 Foundation 角色。</p><label class="rein-field">私有开发频道（每行 accountId/workspaceId/channelId/agentId）<textarea id="rein-dev-channels" rows="3" placeholder="default/T_WORKSPACE/C_CHANNEL/nori-development"></textarea></label><p>开发 Agent 必须配置独立沙箱。受限开发模型与自动化创建会核验当前成员；原生任务执行及工具权限由 Nori 管理。</p></details>
+    <footer class="rein-save"><div><strong>连接到现有 Nori</strong><p>保存后自动合并配置。首次连接后启动或重启 Nori，后续目录变更自动更新。</p></div><div class="rein-actions"><button type="button" id="rein-pause" class="text" hidden>暂停路由</button><button type="button" id="rein-save" class="text primary">保存并连接 Nori</button></div></footer>
+    <p class="rein-footnote">Nori 统一管理任务执行，无需连接 Magpie 的 Agents。手动选模型时使用 /model；自动模式使用 /model auto。</p></div>`,
     mount() {
       const page = document.getElementById('view-rein-router');
       const visibility = () => { if (document.hidden || page.hidden) hideJevKey(); else if (!dirty) void load(); };
@@ -41,8 +41,8 @@ magpie.plugin('rein-router', ctx => {
     router_restricted_policy: '受限复杂开发的 Provider 不能用于默认、简单问答或检索策略。',
     router_restricted_default: '默认策略必须允许日常任务使用。',
     router_coding_plan_scope: 'Coding Plan 仅用于编码路由；请为通用任务选择其他 Provider。',
-    router_catalog_limit: '可用模型过多。请在 Magpie 缩小暴露给 OpenClaw 的模型目录（最多 60 个）。',
-    router_config_changed_retry: 'OpenClaw 配置刚刚发生变化，请重新保存。',
+    router_catalog_limit: '可用模型过多。请在 Magpie 缩小暴露给 Nori 的模型目录（最多 60 个）。',
+    router_config_changed_retry: 'Nori 配置刚刚发生变化，请重新保存。',
     router_magpie_api_failed: 'Magpie 暂时不可用，请检查控制台终端。',
     router_sync_failed: '同步未完成，模型调用已暂停。请检查模型策略、计费设置与本地配置。',
   };
@@ -54,7 +54,7 @@ magpie.plugin('rein-router', ctx => {
     const data = await response.json(); if (!response.ok) throw new Error(data.error); return data;
   }
   function message(text, error = false) { const node = $r('#rein-message'); node.textContent = text; node.className = error ? 'rein-error' : 'rein-notice'; node.hidden = !text; }
-  function changed() { dirty = true; $r('#rein-sync').textContent = '有未保存的更改'; $r('#rein-sync').classList.remove('connected'); $r('#rein-save').textContent = '保存并连接 OpenClaw'; }
+  function changed() { dirty = true; $r('#rein-sync').textContent = '有未保存的更改'; $r('#rein-sync').classList.remove('connected'); $r('#rein-save').textContent = '保存并连接 Nori'; }
   async function load() {
     if (dirty || viewingJev) return;
     try {
@@ -100,7 +100,7 @@ magpie.plugin('rein-router', ctx => {
           : '尚未配置 Foundation 身份后端，受限模型不会放行。请先完成 rein-operations 的 foundationDb 配置和账号绑定。'));
       card.append(ctx.ui.row('已确认此 Provider 的额度与额外用量设置', '新增模型继承此 Provider 的边界；新增 Provider 默认不启用。',
         ctx.ui.toggle(funding.confirmed, '确认 ' + models[0].provider + ' 计费设置', v => { funding.confirmed = v; changed(); })));
-      if (models.some(m => m.hasFallback)) card.append(el('p', 'rein-error', '此 Provider 配有内部回退，请在 Providers 移除回退后再用于 OpenClaw。回退顺序在下方统一配置。'));
+      if (models.some(m => m.hasFallback)) card.append(el('p', 'rein-error', '此 Provider 配有内部回退，请在 Providers 移除回退后再用于 Nori。回退顺序在下方统一配置。'));
       box.append(card);
     }
     renderPolicy(); renderDynamic(); renderFallbacks(); renderScoped();
@@ -114,7 +114,7 @@ magpie.plugin('rein-router', ctx => {
       try {
         state = await api('settings', { settings: { ...settings, enabled: false } });
         settings = structuredClone(state.settings); dirty = false; render();
-        message('路由已暂停。保存并连接 OpenClaw 可重新启用。');
+        message('路由已暂停。保存并连接 Nori 可重新启用。');
       } catch (e) { message(labelError(e.message), true); }
     };
   }
@@ -166,7 +166,7 @@ magpie.plugin('rein-router', ctx => {
   function renderDynamic() {
     hideJevKey();
     const box = $r('#rein-dynamic'); box.replaceChildren();
-    box.append(ctx.ui.row('应用到 OpenClaw', '已有 Agent 的工具、会话及频道配置保持原样。',
+    box.append(ctx.ui.row('应用到 Nori', '已有 Agent 的工具、会话及频道配置保持原样。',
       ctx.ui.menu([{ v: 'defaults', name: '默认模型 · 继承默认的 Agents' }, ...(state.agentTargets ?? []).map(v => ({ v, name: v }))], settings.targetAgent ?? 'defaults', '选择 Agent',
         v => { settings.targetAgent = v; changed(); })));
     box.append(ctx.ui.row('自动判断任务 · Jev', '启用后允许单独计费的 Jev 分类调用；不改变 LLM 额外付费设置。',
@@ -236,7 +236,7 @@ magpie.plugin('rein-router', ctx => {
       const key = jevDraft;
       state = await api('settings', { settings, ...(key ? { jevApiKey: key } : {}) });
       jevDraft = ''; dirty = false; settings = structuredClone(state.settings); render();
-      message('已同步到 OpenClaw。首次连接请启动或重启 OpenClaw；在 Discord / Slack 选择 rein-magpie/auto。');
+      message('已同步到 Nori。首次连接请启动或重启 Nori；在 Discord / Slack 选择 rein-magpie/auto。');
       button.textContent = '已保存 · 自动同步中';
     } catch (e) {
       try { const current = await api('state'); state = { ...current, settings }; render(); } catch {}

@@ -46,7 +46,7 @@ export function decorateMagpieHtml(html, { initialView = '' } = {}) {
       !html.includes('<html') || !html.includes('<body>') || !html.includes('<head>') || !html.includes('</head>') ||
       !html.includes('data-view="providers"') || !html.includes('<button data-view="routing"') ||
       !html.includes('<template data-slot="page"')) throw new Error('router_magpie_ui_incompatible');
-  const nav = '<button data-view="rein-router"><svg class="nav-ic" viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M3 10h5l4-5h5M8 10l4 5h5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span data-t>OpenClaw Router</span></button>';
+  const nav = '<button data-view="rein-router"><svg class="nav-ic" viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M3 10h5l4-5h5M8 10l4 5h5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span data-t>Nori Router</span></button>';
   // Classic script execution order stays upstream-owned. Preloads remove the
   // request waterfall without changing those scripts to async/defer or bundling them.
   const scripts = [...html.matchAll(/<script src="([a-zA-Z0-9_./?=&%-]+)"><\/script>/g)]
@@ -58,7 +58,7 @@ html[data-rein-boot] body>:not(#rein-boot){visibility:hidden!important}
 #rein-boot{position:fixed;inset:0;z-index:2147483647;display:grid;place-content:center;gap:16px;padding:32px;background:#f3f4f5;color:#253e33;font:14px/1.7 "Avenir Next","PingFang SC",sans-serif}
 #rein-boot strong{font-size:28px;font-weight:500;letter-spacing:-.6px}#rein-boot p{margin:0;color:#5c6a60}#rein-boot a{color:#253e33}#rein-boot a[hidden]{display:none}
 </style>`;
-  const boot = `<section id="rein-boot" data-target="${initialView === 'rein-router' ? 'rein-router' : ''}" aria-label="Magpie 加载状态"><strong>Magpie</strong><p role="status">正在打开${initialView === 'rein-router' ? ' OpenClaw Router' : '配置页面'}…</p><a href="" hidden>重新加载</a><noscript>请启用 JavaScript 后重新加载此页面。</noscript></section><script src="/_rein/boot.js"></script>`;
+  const boot = `<section id="rein-boot" data-target="${initialView === 'rein-router' ? 'rein-router' : ''}" aria-label="Magpie 加载状态"><strong>Magpie</strong><p role="status">正在打开${initialView === 'rein-router' ? ' Nori Router' : '配置页面'}…</p><a href="" hidden>重新加载</a><noscript>请启用 JavaScript 后重新加载此页面。</noscript></section><script src="/_rein/boot.js"></script>`;
   return html.replace('<html', '<html data-rein-boot')
     .replace('<head>', '<head>' + critical + preloads)
     .replace('</head>', '<link rel="stylesheet" href="/_rein/router.css"></head>')
@@ -178,7 +178,7 @@ export async function runRouterConsole({ root = projectRoot, noOpen = false, por
     web = await createConsoleServer({ sync, nativeOrigin, nativeSecret, port });
     assertRunning();
     if (onReady) await onReady({ origin: web.origin, token: new URL(web.link).searchParams.get('k') });
-    else console.log(`OpenClaw Router: ${web.link}\nMagpie owns providers and models. Keep this terminal open. Ctrl-C stops this gateway.`);
+    else console.log(`Nori Router: ${web.link}\nMagpie owns providers and models. Keep this terminal open. Ctrl-C stops this gateway.`);
     if (!noOpen) {
       const command = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'rundll32' : 'xdg-open';
       const opened = spawn(command, process.platform === 'win32' ? ['url.dll,FileProtocolHandler', web.link] : [web.link], { stdio: 'ignore', shell: false });
