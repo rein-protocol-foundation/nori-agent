@@ -116,6 +116,62 @@ test('persisted strong wait evidence remains usable after native wait cache expi
   assert.equal(reviewed.phase, 'complete'); assert.equal(f.cancellations(), 0);
 });
 
+const terminalWait = (overrides = {}) => ({ runId: 'native-run', status: 'ok', startedAt: 10, endedAt: 100,
+  stopReason: 'stop', livenessState: 'working', terminalReceipt: { runId: 'native-run', sessionId: 'child-session',
+    turnId: 'child-terminal-turn', terminalDisposition: 'visible', successfulToolNames: ['web_search'] },
+  terminalReply: { disposition: 'visible', text: 'Three sourced nonprofit tools' }, ...overrides });
+
+test('published exact-run receipt settles successful native work despite stale working liveness', async () => {
+  for (const disposition of ['visible', 'silent', 'empty']) {
+    const f = fixture(), wait = terminalWait();
+    if (disposition !== 'visible') {
+      wait.terminalReceipt.terminalDisposition = 'not-visible';
+      wait.terminalReply = { disposition };
+    }
+    f.dependencies.subagent.waitForRun = async () => wait;
+    await f.restart(); const prepared = await f.prepare();
+    await f.accept(prepared, { status: 'succeeded', terminalSummary: 'Three sourced tools' });
+    assert.equal(f.flows.get(prepared.flowId).stateJson.attempts[0].settlement.source, 'native_terminal_receipt');
+    // The receipt was persisted; subsequent process-local wait cache loss cannot
+    // strand the completed attempt or trigger another native launch.
+    f.dependencies.subagent.waitForRun = async () => ({ status: 'timeout' });
+    await f.restart();
+    const reviewed = await f.call({ action: 'review', flow: prepared.flowId, scopeRevision: 1,
+      outcome: 'complete', evidence: 'All three tools and sources verified', effects: 'none', progress: true });
+    assert.equal(reviewed.phase, 'complete'); assert.equal(f.cancellations(), 0);
+    assert.equal(reviewed.report.delivery, 'pending_or_uncertain');
+    assert.equal((await f.spawn(prepared)).gate.block, true);
+  }
+});
+
+test('working liveness still blocks mismatched, partial, yielded and unpublished terminal receipts', async () => {
+  const cases = [
+    { runId: 'foreign-run' }, { status: 'pending' }, { status: 'timeout' }, { status: 'error' },
+    { endedAt: undefined }, { yielded: true }, { pendingError: true }, { stopReason: 'sessions_yield' },
+    { livenessState: 'blocked' }, { terminalReceipt: undefined }, { terminalReply: undefined },
+    { terminalReply: { disposition: 'visible', text: '' } }, { terminalReply: { disposition: 'silent' } },
+    ...[{ runId: 'foreign-run' }, { sessionId: '' }, { turnId: '' }, { terminalDisposition: 'not-visible' }]
+      .map(receipt => ({ terminalReceipt: { ...terminalWait().terminalReceipt, ...receipt } })),
+  ];
+  for (const overrides of cases) {
+    const f = fixture(); f.dependencies.subagent.waitForRun = async () => terminalWait(overrides);
+    await f.restart(); const prepared = await f.prepare();
+    await f.accept(prepared, { status: 'succeeded', terminalSummary: 'Three sourced tools' });
+    await assert.rejects(f.call({ action: 'review', flow: prepared.flowId, scopeRevision: 1,
+      outcome: 'complete', evidence: 'Available result', effects: 'none', progress: true }), /run_not_settled/);
+    assert.equal(f.flows.get(prepared.flowId).stateJson.attempts[0].settlement, undefined);
+    assert.equal((await f.spawn(prepared)).gate.block, true);
+    assert.equal(f.cancellations(), 0);
+  }
+  for (const task of [{ status: 'running' }, { status: 'failed' }, { status: 'cancelled' }, { status: 'succeeded', endedAt: undefined }]) {
+    const f = fixture(); f.dependencies.subagent.waitForRun = async () => terminalWait();
+    await f.restart(); const prepared = await f.prepare(); await f.accept(prepared, task);
+    await assert.rejects(f.call({ action: 'review', flow: prepared.flowId, scopeRevision: 1,
+      outcome: 'complete', evidence: 'Only a receipt', effects: 'none' }), /current_scope_review_required|run_not_settled/);
+    assert.equal(f.flows.get(prepared.flowId).stateJson.attempts[0].settlement, undefined);
+  }
+});
+
 test('failed, incomplete and mismatched cancellation cannot establish durable settlement', async () => {
   for (const cancellation of ['failed', 'throws', 'provisional', 'foreign-receipt', 'missing-endedAt', 'succeeded-race']) {
     const f = fixture(); f.dependencies.subagent.waitForRun = async () => ({ status: 'timeout' });
