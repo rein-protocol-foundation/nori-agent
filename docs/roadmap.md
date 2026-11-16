@@ -1,5 +1,31 @@
 # Nori-Agent implementation roadmap
 
+## 2026-11-15 — Community runtime ticket accepted and closed
+
+#54 / SA-M0-06; scope owner: project owner; record owner: Codex.
+**COMPLETED under the owner-confirmed current scope.** The owner accepts existing
+OpenClaw time controls and Rein admission/concurrency/daily-request budgets as
+sufficient for Community. Concurrent Community subagent calls are not required.
+Strict whole-chain deadlines, uncooperative-tool settlement guarantees and full
+Gateway cancellation/reload/restart verification are deferred enhancements, not
+completion gates for this ticket. Earlier BLOCKED entries are historical and
+superseded for ticket status; their technical evidence remains valid.
+GitHub #54 was updated with a scope note and closed as completed. No new runtime
+implementation, deployment or live acceptance is claimed; other migration/privacy
+gates remain unchanged. Existing evidence: 20/20 admission/routing regressions and
+native diagnostic passed in the prior investigation. Next: no further implementation
+for this scope; revisit only if stricter execution or concurrent child work is needed.
+
+### Community runtime limits — November 14, 2026
+
+#54 / SA-M0-06; owner Codex; **BLOCKED, native gaps reproduced locally**.
+[Native inventory and reproduction](community-runtime-limits.md) on `4a11f89e`:
+Community-only run timeout/concurrency configuration rejected; native timeout queue
+can admit a successor before held work settles. Existing admission/routing 20/20
+passed. No product milestone advanced. Model/tool/fallback deadline integration,
+Gateway reload/restart and live acceptance remain pending. Next: review the narrow
+host-owned deadline and actual-settlement lease contract; retain #52 admission/budgets.
+
 ## #58 scoped live acceptance — November 15, 2026
 
 Owner: Codex / Sol High. PASS: real same-owner two-task OCI restart, automatic supplements, recoverable invalid parameters, succeeded/complete closure and actual merged Slack delivery. PRs #87–#90 merged; final tested code ca5a384. Configuration restored; no active tasks. [Evidence](task-continuation-live-2026-11-15.md). Native delivery/retention limits remain; no broader product milestone implied.

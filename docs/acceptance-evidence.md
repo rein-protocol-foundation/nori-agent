@@ -1,5 +1,31 @@
 # Acceptance evidence
 
+## 2026-11-15 — Community runtime ticket accepted and closed
+
+#54 / SA-M0-06; scope owner: project owner; record owner: Codex.
+**COMPLETED under the owner-confirmed current scope.** The owner accepts existing
+OpenClaw time controls and Rein admission/concurrency/daily-request budgets as
+sufficient for Community. Concurrent Community subagent calls are not required.
+Strict whole-chain deadlines, uncooperative-tool settlement guarantees and full
+Gateway cancellation/reload/restart verification are deferred enhancements, not
+completion gates for this ticket. Earlier BLOCKED entries are historical and
+superseded for ticket status; their technical evidence remains valid.
+GitHub #54 was updated with a scope note and closed as completed. No new runtime
+implementation, deployment or live acceptance is claimed; other migration/privacy
+gates remain unchanged. Existing evidence: 20/20 admission/routing regressions and
+native diagnostic passed in the prior investigation. Next: no further implementation
+for this scope; revisit only if stricter execution or concurrent child work is needed.
+
+## Community runtime limit evidence — 2026-11-14
+
+#54 / #65, SA-M0-06; owner Codex. **BLOCKED — not product acceptance**.
+[Native diagnostic and scope](community-runtime-limits.md): exact pin `4a11f89e`,
+per-agent config rejection and uncooperative queue overlap reproduced; native timer
+synthetic consumers settle and stale timer cleanup leaves successor untouched.
+Existing admission/routing tests 20 passed / 0 failed / 0 skipped. Full model/tool,
+fallback, reload/restart and production acceptance pending; no AC01–AC20 advancement.
+Next: supported host deadline/settlement seam, then end-to-end local rehearsal.
+
 ## NORI-BRANDING — November 14, 2026
 
 Verification follow-up: native Router browser smoke passed (synthetic providers); live Slack
