@@ -243,3 +243,21 @@ test('native engine enforces the saved approver identity independently', async t
   assert.equal((await native.resume({ checkpoint: prepared.requiresApproval, approve: true, actor: 'UBOB0001' })).status, 'ok');
   assert.ok((await readdir(stateDir)).length >= 0);
 });
+
+
+test('native Slack lowercase command identity retains exact approver and current membership checks', async t => {
+  const seen = [];
+  const f = await fixture(t), draft = await f.prepare();
+  f.restart({ authorize: async ctx => { seen.push(ctx.senderId); return ctx.senderId === 'UALICE01'; } });
+  for (const senderId of ['ubob0001', 'ualice01 ', 'slack:ualice01', 'ualıce01']) {
+    assert.equal((await f.command(draft.approveCommand, { senderId })).status, 'unavailable');
+    assert.equal(f.posts.length, 0);
+  }
+  assert.equal((await f.command(draft.approveCommand, { senderId: 'ualice01', isAuthorizedSender: false })).status, 'unavailable');
+  const approved = await f.command(draft.approveCommand, { senderId: 'ualice01' });
+  assert.equal(approved.receipt.accepted, true);
+  assert.equal(f.posts.length, 1);
+  assert.equal(seen.at(-1), 'UALICE01');
+  await f.command(draft.approveCommand, { senderId: 'ualice01' });
+  assert.equal(f.posts.length, 1);
+});

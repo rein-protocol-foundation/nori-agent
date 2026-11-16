@@ -1,5 +1,20 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-16 — Partnership production activation and Slack command identity
+
+SA-M3-01–05 / #59; owner Codex. User authorized production integration and one real test
+recipient. Production code/dependencies existed but plugin loading, optional tool admission,
+command authorization, sender/recipient and mail credential configuration were absent.
+Backed up private runtime configuration, reused existing Slack/Resend credentials and verified
+sender domain, and enabled the fixed workflow in the existing private test channel for its
+verified administrator. A real Slack prepare displayed an exact draft and durable checkpoint.
+Approval then failed before dispatch: native Slack command authorization lowercases user IDs,
+whereas the plugin required uppercase IDs. Normalize only ASCII Slack user IDs at the command
+boundary; retain native authorization, live membership, configured approver and scope checks.
+22 focused tests pass, including lowercase approval, forged/wrong identity rejection and duplicate
+no-op. Live approval/send/reconciliation remain pending deployment of this compatibility fix.
+No secrets or runtime records are included here; existing acceptance evidence is not overwritten.
+
 ## 2026-11-15 — Community runtime ticket accepted and closed
 
 #54 / SA-M0-06; scope owner: project owner; record owner: Codex.

@@ -1,5 +1,9 @@
 # Acceptance evidence
 
+Production follow-up (2026-11-16, Codex, SA-M3-01–05/#59): live Slack draft preview verified;
+command identity normalization fixed with 22 passing focused tests. Real send/delivery remains
+pending the fix deployment. See the dated implementation record.
+
 ## 2026-11-15 — Community runtime ticket accepted and closed
 
 #54 / SA-M0-06; scope owner: project owner; record owner: Codex.
