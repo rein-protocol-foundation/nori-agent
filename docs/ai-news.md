@@ -137,8 +137,9 @@ Runtime base: `/home/ubuntu/rein-agent/runtime/ai-news/`. It contains `config.js
 hashes, `skills/ai-news/`, `editions/`, and `state/delivery/`. Configuration backups are
 under `backups/20261116T112307Z/`; never commit them. Both profiles discover the skill
 through the native extra-directory setting. The runtime directory survived the independent
-release cutover. No app-source merge, upstream patch or channel credential expansion was
-performed by this task. Discord channel creation used the authorized operator UI because
+release cutover. The initial runtime installation required no app-source merge, upstream patch or channel
+credential expansion. Repository integration is tracked in
+[PR #96](https://github.com/rein-protocol-foundation/nori-agent/pull/96). Discord channel creation used the authorized operator UI because
 the bot lacks Manage Channels; that permission was not added.
 
 Pause using the owning Slack launcher's `cron disable <job-id>` for each ID above. Resume
@@ -168,9 +169,10 @@ time. It is not a promise that the completed newsletter appears at exactly 09:00
 and [scheduled Discord daily edition](https://discord.com/channels/1558049042494128219/1571846554145529887/1571933631214260237).
 Slack's actual desktop client shows intact headings, paragraphs, separators and original-link
 buttons without exposed markup or duplicate article bodies. Discord's native readback confirms
-Components V2 cards and nine URL buttons. The browser session expired before this follow-up's
-visual inspection; today's Discord visual recheck is pending login (the earlier weekly visual
-check remains valid only for that edition).
+Components V2 cards and nine URL buttons. After the operator renewed the expired browser
+login, the actual Discord daily edition was visually checked as well: intact card layout,
+source metadata and original-link buttons with no exposed Markdown delimiters. Channel
+history contains exactly three daily and four original weekly messages.
 
 The existing source files match the production-installed skill hashes. The PR adds the 28-test
 Python suite to the scaffold CI workflow so collection, dates/DST, formatting, limits, locked

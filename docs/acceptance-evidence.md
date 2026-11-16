@@ -10,12 +10,13 @@ Owner: Codex. **ENABLED / FIRST SCHEDULED DELIVERY VERIFIED**. Nine public feeds
 native daily 09:00 / Monday 09:15 jobs (America/Los_Angeles). On November 16 the daily
 job started at 09:00:00.020 and sent nine stories as three messages per platform by
 09:03:21; the 09:15 weekly run reused all eight original receipts without re-sending.
-Slack desktop rendering and both native channel payloads verified; today's Discord visual
-recheck awaits the expired browser login. Earlier weekly visual acceptance remains recorded.
+Slack desktop and Discord browser rendering verified, together with both native channel
+payloads. Nine original-link buttons and no exposed Markdown or duplicate bodies observed.
 28 focused Python and eight CI-scope tests pass; Python news tests now run in scaffold CI.
 First interrupted weekly rehearsal is retained as failed evidence. No private runtime data or
 unrelated shared-worktree changes included. [Exact evidence and recovery](ai-news.md).
-Next: complete PR checks/merge and verify preserved jobs/state after the deployment.
+Repository rollout: [PR #96](https://github.com/rein-protocol-foundation/nori-agent/pull/96).
+Recovery: retain the native jobs and per-edition receipts across deployments.
 No unrelated product milestone advanced.
 
 ## 2026-11-15 — Community runtime ticket accepted and closed
