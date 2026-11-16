@@ -1,5 +1,38 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-15 — Community runtime ticket accepted and closed
+
+#54 / SA-M0-06; scope owner: project owner; record owner: Codex.
+**COMPLETED under the owner-confirmed current scope.** The owner accepts existing
+OpenClaw time controls and Rein admission/concurrency/daily-request budgets as
+sufficient for Community. Concurrent Community subagent calls are not required.
+Strict whole-chain deadlines, uncooperative-tool settlement guarantees and full
+Gateway cancellation/reload/restart verification are deferred enhancements, not
+completion gates for this ticket. Earlier BLOCKED entries are historical and
+superseded for ticket status; their technical evidence remains valid.
+GitHub #54 was updated with a scope note and closed as completed. No new runtime
+implementation, deployment or live acceptance is claimed; other migration/privacy
+gates remain unchanged. Existing evidence: 20/20 admission/routing regressions and
+native diagnostic passed in the prior investigation. Next: no further implementation
+for this scope; revisit only if stricter execution or concurrent child work is needed.
+
+## 2026-11-14 — Community runtime/concurrency feasibility (#54 / SA-M0-06)
+
+Owner: Codex. **LOCAL GAP REPRODUCED; implementation/product acceptance BLOCKED**.
+Synced to `87416cc`, including merged #83/#84. The renamed canonical acceptance
+record is `acceptance-evidence.md`; the pre-existing untracked
+`product-acceptance-evidence.md` is preserved. Added an isolated native diagnostic
+and [configuration inventory / narrow host proposal](community-runtime-limits.md).
+The real schema rejects per-Community run timeout/concurrency, and the native queue
+starts a successor before a timed-out held task actually settles. Cooperative
+synthetic signal consumers settle; this is not provider/tool integration acceptance.
+Existing admission/routing tests: 20/20 passed, including reload, dead-process recovery,
+contention and fallback budget preservation. Initial fixture alias/roster setup failures
+were corrected. No production code/config or upstream source changed; no external
+send, paid inference, PR, merge or deployment. Full Gateway fallback/cancellation,
+reload/restart and live acceptance remain pending. Next: obtain the narrow supported
+host deadline/actual-settlement contract before implementing a Community adapter.
+
 ## #58 scoped live acceptance PASS — November 15, 2026
 
 Owner: Codex / verified Sol High implementation. PRs #87–#90 merged after seven green CI checks each and no unresolved findings. Final deployed ca5a384: same-owner A/B interrupted by actual OCI restart, recovered without human continue, corrected invalid spawn/review inputs in the same Flows, and both reached succeeded/complete. Actual merged Slack results independently checked. Original config restored; no active native tasks; histories retained. [Full evidence including failed attempts](task-continuation-live-2026-11-15.md). #58 updated; no exactly-once, arbitrary-crash or retention/delete claim.
