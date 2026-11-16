@@ -1,8 +1,12 @@
 # Nori Super Agent — Feature Checklist 与范围复审
 
-更新：2026-11-09（America/Los_Angeles）。负责人：产品范围由项目负责人决定；本次记录维护者为 Codex。开发执行者待分配。
+更新：2026-11-15（America/Los_Angeles）。范围负责人：项目负责人；文档维护：Codex。
 
-**状态：v0.6 产品方向已确认，本轮仅落实文档与 tickets。** [PRD v0.6](super-agent-nori-prd-en.md) 采用“原生配置 → 已有社区开源集成 → 必要薄适配”。内部 Slack M1 优先；共享 Gateway/Discord 为独立 M0，不整体阻塞 M1–M3。动态路由、ACP 客户端原生登录、Magpie 限额、Axiom 与 09:00 日报已确认；保留期限与 M3 首轮必要性仍待决定。没有新增产品验收通过。总入口：[#65](https://github.com/rein-protocol-foundation/nori-agent/issues/65)。SA-M* 与旧治理 roadmap 的 M0–M5 不同。
+**当前依据为 [PRD v0.7](super-agent-nori-prd-en.md) 和[剩余开发与验收计划](super-agent-delivery-plan.md)。**
+通用工具优先 OpenClaw 原生与社区集成；Super Agent 聚焦任务协调与完成能力。
+已有 Rein 内部工具和邮件工作流保留，内部业务工具扩展移至 Super Agent 验收之后，由 Nori 主导。
+邮件真实发送验收不再是 Super Agent 完成门槛。下列既有编号仅用于追溯，历史证据不升级为当前验收。
+共享 Gateway／社区上线独立跟踪，原有安全门槛不撤销。远端 tickets 尚未同步，本次仅修改本地文档。
 
 ## 维护方式
 
@@ -10,7 +14,7 @@
 - 状态仅用：VERIFIED COMPLETE（所列范围已验证）、IMPLEMENTED BUT UNVERIFIED、PARTIALLY IMPLEMENTED、BLOCKED、NOT STARTED。范围决策另用“待决定／已确认”。
 - `[x]` 只代表该行明确限定的交付范围完成；源码、CI、部署、产品验收分别记录，不能互相替代。
 - 新证据追加日期与精确版本；保留历史失败和限制。未明确批准的删减不删除旧验收项、不关闭旧 Issue。
-- 已确认方向同步 PRD、此清单、roadmap、GitHub Issues；实现负责人待分配。此轮无代码、依赖、运行配置或生产变更。
+- 已确认方向同步本地 PRD、此清单与 roadmap；远端 GitHub Issues 同步单独跟踪。实现负责人待分配。此轮无代码、依赖、运行配置或生产变更。
 
 ## 已核实的源码切片
 
@@ -26,7 +30,7 @@
 
 此前恢复审计刷新 main 为 `7bbd3cd52acc9bf9c99807e2a57de61f933e3561`。#62 是开发代理配置，不推进 Super Agent 功能。此前恢复审计观察到生产 `412f88c9`、OpenClaw `4a11f89e`，四项服务运行且队列为空；该次刷新没有再次检查生产，不能把历史观测当作当前部署版本。
 
-## M0：独立共享 Gateway / Discord Community（v0.6 验收）
+## 社区隔离与共享 Gateway 迁移（保留独立验收）
 
 所有条目尚未完整验收；实现 owner 待分配。下列状态保留已交付切片与未完成产品验收的区别。
 
@@ -42,9 +46,9 @@
 | [ ] | SA-M0-08 | 保留历史/任务所有权/回复目的地的 cutover 与 rollback，无重复 bot consumer | NOT STARTED | #57 有计划，无完成演练；依赖实际 #54–#56/#67/#68 行为验收 |
 | [ ] | SA-M0-09 | 渠道 usage、Axiom Dashboard、09:00 Slack 日报与额度告警 | PARTIALLY IMPLEMENTED | #68；既有健康 telemetry 可复用，渠道用量/日报未实现 |
 
-## M1–M3：现行 feature 清单
+## 任务执行、续接与可选邮件集成：既有证据
 
-v0.6 保留原有用户行为，新增已有 ACP 复用与最小 change/stop 的明确映射。旧 Director ACP 有实现证据，但新授权与 Super Agent 场景尚未验收。
+以下保留 v0.6 的用户行为与证据；邮件条目属于可选集成，不是通用 Super Agent 完成门槛。已有 ACP 复用与最小 change/stop 保持明确映射。旧 Director ACP 有实现证据，但新授权与 Super Agent 场景尚未验收。
 
 | 完成 | ID | 最小可观察验收行为 | 状态／Issue |
 | --- | --- | --- | --- |
@@ -65,11 +69,11 @@ v0.6 保留原有用户行为，新增已有 ACP 复用与最小 change/stop 的
 | [ ] | SA-M3-04 | 审批暂停后重启仍关联同一 checkpoint；缺失或发送结果未知时阻塞而非盲重放 | 不同 Gateway PID 原生恢复通过；持久模板修复、缺失/未知阻塞测试通过 / #59 |
 | [ ] | SA-M3-05 | 验证实际 Lobster 安装、可信执行入口、审批监听与 acknowledgment，不削弱公共隔离 | 本地 pinned core/插件启停/人工命令/原线程 acknowledgment 通过；部署 profile 待验收 / #59 |
 
-2026-11-13 更新：#58 原生核心已编码，仅静态检查；产品框不勾选。SA-M2-06、原子 launch/stop、ACP 硬期限及父回复收件仍有限制，详见实现说明。负责人：Codex 主协调 / 已核验 Sol High；下一步主协调静态审阅，不启动 M3。
+历史 2026-11-13 更新：#58 原生核心已编码，仅静态检查；产品框不勾选。SA-M2-06、原子 launch/stop、ACP 硬期限及父回复收件仍有限制，详见实现说明。负责人：Codex 主协调 / 已核验 Sol High；下一步主协调静态审阅，不启动 M3。
 
 历史 2026-11-12：#58 已获本地开发授权；实际 native 探针发现存储信任与多线程回复接缝阻塞，产品尚未实现，以上接缝证据不勾选完成。负责人：Codex 主协调 / Sol High；下一步审阅最小上游接口方案后继续 #58，不启动 M3。
 
-依赖基线（v0.6）：M0 独立；M2 依赖 M1；M3 保留 M1/M2 依赖且首轮必要性待定。内部试点验证自己的 owner/audience、私有存储、回复、执行与 Provider 边界；仅记录实际触及的 M0 依赖。本轮不执行功能开发。
+历史依赖基线（v0.6，当前范围以文首 v0.7 为准）：M0 独立；M2 依赖 M1；M3 保留 M1/M2 依赖且首轮必要性待定。内部试点验证自己的 owner/audience、私有存储、回复、执行与 Provider 边界；仅记录实际触及的 M0 依赖。本轮不执行功能开发。
 
 2026-11-13 #59 开发补记：用户已另行授权 M3 本地实现，上述“本轮不执行功能开发”指 v0.6 历史文档修订。
 M3 现为已实现／本地验证通过，产品复选框保持未勾选。M1 #74 已合并，真实验收仍独立；M2 #58 按负责人
@@ -113,13 +117,13 @@ M3 现为已实现／本地验证通过，产品复选框保持未勾选。M1 #7
 | [x] | SA-D03 | 原生优先；Magpie 管理推理；Community Qwen-first 按问题升级；Slack 默认动态且可手动控制；不再默认禁用 Jev |
 | [x] | SA-D04 | M1 复用研究子代理与 ACP 编程，包含查询/change/stop；Codex 先复用，其他客户端逐项验证 |
 | [ ] | SA-D05 | M2 切片顺序与摘要保留期限（原 30 天）待确认；不得据此另建平台 |
-| [ ] | SA-D06 | M3 是否首轮必要待确认；若发送，精确审批/去重/未知结果核对保留 |
+| [x] | SA-D06 | 2026-11-15 范围已确认：保留可选邮件集成，不作为 Super Agent 完成门槛；发送时原有审批/去重/未知结果核对要求不变 |
 | [x] | SA-D07 | v0.6 文档与 tickets 修订已授权；功能实现/生产不属于本次任务 |
 | [x] | SA-D08 | 可信 Slack 普通操作无冗余角色门槛；系统 Cron 无需在线人类；保留业务专有权限 |
 | [x] | SA-D09 | ACP 客户端保留原生登录/订阅；Nori 推理走 Magpie，二者用量分开 |
 | [x] | SA-D10 | 日报 09:00 America/Los_Angeles → #nori-alerts；80% 配置额度预警与原生耗尽状态 |
 
-## 恢复与下一步
+## 历史恢复与下一步记录（当前顺序见文首计划）
 
 - 源码 checkpoint：`tempest/m0-router-sdk-compat` / `8e260a640d66cb7d6d323180dfa85aac308a8534`，与本地 `tempest/m0-upstream-audience` 同一提交；#61 未合并。恢复前重新核对 main、mergeability 与 CI，不能把旧 CI 当作新 base 的验证。
 - 原 SDK worktree `nori-m0-foundation/rein-agent` 保留 candidate gitlink 和三个未跟踪文件：`docs/m0-sdk-upgrade.md`、`scripts/probe-native-knowledge.mjs`、`tests/fixtures/native-knowledge-gateway.ts`。本次未移动或修改；最新 probe 不能直接声称通过。
