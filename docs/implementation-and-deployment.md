@@ -33,6 +33,23 @@ send, paid inference, PR, merge or deployment. Full Gateway fallback/cancellatio
 reload/restart and live acceptance remain pending. Next: obtain the narrow supported
 host deadline/actual-settlement contract before implementing a Community adapter.
 
+## 2026-11-15 — Super Agent scope and remaining acceptance plan
+
+Owner: Codex; scope confirmed by the product owner. Updated PRD to v0.7 and aligned the feature
+checklist, roadmap and acceptance index with the [remaining plan](super-agent-delivery-plan.md).
+General tools use OpenClaw/native community integrations. Preserve completed mail and existing Rein
+business tools; new internal business functionality follows general Super Agent acceptance and is
+then led by Nori through development and acceptance. Added cross-business reuse and an isolated
+coding-delivery acceptance contract. Public rollout/operations retain their independent gates.
+Existing uncommitted runtime-limit diagnostics and document changes were preserved. No runtime code,
+configuration, vendor, external tickets, publishing or deployment changed. Documentation checks are
+recorded below after validation; product checks were not run and no product milestone advances.
+Blockers: existing native limits and undecided retention remain, as listed in the plan. Next: assign
+the next bounded integration/acceptance task; remote issue synchronization remains pending.
+
+
+Validation: scaffold, local document links, preservation of pre-existing tracking records and diff whitespace checks passed. Runtime/product tests were not run (documentation-only).
+
 ## #58 scoped live acceptance PASS — November 15, 2026
 
 Owner: Codex / verified Sol High implementation. PRs #87–#90 merged after seven green CI checks each and no unresolved findings. Final deployed ca5a384: same-owner A/B interrupted by actual OCI restart, recovered without human continue, corrected invalid spawn/review inputs in the same Flows, and both reached succeeded/complete. Actual merged Slack results independently checked. Original config restored; no active native tasks; histories retained. [Full evidence including failed attempts](task-continuation-live-2026-11-15.md). #58 updated; no exactly-once, arbitrary-crash or retention/delete claim.
@@ -1178,3 +1195,10 @@ controller is outside the application checkout: install the reviewed version und
 with a backup and no active transaction before expecting live behavior. Next: CI/review,
 then authorized controller installation and a merged documentation-only PR acceptance.
 No product milestone advancement. [Runbook](auto-update-zh.md#纯文档自动拉取).
+
+## 2026-11-16 — Scope documentation PR preparation
+
+Owner: Codex. Seven documentation files isolated from unrelated uncommitted runtime diagnostics.
+Reconciled owner-accepted Community runtime scope and November 15 scoped continuation acceptance.
+Scaffold, document links and whitespace checks pass; runtime tests not applicable to this docs-only change.
+Next: authorized PR, CI/review and merge; no deployment or business-tool expansion.
