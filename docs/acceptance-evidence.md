@@ -1,5 +1,15 @@
 # Acceptance evidence
 
+## 2026-11-16：任务摘要保留本地验证与真实任务验收进行中
+
+SA-M2-06；Owner Codex/Astra High。用户决定无期限服务器保留摘要且保留Slack原文。
+[可选摘要实现](task-summary-retention.md) 70定向、1436全仓通过/4既有跳过，实际plugin loader通过。
+实际public worker覆盖九天旧摘要重启、分页、跨owner拒绝、会话reset连续性、并发删写和tombstone。
+原生Flow cleanup是fixture模拟；真实用户保留/删除未通过前保持待验收。
+[真实任务记录](task-lifecycle-live-2026-11-16.md)：#94七项CI通过后合并部署66700d0；
+Slack/ACP开发真实启动，失败及部分成果保留，不能把native succeeded或accepted算交付成功。
+
+
 ## Task stop/change and recovery controls — November 16, 2026
 
 #58 / SA-M2-01–05; owner Codex (runtime-verified Astra Medium). **LOCAL VERIFIED**.

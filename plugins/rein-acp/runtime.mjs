@@ -21,6 +21,10 @@ export function validateAcpConfig(raw = {}) {
   if (raw.continuation?.enabled === true) {
     if (raw.taskLoop !== true) throw Error('rein_continuation_requires_task_loop');
     continuation = { maxAttempts: 4, maxNoProgress: 2, maxRuntimeMs: 3_600_000, maxActiveFlows: 16, ...raw.continuation };
+    if (continuation.retainedSummaries !== undefined &&
+        (typeof continuation.retainedSummaries !== 'object' || continuation.retainedSummaries === null ||
+         typeof continuation.retainedSummaries.enabled !== 'boolean' ||
+         Object.keys(continuation.retainedSummaries).some(key => key !== 'enabled'))) throw Error('rein_summary_config_invalid');
     for (const [key, max] of Object.entries({ maxAttempts: 12, maxNoProgress: 12, maxRuntimeMs: 86_400_000, maxActiveFlows: 64 }))
       if (!Number.isSafeInteger(continuation[key]) || continuation[key] < 1 || continuation[key] > max) throw Error('rein_continuation_bounds_invalid');
   }

@@ -5,7 +5,8 @@ Updated 2026-11-16, America/Los_Angeles. Owner: Codex (runtime-verified Astra Me
 **CORE IMPLEMENTED; SCOPED LIVE RECOVERY ACCEPTED; CONTROL FOLLOW-UP LOCALLY VERIFIED.**
 PRs #87–#91 already record [real two-task restart/supplement/delivery acceptance](task-continuation-live-2026-11-15.md).
 The new [stop/change and budget handoff follow-up](task-continuation-controls.md) has separate local evidence.
-Broader product acceptance remains open; SA-M2-06 selected retention/deletion remains unsupported.
+Broader product acceptance remains open. The optional [retained summary adapter](task-summary-retention.md)
+is locally verified; real-user retention/deletion acceptance remains pending.
 
 ## Opt-in native implementation
 
@@ -76,11 +77,11 @@ is not established by the public evidence available here.
 
 ## Remaining native limitations
 
-- **SA-M2-06 is unsupported:** public managed Flows expose no selected retention or explicit delete
-  API, and terminal cleanup is fixed at seven days. No duration was selected and no extended
-  retention is simulated by keeping completed flows active. Retrieval after native cleanup is
-  unavailable. This requirement is still open; a supported upstream retention/deletion contract is
-  needed. Retained summaries/links and user deletion acceptance are not claimed.
+- **SA-M2-06 now has an opt-in retained-copy implementation:** the owner selected indefinite server
+  retention on November 16. Public native worker storage keeps minimal new terminal summaries;
+  see [retention scope and verification](task-summary-retention.md). Native Flow cleanup remains
+  seven days and has no full-copy delete API. Explicit deletion clears only the retained copy;
+  native Task/Flow, Slack/chat, files and backups remain. Real-user acceptance is pending.
 - Native launch and flow revision are not one atomic transaction. The canonical pre-launch hook
   rechecks scope/stop after reservation; a stop racing native admission can still admit work before
   the accepted receipt is reconciled and cancelled. A crash before receipt persistence leaves an
