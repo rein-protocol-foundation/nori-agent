@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { root, upstream } from './runtime-env.mjs';
 import { buildOpenClawFragment } from '../plugins/rein-router/policy.mjs';
-import { selectTaskLoopModelInput as currentInput, countTaskLoopToolResults } from '../tests/fixtures/slack-task-loop-model-input.mjs';
+import { selectTaskLoopModelInput as currentInput, countTaskLoopToolResults, hasTaskLoopCancellationNotice } from '../tests/fixtures/slack-task-loop-model-input.mjs';
 
 assert.ok(existsSync(join(upstream, 'dist')), 'Parent must finish the pinned native build first; this script never installs/builds.');
 const temp = mkdtempSync(join(tmpdir(), 'nori-task-loop-'));
@@ -31,8 +31,10 @@ const server = createServer(async (req, res) => {
     const count = countTaskLoopToolResults(request.messages, at);
     const cancelledReport = controlled().some(t => {
       const d = t.result?.details;
-      return d?.childSessionKey === sourceSessionKey && request.messages.some(m =>
-        JSON.stringify(m.content).includes(`CANCELLED / OLD-SCOPE REPORT for native task ${d.taskId}, run ${d.runId}.`));
+      const accepted = tools().find(row => row.name === 'sessions_spawn' && row.result?.details?.runId === d?.runId);
+      return d?.childSessionKey === sourceSessionKey && (request.messages.some(m =>
+        JSON.stringify(m.content).includes(`CANCELLED / OLD-SCOPE REPORT for native task ${d.taskId}, run ${d.runId}.`)) ||
+        hasTaskLoopCancellationNotice(request.messages, { ...d, label: accepted?.params?.label }));
     });
     let name, args, content;
     const acpSpawn = (task, label) => ({ task, label, runtime: 'acp' }); // Host must supply all fixed ACP fields at both compact/canonical boundaries.
