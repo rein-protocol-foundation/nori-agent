@@ -701,3 +701,75 @@ test('current authorized human can recall the same owner/audience summary after 
   assert.equal((await f.call({ action: 'list_summaries', limit: 1 })).summaries.length, 1);
   assert.equal((await f.call({ action: 'delete_summary', flow: finished.flowId })).retainedCopy, 'deleted');
 });
+
+
+test('terminal run before first reconciliation keeps exact references without creating an active projection', async () => {
+  for (const runtime of ['subagent', 'acp']) {
+    const f = fixture(); let links = 0;
+    const binding = f.tasks.async.managedFlows.bindSession();
+    binding.runTask = async () => { links++; return { created: false, reason: 'Task backing ownership could not be verified.' }; };
+    await f.restart();
+    const begun = await f.call({ action: 'begin', goal: 'Synthetic fast task', criteria: 'Actual completed evidence', runtime });
+    const prepared = await f.call({ action: 'delegate', flow: begun.flowId, instruction: 'Complete the synthetic task' });
+    const spawn = await f.spawn(prepared, { runtime });
+    const task = { id: 'native-fast-task', ownerKey: src.sessionKey, scope: 'session', runtime, runId: 'fast-run',
+      childSessionKey: `agent:main:${runtime}:fast`, status: 'succeeded', endedAt: 100, terminalSummary: 'Synthetic completed result' };
+    f.native.set(task.id, task);
+    f.dependencies.subagent.waitForRun = async () => ({ runId: task.runId, status: 'ok', endedAt: 100 });
+    // Keep the actual admission receipt; the first native observation is terminal.
+    await f.runtime.afterToolCall({ ...spawn.event, result: { details: { status: 'accepted', runId: task.runId,
+      childSessionKey: task.childSessionKey } } }, spawn.ctx);
+    const observed = await f.call({ action: 'status', flow: begun.flowId });
+    assert.equal(links, 0); assert.equal(observed.phase, 'review');
+    assert.equal(observed.attempts[0].taskId, task.id);
+    assert.equal(observed.attempts[0].linkage, 'terminal_reference_only');
+    assert.notEqual(observed.attempts[0].linked, true);
+    assert.equal(observed.attempts[0].settlement.source, 'native_wait');
+    await f.restart();
+    const reviewed = await f.call({ action: 'review', flow: begun.flowId, scopeRevision: 1,
+      outcome: 'complete', evidence: 'Synthetic result verified', effects: 'none', progress: true });
+    assert.equal(reviewed.phase, 'complete'); assert.equal(reviewed.report.runId, task.runId);
+    assert.equal(links, 0); assert.equal(f.native.size, 1);
+  }
+});
+
+test('terminal reference-only path rejects foreign owner/scope/run/child/runtime and unavailable ACP settlement', async () => {
+  for (const delta of [{ ownerKey: 'foreign-owner' }, { scope: 'agent' }, { runId: 'foreign-run' },
+    { childSessionKey: 'foreign-child' }, { runtime: 'acp' }]) {
+    const f = fixture(); await f.restart(); const prepared = await f.prepare();
+    // Persist the genuine captured receipt, then let the native scoped resolver
+    // return a conflicting record during status (it cannot authorize a link).
+    await f.accept(prepared, { status: 'running' });
+    const task = f.native.get('native-task'); Object.assign(task, { status: 'succeeded', endedAt: 100 }, delta);
+    const flow = f.flows.get(prepared.flowId); delete flow.stateJson.attempts[0].linked;
+    const observed = await f.call({ action: 'status', flow: prepared.flowId });
+    assert.equal(observed.phase, 'outcome_unknown');
+    assert.notEqual(observed.attempts[0].linkage, 'terminal_reference_only');
+    await assert.rejects(f.call({ action: 'review', flow: prepared.flowId, scopeRevision: 1,
+      outcome: 'complete', evidence: 'Untrusted projection', effects: 'none' }), /current_scope_review_required/);
+  }
+  for (const wait of [{ status: 'timeout' }, { runId: 'foreign-run', status: 'ok', endedAt: 100 },
+    { runId: 'native-run', status: 'ok', endedAt: 100, livenessState: 'working' }]) {
+    const f = fixture(); await f.restart();
+    const begun = await f.call({ action: 'begin', goal: 'ACP task', criteria: 'Settled native result', runtime: 'acp' });
+    const prepared = await f.call({ action: 'delegate', flow: begun.flowId, instruction: 'Synthetic coding task' });
+    const spawn = await f.spawn(prepared, { runtime: 'acp' });
+    f.native.set('native-task', { id: 'native-task', ownerKey: src.sessionKey, scope: 'session', runtime: 'acp',
+      runId: 'native-run', childSessionKey: 'agent:main:acp:fast', status: 'succeeded', endedAt: 100 });
+    f.dependencies.subagent.waitForRun = async () => wait;
+    await f.runtime.afterToolCall({ ...spawn.event, result: { details: { status: 'accepted', runId: 'native-run',
+      childSessionKey: 'agent:main:acp:fast' } } }, spawn.ctx);
+    await f.restart();
+    await assert.rejects(f.call({ action: 'review', flow: begun.flowId, scopeRevision: 1,
+      outcome: 'complete', evidence: 'ACP task says succeeded but wait is unavailable or contradictory', effects: 'none' }), /run_not_settled/);
+    assert.equal(f.flows.get(begun.flowId).stateJson.attempts[0].settlement, undefined);
+  }
+});
+
+test('active backing link refusal remains an error and is never converted to terminal reference-only success', async () => {
+  const f = fixture(); await f.restart(); const prepared = await f.prepare();
+  f.tasks.async.managedFlows.bindSession().runTask = async () => ({ created: false, reason: 'Task backing ownership could not be verified.' });
+  await assert.rejects(f.accept(prepared, { status: 'running' }), /rein_continuation_link_Task backing ownership could not be verified/);
+  const saved = f.flows.get(prepared.flowId).stateJson.attempts[0];
+  assert.notEqual(saved.linked, true); assert.equal(saved.linkage, undefined);
+});

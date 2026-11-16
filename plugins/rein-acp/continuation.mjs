@@ -163,16 +163,20 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
     } else if (attempt?.runId && !task) {
       state.phase = 'outcome_unknown'; state.notice = 'Accepted run has no current owner-bound native task backing; no retry.';
     } else if (task) {
-      if (!attempt.linked && !wasTerminal) {
+      // runTask creates a queued/running managed projection. Public native
+      // custody refuses creating one for already-terminal canonical backing;
+      // retain its exact references without claiming a projection was linked.
+      if (!attempt.linked && !wasTerminal && !terminalRun(task.status)) {
         const linked = await flowsFor(flow.ownerKey).runTask({ flowId: flow.flowId, runtime: task.runtime,
           sourceId: task.sourceId, runId: task.runId, childSessionKey: task.childSessionKey, agentId: task.agentId,
-          task: task.title, ...(terminalRun(task.status) ? {} : { status: task.status }), startedAt: task.startedAt });
+          task: task.title, status: task.status, startedAt: task.startedAt });
         if (!linked.created) throw Error(`rein_continuation_link_${linked.reason}`);
-        attempt.linked = true;
+        attempt.linked = true; delete attempt.linkage;
         flow = await flowsFor(flow.ownerKey).get(flow.flowId);
         // Linking can change native revision; keep the durable stop/scope observed by another turn.
         if (digest(flow.stateJson) !== originalState) return reconcile(flow, cfg);
       }
+      if (!attempt.linked && terminalRun(task.status)) attempt.linkage = 'terminal_reference_only';
       attempt.taskId = task.id; attempt.nativeStatus = task.status;
       attempt.evidence = { progress: task.progressSummary ?? null, result: task.terminalSummary ?? null, error: task.error ?? null,
         deliveryStatus: task.deliveryStatus };

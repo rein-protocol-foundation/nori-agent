@@ -1,5 +1,9 @@
 # Acceptance evidence
 
+## 2026-11-16：获批配置、真实摘要控制与ACP修复
+
+SA-M1/SA-M2/SA-M2-06；Owner Codex。实际配置/隔离探针及真实Slack摘要读取、改向、停止和显式副本删除见[逐项证据](task-lifecycle-activation-2026-11-16.md)。2份retained、1份空payload tombstone；原生Task/Flow和Slack原文保留。新ACP任务实际实现stdin功能，父助手与维护侧独立18测试通过；Flow终态后置关联失败仍保留，修复/重启验证未完成前不推进完整验收。
+
 ## 2026-11-16：任务摘要保留本地验证与真实任务验收进行中
 
 SA-M2-06；Owner Codex/Astra High。用户决定无期限服务器保留摘要且保留Slack原文。

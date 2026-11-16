@@ -31,7 +31,9 @@ separate history store, synthetic owner inventory or replacement sessions are in
   operators can configure bounded values for new flows. Existing flow limits never reset.
 - `delegate`: prepares an exact scope-labelled assignment. The canonical native spawn hook records
   launch custody before admission; accepted receipts retain actual run/session IDs. Native `runTask`
-  associates available canonical backing without replacing its identity. A missing receipt/backing
+  associates active canonical backing without replacing its identity. When the first observation
+  is already terminal, it preserves actual task/run/child references as `terminal_reference_only`
+  without creating a new active projection or claiming `linked: true`. A missing receipt/backing
   blocks retries; it never fabricates a run or infers a failed launch from an observation gap.
 - `status`: reads native evidence and reconciles runs, stop/change intent and deadlines. Native
   settlement evidence is required before replacement readiness; see the pinned durable subagent
@@ -93,6 +95,51 @@ is not established by the public evidence available here.
 - Semantic criteria/progress review is model-dependent. Static checks cannot establish successful
   real-model supplementation, cancellation races, restart recovery or real-user delivery. All
   product boxes stay open. Prior synthetic seam evidence below is historical evidence only.
+
+## Late terminal backing reconciliation — 2026-11-16
+
+A fast native run can finish before the controller first reconciles its accepted receipt. The
+pinned public managed Flow `runTask` operation creates queued/running projections only and
+refuses a new active projection for already-terminal canonical backing. Calling it in that case
+previously stranded status/review with `Task backing ownership could not be verified.`
+
+The controller now skips projection creation only when its existing owner-scoped native resolver
+already returns the exact captured session owner, run ID, child session key and runtime with a
+terminal status. It retains the actual canonical task ID and run references in the public Flow
+`stateJson`, records `linkage: "terminal_reference_only"`, and leaves `linked` unset. The public
+managed Flow state/finish contract supports controller JSON and does not require a child projection.
+No eager launch, status fabrication, ownership widening or fallback from a refused link is added.
+An attempted link against an observed active backing still surfaces every native refusal.
+
+Reference-only linkage is not settlement or product completion. Review still requires the existing
+native settlement evidence, current authority, current scope, known effects and completed criteria.
+A succeeded native ACP record with `terminalOutcome: "blocked"` still cannot complete the goal.
+ACP has no new durable-success fallback: if a Gateway restart loses the native process-local wait
+observation and no accepted settlement proof was previously persisted, the run remains unreviewable
+until the existing authoritative wait contract supplies sufficient evidence. Preserve the old Flow
+and report this uncertainty; do not infer settlement from a retained task ID or start a duplicate.
+
+The new fast-completion regression failed before the fix with the same link refusal. After the fix,
+73 focused tests passed with zero failures/skips across continuation, retained-summary, task-loop
+and ACP suites. New checks cover both ACP and subagent terminal-before-reconciliation, honest
+reference-only linkage across controller restart, foreign owner/scope/run/child/runtime rejection,
+unavailable or conflicting ACP wait evidence and unchanged active-link refusal. Existing scope,
+blocked-outcome, cancellation and authorization regressions remain in the passing suite.
+
+The worker’s first two isolated actual-Gateway native-race probes failed. The first fixture failed to load
+because its scratch fetch shim duplicated a helper declaration. The second loaded and dispatched
+synthetic ingress/model tools, but lacked an accepted spawn receipt in the probe instance and
+produced no valid native-race result; its final assertion failed. The two failures were escalated
+to the Astra orchestrator, with no further worker retries. Those two attempts established no native race result. No vendor, live server or execution/settlement
+policy was changed. The native probe was handed to the orchestrator; a full repository rerun was
+not repeated locally for this narrow change. Live recovery and real-user acceptance remain pending.
+
+Astra follow-up corrected the scratch fixture shared state/receipt and declared the actual ACP
+capability prerequisites. The native Gateway probe `rein-terminal-native-FuNqr2` then passed its
+assertions: real native ACP accepted exactly once, its terminal runTask projection was refused,
+the controller retained the exact task/run/child as reference-only, native_wait confirmed settlement,
+and review completed with original-thread synthetic delivery. This is real native Task/Flow
+integration with synthetic transport/model/ACP, not a live-user claim. The two prior failures remain.
 
 ## Verification and handoff — 2026-11-13
 

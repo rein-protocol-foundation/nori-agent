@@ -1,5 +1,9 @@
 # Nori-Agent development, verification and deployment record
 
+## Approved activation and scoped sandbox repair — November 16, 2026
+
+Owner Codex / Astra High. Explicit approval now covers the private test channel task tools, continuation/context, thread replies and Slack-only restart, plus exact bubblewrap 0.9.0-1ubuntu0.3 and Ubuntu bwrap AppArmor profile. Native config validation passed; full configuration backed up. Only Slack PID changed. One package installed, zero upgrades/removals; global restrictions remain enabled. Actual ACP binary probe passes workspace write/outside write denial/host-loopback denial. Real Slack summary read/change/stop/copy deletion and scope denial observed; Nori stdin delivery independently passes18tests. Late terminal Task-to-Flow projection refusal remains a recorded blocker under repair; restart retention is pending. [Exact evidence and limitations](task-lifecycle-activation-2026-11-16.md).
+
 ## Indefinite summary copies and live task acceptance — November 16, 2026
 
 Owner Codex, runtime-verified Astra High; implementation verified Sol High. Owner selected
