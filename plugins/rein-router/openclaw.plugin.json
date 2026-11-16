@@ -235,6 +235,10 @@
                       "type": "string",
                       "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
                     }
+                  },
+                  "directMessages": {
+                    "type": "boolean",
+                    "description": "Opt in to Discord DMs whose host session key is scoped to this account and exact authenticated sender. Does not grant Foundation backend membership or channel authority."
                   }
                 }
               }

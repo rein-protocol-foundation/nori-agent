@@ -1,5 +1,14 @@
 # Nori Super Agent Product Requirements Document
 
+> **November 16 Community migration scope:** The owner explicitly confirms DeepSeek v4.1
+> Flash-first. Qwen-first, attachment delivery and thread-reply delivery are not gates for this
+> migration. Preserve the main assistant's existing capabilities and the read-only vendor pin.
+> Complete private-memory isolation, then migrate and verify real Slack and Discord entrypoints.
+> Approved Community admission limits: 6 requests/user/minute, 30/conversation/minute;
+> concurrent user/conversation/Community limits 2/4/8; 2,000 model requests/day including retries.
+> Request counts are not token or currency quotas. This supersedes contrary Community-first-model
+> and migration-gate wording below; it does not itself establish acceptance.
+
 - **Version**: v0.7, English edition
 - **Updated**: November 15, 2026 (America/Los_Angeles); owner-confirmed tool and business scope
 - **Status**: Scope clarified by the owner. Complete general task coordination using OpenClaw native/community tools; expand Rein internal business tools only after Super Agent acceptance. Preserve existing capabilities. Partnership mail is an optional delivered integration, not a completion gate. Retention and native enforcement gaps remain open. Documentation only; no runtime acceptance or production authorization.

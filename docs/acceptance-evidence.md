@@ -1,5 +1,29 @@
 # Acceptance evidence
 
+## 2026-11-16 — Private Community memory activated; shared history migration blocked
+
+SA-M0 private-memory boundary / #57; owner Codex. Deployed native owner/audience-scoped
+session memory and approved request limits to the existing Discord Gateway, retaining its `main`
+database owner. Root-owned public seed prevents unclassified history from writing into shared files;
+main Slack configuration and running processes were preserved. A narrow model-free `rein_status`
+health compatibility fix was deployed only in Discord's private router artifact; failed health cutovers
+automatically restored configuration without deleting history. Corrected the existing backend's
+308 bare-domain redirect to its canonical origin and rebuilt the native keyword index.
+
+Real Discord passed DM reset recall, restart + reset recall, public-scope negative lookup, recovered
+catalog retrieval and post-rebuild `memory_search`; real Slack executed the requested calculation
+and returned 1147. Original 5 windows / 388 transcript event identities remain present. 71 focused
+regressions passed; native memory and offline migration fixtures passed. An initial local regression
+attempt lacked localhost permission; rerunning with permitted loopback passed. Real two-human-account
+DM isolation and application-command reset remain unproven (text `/reset` passed); synthetic legacy
+rotated-window `memory_search` can remain stale, so native `sessions_search` is required continuity.
+
+Shared-Gateway migration remains **BLOCKED**: this OpenClaw pin exposes no supported lossless
+cross-agent raw-history import. No vendor patch, ownership rewrite or history deletion was performed.
+Configuration activation does not complete #57 or the wider product milestone. Next: upstream atomic
+raw history export/import seam; preserve current isolated topology and coordinate releases.
+See [implementation, evidence, limitations and recovery](community-private-memory.md).
+
 Production follow-up (2026-11-16, Codex, SA-M3-01–05/#59): live Slack draft preview verified;
 command identity normalization fixed with 22 passing focused tests. Real send/delivery remains
 pending the fix deployment. See the dated implementation record.

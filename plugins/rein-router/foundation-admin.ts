@@ -66,3 +66,26 @@ export function createFoundationDeveloperAuthorizer(options: Parameters<typeof c
 export function createFoundationDirectorAuthorizer(options: Parameters<typeof createFoundationAdminAuthorizer>[0]) {
   return createFoundationAdminAuthorizer(options, member => member.is_director === true);
 }
+
+/** Select backend credentials using the host's agent/account tuple in a shared Gateway. */
+export function createProfileAdminAuthorizer({ operationsConfig, env = process.env, transportForProfile }: {
+  operationsConfig?: any;
+  env?: Record<string, string | undefined>;
+  transportForProfile?: (agentId: string) => BackendTransport | undefined;
+}) {
+  if (operationsConfig?.agentProfiles === undefined) {
+    return createFoundationAdminAuthorizer({ config: operationsConfig?.foundationDb, env,
+      transport: transportForProfile?.('main') });
+  }
+  const profiles = Object.entries(operationsConfig.agentProfiles ?? {}).map(([agentId, raw]) => {
+    const profile = raw as any;
+    return { agentId, platform: profile?.platform, accountId: profile?.accountId,
+      check: createFoundationAdminAuthorizer({ config: profile?.foundationDb, env,
+        transport: transportForProfile?.(agentId) }) };
+  });
+  return async (ctx: any): Promise<boolean> => {
+    const profile = profiles.find(profile => profile.agentId === ctx?.agentId &&
+      profile.platform === ctx?.channel && profile.accountId === ctx?.accountId);
+    return profile ? profile.check(ctx) : false;
+  };
+}

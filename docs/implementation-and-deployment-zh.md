@@ -1,5 +1,26 @@
 # Nori-Agent 开发、验证与部署记录
 
+## 2026-11-16 — 社区私有记忆已启用，共享历史迁移仍阻塞
+
+SA-M0 私有记忆边界 / #57；负责人 Codex。已在现有独立 Discord Gateway 启用原生
+owner/audience 会话记忆和用户批准的请求限额，保留 `main` 数据库归属。公共种子由 root
+持有且服务账户不能替换，阻止未分类历史写入共享文件；主助手 Slack 配置与进程保持不变。
+无模型运行的静态 `rein_status` 探针兼容修复只部署到 Discord 私有 router 副本；此前健康
+检查失败均自动恢复配置，未删除历史。既有后端裸域名 308 跳转已改为规范域名，并完成原生
+关键词索引重建。
+
+真实 Discord 已通过私信重置后回忆、服务重启并再次重置后回忆、公共检索不含私信值、
+目录恢复，以及重建后的 `memory_search`。真实 Slack 执行只读计算得到 1147。
+原有 5 个窗口、388 条转录事件身份均保留。71 项定向回归通过，原生记忆与离线迁移夹具通过。
+一次本地回归因 localhost 权限失败，授权 loopback 后重跑通过。真实双人账户 DM 隔离尚未
+验收；Discord application-command reset 超时，但文本 `/reset` 成功。合成旧旋转窗口的
+`memory_search` 仍可滞后，连续性使用原生 `sessions_search`。
+
+共享 Gateway 迁移仍为 **BLOCKED**：当前 OpenClaw pin 无受支持的无损跨 agent 原始历史
+导入接口。未改 vendor、未改写 owner、未删历史。此次配置上线不等于 #57 或完整产品里程碑
+完成。下一步需 upstream 原子原始历史导出/导入接缝，期间保留已隔离的当前拓扑并协调部署。
+详见[实现、证据、限制与恢复](community-private-memory.md)。
+
 ## 2026-11-16 — 合作邮件生产接入与 Slack 命令身份修复
 
 SA-M3-01–05 / #59；负责人 Codex。用户已授权生产接入及指定收件人的真实测试。
