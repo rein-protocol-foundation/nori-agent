@@ -1,14 +1,29 @@
 import { createHash } from 'node:crypto';
 import { chmod, lstat, mkdir, open, realpath } from 'node:fs/promises';
-import { join } from 'node:path';
+import { dirname, isAbsolute, join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 export const summaryScope = source => digest([source.sessionKey, source.agentId,
   source.accountId, source.channel, source.chatId?.toLowerCase()]);
 const summaryId = flowId => digest(flowId);
 
+// The host-selected physical runtime entry stays stable across native loader
+// capture copies. api.source and this module's import.meta.url do not.
+export function retainedSummaryBackendUrlForRuntime(runtimeSource) {
+  if (typeof runtimeSource !== 'string' || !isAbsolute(runtimeSource) || runtimeSource.includes('\0'))
+    throw Error('rein_summary_runtime_source_required');
+  return pathToFileURL(join(dirname(runtimeSource), 'retained-summaries-backend.mjs'));
+}
+
 /** Lazy, feature-owned native worker store. No expiry, transcript reads or migration. */
-export function createRetainedSummaries({ stateDir, openSqliteWorkerStore }) {
+export function createRetainedSummaries({ stateDir, openSqliteWorkerStore, backendModuleUrl }) {
+  let moduleUrl;
+  try {
+    moduleUrl = new URL(backendModuleUrl);
+    if (moduleUrl.protocol !== 'file:' || moduleUrl.search || moduleUrl.hash) throw Error('invalid_backend_url');
+    fileURLToPath(moduleUrl);
+  } catch { throw Error('rein_summary_backend_module_url_required'); }
   let opening;
   async function connect() {
     if (!opening) opening = (async () => {
@@ -26,7 +41,7 @@ export function createRetainedSummaries({ stateDir, openSqliteWorkerStore }) {
       const info = await lstat(databasePath);
       if (!info.isFile() || info.isSymbolicLink() || info.nlink !== 1) throw Error('rein_summary_unsafe_file');
       await chmod(databasePath, 0o600);
-      return openSqliteWorkerStore({ moduleUrl: new URL('./retained-summaries-backend.mjs', import.meta.url), databasePath, input: null });
+      return openSqliteWorkerStore({ moduleUrl, databasePath, input: null });
     })().catch(error => { opening = undefined; throw error; });
     return opening;
   }

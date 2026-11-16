@@ -582,7 +582,7 @@ async function actualSummaryStore(t) {
   // dependency-free worktree; no native internal database APIs are imported.
   const sdk = process.env.REIN_TEST_SQLITE_SDK ?? new URL('../vendor/openclaw/dist/plugin-sdk/sqlite-runtime.js', import.meta.url).href;
   const { openSqliteWorkerStore } = await import(sdk);
-  const store = createRetainedSummaries({ stateDir, openSqliteWorkerStore });
+  const store = createRetainedSummaries({ stateDir, openSqliteWorkerStore, backendModuleUrl: new URL('../plugins/rein-acp/retained-summaries-backend.mjs', import.meta.url) });
   t.after(async () => { await store.close(); await rm(stateDir, { recursive: true, force: true }); });
   return store;
 }

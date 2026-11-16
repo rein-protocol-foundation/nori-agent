@@ -59,3 +59,40 @@ Nori如实交付代码、测试、旧失败与未保存摘要的缺口，未伪�
 修复、原生接缝验证和真实恢复结果待补充。不得因此修改只读vendor或直接改原生数据库。
 
 收尾修复本地证据：73项定向通过；worker两次临时native fixture失败后停止并升级。Astra修正fixture共享状态与ACP能力声明后，`rein-terminal-native-FuNqr2`原生Gateway探针断言通过：实际ACP单次执行、原生终态投影拒绝复现、准确引用保留、native_wait结算与complete review/合成原线程交付。该探针不替代下次线上恢复验收。
+
+## 限定运行副本与重启验收跟进
+
+PR #98 / 9481dc549ea4：73定向通过；CI 1439通过、0失败、4既有跳过，7项检查全部通过。
+最终只读代码复核无发现。服务器候选配置、原生runtime inspect均通过，rein-acp loaded且注册两个任务工具。
+首次候选验证因误用UID1000不可读而失败；改用实际ubuntu账户后通过，此前线上配置未动。
+21:43:29 UTC仅Slack切换到 `runtime/task-controller-release-9481dc549ea4/rein-acp`，
+Slack PID525786→530514；Discord523435、Router523417、Web523425不变。
+完整配置及摘要SQLite一致备份位于root-only `task-controller-20261116T213723Z`；原生数据库未改写。
+
+原开发flow实际status已恢复为review并准确引用task/run/child，linkage=terminal_reference_only。
+但旧run缺少已保存settlement，重启后的review返回run_not_settled；保留原flow/run及缺口，不重置期限，
+不以代码18测试通过或native succeeded伪装流程完成。旧notice仍描述早先missing backing，不能据此忽略新task引用。
+
+摘要重启验收发现native worker后端身份冲突，实际list/read均失败，不能计为保留验收通过。
+进一步查明运行代码经过OpenClaw plugin-captures临时副本，import.meta.url不是稳定后端路径。
+尝试对字节完全一致的后端使用规范路径symlink并仅重启Slack（PID531301）后，capture不包含该symlink，
+错误变为ENOENT。该路径方案未通过，停止继续尝试；原摘要仍2 retained/1空payload tombstone，原生记录与Slack原文保留。
+既有Discord网关18793不是异常旧Slack进程，未停止或改变它。后续需基于公共插件源路径修复并补真实多capture测试。
+
+公共接缝核查确认：固定SDK的`docs/plugins/sdk-overview.md`明确要求用`api.runtimeSource`定位runtime
+entry旁的私有模块；`api.source`/`resolvePath`属于discovery身份，不能替代选定runtime artifact。
+SQLite broker是每个Gateway进程内的global singleton，冲突不存储在数据库中；同release多capture必须使用
+同一真实backend URL，跨release需关闭全部旧lease或完整重启所属独立Gateway。无需重置数据库或重启Discord。
+
+新独立只读交付复验flow `cc05aa0c-d478-42e0-8fe5-e45b61e26a41`，run
+`a41e3456-5844-4253-abb5-085ec6da976d`，task `a2e9b10d-7cb9-42a6-a0fa-de9c0c4df339`：
+真实ACP执行一次，native_wait确认结算、父助手review complete。ACP与父助手各自18测试通过，CLI行为正确，
+四个源码SHA256及既有git dirty状态前后不变；没有重新实现、添加测试、commit、发布或扩权。
+该新复验没有重写旧flow的run_not_settled缺口。其长期摘要当前仍failed，后台read_summary被human-control
+正确拒绝；待路径修复后由真实用户入口触发保留/回读。
+
+修复实现改为仅在摘要启用时从可信`api.runtimeSource`构造同目录backend file URL，并显式传给store。
+缺失/相对runtimeSource或非静态本地URL直接拒绝，没有import.meta fallback。
+新增实际公开worker回归先在旧代码复现同库backend冲突，修复后双捕获模块并发读写、删除防复活、
+关闭单一lease后另一实例继续工作、全部close后重开均通过。现有范围/权限与失败闭合测试保持通过。
+聚合定向验证75项全通过（53 continuation/summary/ACP +22 Slack task-loop）；scaffold及diff检查通过。
