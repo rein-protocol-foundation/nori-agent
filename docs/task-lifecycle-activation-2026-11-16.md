@@ -96,3 +96,28 @@ SQLite broker是每个Gateway进程内的global singleton，冲突不存储在�
 新增实际公开worker回归先在旧代码复现同库backend冲突，修复后双捕获模块并发读写、删除防复活、
 关闭单一lease后另一实例继续工作、全部close后重开均通过。现有范围/权限与失败闭合测试保持通过。
 聚合定向验证75项全通过（53 continuation/summary/ACP +22 Slack task-loop）；scaffold及diff检查通过。
+
+## 最终真实结果与交接
+
+`d90578704cfe6d6b88472e35ad5d7fae31760e62`固定runtimeSource修复于21:54:22 UTC上线。
+运行副本 `runtime/task-controller-release-d90578704cfe/rein-acp` 全部为普通发行文件；不依赖前次symlink。
+新配置与原生loader验证均通过，rein-acp loaded、两个任务工具正常；仅Slack PID531301→533146。
+Discord523435、Router523417、Web523425未变，备份`task-controller-20261116T215338Z`保存配置与摘要一致副本。
+该目录回滚配置指向上一候选，上一候选存在已记录摘要故障；若需完整撤销本次修复，应使用21:37备份恢复原插件路径，
+再仅重启Slack并重新验证，不将上一候选的健康端口当作摘要可用性证据。
+
+真实Rein Admin请求后，Nori实际逐项调用并在原线程回复：
+
+- KEEP与CHANGE list/read成功，结果1147/6，retained、expiresAt=null；旧STOP不在列表。
+- STOP status返回summaryRetention=deleted，随后read返回summary=null/unavailable_or_deleted；旧终态未使副本复活。
+- 新ACP只读复验flow cc05aa0c…在重启后status仍complete，保留一次attempt和native_wait；summaryRetention=retained，
+  read_summary返回准确flow/run/task/child、complete报告、无TTL。旧开发flow未被重置或改记成功。
+- 服务器只读核验为3 retained、1 tombstone、0非空tombstone payload；摘要目录0700/文件0600。
+  自此次重启后未观察到summary retention/worker路径错误，Slack socket已连接。
+- 原生Task/Flow、Slack原文与外部文件均保留。删除仅涉及此前明确指定的合成STOP摘要副本，未触及其他摘要。
+
+最终代码在PR #98，正式main仍为9ed4cb2；本次使用独立运行副本，未合并触发全服务自动更新。
+两个实际发现的缺陷（终态关联、capture后端身份）已修复并通过上述范围验收；不宣布全部SA-M1/SA-M2完成。
+仍缺：旧ACP缺少已保存settlement的跨重启恢复契约；真实另一账户/成员撤权、实际迟到子结果竞争未在本轮覆盖；
+七天native cleanup仅由fixture模拟；保存引用不等于验证外部文件可用；部分历史Flow notice仍保留早先missing-backing文字，
+应以当前明确task引用、phase及settlement字段判读，不能将该陈旧notice当作新失败。没有绕过任何结算/归属校验。

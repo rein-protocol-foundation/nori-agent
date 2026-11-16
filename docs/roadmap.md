@@ -1,5 +1,9 @@
 # Nori-Agent implementation roadmap
 
+## 2026-11-16：真实任务与无期限摘要验收收尾
+
+SA-M1/SA-M2/SA-M2-06；Owner Codex。限定频道配置及bubblewrap定向修复已生效，仅重启Slack。Nori自行完成stdin开发，18测试通过；新独立ACP复验单次执行、native_wait、complete及摘要跨重启回读均通过。KEEP/CHANGE无期限保留、STOP删除防复活、同人跨owner拒绝实际通过。终态关联与capture后端身份修复见PR #98，75定向通过；正式main未合并，运行版本d90578704cfe。旧ACP缺失结算、真实撤权/迟到竞争等缺口保留，不标记整个里程碑完成。 [完整证据与限制](task-lifecycle-activation-2026-11-16.md)。
+
 ## 获批启用与真实任务验收 — 2026-11-16
 
 SA-M1/SA-M2/SA-M2-06；Owner Codex。已按明确授权启用私有测试频道任务与无期限摘要配置，仅重启Slack；定向bubblewrap修复的写入/网络隔离探针通过。真实摘要写入/用户回读、运行改向、停止/副本删除、跨原生owner拒绝已观察；原文与原生记录保留。Nori经ACP完成stdin功能并独立18测试通过，但发现终态后置Flow关联拒绝，修复及重启保留验收仍进行中，不宣称全部完成。[证据](task-lifecycle-activation-2026-11-16.md)。

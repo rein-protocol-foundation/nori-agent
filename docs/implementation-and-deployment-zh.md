@@ -1,5 +1,9 @@
 # Nori-Agent 开发、验证与部署记录
 
+## 2026-11-16：限定真实验收收尾
+
+Owner Codex / Astra High。运行副本d90578704cfe采用公共api.runtimeSource稳定摘要worker身份，终态关联保留准确原生引用。75定向与原生配置/loader通过；仅Slack重启至PID533146，Discord/Router/Web未变。真实Slack回读确认无期限摘要、删除防复活，以及新单次ACP复验native_wait/complete跨重启保留。原开发flow缺少结算证据的缺口仍在，未伪造完成。PR #98保持开放，未触发全服务自动部署。 [完整证据与限制](task-lifecycle-activation-2026-11-16.md)。
+
 ## 获批配置与定向沙箱修复 — 2026-11-16
 
 负责人Codex/Astra High。用户明确批准私有测试频道任务工具/续接/上下文/原线程回复与仅重启Slack，并批准指定bubblewrap及Ubuntu定向AppArmor profile。完整配置备份、原生校验通过；仅Slack PID改变。一包安装、零升级/删除，全局限制不变；实际ACP二进制探针验证工作区可写、工作区外写入/宿主loopback连接被拒。真实摘要回读/改向/停止/副本删除和scope隔离已观察；Nori新增stdin功能独立18测试通过。终态后置Task-Flow关联拒绝仍在修复，重启保留待验证；[完整证据与限制](task-lifecycle-activation-2026-11-16.md)。

@@ -1,5 +1,9 @@
 # Acceptance evidence
 
+## 2026-11-16：限定范围最终真实结果
+
+SA-M1/SA-M2/SA-M2-06；Owner Codex。真实Slack验收确认3 retained/1空payload tombstone：旧摘要1147/6无到期、删除后status不复活、新ACP只读复验完整结算/父助手review/摘要跨重启回读。Nori自行开发stdin及父助手18测试通过。两个现场缺陷已修复，75定向通过；此前失败与旧flow run_not_settled仍如实保留。 [完整证据与限制](task-lifecycle-activation-2026-11-16.md)。
+
 ## 2026-11-16：获批配置、真实摘要控制与ACP修复
 
 SA-M1/SA-M2/SA-M2-06；Owner Codex。实际配置/隔离探针及真实Slack摘要读取、改向、停止和显式副本删除见[逐项证据](task-lifecycle-activation-2026-11-16.md)。2份retained、1份空payload tombstone；原生Task/Flow和Slack原文保留。新ACP任务实际实现stdin功能，父助手与维护侧独立18测试通过；Flow终态后置关联失败仍保留，修复/重启验证未完成前不推进完整验收。
