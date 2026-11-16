@@ -102,7 +102,9 @@ Normal delivery retains native original-thread routing. Recovery may combine tas
 one authorized owner/audience, listing each task's scope, result/gaps and status. `agent_end` is
 not a delivery receipt; no claim of per-thread or exactly-once delivery is added.
 
-Selected summary retention/deletion remains unsupported: the pinned public managed Flow API
+Historical controller-only scope (superseded for retained copies by the November 16
+[indefinite-summary implementation](task-summary-retention.md), real acceptance pending):
+selected summary retention/deletion was unsupported: the pinned public managed Flow API
 has no selected retention/delete operation, and native terminal cleanup is fixed at seven days
 (`task-flow-maintenance-policy.ts`). No retention duration is selected here, and no replacement
 history storage is created. Product retention choice and a supported SDK contract remain separate.

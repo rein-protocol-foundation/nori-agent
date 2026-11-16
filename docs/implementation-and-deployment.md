@@ -1,5 +1,24 @@
 # Nori-Agent development, verification and deployment record
 
+## Indefinite summary copies and live task acceptance — November 16, 2026
+
+Owner Codex, runtime-verified Astra High; implementation verified Sol High. Owner selected
+indefinite server retention and preservation of Slack chat. Optional minimal summary storage uses
+public native SQLite worker APIs, current owner/audience checks, pagination, reset continuity and
+non-resurrecting deletion of retained copies only. No native database mutation, vendor edit or
+history migration. 70 focused tests and 1436 full-suite tests pass, with 4 existing skips; actual
+plugin loader passes. Native cleanup is simulated in fixtures, not a live-maintenance acceptance.
+PR #94 conflict resolution preserved both independent document entries, 56 focused tests and seven
+CI checks passed; merged/deployed as 66700d0 at 19:02:33 UTC. Slack configuration activation was
+rejected by automatic approval review; exact settings await user confirmation. Existing ACP
+produced two actual blocked runs and code independently passing 13 tests; startup required human
+correction, so full autonomous development is not accepted. Native research delivered in the original
+thread while ordinary chat/progress worked during execution; source review required two corrections.
+A narrowly scoped distro bubblewrap/AppArmor repair is prepared but awaits explicit approval.
+PR #97 review at f6dd3df has no findings; no feature activation or shared release yet. [Live record](task-lifecycle-live-2026-11-16.md),
+[summary contract/rollback](task-summary-retention.md). No product milestone advanced.
+
+
 ## Task stop/change, recovery and budget handoff — November 16, 2026
 
 Tracking #58 / SA-M2-01–05. Owner: Codex, runtime-verified GPT-6 Astra Medium as requested.

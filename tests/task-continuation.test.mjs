@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createTaskContinuation } from '../plugins/rein-acp/continuation.mjs';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { createRetainedSummaries } from '../plugins/rein-acp/retained-summaries.mjs';
 import { createTaskLoop } from '../plugins/rein-acp/task-loop.mjs';
 
 const config = { channel: { agentId: 'main', accountId: 'default', workspaceId: 'TFIXTURE1', channelId: 'CFIXTURE1' },
@@ -570,4 +574,130 @@ test('status racing pre-admission authorization releases both attempt and flow c
   const retry = await f.call({ action: 'delegate', flow: p.flowId, instruction: 'Reuse the unlaunched assignment' });
   assert.equal(retry.task, p.task); assert.equal(retry.attempts.length, 1);
   assert.equal((await f.spawn(retry)).gate.block, undefined); assert.equal(f.cancellations(), 0);
+});
+
+async function actualSummaryStore(t) {
+  const stateDir = await mkdtemp(join(tmpdir(), 'rein-summary-controller-'));
+  // The test runner may use the original checkout's pinned public dist for this
+  // dependency-free worktree; no native internal database APIs are imported.
+  const sdk = process.env.REIN_TEST_SQLITE_SDK ?? new URL('../vendor/openclaw/dist/plugin-sdk/sqlite-runtime.js', import.meta.url).href;
+  const { openSqliteWorkerStore } = await import(sdk);
+  const store = createRetainedSummaries({ stateDir, openSqliteWorkerStore });
+  t.after(async () => { await store.close(); await rm(stateDir, { recursive: true, force: true }); });
+  return store;
+}
+async function finishedSummaryFixture(t) {
+  const f = fixture(); f.dependencies.retainedSummaries = await actualSummaryStore(t);
+  await f.restart(); const prepared = await f.prepare();
+  await f.accept(prepared, { status: 'succeeded', terminalSummary: 'Three sourced tools; file /synthetic/missing-report.md' });
+  const finished = await f.call({ action: 'review', flow: prepared.flowId, scopeRevision: 1,
+    outcome: 'complete', evidence: 'Three tools compared; /synthetic/missing-report.md', effects: 'none', progress: true });
+  return { f, finished };
+}
+
+test('opt-in terminal summary survives worker/controller restart and simulated native seven-day cleanup', async t => {
+  const { f, finished } = await finishedSummaryFixture(t);
+  assert.equal(finished.summaryRetention.status, 'retained');
+  assert.equal(finished.retainedSummaryOptIn, true);
+  await f.dependencies.retainedSummaries.close();
+  f.flows.clear(); f.native.clear(); // Native expiry no longer supplies any Flow/Task.
+  f.dependencies.clock = () => 9 * 86400000; await f.restart();
+  const listed = await f.call({ action: 'list_summaries' });
+  assert.equal(listed.summaries.length, 1);
+  const { summary } = await f.call({ action: 'read_summary', flow: finished.flowId });
+  assert.equal(summary.goal, finished.goal); assert.equal(summary.criteria, finished.criteria);
+  assert.equal(summary.runs[0].runId, 'native-run'); assert.equal(summary.retention.expiresAt, null);
+  assert.equal(summary.artifactAvailability, 'not_verified'); assert.match(summary.artifactNotice, /do not verify/);
+  assert.equal(summary.attempts, undefined); assert.equal(summary.source.runId, undefined);
+});
+
+test('retained-copy deletion preserves native records and its tombstone blocks status/restart resurrection', async t => {
+  const { f, finished } = await finishedSummaryFixture(t);
+  const nativeBefore = structuredClone([...f.native]);
+  const deleted = await f.call({ action: 'delete_summary', flow: finished.flowId });
+  assert.equal(deleted.retainedCopy, 'deleted'); assert.equal(deleted.fullDeletion, false);
+  assert.match(deleted.deletionBoundary, /Native Flow\/Task records, Slack chat, external files and backups were not deleted/);
+  assert.deepEqual([...f.native], nativeBefore); assert.equal(f.flows.size, 1);
+  assert.equal((await f.call({ action: 'status', flow: finished.flowId })).summaryRetention.status, 'deleted');
+  await f.dependencies.retainedSummaries.close();
+  f.dependencies.system = { enqueueSystemEvent() {}, requestHeartbeat() {} }; await f.restart();
+  await f.runtime.gatewayStart({}, {});
+  assert.equal((await f.call({ action: 'list_summaries' })).summaries.length, 0);
+  assert.equal((await f.call({ action: 'read_summary', flow: finished.flowId })).summary, null);
+});
+
+test('retained summary reads/deletes reject revoked, changed-session and background callers', async t => {
+  const { f, finished } = await finishedSummaryFixture(t);
+  f.setMember(false);
+  for (const action of ['list_summaries', 'read_summary', 'delete_summary'])
+    await assert.rejects(f.call({ action, flow: finished.flowId }), /authority_unavailable/);
+  f.setMember(true);
+  f.dependencies.session.listSessionEntries = () => [{ sessionKey: src.sessionKey, entry: { sessionId: 'replaced-session' } }];
+  await assert.rejects(f.call({ action: 'delete_summary', flow: finished.flowId }), /session_changed/);
+  f.dependencies.session.listSessionEntries = () => [{ sessionKey: src.sessionKey, entry: { sessionId: src.sessionId } }];
+  f.context.trigger = 'heartbeat'; delete f.context.senderId; delete f.context.requesterSenderId;
+  f.context.inputProvenance = { kind: 'internal_system', sourceTool: 'background-task' }; await f.restart();
+  await assert.rejects(f.call({ action: 'delete_summary', flow: finished.flowId }), /human_control_required/);
+  assert.ok(await f.dependencies.retainedSummaries.read(src, finished.flowId));
+});
+
+test('read and delete recheck asynchronous authority after store access', async t => {
+  const { f, finished } = await finishedSummaryFixture(t), store = f.dependencies.retainedSummaries;
+  const originalRead = store.read;
+  store.read = async (...args) => { const value = await originalRead(...args); f.setMember(false); return value; };
+  await assert.rejects(f.call({ action: 'read_summary', flow: finished.flowId }), /authority_unavailable/);
+  f.setMember(true); store.read = originalRead;
+  const originalDelete = store.delete;
+  store.delete = async (...args) => { const value = await originalDelete(...args); f.setMember(false); return value; };
+  await assert.rejects(f.call({ action: 'delete_summary', flow: finished.flowId }), /authority_unavailable/);
+  // Operation already linearized, but no success or summary content is disclosed after revocation.
+  assert.equal(await store.read(src, finished.flowId), null);
+});
+
+test('retention failure is visible and next authorized status retries; unmarked old flows are never imported', async t => {
+  const f = fixture(), store = await actualSummaryStore(t); let fail = true;
+  f.dependencies.retainedSummaries = { ...store, put: async summary => { if (fail) throw Error('synthetic disk failure'); return store.put(summary); } };
+  await f.restart(); const prepared = await f.prepare(); await f.accept(prepared, { status: 'succeeded' });
+  const finished = await f.call({ action: 'review', flow: prepared.flowId, scopeRevision: 1, outcome: 'complete', evidence: 'Done', effects: 'none' });
+  assert.equal(finished.nativeStatus, 'succeeded'); assert.equal(finished.summaryRetention.status, 'failed');
+  fail = false; assert.equal((await f.call({ action: 'status', flow: finished.flowId })).summaryRetention.status, 'retained');
+  await store.delete(src, finished.flowId, 1000);
+  const saved = f.flows.get(finished.flowId); delete saved.stateJson.retainedSummaryOptIn;
+  saved.flowId = 'unmarked-old-flow'; f.flows.set(saved.flowId, saved);
+  await f.call({ action: 'status', flow: saved.flowId });
+  assert.equal(await store.read(src, saved.flowId), null);
+});
+
+test('disabling retained summaries preserves existing copies and ordinary continuation', async t => {
+  const { f, finished } = await finishedSummaryFixture(t), store = f.dependencies.retainedSummaries;
+  delete f.dependencies.retainedSummaries; await f.restart();
+  assert.equal((await f.call({ action: 'status', flow: finished.flowId })).nativeStatus, 'succeeded');
+  await assert.rejects(f.call({ action: 'list_summaries' }), /retention_disabled/);
+  assert.ok(await store.read(src, finished.flowId));
+  const next = await f.call({ action: 'begin', goal: 'Another task', criteria: 'Evidence', runtime: 'subagent' });
+  assert.equal(next.retainedSummaryOptIn, undefined);
+});
+
+
+test('terminal summary persistence cannot disclose success after the current human is revoked mid-write', async t => {
+  const f = fixture(), store = await actualSummaryStore(t);
+  f.dependencies.retainedSummaries = { ...store, put: async summary => {
+    const value = await store.put(summary); f.setMember(false); return value;
+  } };
+  await f.restart(); const prepared = await f.prepare(); await f.accept(prepared, { status: 'succeeded' });
+  await assert.rejects(f.call({ action: 'review', flow: prepared.flowId, scopeRevision: 1,
+    outcome: 'complete', evidence: 'Synthetic done', effects: 'none' }), /authority_unavailable/);
+  assert.equal(f.flows.get(prepared.flowId).status, 'succeeded');
+});
+
+
+test('current authorized human can recall the same owner/audience summary after native reset without changing provenance', async t => {
+  const { f, finished } = await finishedSummaryFixture(t);
+  f.flows.clear(); f.context.sessionId = 'new-authorized-window';
+  f.dependencies.session.listSessionEntries = () => [{ sessionKey: src.sessionKey, entry: { sessionId: f.context.sessionId } }];
+  await f.restart();
+  const { summary } = await f.call({ action: 'read_summary', flow: finished.flowId });
+  assert.equal(summary.source.sessionId, src.sessionId); assert.equal(summary.ownerKey, src.sessionKey);
+  assert.equal((await f.call({ action: 'list_summaries', limit: 1 })).summaries.length, 1);
+  assert.equal((await f.call({ action: 'delete_summary', flow: finished.flowId })).retainedCopy, 'deleted');
 });
