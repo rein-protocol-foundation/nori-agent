@@ -126,12 +126,16 @@ export function createPartnershipWorkflow({ config, authorize, stateDir, lobster
     });
   }
   function commandSource(ctx) {
+    // Slack's native command authorization lowercases allow-list identities.
+    // Restore the canonical ID only after validating its ASCII ID shape.
+    const senderId = typeof ctx.senderId === 'string' && /^[UuWw][A-Za-z0-9]{5,31}$/.test(ctx.senderId)
+      ? ctx.senderId.toUpperCase() : undefined;
     const channel = /^(?:slack:)?(?:channel:)?([A-Z][A-Z0-9]{5,31})$/.exec(ctx.to ?? '')?.[1];
     if (ctx.channel !== 'slack' || ctx.isAuthorizedSender !== true || channel !== config.channel.channelId ||
-        ctx.accountId !== config.channel.accountId || ctx.agentId !== config.channel.agentId || !nativeId(ctx.senderId) || !text(ctx.sessionKey, 1024))
+        ctx.accountId !== config.channel.accountId || ctx.agentId !== config.channel.agentId || !senderId || !text(ctx.sessionKey, 1024))
       throw Error('partnership_authority_unavailable');
     return { channel: 'slack', accountId: ctx.accountId, agentId: ctx.agentId, sessionKey: ctx.sessionKey,
-      senderId: ctx.senderId, chatId: channel, threadId: ctx.messageThreadId,
+      senderId, chatId: channel, threadId: ctx.messageThreadId,
       runId: `partnership-command:${randomUUID()}`, trigger: 'user', messageProvider: 'slack' };
   }
   async function decide(parts, source) {

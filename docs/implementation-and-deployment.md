@@ -37,6 +37,36 @@ CI follow-up: run 43857871202 reproduced the cancelled ACP report fixture failur
 
 Review race follow-up: concurrent all-flow status during launch authorization could leave a known-unlaunched Flow stuck after its attempt was released. Reproduced, restored the Flow phase and cleared only obsolete launch uncertainty; restart reuses the same attempt. 56 targeted tests and final full suite 1421 passed / 4 conditional skips / 0 failures. PR #94 remains unmerged; final CI/review pending.
 
+## NORI-AI-NEWS — November 16, 2026
+
+Owner: Codex. **ENABLED / FIRST SCHEDULED DELIVERY VERIFIED**. Nine public feeds and
+native daily 09:00 / Monday 09:15 jobs (America/Los_Angeles). On November 16 the daily
+job started at 09:00:00.020 and sent nine stories as three messages per platform by
+09:03:21; the 09:15 weekly run reused all eight original receipts without re-sending.
+Slack desktop and Discord browser rendering verified, together with both native channel
+payloads. Nine original-link buttons and no exposed Markdown or duplicate bodies observed.
+28 focused Python and eight CI-scope tests pass; Python news tests now run in scaffold CI.
+First interrupted weekly rehearsal is retained as failed evidence. No private runtime data or
+unrelated shared-worktree changes included. [Exact evidence and recovery](ai-news.md).
+Repository rollout: [PR #96](https://github.com/rein-protocol-foundation/nori-agent/pull/96).
+Recovery: retain the native jobs and per-edition receipts across deployments.
+No unrelated product milestone advanced.
+
+## 2026-11-16 — Partnership production activation and Slack command identity
+
+SA-M3-01–05 / #59; owner Codex. User authorized production integration and one real test
+recipient. Production code/dependencies existed but plugin loading, optional tool admission,
+command authorization, sender/recipient and mail credential configuration were absent.
+Backed up private runtime configuration, reused existing Slack/Resend credentials and verified
+sender domain, and enabled the fixed workflow in the existing private test channel for its
+verified administrator. A real Slack prepare displayed an exact draft and durable checkpoint.
+Approval then failed before dispatch: native Slack command authorization lowercases user IDs,
+whereas the plugin required uppercase IDs. Normalize only ASCII Slack user IDs at the command
+boundary; retain native authorization, live membership, configured approver and scope checks.
+22 focused tests pass, including lowercase approval, forged/wrong identity rejection and duplicate
+no-op. Live approval/send/reconciliation remain pending deployment of this compatibility fix.
+No secrets or runtime records are included here; existing acceptance evidence is not overwritten.
+
 ## 2026-11-15 — Community runtime ticket accepted and closed
 
 #54 / SA-M0-06; scope owner: project owner; record owner: Codex.

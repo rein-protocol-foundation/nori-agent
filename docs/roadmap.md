@@ -15,6 +15,27 @@ No new deployment/live acceptance. Retention/delete and ACP hard deadline remain
 #54's accepted Community scope does not waive internal controls. Next: authorized real-entry
 stop/change acceptance; product retention/SDK decision separately. Existing unrelated work retained.
 
+## NORI-AI-NEWS — November 16, 2026
+
+Owner: Codex. **ENABLED / FIRST SCHEDULED DELIVERY VERIFIED**. Nine public feeds and
+native daily 09:00 / Monday 09:15 jobs (America/Los_Angeles). On November 16 the daily
+job started at 09:00:00.020 and sent nine stories as three messages per platform by
+09:03:21; the 09:15 weekly run reused all eight original receipts without re-sending.
+Slack desktop and Discord browser rendering verified, together with both native channel
+payloads. Nine original-link buttons and no exposed Markdown or duplicate bodies observed.
+28 focused Python and eight CI-scope tests pass; Python news tests now run in scaffold CI.
+First interrupted weekly rehearsal is retained as failed evidence. No private runtime data or
+unrelated shared-worktree changes included. [Exact evidence and recovery](ai-news.md).
+Repository rollout: [PR #96](https://github.com/rein-protocol-foundation/nori-agent/pull/96).
+Recovery: retain the native jobs and per-edition receipts across deployments.
+No unrelated product milestone advanced.
+
+## Partnership production follow-up — November 16, 2026
+
+SA-M3-01–05 / #59; Codex. Live draft preview passed after configuration activation; native
+Slack lowercase command identities require a boundary fix. 22 focused tests pass. Actual
+approval/send/delivery evidence pending deployment; no broader milestone advanced.
+
 ## 2026-11-15 — Community runtime ticket accepted and closed
 
 #54 / SA-M0-06; scope owner: project owner; record owner: Codex.
