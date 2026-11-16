@@ -118,7 +118,7 @@ change, but it does not create per-member ownership inside Community's own works
 
 ### Required: host-enforced per-run execution deadline
 
-November 14 configuration-first follow-up: [native inventory and minimal reproduction](community-runtime-limits.md) verifies the current pin's per-agent configuration rejection and queue settlement gap. This section remains a proposal, not shipped enforcement. On November 15 the owner accepted existing controls and closed #54; the stricter deadline proposal is deferred and no longer a completion gate for that ticket.
+November 14 configuration-first follow-up: [native inventory and historical findings](community-runtime-limits.md) verifies the current pin's per-agent configuration rejection and queue settlement gap. This section remains a proposal, not shipped enforcement. On November 15 the owner accepted existing controls and closed #54; the stricter deadline proposal is deferred and no longer a completion gate for that ticket.
 
 The public `api.runtime.gateway.request` surface is limited to bundled or trusted official plugins.
 An actual OCI Gateway test attempted exact run/agent/session cancellation from `rein-router` at one

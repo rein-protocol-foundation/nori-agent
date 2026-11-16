@@ -1,4 +1,4 @@
-# Community runtime limits: native feasibility and reproduction
+# Community runtime limits: conclusions and acceptance record
 
 Status (2026-11-15): **COMPLETED under the owner-confirmed current scope; #54 closed**.
 The owner accepts existing runtime controls and admission/concurrency budgets.
@@ -39,21 +39,15 @@ configured duration into candidate execution. This review does **not** establish
 one shared deadline across every fallback, retry, compaction and child; that remains
 an explicit integration acceptance requirement, not an inferred guarantee.
 
-## Minimal local reproduction
+## Historical local verification
 
-After the documented local dependencies are installed:
+The November 14 investigation used temporary local diagnostics against the pinned
+native implementations. PR #92 retains their findings as historical evidence;
+the diagnostic scripts and their run instructions were removed on November 16
+at the owner's request. This documentation does not ship an executable diagnostic
+or a new production control.
 
-```sh
-.toolchain/node_modules/.bin/node scripts/probe-community-runtime-limits.mjs
-.toolchain/node_modules/.bin/node --test tests/usage-limits.test.mjs tests/scoped-router.test.mjs
-```
-
-The runner checks the exact Git pin and pristine tracked upstream source, sanitizes
-its environment and uses temporary HOME/config/state. The pinned TypeScript path map
-is selected explicitly; no vendor edits or workspace link installation are needed.
-Only diagnostic fixtures import host internals; no production plugin uses them.
-
-The native diagnostic asserts:
+The investigation observed:
 
 1. Global configuration is accepted, but Community-only `timeoutSeconds`,
    `maxConcurrent`, and subagent timeout/concurrency keys are rejected specifically
@@ -72,7 +66,7 @@ The native diagnostic asserts:
    physical execution settlement or the required Community concurrency guarantee.
 5. Without a lane timeout, the native baseline retains its slot until actual settlement.
 
-The queue reproduction isolates `src/process/command-queue.ts`; it does not claim
+The historical queue experiment isolated `src/process/command-queue.ts`; it does not claim
 that a deployed Community admission lease was released. The embedded runner wires
 queue deadlines and abort/release signals through `run/lane-controller.ts`, with a
 30-second abort grace in `run/lane-runtime.ts`. This identifies a boundary requiring
@@ -118,13 +112,14 @@ current Community cutover prerequisite. No upstream issue was filed.
 
 ## Verification and remaining acceptance
 
-Local diagnostic: passed. Existing admission/routing regressions: 20 passed,
+Historical local diagnostic: passed. Existing admission/routing regressions: 20 passed,
 0 failed, 0 skipped. Initial diagnostic attempts failed because source workspace
 aliases were missing from the isolated process, then because the synthetic multi-agent
 roster omitted `ownership: explicit`; those fixture setup errors and a missing
 brace in the added timer-cleanup case were corrected. The final diagnostic and
 scaffold checks passed; full repository/production suites were not run for this
-diagnostic-only change.
+original local investigation. The documentation-only revision does not rerun
+those experiments or claim new runtime acceptance.
 
 Pending: real model stream and registered cooperative-tool settlement at one scoped
 deadline, fallback and child propagation, uncooperative-tool lease retention through
@@ -133,7 +128,7 @@ and restart recovery, main enabled/disabled compatibility and authorized product
 acceptance. No real cancellation success or product milestone completion is claimed.
 Current next step: configure the persistent Community agent using existing controls
 and verify its effective configuration during the separately authorized rollout.
-No new runtime implementation or deployment of these diagnostic scripts is needed
+No new runtime implementation is needed
 for the accepted scope. A separate agent in a shared Gateway does not create an
 agent-specific ordinary timeout setting: global defaults remain shared. Revisit
 the proposed host extension only if stronger guarantees become a requirement.
