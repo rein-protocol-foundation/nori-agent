@@ -29,6 +29,22 @@ API. No product milestone advancement. [Scope and next steps](nori-branding.md).
 
 
 
+
+## Current plan — November 15, 2026
+
+Owner: product owner (scope), Codex (documentation); implementation owners pending.
+**SCOPE UPDATED; NO NEW PRODUCT ACCEPTANCE.** [Remaining development and acceptance](super-agent-delivery-plan.md)
+is the current task order and acceptance contract under [PRD v0.7](super-agent-nori-prd-en.md).
+Use OpenClaw native/community tools; preserve delivered task, mail and Rein internal capabilities.
+Complete general coordination and an isolated development-to-acceptance exercise before Nori-led
+internal business-tool expansion. Optional mail is not a core completion gate. Community rollout,
+shared-Gateway migration and operations remain separately tracked with their existing gates.
+The November 15 owner decision accepts existing Community runtime controls (#54); stricter
+whole-chain limits are deferred. Preserve the separate uncommitted investigation evidence. Retention and other recorded
+native limitations remain open. Earlier dated next-step statements below are historical, not current
+sequencing. Local documents only; remote tickets remain unsynchronized.
+
+
 ## Slack reaction permission maintenance / #77 / C02 support — November 13, 2026
 
 Owner: Codex. **LIVE API VERIFIED; configuration-only**. Existing Nori reauthorized with only

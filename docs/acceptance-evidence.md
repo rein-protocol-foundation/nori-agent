@@ -14,6 +14,20 @@ is not implemented; see [extension proposal and scope](nori-branding.md).
 No AC01–AC20 milestone advancement.
 
 
+
+## Current Super Agent acceptance scope — November 15, 2026
+
+Owner: product owner (scope), Codex (documentation). **PLANNING UPDATED; NO NEW ACCEPTANCE.**
+[PRD v0.7](super-agent-nori-prd-en.md) and the [concrete task/acceptance matrix](super-agent-delivery-plan.md)
+now distinguish general coordination, public rollout/operations, optional delivered mail, and later
+Nori-led Rein internal-tool expansion. Existing Community information and social/email linking remain
+compatibility subjects, not new business development. Cross-task tool/Skill reuse and an isolated
+requirements-to-code-to-acceptance exercise are explicit pending evidence. Historical source/CI/live
+records below remain unchanged in scope; no checkbox is advanced. Retention, cancellation races,
+ACP deadlines, delivery and public runtime limits remain open where recorded. No live checks ran.
+Next: assign bounded work from the plan and record environment-specific results here.
+
+
 | Task / date / owner | Status and evidence | Pending acceptance / next step |
 | --- | --- | --- |
 | Slack reaction permission / #77 / C02 support; 2026-11-13; Codex | **LIVE API VERIFIED / CONFIGURATION ONLY**. Reproduced `missing_scope`; added only `reactions:write` and completed operator-confirmed reauthorization. Same deployed credential and bot identity passed add/read-back/remove/cleanup; service PID unchanged. [Evidence](implementation-and-deployment.md). | Automatic acknowledgement timing, model-selected reactions and other conversation types not retested. Observe next normal mention; no C02, AC01–AC20 or product milestone advancement. |
@@ -35,7 +49,7 @@ No AC01–AC20 milestone advancement.
 | SA-OBS-02 Provider layout follow-up; 2026-11-12; Codex | **DEPLOYED / MANUAL LIVE VERIFIED**. PR #75 CI passed; deployed `33c44dc268b5`; Node 13/13, Python 12/12 and visual checks passed. Slack `provider-v3` read back and deduplicated; original records retained. Native synthetic ledger proves current subscription model prices work via maker fallback without alias catalog changes; failed catalog mutation fully rolled back. | First clock-triggered acceptance pending. Retired unused Gemini 3 Pro and unresolved historical `auto` identities documented in [runbook](daily-agent-receipt.md); no broader milestone advancement. |
 | SA-OPS-01 / #66; 2026-11-10 America/Los_Angeles; Codex; implementation base `b36f21b3`, investigation base `ac8d766`, native `4a11f89`; #61/#69 merged | **IMPLEMENTED / LOCAL VERIFIED; no product acceptance**. [Current evidence](sa-ops-native-authority.md). Native Cron lifecycle/restart, two-user audit, public refusal, explicitly eligible development-subscription default/job override, announce and real native child spawn/senderless execution/parent result. Run11: 31 targeted tests; projection 7 cases plus disabled entry; Node 1309 tests / 1307 pass / 0 fail / 2 existing skips; loader, native ACP, scaffold and links/diff passed. Scoped native candidates are checked before credentials/network; ordinary-user fallback retained. | Review bounded diff and native enable post-commit output-schema limitation; parent completes already authorized commit/push workflow. Live Slack/production, complete memory, broader child continuation, cancellation/revocation races and all message-tool audiences remain unverified. No M0/M1 or AC01–AC20 advancement; no deployment/new Issue. |
 
-Super Agent acceptance uses the separate [SA-M0–M3 feature checklist](super-agent-feature-checklist.md), updated November 9, 2026. Its source/CI evidence does not advance the historical governance AC01–AC20 below. Super Agent PRD v0.6 uses native configuration and existing integrations; M0 remains unaccepted and independent of internal M1–M3. Checklist SA-M0-01–09, SA-M1-01–05, SA-M2-01–06, SA-M3-01–05 and SA-OPS/ROUTE/COST/OBS map to #54–#60 and #66–#68. Routing, trusted Cron, Magpie limits and Axiom reporting require new behavior evidence; this documentation revision advances no product acceptance.
+Historical November 9 scope used the [feature checklist](super-agent-feature-checklist.md); current acceptance follows the November 15 plan above. Its source/CI evidence does not advance the historical governance AC01–AC20 below. Super Agent PRD v0.6 uses native configuration and existing integrations; M0 remains unaccepted and independent of internal M1–M3. Checklist SA-M0-01–09, SA-M1-01–05, SA-M2-01–06, SA-M3-01–05 and SA-OPS/ROUTE/COST/OBS map to #54–#60 and #66–#68. Routing, trusted Cron, Magpie limits and Axiom reporting require new behavior evidence; this documentation revision advances no product acceptance.
 
 This matrix preserves the PRD's AC01–AC20 **historical acceptance evidence**. Current configuration
 and the 19 backend tools are documented in [setup](setup.md#optional-enable-backend-backed-tools);

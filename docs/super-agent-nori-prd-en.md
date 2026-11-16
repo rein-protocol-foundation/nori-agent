@@ -1,11 +1,42 @@
 # Nori Super Agent Product Requirements Document
 
-- **Version**: v0.6, English edition
-- **Updated**: November 9, 2026 (America/Los_Angeles); native-first integration, ACP coding, dynamic routing and usage reporting approved
-- **Status**: Product direction approved for this documentation revision. Internal Slack M1 is first; shared-Gateway/Discord M0 remains independent. Retention duration and M3 first-release necessity remain open product parameters. This update does not implement features or authorize production changes.
+- **Version**: v0.7, English edition
+- **Updated**: November 15, 2026 (America/Los_Angeles); owner-confirmed tool and business scope
+- **Status**: Scope clarified by the owner. Complete general task coordination using OpenClaw native/community tools; expand Rein internal business tools only after Super Agent acceptance. Preserve existing capabilities. Partnership mail is an optional delivered integration, not a completion gate. Retention and native enforcement gaps remain open. Documentation only; no runtime acceptance or production authorization.
 - **Repository baseline**: [nori-agent `3a0dbb4`](https://github.com/rein-protocol-foundation/nori-agent/tree/3a0dbb4ff98dc6b38110febb6272d9973a971b4a)
 
 > **v0.6 decision:** Prefer native configuration, then existing community open-source integration, then a necessary thin adapter backed by a concrete gap. This supersedes v0.5.2's default-disabled Dynamic Router, preselected upstream extensions and fixed 30-day retention requirement. Historical source slices and failed probes remain evidence, not mandatory final designs. See the [feature checklist](super-agent-feature-checklist.md) and [decision tracker #65](https://github.com/rein-protocol-foundation/nori-agent/issues/65). Only documents and tickets change in this task.
+
+## Current scope and completion contract — November 15, 2026
+
+This v0.7 decision supersedes earlier first-release optionality and sequencing language below;
+historical evidence remains valid only for its recorded scope. The actionable remaining work and
+acceptance matrix are in [remaining development and acceptance](super-agent-delivery-plan.md).
+
+- General tools come primarily from OpenClaw native capabilities and maintained community integrations.
+  Use supported extension points for demonstrated integration gaps; do not build a Nori tool platform.
+- Nori's scope is goal understanding, tool/skill selection, optional delegation, progress and result
+  review, bounded continuation, change/cancellation/recovery, and authorized delivery. Simple requests
+  stay direct. Missing tools produce an explicit gap and proposed next step, not invented execution.
+- Preserve existing Rein internal capabilities, including Community information, social-account and
+  Community-email linking, and their backend authority checks. Their compatibility is in scope;
+  expanding their business functionality is not.
+- After Super Agent acceptance, Nori itself investigates internal-system gaps and leads requirements,
+  reuse analysis, implementation, tests and acceptance under the applicable authorization. Demonstrate
+  this development lifecycle now in an isolated fixture/repository using existing tools; do not make
+  a new production business integration a prerequisite for that demonstration.
+- Preserve the completed optional partnership-mail plugin, workflow and evidence. No removal or rewrite
+  is implied. Its live-mail acceptance remains separate; adding further business workflows is deferred.
+- Existing Community routing, privacy, runtime bounds and usage work remains tracked. Public rollout
+  must pass its applicable safety/compatibility gates. Shared-Gateway consolidation and reporting
+  schedules are deployment/operations deliverables, not definitions of general agent intelligence.
+  This clarification does not waive public rollout gates or authorize changing approved defaults.
+
+Super Agent completion requires evidence for general task execution, cross-task reuse without
+coordinator changes, a bounded development-to-acceptance exercise, and the identity/storage/provider
+boundaries actually exercised. Source merge, successful synthetic probes and product acceptance are
+separate. Unresolved requirements must stay open or receive an explicit scope decision; do not silently
+weaken retention, cancellation, deadlines or delivery guarantees to match the implementation.
 
 ## 1 Goals and Implementation Principles
 
@@ -163,7 +194,7 @@ Each task milestone delivers one demonstrable end-to-end lifecycle through small
 | --- | --- | --- |
 | M1: internal Slack task loop | Authorized research/native child and coding/existing ACP, progress, change/stop and delivery | First delivery priority; own task/identity/storage/provider boundaries and #66 affected-path compatibility required |
 | M2: continuation and recovery | Review results, follow up, handle changes/cancellation/restart, retain minimal summaries | Depends on M1; feature slicing and retention parameter under review |
-| M3: fixed Lobster workflow | Exact-action-approved draft and designated test-recipient send | Existing M1/M2 dependencies retained; optionality/scope under review; no real outreach |
+| Optional partnership-mail integration (historical M3) | Preserve delivered exact-action-approved draft and test-send workflow | Not a Super Agent completion gate; uses its actual authority/checkpoint/mail seams, not blanket completion of all continuation features; live acceptance separate |
 | M0: shared Gateway and Discord Community migration | Distinct persistent agents, public workspace, scoped callers/memory/provider limits, preserved-state cutover | Independent milestone; #54/#55/#56/#67/#68 provide applicable behavior gates for #57; not a blanket gate on internal Slack delivery |
 
 Do not read milestone numbers as execution order. M0 retains privacy, memory and capability behavior; v0.6 revises route/limit criteria and adds usage reporting. Separating schedules does not accept M0.
@@ -213,9 +244,9 @@ Do not read milestone numbers as execution order. M0 retains privacy, memory and
 - Force the configured attempt/runtime limit or repeated no-progress condition. Nori stops new work and returns partial outputs and the remaining gap; redelegation or restart does not reset the task's limit accounting.
 - In a later authorized conversation, retrieve the original task summary and deliverable links after simulated native run cleanup. Verify the explicitly selected retention period without a calendar-length test (duration, formerly 30 days, remains a product decision); missing artifacts are explicitly identified.
 
-### M3 One Fixed Lobster Workflow
+### Optional Delivered Partnership-Mail Workflow (historical M3)
 
-**Deliverable**: Use one selected shortlist entry to prepare a partnership email draft, pause for approval, and send the approved version to an operator-designated test recipient. Reuse existing Lobster and mail integration with one `.lobster` template, identity-bound approval, and reporting through the primary Nori; no general workflow platform. Whether M3 is needed for the first release remains open. Real partner outreach is outside milestone acceptance and requires separate authorization.
+**Deliverable**: Use one selected shortlist entry to prepare a partnership email draft, pause for approval, and send the approved version to an operator-designated test recipient. Reuse Lobster with the now-delivered mail adapter and one `.lobster` template, identity-bound approval, and reporting through the primary Nori; no general workflow platform. This optional integration is retained but is not required for Super Agent completion. The original assumption of an existing reusable mail adapter was incorrect; the implementation added a narrow Resend adapter (see [integration evidence](partnership-workflow.md)). Real partner outreach is outside milestone acceptance and requires separate authorization.
 
 **Acceptance criteria**:
 
@@ -227,7 +258,7 @@ Do not read milestone numbers as execution order. M0 retains privacy, memory and
 
 ### Further Expansion as Needed
 
-Once these end-to-end task lifecycles work, separately plan automatic Discord deployment management, PR/CI event follow-up, and additional fixed workflows. Continue reusing existing deployment and automation capabilities rather than building a general-purpose platform in advance.
+After general Super Agent acceptance, let Nori identify Rein internal-system gaps and lead their authorized development-to-acceptance lifecycle. Reuse OpenClaw/community tools before proposing a new internal adapter. New Community business operations, identity/email-link enhancements and additional business workflows belong to this later backlog. Deployment automation and PR/CI follow-up use existing capabilities and remain separately authorized; they do not imply automatic deployment permission.
 
 ## 6 Mapping to DeepSeek Concepts
 
