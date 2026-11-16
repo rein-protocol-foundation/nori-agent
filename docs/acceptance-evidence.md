@@ -7,7 +7,9 @@ SA-M2-06；Owner Codex/Astra High。用户决定无期限服务器保留摘要�
 实际public worker覆盖九天旧摘要重启、分页、跨owner拒绝、会话reset连续性、并发删写和tombstone。
 原生Flow cleanup是fixture模拟；真实用户保留/删除未通过前保持待验收。
 [真实任务记录](task-lifecycle-live-2026-11-16.md)：#94七项CI通过后合并部署66700d0；
-Slack/ACP开发真实启动，失败及部分成果保留，不能把native succeeded或accepted算交付成功。
+研究原线程交付及后台聊天/实际进度已观察；官方来源抽查后Nori补充两项勘误。
+ACP产出代码独立13项测试通过，但两次terminal_outcome=blocked且有人工作业纠正，
+不能把native succeeded或accepted算完整自主开发成功。配置启用与定向沙箱修复待明确批准。
 
 
 ## Task stop/change and recovery controls — November 16, 2026

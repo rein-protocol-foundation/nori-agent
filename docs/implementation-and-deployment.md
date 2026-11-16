@@ -11,8 +11,11 @@ plugin loader passes. Native cleanup is simulated in fixtures, not a live-mainte
 PR #94 conflict resolution preserved both independent document entries, 56 focused tests and seven
 CI checks passed; merged/deployed as 66700d0 at 19:02:33 UTC. Slack configuration activation was
 rejected by automatic approval review; exact settings await user confirmation. Existing ACP
-remains usable for testing and produced real runs with blocked/partial evidence; acceptance is
-ongoing, not completed. [Live record](task-lifecycle-live-2026-11-16.md),
+produced two actual blocked runs and code independently passing 13 tests; startup required human
+correction, so full autonomous development is not accepted. Native research delivered in the original
+thread while ordinary chat/progress worked during execution; source review required two corrections.
+A narrowly scoped distro bubblewrap/AppArmor repair is prepared but awaits explicit approval.
+PR #97 review at f6dd3df has no findings; no feature activation or shared release yet. [Live record](task-lifecycle-live-2026-11-16.md),
 [summary contract/rollback](task-summary-retention.md). No product milestone advanced.
 
 

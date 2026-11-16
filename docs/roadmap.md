@@ -6,7 +6,8 @@
 仅新任务opt-in，公开native SQLite worker、自有私有库、当前owner/audience授权、分页、重启、
 删除副本及防复活tombstone。1436 tests pass / 4 existing skips；70 focused pass；真实loader通过。
 原生七天cleanup仅fixture模拟，真实保留/删除尚待Slack验收，不推进产品完成。
-任务控制PR #94已合并并部署66700d0；真实编码已触发，失败/部分完成证据正在核对。
+任务控制PR #94已合并并部署66700d0；研究交付/后台聊天/实际进度已观察，勘误已补充。
+真实编码产物独立13测试通过，但ACP两次blocked，完整自主验收未通过；配置与沙箱修复待批准。
 详见[摘要契约](task-summary-retention.md)与[真实验收记录](task-lifecycle-live-2026-11-16.md)。
 负责人Codex；下一步完成实际入口验证。
 
