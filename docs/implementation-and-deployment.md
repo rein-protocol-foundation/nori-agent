@@ -19,6 +19,8 @@ PR #97 review at f6dd3df has no findings; no feature activation or shared releas
 [summary contract/rollback](task-summary-retention.md). No product milestone advanced.
 
 
+Release follow-up: #97 final head passed all seven CI checks and merged as 9ed4cb2; updater completed at 19:50:59 UTC. Four services are healthy; all 69 protected static files retain identical content, mode and ownership. The Discord private plugin/launcher and root-owned public seed are preserved. Live native DB read was refused as locked, so no independent row-level history claim is made. rein-acp remains disabled; configuration and sandbox approvals are still pending. Rollback and limits are in the live record. No product completion advanced.
+
 ## Task stop/change, recovery and budget handoff — November 16, 2026
 
 Tracking #58 / SA-M2-01–05. Owner: Codex, runtime-verified GPT-6 Astra Medium as requested.

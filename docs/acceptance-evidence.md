@@ -12,6 +12,8 @@ ACP产出代码独立13项测试通过，但两次terminal_outcome=blocked且有
 不能把native succeeded或accepted算完整自主开发成功。配置启用与定向沙箱修复待明确批准。
 
 
+发布跟进：#97最终七项CI通过，19:50:59 UTC部署9ed4cb2，四服务健康，69个私有/隔离静态文件内容与权限不变。rein-acp仍关闭；真实摘要验收未开始，未将发布视作产品完成。
+
 ## Task stop/change and recovery controls — November 16, 2026
 
 #58 / SA-M2-01–05; owner Codex (runtime-verified Astra Medium). **LOCAL VERIFIED**.

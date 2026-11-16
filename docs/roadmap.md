@@ -12,6 +12,8 @@
 负责人Codex；下一步完成实际入口验证。
 
 
+发布跟进：#97已合并并健康部署9ed4cb2，七项CI通过；69个静态保留文件校验一致。功能开关仍关闭，配置批准与真实摘要/自主开发验收仍待完成。
+
 ## Task stop/change and recovery follow-up — November 16, 2026
 
 #58 / SA-M2-01–05; owner Codex (runtime-verified Astra Medium).
