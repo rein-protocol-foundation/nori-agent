@@ -1,5 +1,20 @@
 # Nori-Agent implementation roadmap
 
+## Task stop/change and recovery follow-up — November 16, 2026
+
+#58 / SA-M2-01–05; owner Codex (runtime-verified Astra Medium).
+**IMPLEMENTED / LOCAL VERIFIED; new live race acceptance pending.** Reconciled the stale checkout
+with `332cdf0` and retained prior PRD/planning/runtime edits. #87–#91 already establish scoped live
+restart/supplement/merged-delivery acceptance; do not redo that development. New changes preserve
+explicit cancellation outcomes, release known-unlaunched reservations, reconcile all-owner status,
+reject foreign settlement receipts and retain concrete gaps on budget exhaustion.
+[Contract, failures and checks](task-continuation-controls.md): 53 targeted checks pass; full suite
+1418 pass / 4 conditional skips / 0 failures on the final version. Native two-process seam
+passes; policy-disabled M1 probe failed its ACP report wait once and passed standalone unchanged.
+No new deployment/live acceptance. Retention/delete and ACP hard deadline remain unsupported;
+#54's accepted Community scope does not waive internal controls. Next: authorized real-entry
+stop/change acceptance; product retention/SDK decision separately. Existing unrelated work retained.
+
 ## NORI-AI-NEWS — November 16, 2026
 
 Owner: Codex. **ENABLED / FIRST SCHEDULED DELIVERY VERIFIED**. Nine public feeds and

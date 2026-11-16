@@ -1,5 +1,42 @@
 # Nori-Agent development, verification and deployment record
 
+## Task stop/change, recovery and budget handoff — November 16, 2026
+
+Tracking #58 / SA-M2-01–05. Owner: Codex, runtime-verified GPT-6 Astra Medium as requested.
+**IMPLEMENTED / LOCAL VERIFIED; no new deployment or live acceptance.** Reused already-fetched
+main `332cdf0` after discovering #87–#91 superseded the initial checkout. Prior tracked edits
+were backed up in a retained stash, restored and merged with all upstream records; untracked PRD,
+planning and runtime investigation files were preserved. No new commit/push/PR/merge to remote.
+
+Added explicit pending/failed/confirmed/not-needed cancellation evidence, known-unlaunched custody
+release for stop/deadline races, reconciliation on all-flow status, foreign-run wait rejection,
+and concrete partial evidence/gaps at limits. No scheduler, vendor, mail or business-tool changes.
+Ten new controller tests cover scope/stop/restart/limits/authority/ACP uncertainty. The budget
+handoff test first exposed loss of concrete gaps, then passed after repair. See the
+[contract and handoff](task-continuation-controls.md) for confirmation points and remaining windows.
+
+Checks: 53 targeted pass; full repository 1418 pass / 4 conditional skips / 0 fail on the final version.
+Final review additionally prevents a stopped supplement inheriting its predecessor’s known effects. Isolated two-process native seam passes.
+Both probes initially hit sandbox loopback EPERM; permitted reruns used synthetic transports only.
+M1 native probe failed waiting for an independent ACP cancel report, then passed standalone unchanged;
+retain both results. Syntax/scaffold/local-link/diff and preservation checks passed.
+Existing #91 real acceptance is referenced, not re-executed. Updated stale delivery-plan #54 next
+steps to respect November 15 closure. No deployment, external send or paid inference occurred.
+
+Remaining: new control races need separately authorized real-entry/provider acceptance; no exactly-once
+or arbitrary-crash guarantee. Selected retention/delete is still unsupported and duration undecided;
+ACP hard deadline remains unavailable. Next: review this local diff and authorize the bounded live
+control acceptance if desired; monitor the intermittent M1 report observation failure. Rollback
+reverts only this task's runtime/test delta; no state/history migration or deletion occurred.
+
+Review follow-up: reproduced and fixed stale provisional cancellation evidence after native promotion;
+54 focused tests and final full suite (1419 passed / 4 conditional skips / 0 failures) pass. Owner now authorizes the separate commit/PR and CI/review follow-up only.
+Based on `64d0ff1` (#93); unrelated working changes remain uncommitted. No merge/deployment.
+
+CI follow-up: run 43857871202 reproduced the cancelled ACP report fixture failure. The native background-task notice was present, but the scripted model recognized only the announce prompt. Added exact-current-run notification decoding and negative cases without changing production behavior or weakening delivery assertions. 55 targeted tests and native nori-task-loop-43csHm pass; CI/review rerun on the amended PR follows.
+
+Review race follow-up: concurrent all-flow status during launch authorization could leave a known-unlaunched Flow stuck after its attempt was released. Reproduced, restored the Flow phase and cleared only obsolete launch uncertainty; restart reuses the same attempt. 56 targeted tests and final full suite 1421 passed / 4 conditional skips / 0 failures. PR #94 remains unmerged; final CI/review pending.
+
 ## NORI-AI-NEWS — November 16, 2026
 
 Owner: Codex. **ENABLED / FIRST SCHEDULED DELIVERY VERIFIED**. Nine public feeds and

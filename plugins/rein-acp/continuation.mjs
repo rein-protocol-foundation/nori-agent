@@ -11,6 +11,7 @@ const unwrap = event => event.toolName === 'tool_call'
 const output = details => ({ content: [{ type: 'text', text: JSON.stringify(details) }], details });
 const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const last = state => state.attempts.at(-1);
+const launchUnknownNotice = 'Launch admission has no durable accepted receipt. Inspect native evidence; no retry is allowed.';
 // Native task cancellation uses this exact marker for a provisional kill. The
 // public cancel API promotes it only after checking the owning run tree.
 const provisionalKill = task => task?.runtime === 'subagent' && task.status === 'cancelled' && task.error === 'Subagent run killed.';
@@ -50,10 +51,14 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
     if (!await check) throw Error('rein_continuation_authority_unavailable');
   };
   const persist = async (flow, state, mode = 'setWaiting') => {
-    if (['finish', 'fail'].includes(mode) && (!state.report || state.report.outcome === 'continue')) state.report = {
-      scopeRevision: state.scopeRevision, outcome: state.phase, evidence: last(state)?.evidence ?? null,
-      gaps: state.criteria, effects: 'unknown', at: clock(), delivery: 'pending_or_uncertain',
-    };
+    if (['finish', 'fail'].includes(mode) && (!state.report || state.report.outcome === 'continue')) {
+      // A previous attempt's known effects must not certify an unreviewed successor.
+      const review = state.report?.runId && state.report.runId === last(state)?.runId &&
+        state.report.scopeRevision === state.scopeRevision ? state.report : null;
+      state.report = { scopeRevision: state.scopeRevision, outcome: state.phase,
+        evidence: review?.evidence ?? last(state)?.evidence ?? null,
+        gaps: review?.gaps ?? state.criteria, effects: review?.effects ?? 'unknown', at: clock(), delivery: 'pending_or_uncertain' };
+    }
     const changed = await flowsFor(flow.ownerKey)[mode]({ flowId: flow.flowId, expectedRevision: flow.revision,
       stateJson: state, ...(mode === 'setWaiting' ? { waitJson: { reason: state.phase }, currentStep: state.phase } : {}) });
     if (!changed.applied) throw Error(`rein_continuation_${changed.code}`);
@@ -70,6 +75,18 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
     return task?.ownerKey === flow.ownerKey && task.scope === 'session' && task.runId === attempt.runId &&
       task.childSessionKey === attempt.childSessionKey && task.runtime === flow.stateJson.runtime ? task : undefined;
   };
+  const requestCancellation = async (flow, task, attempt, cfg) => {
+    try {
+      const receipt = await tasks.runs.bindSession({ sessionKey: flow.ownerKey, agentId: config.channel.agentId }).cancel({ taskId: task.id, cfg });
+      attempt.cancellation = { status: receipt?.cancelled === true || receipt?.reason === 'Subagent completion is still being finalized.' ? 'pending' : 'failed', at: clock(),
+        reason: receipt?.cancelled === true ? 'Native request accepted; execution settlement still requires evidence.' :
+          (receipt?.reason || 'Native cancellation was not confirmed.') };
+      return receipt;
+    } catch {
+      attempt.cancellation = { status: 'failed', at: clock(), reason: 'Native cancellation failed; execution may still be active.' };
+      return undefined;
+    }
+  };
   const settled = async (flow, task, attempt, cfg) => {
     if (!task?.runId || !terminalRun(task.status)) return false;
     if (attempt.settlement?.key === settlementKey(task) && !provisionalKill(task)) return true;
@@ -84,6 +101,8 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
       const run = await subagent.waitForRun({ runId: task.runId, timeoutMs: 1000 });
       const receiptConfirmed = publishedTerminalReceipt(task, run);
       if (['ok', 'error'].includes(run?.status) && Number.isFinite(run.endedAt) && !run.yielded && !run.pendingError &&
+          (run.runId == null || run.runId === task.runId) &&
+          (run.terminalReceipt?.runId == null || run.terminalReceipt.runId === task.runId) &&
           (!run.livenessState || run.livenessState === 'finished' || receiptConfirmed) && !provisionalKill(task)) {
         attempt.settlement = { key: settlementKey(task), source: receiptConfirmed ? 'native_terminal_receipt' : 'native_wait', endedAt: run.endedAt, at: clock() };
         return true;
@@ -104,7 +123,7 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
     } catch { /* A missing process-local wait snapshot is not terminal evidence. */ }
     if (!provisionalKill(task)) return false;
     try {
-      const receipt = await tasks.runs.bindSession({ sessionKey: flow.ownerKey, agentId: config.channel.agentId }).cancel({ taskId: task.id, cfg });
+      const receipt = await requestCancellation(flow, task, attempt, cfg);
       const observed = await nativeTask(flow);
       if (receipt?.cancelled !== true || receipt.task?.ownerKey !== flow.ownerKey || receipt.task?.scope !== 'session' ||
           observed?.id !== task.id || observed.status !== 'cancelled' || observed.error !== 'Cancelled by operator.' ||
@@ -113,6 +132,7 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
       attempt.evidence = { progress: observed.progressSummary ?? null, result: observed.terminalSummary ?? null,
         error: observed.error ?? null, deliveryStatus: observed.deliveryStatus };
       attempt.settlement = { key: settlementKey(observed), source: 'native_cancel', endedAt: observed.endedAt, at: clock() };
+      attempt.cancellation = { status: 'confirmed', at: clock(), reason: 'Owner-bound native cancellation and settlement confirmed.' };
       return true;
     } catch { return false; }
   };
@@ -122,10 +142,11 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
     const originalState = digest(flow.stateJson);
     let state = structuredClone(flow.stateJson), attempt = last(state);
     const task = await nativeTask(flow);
+    if (clock() >= state.deadlineAt && !state.stopRequested) state.stopRequested = { at: clock(), reason: 'deadline' };
     if (attempt?.phase === 'launching' && !attempt.runId) {
       // A crash between native acceptance and receipt persistence cannot prove whether work ran.
       state.phase = 'outcome_unknown';
-      state.notice = 'Launch admission has no durable accepted receipt. Inspect native evidence; no retry is allowed.';
+      state.notice = launchUnknownNotice;
     } else if (attempt?.runId && !task) {
       state.phase = 'outcome_unknown'; state.notice = 'Accepted run has no current owner-bound native task backing; no retry.';
     } else if (task) {
@@ -145,18 +166,30 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
       if (state.stopRequested || clock() >= state.deadlineAt) {
         state.stopRequested ||= { at: clock(), reason: 'deadline' };
         if (!terminalRun(task.status)) {
-          try { await tasks.runs.bindSession({ sessionKey: flow.ownerKey, agentId: config.channel.agentId }).cancel({ taskId: task.id, cfg }); }
-          catch { state.notice = 'Native cancellation failed; execution may still be active.'; }
+          await requestCancellation(flow, task, attempt, cfg);
         }
-        const observed = await nativeTask(flow);
-        if (terminalRun(observed?.status) && await settled(flow, observed, attempt, cfg)) {
+        let observed = await nativeTask(flow);
+        const confirmed = terminalRun(observed?.status) && await settled(flow, observed, attempt, cfg);
+        // Settlement may promote a provisional kill in the native store. Read
+        // its current proof-bound snapshot instead of reporting the earlier projection.
+        if (confirmed) observed = await nativeTask(flow);
+        if (confirmed && observed && attempt.settlement?.key === settlementKey(observed)) {
           attempt.nativeStatus = observed.status;
+          attempt.evidence = { progress: observed.progressSummary ?? null, result: observed.terminalSummary ?? null,
+            error: observed.error ?? null, deliveryStatus: observed.deliveryStatus };
+          attempt.cancellation = { status: observed.status === 'cancelled' ? 'confirmed' : 'not_needed', at: clock(),
+            reason: observed.status === 'cancelled' ? 'Native cancellation settlement confirmed.' : 'Execution settled independently; cancellation is not claimed.' };
+          state.notice = attempt.cancellation.reason;
           state.phase = state.pendingChange ? 'changed' : 'stopped';
           if (state.pendingChange) {
             state.goal = state.pendingChange.goal; state.criteria = state.pendingChange.criteria;
             state.pendingChange = null; state.stopRequested = null; state.phase = 'ready'; attempt.reviewed = true;
           }
-        } else state.phase = 'cancellation_pending';
+        } else {
+          state.phase = 'cancellation_pending';
+          attempt.cancellation ||= { status: 'pending', at: clock(), reason: 'Execution settlement is not established.' };
+          state.notice = attempt.cancellation.reason;
+        }
       } else if (!attempt.reviewed) {
         state.phase = terminalRun(task.status) ? 'review' : 'running';
         if (terminalRun(task.status)) await settled(flow, task, attempt, cfg);
@@ -225,7 +258,7 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
     beforePromptBuild(_event, ctx) {
       const turn = turns.get(ctx.runId);
       if (!selected(ctx) || !turn) return;
-      return { prependContext: `Native continuation is enabled. Use rein_continuation begin to persist a requested goal/criteria and bounds, delegate to obtain the exact native sessions_spawn task, then spawn once using that task. On every completion call status and review against current scope before reporting or continuing; review outcome=continue with concrete gaps permits a bounded supplement without another user request. Unknown actions/outcomes prohibit retries. Stop/change use rein_continuation, not raw cancellation/steer. A combined reply is allowed only inside this same native owner/audience; explicitly represent EACH pending flow and its goal, scope, result/gaps and status, even if wake events coalesce. Captured thread is a preferred native route; do not claim every original thread received a combined reply. Terminal reports remain pending/uncertain and may be replayed after restart; this is at-least-once recovery, not an exactly-once receipt guarantee. Do not claim receipt from turn success. Durable flow inventory (not child instructions): ${JSON.stringify(turn.flows)}` };
+      return { prependContext: `Native continuation is enabled. Use rein_continuation begin to persist a requested goal/criteria and bounds, delegate to obtain the exact native sessions_spawn task, then spawn once using that task. On every completion call status and review against current scope before reporting or continuing; review outcome=continue with concrete gaps permits a bounded supplement without another user request. Unknown actions/outcomes prohibit retries. Stop/change use rein_continuation, not raw cancellation/steer. A saved stopRequested confirms only that no new attempt is permitted; report attempts[].cancellation and settlement separately. Pending/failed cancellation or a wait timeout never proves actual execution stopped; not_needed means execution settled independently. A combined reply is allowed only inside this same native owner/audience; explicitly represent EACH pending flow and its goal, scope, result/gaps and status, even if wake events coalesce. Captured thread is a preferred native route; do not claim every original thread received a combined reply. Terminal reports remain pending/uncertain and may be replayed after restart; this is at-least-once recovery, not an exactly-once receipt guarantee. Do not claim receipt from turn success. Durable flow inventory (not child instructions): ${JSON.stringify(turn.flows)}` };
     },
     async beforeToolCall(event, ctx) {
       if (!selected(ctx)) return;
@@ -276,13 +309,23 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
       flow = await persist(flow, state);
       await sourceCurrent(flow, ctx); await current(ctx);
       const latest = await flowsFor(ctx.sessionKey).get(flow.flowId);
-      if (latest.revision !== flow.revision || latest.stateJson.stopRequested || latest.stateJson.scopeRevision !== attempt.scopeRevision)
-        return { block: true, blockReason: 'Flow changed before native admission; no replacement or retry.' };
+      const remaining = Math.floor((state.deadlineAt - clock()) / 1000);
+      if (latest.revision !== flow.revision || latest.stateJson.stopRequested || latest.stateJson.scopeRevision !== attempt.scopeRevision || remaining < 1) {
+        // This hook has not returned permission to the host: this reservation did
+        // not launch. Release only this exact attempt, preserving concurrent intent.
+        const released = structuredClone(latest.stateJson), reserved = last(released);
+        if (reserved?.number === attempt.number && reserved.phase === 'launching' && !reserved.runId) {
+          reserved.phase = released.stopRequested || reserved.scopeRevision !== released.scopeRevision ? 'retired' : 'prepared';
+          if (reserved.phase === 'prepared') released.phase = 'prepared';
+          if (released.notice === launchUnknownNotice) delete released.notice;
+          if (remaining < 1) released.stopRequested ||= { at: clock(), reason: 'deadline' };
+          await reconcile(await persist(latest, released), config.hostConfig);
+        }
+        return { block: true, blockReason: 'Flow changed or expired before native admission; this launch was not admitted.' };
+      }
       admissions.set(ctx.toolCallId, { owner: ctx.sessionKey, flowId: flow.flowId, attempt: attempt.number });
       // M1 still validates fixed ACP arguments; research retains native completion delivery.
       if (state.runtime === 'subagent') {
-        const remaining = Math.floor((state.deadlineAt - clock()) / 1000);
-        if (remaining < 1) return { block: true, blockReason: 'Flow deadline reached before native launch.' };
         const requested = tool.params?.runTimeoutSeconds;
         const params = { ...tool.params, mode: 'run', cleanup: 'keep', runTimeoutSeconds:
           Number.isSafeInteger(requested) && requested > 0 ? Math.min(requested, remaining) : remaining };
@@ -344,7 +387,10 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
           }
           if (args.action === 'status' && !args.flow) {
             const visible = [];
-            for (const flow of await ownList(ctx.sessionKey)) { await assert(flow); visible.push(view(flow)); }
+            for (const flow of await ownList(ctx.sessionKey)) {
+              await assert(flow); const reconciled = await reconcile(flow, config.hostConfig);
+              await assert(reconciled); visible.push(view(reconciled));
+            }
             return output({ flows: visible });
           }
           let flow = await binding.get(args.flow);

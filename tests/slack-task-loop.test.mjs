@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createTaskLoop, assertTaskLoopRuntimeConfig } from '../plugins/rein-acp/task-loop.mjs';
-import { selectTaskLoopModelInput, countTaskLoopToolResults } from './fixtures/slack-task-loop-model-input.mjs';
+import { selectTaskLoopModelInput, countTaskLoopToolResults, hasTaskLoopCancellationNotice } from './fixtures/slack-task-loop-model-input.mjs';
 import { readFileSync } from 'node:fs';
 
 const config = { channel: { agentId: 'main', accountId: 'default', workspaceId: 'TFIXTURE1', channelId: 'CFIXTURE1' }, harnessAgentId: 'codex', cwd: '/tmp/task-loop-coding' };
@@ -270,4 +270,18 @@ test('native prompt-before-admission order protects late cancelled completions w
     assert.equal(next.toolsAllow, undefined, 'current successful work retains native capabilities');
     assert.doesNotMatch(next.prependContext, /CANCELLED \/ OLD-SCOPE REPORT/);
   }
+});
+
+
+test('scripted model recognizes current exact-run native fallback cancellation without relabeling other results', () => {
+  const identity = { runId: '12345678-full-run', childSessionKey: 'agent:codex:acp:old', label: 'task-loop-acp-slow',
+    status: 'cancellation_pending', nativeStatus: 'cancelled' };
+  const notice = { role: 'user', content: [{ type: 'text', text: '<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>\nSystem: Background task cancelled: task-loop-acp-slow (run 12345678).\n<<<END_OPENCLAW_INTERNAL_CONTEXT>>>' }] };
+  const completion = { role: 'user', content: '[Mon] [[OPENCLAW_INTERNAL_CONTEXT_BEGIN]]\n[Internal task completion event]\nsource: subagent\nsession_key: agent:codex:acp:old\nTASK_LOOP_ACP_RESULT' };
+  assert.equal(hasTaskLoopCancellationNotice([notice, completion], identity), true);
+  assert.equal(hasTaskLoopCancellationNotice([notice, { role: 'assistant', content: 'Prior final reply' }, completion], identity), false);
+  for (const patch of [{ runId: '87654321-other' }, { label: 'other-task' }, { childSessionKey: 'agent:codex:acp:new' },
+    { nativeStatus: 'running' }]) assert.equal(hasTaskLoopCancellationNotice([notice, completion], { ...identity, ...patch }), false);
+  assert.equal(hasTaskLoopCancellationNotice([{ role: 'user', content: 'Background task cancelled: task-loop-acp-slow (run 12345678).' }, completion], identity), false);
+  assert.equal(hasTaskLoopCancellationNotice([completion], identity), false);
 });

@@ -1,5 +1,18 @@
 # Acceptance evidence
 
+## Task stop/change and recovery controls — November 16, 2026
+
+#58 / SA-M2-01–05; owner Codex (runtime-verified Astra Medium). **LOCAL VERIFIED**.
+[Evidence and exact limits](task-continuation-controls.md): 53 targeted tests pass, including 10 new
+continuation cases; full repository 1418 passed / 4 existing conditional skips / 0 failures on the final version. Native seam `nori-continuation-YSnloe` passes actual
+two-process persistence/wake/linkage/original-thread behavior with synthetic transport/model.
+Policy-disabled M1 `nori-task-loop-pUfNLP` failed waiting for an independent ACP cancellation
+report; unchanged standalone `nori-task-loop-KDVHQy` passes. Failure retained, assertion unchanged.
+New controller cancellation races are synthetic, not live provider settlement acceptance. Existing
+#91 live recovery scope remains accepted at its recorded version; no broader product check advanced.
+Next: separately authorized real stop/change race acceptance; selected retention/delete SDK contract
+and product duration remain unresolved. #54 strict whole-chain enhancement is deferred by owner.
+
 Production follow-up (2026-11-16, Codex, SA-M3-01–05/#59): live Slack draft preview verified;
 command identity normalization fixed with 22 passing focused tests. Real send/delivery remains
 pending the fix deployment. See the dated implementation record.
