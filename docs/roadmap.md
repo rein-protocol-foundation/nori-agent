@@ -1,5 +1,11 @@
 # Nori-Agent implementation roadmap
 
+## Partnership production follow-up — November 16, 2026
+
+SA-M3-01–05 / #59; Codex. Live draft preview passed after configuration activation; native
+Slack lowercase command identities require a boundary fix. 22 focused tests pass. Actual
+approval/send/delivery evidence pending deployment; no broader milestone advanced.
+
 ## 2026-11-15 — Community runtime ticket accepted and closed
 
 #54 / SA-M0-06; scope owner: project owner; record owner: Codex.
