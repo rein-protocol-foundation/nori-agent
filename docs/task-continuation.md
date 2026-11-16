@@ -177,7 +177,10 @@ Local paths, `--link` and `--force` do not establish official provenance. The se
 active-index/retained-summary design therefore cannot run in the real local Rein plugin.
 The public managed-flow API has no delete operation, and its fixed seven-day terminal cleanup
 cannot stand in for an explicitly selected product retention policy. No retention duration,
-including the formerly proposed 30 days, was chosen. No cleanup timestamp was fabricated.
+including the formerly proposed 30 days, was chosen at that stage. No cleanup timestamp was fabricated.
+The November 16 owner decision now selects indefinite server copies through the separate public
+SQLite-worker interface; see [retained summaries](task-summary-retention.md). Native Flow retention
+and the historical keyed-store refusal are unchanged.
 
 ### Same-session recovery loses per-flow reply routes
 
