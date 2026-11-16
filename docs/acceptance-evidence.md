@@ -1,5 +1,9 @@
 # Acceptance evidence
 
+Production follow-up (2026-11-16, Codex, SA-M3-01–05/#59): live Slack draft preview verified;
+command identity normalization fixed with 22 passing focused tests. Real send/delivery remains
+pending the fix deployment. See the dated implementation record.
+
 ## NORI-AI-NEWS — November 16, 2026
 
 Owner: Codex. **ENABLED / FIRST SCHEDULED DELIVERY VERIFIED**. Nine public feeds and
