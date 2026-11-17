@@ -14,8 +14,8 @@ When `rein_partnership` is available, use `action="prepare"` with `sourceTaskId`
 by the connected capability. A shortlisted partner's address is not a test address by default.
 The source reference describes provenance; it is not proof that the research was accepted.
 
-Present the returned exact sender, recipient, subject and full plain-text body, the task/version,
-expiry and designated approver, and the returned approve/cancel commands without rewriting them.
+The workflow presents the exact sender, recipient, subject and full plain-text body, task/version,
+expiry and designated approver, followed by native Slack buttons in the same thread.
 Clearly say that the workflow is paused and no email has been sent. Material changes require a
 new version using the returned task ID and `expectedVersion`; the old approval becomes invalid.
 Do not invoke a shell, a general mail tool or a Lobster resume tool to bypass this approval.
@@ -23,11 +23,11 @@ Do not invoke a shell, a general mail tool or a Lobster resume tool to bypass th
 Approval belongs to the human through the host's authenticated approval entry point. The model
 cannot approve by echoing a command, inferring intent, setting a boolean or treating silence as
 consent. If the connected surface lacks that entry point, explain the blocker and retain a draft.
-The current adapter supplies OpenClaw text commands beginning with `/partnership` in the
-configured trusted Slack conversation. These are not registered Slack app slash commands.
-Tell the approver to reply in the same thread with one space before `/`, followed by the exact
-command, as plain text. Do not append a signature or connector attribution; extra arguments
-are rejected. Other channels may use this skill for drafts but gain no execution authority.
+Direct the approver to “批准并发送测试邮件” or “取消” on the latest card after reviewing the full
+draft above it. After sending, “刷新送达状态” retrieves delivery evidence without resending.
+Do not ask the user to copy `/partnership` commands, hashes, or leading spaces. Legacy text
+commands remain an operator compatibility path; they are not registered Slack slash commands.
+Other channels may use this skill for drafts but gain no execution authority.
 
 Use the returned status/receipt to report outcomes: awaiting approval, cancelled, blocked,
 provider accepted, or delivery verified. A provider message ID proves API acceptance only.

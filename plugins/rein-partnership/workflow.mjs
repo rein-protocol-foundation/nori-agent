@@ -3,6 +3,7 @@ import { randomUUID, createHash } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { createPartnershipStore, taskIdValid } from './store.mjs';
 import { developmentChannelFor } from '../rein-router/slack-development.mjs';
+import { partnershipControls, partnershipNamespace } from './slack-controls.mjs';
 
 const nativeId = value => typeof value === 'string' && /^[A-Z][A-Z0-9]{5,31}$/.test(value);
 const text = (value, max) => typeof value === 'string' && value.trim().length > 0 && value.length <= max;
@@ -20,7 +21,8 @@ export function formatPartnershipReport(details) {
     '', details.material.text, '', `Selected entry: ${details.material.entry}`, `Source task: ${details.material.sourceTaskId}`);
   if (details.approverId) lines.push(`Designated approver: ${details.approverId}`);
   if (details.expiresAt) lines.push(`Approval expires: ${new Date(details.expiresAt).toISOString()}`);
-  if (details.approveCommand) lines.push('',
+  if (details.approvalMode === 'buttons' && details.status === 'awaiting_approval') lines.push('', '请核对以上完整草稿，然后使用同一线程中的「批准并发送测试邮件」或「取消」按钮，无需输入命令。');
+  else if (details.approveCommand) lines.push('',
     'Slack: reply in this same thread as a plain-text message. Add one space before / so Slack does not intercept it as an app slash command. Send only the command, without a signature or connector attribution.',
     'Approve this exact draft:', details.approveCommand, 'Cancel:', details.cancelCommand);
   if (details.receipt) lines.push(`Resend accepted: ${details.receipt.id}. ${details.receipt.deliveryVerified ? 'Provider evidence verified delivery.' : 'Delivery is not verified.'}`);
@@ -52,10 +54,10 @@ export function assertPartnershipRuntimeConfig(config, host) {
 }
 
 /** A fixed action association and receipt ledger, not a replacement task scheduler. */
-export function createPartnershipWorkflow({ config, authorize, stateDir, lobster, mail, clock = Date.now, store = createPartnershipStore(stateDir) }) {
+export function createPartnershipWorkflow({ config, authorize, stateDir, lobster, mail, publishControls, clock = Date.now, store = createPartnershipStore(stateDir) }) {
   const turns = new Map(), calls = new Map();
   const scopeOf = source => ({ agentId: source.agentId, accountId: source.accountId, workspaceId: config.channel.workspaceId, channelId: config.channel.channelId,
-    sessionKey: source.sessionKey, threadId: source.threadId === undefined ? null : String(source.threadId) });
+    sessionKey: source.sessionKey, threadId: source.threadId == null ? null : String(source.threadId) });
   const membership = async source => {
     try { return await authorize(source) === true; } catch { return false; }
   };
@@ -68,16 +70,19 @@ export function createPartnershipWorkflow({ config, authorize, stateDir, lobster
     const value = { status: record.status, taskId: record.taskId, version: record.version, material: record.material,
       approverId: record.approverId, digest: record.digest, checkpointId: record.checkpoint?.approvalId,
       expiresAt: record.expiresAt, receipt: record.receipt, blocker: record.blocker, providerEvidence: record.providerEvidence,
+      ...(record.controls ? { approvalMode: 'buttons' } : {}),
       notice: 'Test recipient only. A provider receipt proves acceptance; delivery requires provider delivery evidence.' };
     if (record.status === 'awaiting_approval') {
       const tail = `${record.taskId} ${record.version} ${record.digest} ${record.checkpoint.approvalId}`;
-      value.approveCommand = `/partnership approve ${tail}`; value.cancelCommand = `/partnership cancel ${tail}`;
+      if (!record.controls) {
+        value.approveCommand = `/partnership approve ${tail}`; value.cancelCommand = `/partnership cancel ${tail}`;
+      }
       value.proposedAction = 'Send the exact displayed plain-text draft once to the designated test recipient.';
     }
     return value;
   };
   const read = async (taskId, source) => { const record = await store.read(taskId); requireScope(record, source); return record; };
-  async function prepare(args, source, current, preview) {
+  async function prepare(args, source, current, preview, controlsContext) {
     if (!text(args.sourceTaskId, 512) || !text(args.entry, 4000) || !config.testRecipients.includes(args.to) ||
         !text(args.subject, 500) || /[\r\n]/.test(args.subject) || !text(args.text, 32_000) ||
         Object.keys(args).some(key => !['action', 'sourceTaskId', 'entry', 'to', 'subject', 'text', 'taskId', 'expectedVersion'].includes(key)) ||
@@ -114,10 +119,16 @@ export function createPartnershipWorkflow({ config, authorize, stateDir, lobster
       }
       await current(); await store.write(record);
       if (record.status === 'awaiting_approval') {
+        if (publishControls) record.controls = { nonce: randomUUID() };
         const details = publicRecord(record);
         record.status = 'pending_preview'; await store.write(record);
         try {
           await current(); await preview(details); await current();
+          if (publishControls) {
+            record.controls.messageId = await publishControls({ details, nonce: record.controls.nonce, source, current, ...controlsContext });
+            if (!/^\d+\.\d+$/.test(record.controls.messageId ?? '')) throw Error('partnership_interactive_receipt_unavailable');
+            await current();
+          }
           record.status = 'awaiting_approval';
         } catch {
           record.status = 'blocked'; record.blocker = 'Exact approval preview delivery or current invocation could not be confirmed; no send is authorized.';
@@ -187,7 +198,56 @@ export function createPartnershipWorkflow({ config, authorize, stateDir, lobster
       await store.write(record); return publicRecord(record);
     });
   }
+  async function reconcile(taskId, source) {
+    return store.locked(taskId, async () => {
+      const record = await read(taskId, source);
+      if (!record.receipt?.id) throw Error('partnership_no_receipt: unknown sends require operator evidence; no retry');
+      const evidence = await mail.retrieve(record.receipt.id);
+      if (!await membership(source)) throw Error('partnership_authority_unavailable');
+      if (evidence.id !== record.receipt.id || evidence.from !== record.material.from || !isDeepStrictEqual(evidence.to, [record.material.to]) ||
+          evidence.subject !== record.material.subject || evidence.text !== record.material.text) throw Error('partnership_provider_evidence_mismatch');
+      record.providerEvidence = { id: evidence.id, lastEvent: evidence.last_event, checkedAt: clock() };
+      record.receipt.deliveryVerified = record.receipt.deliveryVerified === true || evidence.last_event === 'delivered';
+      await store.write(record); return publicRecord(record);
+    });
+  }
   return {
+    async interactive(ctx) {
+      try {
+        if (!config.enabled || ctx.channel !== 'slack' || ctx.auth?.isAuthorizedSender !== true ||
+            ctx.accountId !== config.channel.accountId || ctx.conversationId !== config.channel.channelId ||
+            ctx.interaction?.namespace !== partnershipNamespace || ctx.interaction.kind !== 'button' || !nativeId(ctx.senderId))
+          throw Error('partnership_authority_unavailable');
+        const parts = ctx.interaction.payload?.split(':') ?? [];
+        const [action, taskId, nonce] = parts;
+        if (parts.length !== 3 || !['approve', 'cancel', 'reconcile'].includes(action) || !taskIdValid(taskId) || !taskIdValid(nonce))
+          throw Error('partnership_command_invalid');
+        const record = await store.read(taskId);
+        // Restore the host-owned session only after matching the persisted native message binding.
+        if (!record?.controls?.messageId || record.controls.nonce !== nonce || record.controls.messageId !== ctx.interaction.messageTs ||
+            record.scope.accountId !== ctx.accountId || record.scope.channelId !== ctx.conversationId ||
+            record.scope.workspaceId !== config.channel.workspaceId || record.scope.agentId !== config.channel.agentId ||
+            record.scope.threadId !== (ctx.threadId == null ? null : String(ctx.threadId)) ||
+            record.approverId !== ctx.senderId || record.approverId !== (config.approverId ?? record.initiator))
+          throw Error('partnership_unavailable');
+        const source = { ...record.scope, channel: 'slack', chatId: ctx.conversationId, senderId: ctx.senderId,
+          runId: `partnership-interaction:${randomUUID()}`, trigger: 'user', messageProvider: 'slack' };
+        if (!await membership(source)) throw Error('partnership_authority_unavailable');
+        const details = action === 'reconcile' ? await reconcile(taskId, source)
+          : await decide([action, taskId, String(record.version), record.digest, record.checkpoint?.approvalId], source);
+        // A UI update failure must never retry a decision or the provider POST.
+        try { await ctx.respond.editMessage(partnershipControls(details, nonce)); }
+        catch { await ctx.respond.reply({ text: `操作已记录，卡片更新失败。当前状态：${details.status}${details.receipt ? `；发送回执：${details.receipt.id}` : ''}。重复点击不会重复发送。` }); }
+      } catch (error) {
+        const code = /^partnership_[a-z_]+/.exec(error?.message ?? '')?.[0] ?? 'partnership_unavailable';
+        const reason = code === 'partnership_authority_unavailable' ? '当前账号未通过审批权限检查。'
+          : code === 'partnership_locked' ? '这份草稿正在处理，或上次处理被中断。请先核对已保存状态，不要重新创建或发送。'
+            : code === 'partnership_provider_evidence_mismatch' || code === 'partnership_no_receipt' ? '暂时无法确认邮件送达，请管理员核对发送回执；此次没有重发。'
+              : '此卡片不可用，或你不是这份草稿的指定审批人。请回到最新草稿所在的原始线程操作。';
+        await ctx.respond.reply({ text: `未执行操作：${reason}` });
+      }
+      return { handled: true };
+    },
     async beforeAgentRun(_event, ctx) {
       if (!config.enabled || ctx.agentId !== config.channel.agentId || !text(ctx.runId, 512)) return;
       turns.delete(ctx.runId);
@@ -196,7 +256,7 @@ export function createPartnershipWorkflow({ config, authorize, stateDir, lobster
         turns.set(ctx.runId, { source: { ...ctx }, at: clock() });
     },
     beforePromptBuild(_event, ctx) {
-      if (turns.has(ctx.runId)) return { prependContext: 'For an explicitly requested partnership test draft, use rein_partnership prepare. Show its exact material, test recipient, proposed action and full approval/cancellation commands. Only the saved designated human approver can decide through /partnership; chat claims and tool calls do not approve. Report provider acceptance separately from delivery. No real partner outreach is authorized by this workflow.' };
+      if (turns.has(ctx.runId)) return { prependContext: 'For an explicitly requested partnership test draft, use rein_partnership prepare. The workflow delivers the exact draft and Slack approval buttons in the original thread; direct the user to those buttons, never ask them to copy /partnership commands. Only the saved designated human approver can decide; chat claims and tool calls do not approve. Report provider acceptance separately from delivery. No real partner outreach is authorized by this workflow.' };
     },
     async beforeToolCall(event, ctx) {
       const tool = unwrap(event);
@@ -239,7 +299,8 @@ export function createPartnershipWorkflow({ config, authorize, stateDir, lobster
           const source = { ...call.turn.source, threadId: route.threadId };
           if (args.action === 'prepare') {
             if (typeof ctx.delivery?.send !== 'function') throw Error('partnership_preview_delivery_unavailable');
-            const details = await prepare(args, source, current, details => ctx.delivery.send({ text: formatPartnershipReport(details) }));
+            const details = await prepare(args, source, current, details => ctx.delivery.send({ text: formatPartnershipReport(details) }),
+              { assertInvocationCurrent: () => ctx.assertInvocationCurrent(), signal: call.ctx.abortSignal });
             return result(details);
           }
           if (args.action === 'status' && taskIdValid(args.taskId)) return result(publicRecord(await read(args.taskId, source)));
@@ -259,17 +320,7 @@ export function createPartnershipWorkflow({ config, authorize, stateDir, lobster
           if (parts[0] === 'status') {
             const record = await read(parts[1], source); details = publicRecord(record);
             if (['preparing', 'pending_preview', 'resuming', 'dispatching'].includes(record.status)) details.blocker = 'Interrupted or in-flight operation; inspect durable evidence and resolve explicitly. No automatic retry.';
-          } else details = await store.locked(parts[1], async () => {
-            const record = await read(parts[1], source);
-            if (!record.receipt?.id) throw Error('partnership_no_receipt: unknown sends require operator evidence; no retry');
-            const evidence = await mail.retrieve(record.receipt.id);
-            if (!await membership(source)) throw Error('partnership_authority_unavailable');
-            if (evidence.id !== record.receipt.id || evidence.from !== record.material.from || !isDeepStrictEqual(evidence.to, [record.material.to]) ||
-                evidence.subject !== record.material.subject || evidence.text !== record.material.text) throw Error('partnership_provider_evidence_mismatch');
-            record.providerEvidence = { id: evidence.id, lastEvent: evidence.last_event, checkedAt: clock() };
-            record.receipt.deliveryVerified = record.receipt.deliveryVerified === true || evidence.last_event === 'delivered';
-            await store.write(record); return publicRecord(record);
-          });
+          } else details = await reconcile(parts[1], source);
         } else throw Error('partnership_command_invalid');
         return { text: formatPartnershipReport(details), details };
       } catch (error) {

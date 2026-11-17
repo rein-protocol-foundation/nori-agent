@@ -78,14 +78,27 @@ an operator can configure a fixed approver. Allowing an address in this configur
 test-recipient capability only; a real send still needs the exact current human approval.
 
 The preparation result shows the exact sender, recipient, subject, full body, version, expiry and
-approval commands. Material changes create a new version and invalidate the old decision.
-In Slack, these are OpenClaw text commands, not registered Slack app slash commands. Reply in
-the original thread with one leading space before `/partnership` so Slack submits a message.
-Send only the exact command; connector-added attribution or signatures cause strict argument
-validation to reject it. This applies to approve, cancel, status and reconcile alike.
-`/partnership status <task-id>` reads the current record in its original authorized scope.
-`/partnership reconcile <task-id>` retrieves provider evidence for an existing receipt; it does
-not send. API acceptance is distinct from verified delivery.
+approver in the originating thread, then posts a native Slack card with **批准并发送测试邮件**
+and **取消**. After approval, the card shows the provider receipt and **刷新送达状态**.
+Users do not type slash commands, digests or leading spaces. Material changes create a new
+version and invalidate the old card. Button decisions bypass the model through the public
+`registerInteractiveHandler` API. Cards use the public native Slack outbound adapter; no
+replacement channel, raw Slack sender or vendored runtime patch is introduced.
+
+The private ledger binds each card's random nonce and accepted Slack message ID to its saved
+version/checkpoint, account, workspace, channel, thread and designated approver. Callbacks must
+pass native command authorization and fresh private-channel membership checks. The saved
+session is restored only after checking that binding. Missing/failed card delivery blocks the
+draft; old, forged and foreign-scope clicks cannot authorize sending. Restart preserves the
+binding. A durable send claim still precedes the only provider POST. Failure to update a card
+cannot retry a send. Read-only refresh checks the exact original material against provider data;
+API acceptance remains distinct from provider-confirmed delivery and from reading.
+
+Legacy `/partnership` text commands remain available for existing drafts and operator recovery.
+They are not Slack app slash commands: when necessary, submit the exact command as plain text
+with a leading space and no connector attribution. They are no longer the primary user flow.
+`/partnership status <task-id>` reads the saved state; `/partnership reconcile <task-id>` checks
+an existing receipt without sending. Existing durable checkpoints require no migration.
 
 Private action bindings and native checkpoints live below the profile state directory, outside
 shared workspace skills. Back up that directory together with its `lobster` child before an

@@ -1,5 +1,24 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-16 — Native Slack buttons for partnership test mail
+
+SA-M3-01–05 / #59; owner Codex; PR #99. **IMPLEMENTED / LOCAL VERIFIED; button deployment
+and real-user acceptance pending.** The leading-space command workaround is superseded by
+native “批准并发送测试邮件”, “取消” and “刷新送达状态” buttons. Full draft preview remains in
+the original thread. The plugin uses public native outbound and interactive registration APIs,
+with persisted nonce/message/scope binding, current host authorization and membership checks.
+Legacy commands and stored checkpoints remain compatible; no vendor changes or state migration.
+
+Verification: 27 focused tests pass; full suite 1414 passed / 4 conditional skips / 0 failures.
+The initial full-suite attempt in the incomplete worktree failed on missing dependencies; an
+isolated verification copy with existing local dependencies passes without changing other worktrees. Real pinned loader/Gateway fixture `nori-partnership-6zW9cY`
+passes distinct-process preparation/button approval/legacy command checks; seven button actions
+produce POST deltas `[0, 0, 1, 0, 0, 0, 0]`, with zero model calls for decisions and one exact
+synthetic email. It also verifies cancellation, duplicate no-op and delivered reconciliation.
+Slack/provider transport remains synthetic. The earlier real command-based delivery evidence
+below does not establish button usability. Next: updated PR CI/review, authorized deployment,
+then actual Slack card/approval/test-recipient delivery verification. No milestone expansion.
+
 ## 2026-11-16 — Partnership production activation and Slack command identity
 
 SA-M3-01–05 / #59; owner Codex. User authorized production integration and one real test
