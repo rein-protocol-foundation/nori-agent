@@ -104,3 +104,29 @@ test('transitional Discord configuration retains original database owner, gatewa
   assert.equal(result.config.bindings[0].session.dmScope, 'per-account-channel-peer');
   assert.equal(result.config.memory?.search?.extraPaths, undefined);
 });
+
+
+test('shared Dashboard candidate uses the existing main route and preserves auth and agent identity', () => {
+  const input = fixture();
+  input.internal.gateway = { port: 18791, controlUi: { basePath: '/slack' } };
+  input.internal.agents.entries.main.name = 'Nori · Slack 主助手';
+  input.internal.agents.entries.main.identity = { name: 'Nori · Slack 主助手', avatar: 'avatars/nori.png' };
+  input.dashboardConfig = { hostname: 'example.test', keyHash: 'a'.repeat(64), user: 'owner',
+    port: 3440, routerPort: 3431, instances: [
+      { id: 'discord', label: 'Discord', basePath: '/discord', port: 18793 },
+      { id: 'slack', label: 'Slack', basePath: '/slack', port: 18791 },
+    ] };
+  const before = structuredClone(input);
+  const result = configureCommunityGateway(input);
+  assert.deepEqual(input, before);
+  assert.deepEqual(result.dashboardConfig, { ...before.dashboardConfig,
+    instances: [{ ...before.dashboardConfig.instances[1], label: 'Nori' }] });
+  assert.equal(result.config.agents.entries.main.name, 'Nori · 主助手');
+  assert.deepEqual(result.config.agents.entries.main.identity,
+    { name: 'Nori · 主助手', avatar: 'avatars/nori.png' });
+  assert.deepEqual(result.config.gateway, before.internal.gateway);
+  assert.deepEqual(result.config.agents.entries.development.tools, before.internal.agents.entries.development.tools);
+  assert.equal(result.activationReady, false);
+  input.internal.gateway.controlUi.basePath = '/wrong';
+  assert.throws(() => configureCommunityGateway(input), /dashboard_target_mismatch/);
+});

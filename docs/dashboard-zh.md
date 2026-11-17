@@ -4,10 +4,27 @@
 
 项目仓库：[rein-protocol-foundation/nori-agent](https://github.com/rein-protocol-foundation/nori-agent)。下文说明管理入口实现和自托管配置。
 
-首页 `/apps` 只有 OpenClaw 与 Magpie 两个主卡片。OpenClaw 卡片列出部署配置中的所有实例，
-默认示例为 Slack 和 Discord；每个入口打开对应实例的原生 Control UI。`/dashboard?instance=discord`
+首页 `/apps` 只有 Nori 与 Magpie 两个主卡片。配置仅有一个 Gateway 时，Nori 卡片只显示
+“打开 Nori”，在同一原生 Control UI 管理智能体、渠道消息与网页对话。迁移前配置仍有多个
+实例时，继续列出各实例入口；当前双实例示例为 Slack 和 Discord。`/dashboard?instance=discord`
 解析为配置中的原生 basePath，未知实例回到第一个实例。Magpie 卡片进入 `/?view=rein-router`，
 Provider 管理继续使用原生 Magpie 页。
+
+## 合并 Gateway 后的界面
+
+`configureCommunityGateway` 可接收现有私有 `dashboardConfig`，生成只含主 Gateway 的候选
+Dashboard 配置。它要求端口和 `gateway.controlUi.basePath` 同时匹配，保留该路由、管理身份、
+登录密钥哈希和其他入口设置，避免误连旧 Discord 实例。候选配置不会写盘或部署。
+主助手的原生 `name` / `identity.name` 更新为“Nori · 主助手”，头像、agent ID、
+工具和历史保持原位；Community、开发沙箱和编程执行器继续按各自角色展示。
+Slack / Discord 仍是渠道名称，可出现在会话来源和渠道设置中，不再是两个管理入口。
+
+在共享 Gateway 真正完成切换后才应用单入口配置。保留现有 `sessions.json` 和认证设置，
+不要为改显示名称重建 Slack 状态或目录。内部原生路径可继续为 `/slack`，用户按钮只指向
+`/dashboard`；旧 `/dashboard?instance=discord` 选择链接会回到唯一 Gateway。旧 `/discord/`
+原生深链接需在切换时更新书签，当前改动不承诺跨实例深链接或会话 ID 重定向。
+回滚到独立服务时恢复原实例列表，页面自动恢复多入口。仍需真实验证登录、WebSocket、
+原生 Agents 列表、Slack 历史和两渠道收发；本地页面预览不等于迁移验收。
 
 ## 会话范围
 

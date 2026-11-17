@@ -1,4 +1,5 @@
 // Pure candidate builder. Activation, credential loading and history migration are separate.
+import { validateDashboardConfig } from './dashboard-server.mjs';
 import { configureCommunitySessionMemory } from './configure-community-session-memory.mjs';
 import { scopedGatewayKeyEnv } from '../plugins/rein-router/catalog-sync.mjs';
 import { validateRouterConfig } from '../plugins/rein-router/policy.mjs';
@@ -12,7 +13,7 @@ const credentialFields = ['backendApiBaseUrlEnvVar', 'agentCallerIdEnvVar',
   'agentCredentialEnvVar', 'proposalConfirmationKeyEnvVar'];
 
 export function configureCommunityGateway({ internal, discord, consoleSettings, workspace,
-  sandbox, dmUserIds, maxOutputTokens = 4096, requestTimeoutMs = 180000 }) {
+  sandbox, dmUserIds, dashboardConfig, maxOutputTokens = 4096, requestTimeoutMs = 180000 }) {
   const agentId = 'nori-community';
   if (!internal?.agents?.entries?.main || internal.agents.entries[agentId] ||
       internal.bindings?.some(b => b.match?.channel === 'discord')) fail('baseline_invalid');
@@ -85,13 +86,28 @@ export function configureCommunityGateway({ internal, discord, consoleSettings, 
   if (!settings || settings.policy?.general?.model !== general.gatewayModel || settings.enabled !== true)
     fail('console_baseline_invalid');
   settings.scopedPolicies = { ...settings.scopedPolicies, [agentId]: policy };
+  // Native display metadata only: keep main's ID, workspace, history and capabilities.
+  cfg.agents.entries.main.name = 'Nori · 主助手';
+  cfg.agents.entries.main.identity = { ...cfg.agents.entries.main.identity, name: 'Nori · 主助手' };
   const config = configureCommunitySessionMemory(cfg, { previousConfig: prior });
+  let dashboard;
+  if (dashboardConfig !== undefined) {
+    const source = validateDashboardConfig(structuredClone(dashboardConfig));
+    const matches = source.instances.filter(instance => instance.port === config.gateway?.port &&
+      instance.basePath === config.gateway?.controlUi?.basePath);
+    if (matches.length !== 1) fail('dashboard_target_mismatch');
+    // Reuse the internal Gateway route and auth settings; never merge session stores here.
+    dashboard = { ...source, instances: [{ ...matches[0], label: 'Nori' }] };
+  }
   assertRuntimeConfig(validateRouterConfig(router), config);
   return { config, consoleSettings: settings, environmentMapping,
+    ...(dashboard ? { dashboardConfig: dashboard } : {}),
     // Native console synchronization creates/reuses the singleton key and publishes gateway.env.
     singletonKeyEnvironment: general.gatewayKeyEnvVar, activationReady: false,
     activationRequirements: ['Verify public workspace and its ancestors are immutable to the Gateway service identity.',
       'Verify read-only bootstrap provisioning without changing the main agent bootstrap defaults.',
       'Load distinct backend credentials and confirm native singleton model-key synchronization.',
-      'Complete lossless history migration, stopped-service backup, single-consumer cutover and real channel acceptance.'] };
+      'Back up local files, preserve all Slack data and prepare the owner-approved fresh Discord state cutover.',
+      'Switch the Dashboard to the verified shared Gateway and verify native role names, login, WebSocket and retained Slack sessions.',
+      'Complete single-consumer cutover and real channel acceptance.'] };
 }

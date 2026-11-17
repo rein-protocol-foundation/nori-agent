@@ -5,6 +5,8 @@
 > history/data while preserving local files where feasible. All Slack data must be preserved.
 > Lossless Discord history import is no longer a gate. Fresh Discord state still needs implementation
 > and shared-topology verification; this scope change performs no deletion, cutover or acceptance.
+> After consolidation, Admin Dashboard must expose one Nori entry, with a channel-neutral main
+> display name; Slack/Discord remain channel labels within native sessions and settings.
 
 > **November 16 Community migration scope:** The owner explicitly confirms DeepSeek v4.1
 > Flash-first. Qwen-first, attachment delivery and thread-reply delivery are not gates for this

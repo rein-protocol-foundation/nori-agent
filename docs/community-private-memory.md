@@ -135,3 +135,12 @@ and revalidate isolation and real-channel behavior in the shared topology.
 For now, retain the isolated standalone Discord service and BLOCKED migration status as requested.
 The owner authorized pushing this branch and creating a draft PR, with no merge. No vendor edits,
 production deletions, migration, or new acceptance claims are part of that publishing step.
+
+
+## Unified Admin Dashboard acceptance
+
+After the shared cutover, the owner requires one Nori management entry rather than Slack/Discord
+entry buttons. The single-instance landing page and optional matched Dashboard configuration output
+are implemented; main uses native “Nori · 主助手” display metadata. This is a presentation change,
+not an agent-ID rename or history merge. Keep split navigation until the topology actually changes.
+See [Dashboard configuration and checks](dashboard-zh.md). Live shared acceptance remains pending.

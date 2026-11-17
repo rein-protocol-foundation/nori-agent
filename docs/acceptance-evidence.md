@@ -1,5 +1,23 @@
 # Acceptance evidence
 
+## 2026-11-17 — Shared Gateway Dashboard entry prepared
+
+SA-M0 / #57; owner Codex; **implemented locally, not deployed**. The owner requires one Admin
+Dashboard entry after Gateway consolidation. The landing page now shows one “打开 Nori” action
+for a single configured Gateway and retains instance navigation for split deployments. The shared
+candidate optionally generates a Dashboard config matched to the retained main port/basePath,
+preserving authentication settings; native main display metadata becomes “Nori · 主助手”. Agent IDs,
+Slack state, other agent capabilities and vendor source are unchanged. Channel labels remain useful
+inside native sessions/settings; they are not separate management entrypoints.
+
+Validation: 10 focused Dashboard/candidate tests pass, including login, persistent cookie restart,
+proxy identity, WebSocket revocation and split/single navigation. Desktop/mobile synthetic previews
+pass with one action and no mobile horizontal overflow. An initial test incorrectly expected unknown
+paths to return 404; the existing Router fallback is outside this change, and that assertion was
+removed. Shared live UI/channel acceptance is pending the blocked migration; no milestone advances.
+Next: apply the candidate only with the actual shared cutover, then verify native Agents, WebSocket
+and all retained Slack data. [Configuration and recovery](dashboard-zh.md).
+
 ## 2026-11-17 — Discord retention exception; draft PR publication authorized
 
 SA-M0 private-memory boundary / #57; owner Codex; scope decision: project owner.
