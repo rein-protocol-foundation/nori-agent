@@ -57,6 +57,15 @@ test('unknown agents, swapped platforms/accounts, and missing authority expose n
   }
 });
 
+test('Community-first ordering retains exactly one set of internal reply guards', () => {
+  const p = profiles();
+  const loaded = register({ 'nori-community': p['nori-community'], main: p.main,
+    'director-control': structuredClone(p.main) });
+  assert.equal(loaded.hooks.filter(([name]) => name === 'reply_payload_sending').length, 3);
+  assert.ok(loaded.create(context('main', 'slack')).some(tool => tool.name === 'rein_poll_vote'));
+  assert.equal(register({ 'nori-community': p['nori-community'] }).hooks.length, 0);
+});
+
 test('retained tools recheck current authority and cannot change their selected profile', async () => {
   const loaded = register();
   const ctx = context();
@@ -121,4 +130,21 @@ test('backend relay and operation use the selected caller; model arguments canno
       assert.equal(calls.some(call => !call.url.endsWith('/api/ingress/relay')), false);
     }
   } finally { globalThis.fetch = originalFetch; }
+});
+
+
+test('Community query-only profile needs neither governance channels nor a signing key', async () => {
+  const p = profiles();
+  const db = p['nori-community'].foundationDb;
+  db.platform = 'discord'; db.proposalChannelIds = []; db.boardChannelIds = [];
+  delete db.proposalConfirmationKeyEnvVar;
+  const loaded = register(p);
+  const tools = loaded.create(context());
+  assert.ok(tools.some(tool => tool.name === 'rein_resources_search'));
+  assert.ok(tools.some(tool => tool.name === 'rein_identity_bind_start'));
+  assert.ok(!tools.some(tool => /proposal|poll|funds/.test(tool.name)));
+  const status = await tools.find(tool => tool.name === 'rein_status').execute('fixture', {});
+  assert.equal(status.details.foundationDbWriteToolsEnabled, false);
+  p.main.foundationDb.proposalChannelIds = [];
+  assert.throws(() => register(p), /proposalChannelIds/);
 });

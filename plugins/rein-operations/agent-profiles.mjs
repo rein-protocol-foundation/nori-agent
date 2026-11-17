@@ -43,16 +43,17 @@ export function registerAgentProfiles(api, registerLegacy) {
     profiles.push({ agentId, ...profile, registrations: [] });
   }
   const hooks = [];
+  const hookOwner = profiles.find(profile => profile.capabilities === 'internal');
   for (const profile of profiles) {
     registerLegacy({ ...api, pluginConfig: { foundationDb: profile.foundationDb },
-      on: profile === profiles[0] && typeof api.on === 'function'
+      on: profile === hookOwner && typeof api.on === 'function'
         ? (...args) => hooks.push(args) : undefined,
       registerTool(registration, options) {
         const names = options?.names ?? [registration.name];
         const admitted = names.filter(name => profile.capabilities === 'internal' || COMMUNITY_TOOLS.has(name));
         if (admitted.length) profile.registrations.push({ registration, names: admitted });
       },
-    });
+    }, { communityOnly: profile.capabilities === 'community' });
   }
   const names = [...new Set(profiles.flatMap(profile => profile.registrations.flatMap(item => item.names)))];
   api.registerTool({ contextVersion: 2, create(ctx) {

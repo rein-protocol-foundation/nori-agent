@@ -30,7 +30,13 @@ export function configureCommunityGateway({ internal, discord, consoleSettings, 
       Object.keys(discordOperations.config ?? {}).some(k => k !== 'foundationDb')) fail('operations_baseline_invalid');
   const mainDb = mainOperations.config.foundationDb;
   const communityDb = structuredClone(discordOperations.config.foundationDb);
-  if (communityDb) communityDb.workspaces = communityDb.workspaces?.filter(w => w.platform === 'discord');
+  if (communityDb) {
+    communityDb.workspaces = communityDb.workspaces?.filter(w => w.platform === 'discord');
+    communityDb.platform = 'discord';
+    communityDb.proposalChannelIds = []; communityDb.boardChannelIds = [];
+    delete communityDb.proposalConfirmationKeyEnvVar;
+    delete communityDb.voteTypeAliases;
+  }
   if (mainDb?.enabled !== true || communityDb?.enabled !== true ||
       !communityDb.workspaces?.length ||
       mainDb.workspaces?.some(w => w.platform !== 'slack')) fail('backend_scope_invalid');

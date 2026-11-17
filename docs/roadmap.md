@@ -1,5 +1,21 @@
 # Nori-Agent implementation roadmap
 
+## 2026-11-17 — Shared Gateway cutover resumed
+
+SA-M0 / #57; owner Codex. The owner lifted the migration hold and authorized deployment,
+restarts and real Slack/Discord acceptance. The other deployment chat released its window.
+All Slack state/capabilities must remain; Community starts with a fresh agent database while
+retaining the old Discord profile and local files for recovery. PR #101 is deployed, but its
+single-entry UI still requires the actual topology/configuration cutover.
+
+Native rehearsal exposed legacy Slack governance fields in the standalone Discord backend config.
+The candidate now creates a Discord-only query/identity profile without governance channels or
+signing-key dependency. Community registration skips governance initialization; internal profiles
+retain strict validation and existing tool registration. Focused profile/config/router tests:
+18 passed; scaffold and native candidate schema validation passed. Live cutover and acceptance
+remain pending; this entry does not claim production completion. Next: reviewed source delivery,
+locked backup/cutover, data-preservation checks and actual channel/Dashboard verification.
+
 ## NORI-SEO-DATA — November 17, 2026
 
 Owner: Codex. **LIVE CONNECTED / SCHEDULED; both native rehearsals verified.**

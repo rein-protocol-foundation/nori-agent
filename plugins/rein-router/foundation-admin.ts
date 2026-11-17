@@ -7,8 +7,9 @@ const nativeId = (value: unknown): value is string => typeof value === 'string' 
 const runField = (value: unknown): value is string => typeof value === 'string' && value.length > 0 && value.length <= 1024;
 
 /** Reuse Foundation's enrolled relay and signed identity resolution. No model-supplied actor. */
-export function createFoundationAdminAuthorizer({ config, env = process.env, transport, now = Date.now }: {
+export function createFoundationAdminAuthorizer({ config, env = process.env, transport, now = Date.now, communityOnly = false }: {
   config?: unknown;
+  communityOnly?: boolean;
   env?: Record<string, string | undefined>;
   transport?: BackendTransport;
   now?: () => number;
@@ -16,7 +17,7 @@ export function createFoundationAdminAuthorizer({ config, env = process.env, tra
   let resolved: ReturnType<typeof parseBackendConfig>;
   let backend: BackendTransport;
   try {
-    resolved = parseBackendConfig({ config, env, error: () => { throw new Error('router_identity_config_invalid'); } });
+    resolved = parseBackendConfig({ config, env, allowEmptyGovernanceChannels: communityOnly, error: () => { throw new Error('router_identity_config_invalid'); } });
     if (!resolved) return async () => false;
     backend = transport ?? createBackendTransport({ baseUrl: resolved.baseUrl, callerId: resolved.callerId,
       credential: resolved.credential, timeoutMs: 3000 });
@@ -80,7 +81,7 @@ export function createProfileAdminAuthorizer({ operationsConfig, env = process.e
   const profiles = Object.entries(operationsConfig.agentProfiles ?? {}).map(([agentId, raw]) => {
     const profile = raw as any;
     return { agentId, platform: profile?.platform, accountId: profile?.accountId,
-      check: createFoundationAdminAuthorizer({ config: profile?.foundationDb, env,
+      check: createFoundationAdminAuthorizer({ config: profile?.foundationDb, env, communityOnly: profile?.capabilities === 'community',
         transport: transportForProfile?.(agentId) }) };
   });
   return async (ctx: any): Promise<boolean> => {
