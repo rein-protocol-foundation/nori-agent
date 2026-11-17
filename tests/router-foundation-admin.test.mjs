@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createFoundationAdminAuthorizer } from '../plugins/rein-router/foundation-admin.ts';
+import { createFoundationAdminAuthorizer, createProfileAdminAuthorizer } from '../plugins/rein-router/foundation-admin.ts';
 
 const config = { enabled: true, workspaces: [{ platform: 'slack', workspaceId: 'T_FIXTURE', nativeChannelIds: ['C_FIXTURE'] }],
   proposalChannelIds: ['C_FIXTURE'], boardChannelIds: ['C_FIXTURE'], backendApiBaseUrlEnvVar: 'TEST_BACKEND_URL',
@@ -11,6 +11,32 @@ const context = { runId: 'run-one', agentId: 'main', sessionKey: 'agent:main:sla
   trigger: 'user', inputProvenance: { kind: 'external_user' } };
 const success = body => ({ ok: true, httpStatus: 200, body });
 const member = extra => ({ ok: true, status: 'resolved', contact_id: 'PRIVATE_CONTACT_CANARY', is_administrator: true, ...extra });
+
+test('shared Gateway keeps main authority and selects only the matching agent/platform/account backend', async () => {
+  const calls = [];
+  const discordConfig = { ...config, workspaces: [{ platform: 'discord', workspaceId: 'G_FIXTURE', nativeChannelIds: ['D_FIXTURE'] }],
+    proposalChannelIds: ['D_FIXTURE'], boardChannelIds: ['D_FIXTURE'], agentCallerIdEnvVar: 'DISCORD_CALLER', agentCredentialEnvVar: 'DISCORD_CREDENTIAL' };
+  const transportForProfile = id => ({
+    relayIngress: async tuple => { calls.push({ id, tuple }); return success({ ok: true, assertion: `proof-${id}` }); },
+    resolveIdentity: async proof => { assert.equal(proof.assertion, `proof-${id}`); return success(member()); },
+  });
+  const check = createProfileAdminAuthorizer({ env: { ...env, DISCORD_CALLER: 'community', DISCORD_CREDENTIAL: 'SYNTHETIC_OTHER' },
+    operationsConfig: { agentProfiles: {
+      main: { platform: 'slack', accountId: 'default', foundationDb: config },
+      'nori-community': { platform: 'discord', accountId: 'default', foundationDb: discordConfig },
+    } }, transportForProfile });
+  assert.equal(await check(context), true);
+  const community = { ...context, agentId: 'nori-community', sessionKey: 'agent:nori-community:discord:channel:D_FIXTURE',
+    channel: 'discord', messageProvider: 'discord', chatId: 'D_FIXTURE' };
+  assert.equal(await check(community), true);
+  for (const patch of [{ agentId: 'unknown' }, { agentId: 'main' }, { accountId: 'other' }, { channel: 'slack' }])
+    assert.equal(await check({ ...community, ...patch }), false);
+  assert.deepEqual(calls.map(call => call.id), ['main', 'nori-community']);
+  const legacy = createProfileAdminAuthorizer({ operationsConfig: { foundationDb: config }, env, transportForProfile });
+  assert.equal(await legacy(context), true);
+  const noFallback = createProfileAdminAuthorizer({ operationsConfig: { agentProfiles: {}, foundationDb: config }, env, transportForProfile });
+  assert.equal(await noFallback(context), false);
+});
 
 test('Foundation admin proof is derived from trusted native ingress and checked anew for each request', async () => {
   const calls = [];

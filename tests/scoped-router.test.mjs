@@ -18,6 +18,31 @@ const config = () => ({ enabled: true, gateway: { baseUrl: 'http://127.0.0.1:342
 const ctx = (extra = {}) => ({ runId: 'run', agentId: 'nori-community', sessionId: 'session', sessionKey: 'agent:nori-community:discord:room',
   modelProviderId: 'rein-magpie', modelId: 'auto', channel: 'discord', accountId: 'default', chatId: 'ROOM', senderId: 'USER',
   trigger: 'user', inputProvenance: { kind: 'external_user' }, ...extra });
+
+test('opt-in Discord DMs require the host account and exact sender-scoped native key', () => {
+  const raw = config(); raw.scopedPolicies['nori-community'].origins[0].directMessages = true;
+  const policies = validateRouterConfig(raw).scopedPolicies;
+  const senderId = '100000000000000003', chatId = '100000000000000007';
+  const dm = ctx({ senderId, chatId, sessionKey: `agent:nori-community:discord:default:direct:${senderId}` });
+  assert.equal(resolveScopedPolicy(policies, dm).primary, 'b');
+  for (const delta of [{ senderId: '100000000000000004' }, { accountId: 'other' },
+    { sessionKey: 'agent:nori-community:discord:channel:100000000000000007' },
+    { sessionKey: 'agent:nori-community:main' }, { chatId: 'ROOM_ALIAS' },
+    { channel: 'slack' }, { trigger: 'cron' }, { inputProvenance: { kind: 'inter_session' } }])
+    assert.equal(resolveScopedPolicy(policies, { ...dm, ...delta }), null);
+  assert.equal(resolveScopedPolicy(validateRouterConfig(config()).scopedPolicies, dm), null);
+  const duplicate = structuredClone(raw);
+  duplicate.scopedPolicies['nori-community'].origins.push({ platform: 'discord', accountId: 'default',
+    workspaceId: 'SECOND', channelIds: ['SECOND_ROOM'], directMessages: true });
+  assert.throws(() => validateRouterConfig(duplicate), /scoped_policy_invalid/);
+  const host = { ...buildOpenClawFragment(raw, '/fixture/plugin'), agents: { entries: { 'nori-community': {
+    model: { primary: 'rein-magpie/auto', fallbacks: [] },
+  } } }, bindings: [{ agentId: 'nori-community', match: { channel: 'discord', accountId: 'default' },
+    session: { dmScope: 'per-account-channel-peer' } }] };
+  assert.doesNotThrow(() => assertRuntimeConfig(validateRouterConfig(raw), host));
+  assert.throws(() => assertRuntimeConfig(validateRouterConfig(raw), { ...host, bindings: [] }), /direct messages/);
+  assert.throws(() => assertRuntimeConfig(validateRouterConfig(raw), { ...host, session: { identityLinks: { alice: ['discord:100000000000000003'] } } }), /direct messages/);
+});
 const model = id => ({ id, provider: 'rein-magpie', baseUrl: 'http://127.0.0.1:3425/v1', api: 'openai-completions', maxTokens: 2048 });
 const terminal = (status, content = []) => ({ role: 'assistant', content, api: 'openai-completions', provider: 'rein-magpie', model: 'fixture',
   stopReason: status ? 'error' : 'stop', ...(status ? { status, errorCode: String(status), errorMessage: `${status} fixture unavailable` } : {}),
@@ -35,6 +60,15 @@ const fixtureRouter = (raw = config(), overrides = {}) => createRouter({ config:
     const id = ['a', 'b', 'c'].find(id => new Headers(init.headers).get('Authorization') === `Bearer ${key(id)}`);
     return new Response(JSON.stringify({ data: [{ id: `fixture/${id}` }] }));
   }, ...overrides });
+
+test('static Gateway health works without a model lease while business and retired-run tools fail closed', async () => {
+  const r = fixtureRouter();
+  const external = { agentId: 'nori-community', sessionKey: 'agent:nori-community:main' };
+  assert.equal(await r.beforeToolCall({ toolName: 'rein_status' }, external), undefined);
+  for (const toolName of ['rein_resources_search', 'sessions_search', 'message', 'exec'])
+    assert.equal((await r.beforeToolCall({ toolName }, external)).block, true);
+  assert.equal((await r.beforeToolCall({ toolName: 'rein_status' }, { ...external, runId: 'retired' })).block, true);
+});
 
 test('channel > platform > agent preferences inherit each field; empty fallback stays empty', () => {
   const c = validateRouterConfig(config());

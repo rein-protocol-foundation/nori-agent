@@ -1,5 +1,71 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-17 — PR #101 integration review
+
+SA-M0 / #57; owner Codex. Resolved four documentation-only conflicts against `b2bab84`, retaining
+both tasks’ evidence. 39 focused integration regressions passed. Review found that standalone
+Community could retain global identity aliases despite sender-scoped DMs. The common memory
+configuration boundary now rejects nonempty aliases without modifying the input or internal aliases;
+8 focused configuration tests pass, covering standalone rejection and empty-map compatibility.
+CI and final merge verification are tracked on PR #101. Shared migration/deployment remains on hold.
+
+## 2026-11-17 — Shared Gateway Dashboard entry prepared
+
+SA-M0 / #57; owner Codex; **implemented locally, not deployed**. The owner requires one Admin
+Dashboard entry after Gateway consolidation. The landing page now shows one “打开 Nori” action
+for a single configured Gateway and retains instance navigation for split deployments. The shared
+candidate optionally generates a Dashboard config matched to the retained main port/basePath,
+preserving authentication settings; native main display metadata becomes “Nori · 主助手”. Agent IDs,
+Slack state, other agent capabilities and vendor source are unchanged. Channel labels remain useful
+inside native sessions/settings; they are not separate management entrypoints.
+
+Validation: 10 focused Dashboard/candidate tests pass, including login, persistent cookie restart,
+proxy identity, WebSocket revocation and split/single navigation. Desktop/mobile synthetic previews
+pass with one action and no mobile horizontal overflow. An initial test incorrectly expected unknown
+paths to return 404; the existing Router fallback is outside this change, and that assertion was
+removed. Shared live UI/channel acceptance is pending the blocked migration; no milestone advances.
+Next: apply the candidate only with the actual shared cutover, then verify native Agents, WebSocket
+and all retained Slack data. [Configuration and recovery](dashboard-zh.md).
+
+## 2026-11-17 — Discord retention exception; draft PR publication authorized
+
+SA-M0 private-memory boundary / #57; owner Codex; scope decision: project owner.
+Shared-Gateway migration remains **BLOCKED/on hold** as requested. The owner permits discarding
+Discord history/data when needed for consolidation, while preserving local files where feasible.
+**All Slack data must be preserved.** Lossless Discord history import is therefore no longer a
+mandatory gate; the November 16 SDK finding remains historical evidence, not a requirement to wait
+for upstream before considering fresh Discord state. The current planner remains read-only and
+shared activation remains disabled. Next, when migration resumes: prepare fresh Discord state,
+inventory/backup local files, prove Slack data preservation and revalidate the shared topology.
+
+This update authorizes branch push and a draft PR only, with no merge or production deletion/cutover.
+Documentation/scaffold and diff checks cover this scope update; prior runtime evidence and its
+limitations remain unchanged. No product milestone advances. See [current scope and evidence](community-private-memory.md).
+
+## 2026-11-16 — Private Community memory activated; shared history migration blocked
+
+SA-M0 private-memory boundary / #57; owner Codex. Deployed native owner/audience-scoped
+session memory and approved request limits to the existing Discord Gateway, retaining its `main`
+database owner. Root-owned public seed prevents unclassified history from writing into shared files;
+main Slack configuration and running processes were preserved. A narrow model-free `rein_status`
+health compatibility fix was deployed only in Discord's private router artifact; failed health cutovers
+automatically restored configuration without deleting history. Corrected the existing backend's
+308 bare-domain redirect to its canonical origin and rebuilt the native keyword index.
+
+Real Discord passed DM reset recall, restart + reset recall, public-scope negative lookup, recovered
+catalog retrieval and post-rebuild `memory_search`; real Slack executed the requested calculation
+and returned 1147. Original 5 windows / 388 transcript event identities remain present. 71 focused
+regressions passed; native memory and offline migration fixtures passed. An initial local regression
+attempt lacked localhost permission; rerunning with permitted loopback passed. Real two-human-account
+DM isolation and application-command reset remain unproven (text `/reset` passed); synthetic legacy
+rotated-window `memory_search` can remain stale, so native `sessions_search` is required continuity.
+
+Shared-Gateway migration remains **BLOCKED**: this OpenClaw pin exposes no supported lossless
+cross-agent raw-history import. No vendor patch, ownership rewrite or history deletion was performed.
+Configuration activation does not complete #57 or the wider product milestone. Next: upstream atomic
+raw history export/import seam; preserve current isolated topology and coordinate releases.
+See [implementation, evidence, limitations and recovery](community-private-memory.md).
+
 ## 2026-11-16 — Native Slack buttons for partnership test mail
 
 SA-M3-01–05 / #59; owner Codex; PR #99. **IMPLEMENTED / LOCAL VERIFIED; button deployment

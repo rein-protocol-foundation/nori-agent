@@ -77,6 +77,13 @@ export function assertRuntimeConfig(config, host) {
     const model = agent?.model ?? defaults;
     if (!agent || !usesRein(model) || JSON.stringify(model?.fallbacks ?? defaults?.fallbacks) !== '[]')
       throw new Error('rein_router_runtime_invalid: scoped agent requires explicit empty native fallbacks');
+    for (const origin of config.scopedPolicies[agentId].origins.filter(origin => origin.directMessages)) {
+      const bindings = (host.bindings ?? []).filter(binding => binding.agentId === agentId &&
+        binding.match?.channel === 'discord' && binding.match.accountId === origin.accountId);
+      if (!bindings.length || bindings.some(binding => binding.session?.dmScope !== 'per-account-channel-peer') ||
+          Object.keys(host.session?.identityLinks ?? {}).length)
+        throw new Error('rein_router_runtime_invalid: direct messages require sender-scoped native bindings without session aliases');
+    }
   }
   for (const entry of config.developmentChannels) {
     const agent = host.agents?.entries?.[entry.agentId] ?? host.agents?.list?.find(agent => agent.id === entry.agentId);
@@ -392,7 +399,11 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
       if (ctx.runId && runs.has(ctx.runId)) runs.get(ctx.runId).lastRoute = ctx.modelId;
       return { outcome: 'pass' };
     },
-    async beforeToolCall(_event, ctx) {
+    async beforeToolCall(event, ctx) {
+      // Authenticated Gateway health probes do not start a model run. This one
+      // static capability report reads no organization records and has no side effects.
+      // Calls inside a model run, including stale runs, still require their ledger lease.
+      if (!ctx.runId && event.toolName === 'rein_status') return;
       if (config.scopedPolicies?.[ctx.agentId]?.usageLimits) {
         const run = runs.get(ctx.runId);
         try {

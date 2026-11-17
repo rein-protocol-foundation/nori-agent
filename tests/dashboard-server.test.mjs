@@ -23,7 +23,7 @@ const ingress = {
   "X-Forwarded-Proto": "https",
 };
 const origin = `https://${config.hostname}`;
-async function fixture(t) {
+async function fixture(t, singleGateway = false) {
   const directory = await mkdtemp(join(tmpdir(), "rein-dashboard-"));
   const calls = [];
   const upstream = createServer((req, res) => {
@@ -52,6 +52,7 @@ async function fixture(t) {
       { id: "discord", label: "Discord", basePath: "/discord", port: upstreamPort },
     ],
   };
+  if (singleGateway) settings.instances = [{ ...settings.instances[0], label: "Nori" }];
   await writeFile(join(directory, "router-session.json"), JSON.stringify({ token }));
   let app = createDashboardServer({ config: settings, stateDirectory: directory });
   let port = await listen(app.server);
@@ -258,4 +259,24 @@ test("WebSocket requires a valid session and origin; logout closes upgraded conn
   });
   await f.send("/logout", { method: "POST", headers: { Cookie, Origin: origin } });
   await ended;
+});
+
+
+test("one Gateway exposes one Nori entry and keeps authenticated navigation across restart", async (t) => {
+  const f = await fixture(t, true);
+  assert.equal((await f.send('/dashboard')).status, 303);
+  const Cookie = (await f.login()).split(';')[0];
+  const html = await (await f.send('/apps', { headers: { Cookie } })).text();
+  assert.match(html, /打开 Nori/);
+  assert.match(html, /统一管理智能体、渠道消息与网页对话/);
+  assert.doesNotMatch(html, /instance=|>Slack|>Discord|{{/);
+  assert.equal((html.match(/class="panel /g) ?? []).length, 2);
+  assert.equal((await f.send('/dashboard', { headers: { Cookie } })).headers.get('location'), '/slack/');
+  // Old instance-selection bookmarks converge on the retained Gateway without rewriting its URL.
+  assert.equal((await f.send('/dashboard?instance=discord', { headers: { Cookie } })).headers.get('location'), '/slack/');
+  await f.restart();
+  const upstream = await f.send('/slack/', { headers: { Cookie } });
+  assert.equal(upstream.status, 200);
+  assert.equal(upstream.headers.get('x-frame-options'), 'DENY');
+  assert.equal(f.calls.at(-1).headers['x-nori-user'], 'nori-owner');
 });

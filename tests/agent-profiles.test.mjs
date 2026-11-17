@@ -79,6 +79,19 @@ test('invalid or shared authority is rejected before registering tools or hooks'
   assert.throws(() => register(profiles(), { foundationDb: backend('slack', 'MAIN') }), /foundation_agent_profiles_invalid/);
 });
 
+test('explicit internal profiles retain identical Slack authority without lending it to Community', () => {
+  const p = profiles(); p['director-control'] = structuredClone(p.main);
+  const loaded = register(p);
+  assert.ok(loaded.create(context('director-control', 'slack')).some(tool => tool.name === 'rein_poll_vote'));
+  assert.deepEqual(loaded.create(context('director-control', 'discord')), []);
+  for (const edit of [p => { p['director-control'].accountId = 'other'; },
+    p => { p['director-control'].foundationDb.workspaces[0].nativeChannelIds = ['OTHER']; },
+    p => { p['director-control'].foundationDb.agentCredentialEnvVar = 'M0_TEST_COMMUNITY_KEY'; }]) {
+    const changed = structuredClone(p); edit(changed);
+    assert.throws(() => register(changed), /foundation_agent_profiles_invalid/);
+  }
+});
+
 test('backend relay and operation use the selected caller; model arguments cannot choose one', async () => {
   const originalFetch = globalThis.fetch;
   const calls = [];
