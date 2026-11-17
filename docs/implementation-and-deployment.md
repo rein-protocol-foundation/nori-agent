@@ -2,7 +2,7 @@
 
 ## NORI-AI-NEWS bilingual and formatting correction — November 16, 2026
 
-Owner Codex. **LIVE VERIFIED; PR ROLLOUT PENDING**. User requests Chinese and English editions in the same
+Owner Codex. **LIVE VERIFIED**. User requests Chinese and English editions in the same
 Slack/Discord channels, without pagination and with concise local issuance timestamps.
 Original 14 Chinese messages corrected in place; original delivery ledgers retained.
 SchemaVersion 2 pairs both languages per event and preserves legacy receipt verification.
@@ -10,7 +10,10 @@ English supplements require exact original Chinese content/routes and complete r
 39 focused tests, scaffold, whitespace and 60 native fallback checks pass. Existing native
 jobs now use the bilingual prompt. All 20 English supplement receipts confirmed; repeated
 publication creates no duplicates. API readback matches all 34 messages; native clients show
-rendered cards and concise times. Next: PR/CI/rollout verification. [Runbook and evidence](ai-news.md). No unrelated milestone advanced.
+rendered cards and concise times. A native Nori preview-only run generated and validated
+two bilingual stories in 35 seconds, with no delivery; its disabled temporary job was removed.
+Merge/rollout evidence is tracked in [PR #100](https://github.com/rein-protocol-foundation/nori-agent/pull/100).
+The next scheduled bilingual run remains future evidence. [Runbook and evidence](ai-news.md). No unrelated milestone advanced.
 
 
 ## Indefinite summary copies and live task acceptance — November 16, 2026

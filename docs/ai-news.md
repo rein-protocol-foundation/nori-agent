@@ -238,6 +238,10 @@ English daily: [Slack](https://app.slack.com/archives/C0CHWFYNSRH/p1794881233249
 [Discord](https://discord.com/channels/1558049042494128219/1571846554145529887/1572070753170624533).
 English weekly: [Slack](https://app.slack.com/archives/C0CHWFYNSRH/p1794881150805549),
 [Discord](https://discord.com/channels/1558049042494128219/1571846554145529887/1572070406058156095).
-PR CI and merge-triggered rollout remain to be followed. The next clock-triggered
-bilingual edition has not run yet; November 16's original scheduled daily and weekly
+A disabled, isolated native Nori job also generated two bilingual stories from the same
+public snapshot and passed preview validation in 35 seconds. Its run reported `ok` and
+`lastDeliveryStatus=not-requested`; the temporary job was then removed. This is generation
+and rendering rehearsal, separate from the authorized real English supplements.
+Merge/rollout evidence is tracked in [PR #100](https://github.com/rein-protocol-foundation/nori-agent/pull/100).
+The next clock-triggered bilingual edition has not run yet; November 16's original scheduled daily and weekly
 suppression evidence above remain the clock-triggered acceptance evidence.
