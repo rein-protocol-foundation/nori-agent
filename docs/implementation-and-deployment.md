@@ -1,5 +1,17 @@
 # Nori-Agent development, verification and deployment record
 
+## NORI-SEO-DATA — November 17, 2026
+
+Owner: Codex. **LOCAL VERIFIED; live API access pending.** Add an optional
+native skill for private Google Search Console and Bing Webmaster collection. Google
+uses service-account read-only OAuth; Bing uses an account-wide API key with a fixed
+read-method allowlist in the collector. Console ownership is already verified but does
+not establish Nori API connectivity. Credentials, authenticated reads and native jobs
+remain pending the user's action-time confirmation. [Runbook](seo-data.md).
+Verification: 16 focused mocked-network tests, scaffold, whitespace and native workspace
+skill discovery pass. No live provider call was made. No product milestone advanced.
+Next: approved credential provisioning, live source/report checks and scheduler activation.
+
 ## 2026-11-17 — PR #101 integration review
 
 SA-M0 / #57; owner Codex. Resolved four documentation-only conflicts against `b2bab84`, retaining
