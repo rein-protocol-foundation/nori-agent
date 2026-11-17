@@ -1,6 +1,6 @@
 // Creation-time policy only. Native OpenClaw owns job execution, grants and self-cleanup.
 import { createAgentToAgentPolicy } from 'openclaw/plugin-sdk/session-visibility';
-import { resolveAgentRoute, normalizeAgentId } from 'openclaw/plugin-sdk/routing';
+import { resolveAgentRoute, normalizeAgentId, parseAgentSessionKey, parseThreadSessionSuffix } from 'openclaw/plugin-sdk/routing';
 import { developmentChannelFor } from './slack-development.mjs';
 
 const PREFIX = '[Nori creation v1 ';
@@ -14,10 +14,22 @@ const cleanDescription = value => (typeof value === 'string' ? value : '').split
   .filter(line => !line.trimStart().startsWith(PREFIX)).join('\n').trim();
 const existingStamp = job => typeof job?.description === 'string'
   ? job.description.split('\n').find(line => line.startsWith(PREFIX)) : undefined;
+function sameConversation(source, channelId) {
+  if (channelId === source.chatId || channelId === `channel:${source.chatId}`) return true;
+  // Compact native tools project the session's opaque conversation tail, including
+  // its thread suffix. This only corroborates the already observed trusted run;
+  // a session-key string never supplies requester identity or creation authority.
+  const { baseSessionKey, threadId } = parseThreadSessionSuffix(source.sessionKey);
+  const base = parseAgentSessionKey(baseSessionKey);
+  const chatId = source.chatId.toLowerCase();
+  if (base?.agentId !== source.agentId || base.rest !== `slack:channel:${chatId}`) return false;
+  if (threadId !== undefined && !/^\d+\.\d+$/.test(threadId)) return false;
+  return channelId === `${chatId}${threadId === undefined ? '' : `:thread:${threadId}`}`;
+}
 const sameRun = (source, ctx) => source && source.agentId === ctx.agentId && source.sessionKey === ctx.sessionKey &&
   source.sessionId === ctx.sessionId && source.senderId === ctx.requester?.senderId &&
   source.accountId === ctx.requester?.accountId && ctx.requester?.channel === 'slack' &&
-  (ctx.channelId === source.chatId || ctx.channelId === `channel:${source.chatId}`);
+  sameConversation(source, ctx.channelId);
 
 export function createCronIngress({ channels, authorize, readJobs, clock = Date.now, deadlineMs = 8500 }) {
   const sources = new Map();

@@ -64,7 +64,7 @@ export default definePluginEntry({ id: 'sa-ops-cron-fixture', name: 'SA-OPS nati
         ].entries()) {
           const runtime = ctx.channelRuntime, agentId = platform === 'slack' ? 'main' : 'public';
           const nativeChannelId = platform === 'slack' ? 'CFIXTURE1' : 'CFIXPUB1';
-          const sessionKey = `agent:${agentId}:${platform}:channel:${nativeChannelId.toLowerCase()}`;
+          const sessionKey = `agent:${agentId}:${platform}:channel:${nativeChannelId.toLowerCase()}${platform === 'slack' ? ':thread:1000.001' : ''}`;
           const messageId = `fixture-${i}`;
           const ingress = await runtime.inbound.ingress.resolveStable({ channelId: platform, accountId: 'default', cfg: ctx.cfg,
             identity: { key: 'sa-ops-user', entryIdPrefix: 'sa-ops' }, subject: { stableId: sender },
