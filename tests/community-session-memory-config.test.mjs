@@ -49,6 +49,7 @@ test('rejects configurations that would merge private files, widen visibility or
     cfg => { cfg.agents.defaults.sandbox = { sessionToolsVisibility: 'all' }; },
     cfg => { cfg.bindings.push({ agentId: 'main', match: { channel: 'discord' } }); },
     cfg => { cfg.plugins.slots = { memory: 'other' }; },
+    cfg => { cfg.session = { identityLinks: { shared: ['discord:100000000000000003', 'discord:100000000000000004'] } }; },
   ];
   for (const edit of edits) {
     const previousConfig = baseline(), cfg = candidate(previousConfig); edit(cfg);

@@ -103,6 +103,16 @@ test('transitional Discord configuration retains original database owner, gatewa
   assert.equal(result.config.bindings[0].agentId, 'main');
   assert.equal(result.config.bindings[0].session.dmScope, 'per-account-channel-peer');
   assert.equal(result.config.memory?.search?.extraPaths, undefined);
+  const aliased = structuredClone(original);
+  aliased.session = { identityLinks: { shared: ['discord:100000000000000003', 'discord:100000000000000004'] } };
+  const aliasedBefore = structuredClone(aliased);
+  assert.throws(() => configureExistingCommunity({ original: aliased, workspace: f.workspace,
+    sandbox: f.sandbox, dmUserIds: f.dmUserIds, dmChannelIds: ['100000000000000007'] }),
+    /session_aliases_incompatible/);
+  assert.deepEqual(aliased, aliasedBefore);
+  const unlinked = structuredClone(original); unlinked.session = { identityLinks: {} };
+  assert.equal(configureExistingCommunity({ original: unlinked, workspace: f.workspace,
+    sandbox: f.sandbox, dmUserIds: f.dmUserIds, dmChannelIds: ['100000000000000007'] }).activationReady, false);
 });
 
 

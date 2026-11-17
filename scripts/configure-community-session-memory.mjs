@@ -10,6 +10,9 @@ const remembered = (cfg, id) => cfg.agents?.entries?.[id]?.memory?.search?.remem
 
 export function configureCommunitySessionMemory(candidate, { previousConfig, agentId = 'nori-community' }) {
   if (!previousConfig?.agents?.entries || candidate.agents?.list) fail('explicit_agents_required');
+  // Global identity aliases can merge otherwise sender-scoped Discord DM keys.
+  // Refuse the candidate instead of silently deleting aliases used by internal agents.
+  if (Object.keys(candidate.session?.identityLinks ?? {}).length) fail('session_aliases_incompatible');
   const cfg = structuredClone(candidate);
   const community = cfg.agents?.entries?.[agentId];
   if (!community || !isAbsolute(community.workspace ?? '')) fail('public_workspace_required');

@@ -1,5 +1,14 @@
 # Nori-Agent implementation roadmap
 
+## 2026-11-17 — PR #101 integration review
+
+SA-M0 / #57; owner Codex. Resolved four documentation-only conflicts against `b2bab84`, retaining
+both tasks’ evidence. 39 focused integration regressions passed. Review found that standalone
+Community could retain global identity aliases despite sender-scoped DMs. The common memory
+configuration boundary now rejects nonempty aliases without modifying the input or internal aliases;
+8 focused configuration tests pass, covering standalone rejection and empty-map compatibility.
+CI and final merge verification are tracked on PR #101. Shared migration/deployment remains on hold.
+
 ## 2026-11-17 — Shared Gateway Dashboard entry prepared
 
 SA-M0 / #57; owner Codex; **implemented locally, not deployed**. The owner requires one Admin
