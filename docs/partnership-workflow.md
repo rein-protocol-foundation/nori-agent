@@ -68,8 +68,9 @@ config only for the selected trusted private Slack channel; add `rein-partnershi
 plugin allow list if present and `rein_partnership` to the selected agent's `tools.alsoAllow`.
 The selected internal agent must already have an authorized unsandboxed execution context.
 Do not turn off a public agent's sandbox to use this workflow. Grant only the conversation hook
-needed to inspect trusted host context. Preserve the native text-command policy and authorize
-the designated approver there; disabling text commands prevents approval.
+needed to inspect trusted host context. Preserve native command authorization and authorize
+the designated approver there; button callbacks use the same authorization policy. Text commands
+need to remain enabled only for the legacy operator command path.
 
 Supply the configured Slack bot and Resend credentials through private environment variables,
 never through prompts, tool arguments or committed JSON. Replace synthetic workspace/channel

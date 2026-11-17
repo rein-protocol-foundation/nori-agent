@@ -9,7 +9,9 @@ the original thread. The plugin uses public native outbound and interactive regi
 with persisted nonce/message/scope binding, current host authorization and membership checks.
 Legacy commands and stored checkpoints remain compatible; no vendor changes or state migration.
 
-Verification: 27 focused tests pass; full suite 1414 passed / 4 conditional skips / 0 failures.
+Verification: 27 focused tests pass; full suite after merging main: 1441 passed / 4 conditional skips / 0 failures.
+The pinned native Slack outbound adapter also preserves one exact card, action values and
+thread receipt with injected transport.
 The initial full-suite attempt in the incomplete worktree failed on missing dependencies; an
 isolated verification copy with existing local dependencies passes without changing other worktrees. Real pinned loader/Gateway fixture `nori-partnership-6zW9cY`
 passes distinct-process preparation/button approval/legacy command checks; seven button actions
