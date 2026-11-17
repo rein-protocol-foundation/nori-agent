@@ -2,7 +2,7 @@
 
 ## Development-channel Cron repair — November 17, 2026
 
-SA-OPS-01 / #66 follow-up; owner Codex. **LIVE ACCEPTANCE PASSED; SCHEMA FIX READY FOR RELEASE.**
+SA-OPS-01 / #66 follow-up; owner Codex. **LIVE ACCEPTANCE PASSED; SCHEMA DEFAULT REGRESSION CORRECTED.**
 PR #106 merged/deployed after seven green checks. Its thread compatibility fix alone did not
 resolve production: native schema defaults manufactured an empty trusted-channel list, and
 shared-Gateway A2A defaults allowed public-to-internal reachability. Explicit existing-channel
