@@ -1,7 +1,6 @@
 # Development-channel Cron repair — November 16, 2026
 
-SA-OPS-01 / #66 follow-up. Owner: Codex. **CONFIGURATION APPLIED; LIVE CREATION
-STILL BLOCKED; COMPATIBILITY PATCH LOCAL VERIFIED.** No product milestone advances.
+SA-OPS-01 / #66 follow-up. Owner: Codex. **LIVE CREATION, AUTOMATIC SANDBOX EXECUTION AND THREAD DELIVERY PASSED.** No product milestone advances.
 
 The operator authorized live configuration repair, preservation of sandbox isolation,
 and an actual Slack creation → clock-triggered execution → delivery acceptance test.
@@ -92,3 +91,71 @@ Next: release the now-authorized minimal Router source patch through the normal 
 deployment workflow; then repeat the real-channel test, inspect the native creation audit,
 wait for the scheduler without `cron.run`, verify sandbox execution and original-thread
 delivery, and confirm existing tasks remain intact. Live acceptance remains open.
+
+## November 17 deployed diagnosis and schema repair
+
+[PR #106](https://github.com/rein-protocol-foundation/nori-agent/pull/106) passed all seven
+CI checks, merged as `45e61fcfb0903f9d1d1bd1d4faf4715908540c95`, and deployed at
+23:38:02 UTC. Its real-channel retest B still failed creation; the thread projection
+compatibility change was not the production blocker.
+
+A temporary passive plugin observed only host hook metadata and match booleans. Agent
+and tool contexts agreed on run, session, sender, account and canonical channel, but
+trusted-channel selection returned false. The native `applyJsonSchemaDefaults` pass
+followed the trusted-list `$ref` to `developmentChannels.default=[]`, manufacturing an
+explicit empty trusted list even when the operator omitted it. Rein correctly interprets
+an explicit empty list as revocation, so documented omission/inheritance never took effect.
+
+The source fix removes that referenced default. Rein's validator still defaults absent
+lists safely. Four tests call the actual pinned native default helper and verify omitted
+inheritance, explicit-empty revocation, explicit trusted-list retention and both-omitted
+denial. The native authority probe passed these four cases plus its seven original authority
+cases and disabled-plugin registration check; 78 targeted Node tests and scaffold passed.
+
+For immediate production repair, the existing development channel was explicitly copied
+into `trustedSlackChannels`. No channel or identity was added. This exposed a second
+configuration issue after the shared-Gateway migration: native agent-to-agent policy is
+**enabled for all agent pairs when omitted**. Router therefore correctly refused startup
+with `rein_router_public_reachable_trusted_agent`; retest C produced an unresolved `auto`
+model error while Router was unavailable, not a successful automation.
+
+Native configuration patch validation passed before applying an explicit enabled A2A allow
+list of the four existing internal agents (`main`, `nori-development`, `director-control`,
+`codex`). Community retains native same-agent access and its existing tools, memory and
+public backend; its tools already exclude cross-agent send/spawn. Internal cooperation is
+retained, and the public-to-internal configuration path is closed. The shared Gateway was
+restarted and readiness returned 200 with Router model resolution active. The temporary
+diagnostic plugin was removed from all load/allow/entry configuration before this restart.
+
+Private release backup (configuration and exact definitions of all 13 existing jobs):
+`runtime/openclaw/operator-backups/development-cron-release-20261117T232433Z/` on the host.
+It includes pre-diagnostic, pre-trust and pre-A2A snapshots. Restore only the fields changed
+by this task if rollback is needed; do not replace live jobs or overwrite concurrent updates.
+
+## Actual channel creation after configuration repair
+
+[Acceptance D and its thread](https://reinprotocolf-e2q1425.slack.com/archives/C0CD97XD6CA/p1794959425852369)
+created native job `ed7429fa-71b0-4205-a78c-538d7974cd86` at 23:51:26 UTC for
+2026-11-17 23:54:00 UTC. The first message arrived in the service restart window;
+a follow-up after readiness explicitly requested this one task, with no manual run.
+The native transcript shows one successful `add` followed only by read-only `get`/`list`.
+The host-authored creation stamp, owner session, account and explicit Slack thread delivery
+match this actual authorized request. Session prompt metadata reports `mode=all`, sandboxed.
+All 13 pre-existing job definitions still match the release snapshot exactly.
+
+The scheduler started the job at **23:54:00.055 UTC**, without a manual request run ID,
+and finished at **23:54:10.507 UTC**. Receipt `956f01ea-8e79-4910-90c9-d50e942ac547`
+is `ok`; job state reports `lastDelivered=true`, `lastDeliveryStatus=delivered`, zero errors.
+The isolated native run's prompt report says `mode=all`, `sandboxed=true`; its actual `exec`
+output contains `37*41 = 1517`, UTC `2026-11-17 23:54:06`, user `nori-dev`, and a workspace
+under `/home/nori-dev/workspaces/openclaw-ssh-workspace-…/workspace`. Slack readback confirms
+the same result in the original thread. The completed one-off is retained as disabled audit
+evidence (`deleteAfterRun=false`), not a recurring task.
+
+The follow-up native scheduler fixture also passed on the manifest fix: actual native
+creation/store/scheduler, two-user audit, mutation controls, public refusal, child execution,
+restart and senderless default/override runs with synthetic model/Slack transport. This
+supports compatibility; acceptance D above supplies the separate real-user/live inference
+and delivery evidence. A local shell initially used unsupported Node 21 and one invocation
+used an incorrect script filename; neither is counted as a passing check. Both corrected
+invocations used the pinned Node 24.16.0 and passed.

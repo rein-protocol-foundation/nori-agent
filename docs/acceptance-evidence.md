@@ -1,15 +1,17 @@
 # Acceptance evidence
 
-## Development-channel Cron thread compatibility — November 17, 2026
+## Development-channel Cron repair — November 17, 2026
 
-SA-OPS-01 / #66 follow-up; owner Codex. **LOCAL VERIFIED; RELEASE AUTHORIZED.**
-The owner authorized committing, merging and deploying the bounded Router patch, then real
-Slack creation, clock-triggered sandbox execution and original-thread delivery acceptance.
-The existing three-field configuration repair and SSH isolation remain in place. Production
-has since migrated to one shared Gateway; preserve its current 13 jobs and all channel state.
-43 targeted regressions on the updated main base and the prior full Node/native scheduler checks passed. Live creation
-was previously rejected and remains unaccepted until the source release and retest complete.
-[Evidence, exact checks and rollback](slack-development-cron-live-2026-11-16.md). No milestone advancement.
+SA-OPS-01 / #66 follow-up; owner Codex. **LIVE ACCEPTANCE PASSED; SCHEMA FIX READY FOR RELEASE.**
+PR #106 merged/deployed after seven green checks. Its thread compatibility fix alone did not
+resolve production: native schema defaults manufactured an empty trusted-channel list, and
+shared-Gateway A2A defaults allowed public-to-internal reachability. Explicit existing-channel
+trust and internal-only A2A configuration restored Router while preserving sandbox isolation.
+Actual Slack creation, clock-triggered SSH execution (37 × 41 = 1517), and original-thread
+announce passed at 23:54 UTC; all 13 existing task definitions were unchanged. The one-line
+manifest correction now has native default-loader and scheduler regression coverage, plus
+78 focused Node passes and scaffold checks. No product milestone advancement.
+[Evidence, failed attempts, actual receipts and rollback](slack-development-cron-live-2026-11-16.md).
 
 ## 2026-11-17 — Shared Gateway migration completed
 
