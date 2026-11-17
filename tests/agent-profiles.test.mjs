@@ -57,6 +57,15 @@ test('unknown agents, swapped platforms/accounts, and missing authority expose n
   }
 });
 
+test('Community-first ordering retains exactly one set of internal reply guards', () => {
+  const p = profiles();
+  const loaded = register({ 'nori-community': p['nori-community'], main: p.main,
+    'director-control': structuredClone(p.main) });
+  assert.equal(loaded.hooks.filter(([name]) => name === 'reply_payload_sending').length, 3);
+  assert.ok(loaded.create(context('main', 'slack')).some(tool => tool.name === 'rein_poll_vote'));
+  assert.equal(register({ 'nori-community': p['nori-community'] }).hooks.length, 0);
+});
+
 test('retained tools recheck current authority and cannot change their selected profile', async () => {
   const loaded = register();
   const ctx = context();
