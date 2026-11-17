@@ -1,3 +1,5 @@
+import { openSqliteWorkerStore } from 'openclaw/plugin-sdk/sqlite-runtime';
+import { createRetainedSummaries } from './retained-summaries.mjs';
 import { definePluginEntry } from 'openclaw/plugin-sdk/plugin-entry';
 import { isSubagentSessionKey, isAcpSessionKey } from 'openclaw/plugin-sdk/routing';
 import { createSlackDevelopmentAuthorizer, DEVELOPMENT_AUTH_TIMEOUT_MS } from '../rein-router/slack-development.mjs';
@@ -18,15 +20,18 @@ export default definePluginEntry({
       const runtime = createTaskLoop({ config, authorize, tasks: api.runtime.tasks, subagent: api.runtime.subagent,
         isCurrentContinuation: (task, ctx) => continuation?.isCurrentAttempt(task, ctx) ?? false,
         isNativeChild: ctx => isSubagentSessionKey(ctx.sessionKey) || isAcpSessionKey(ctx.sessionKey) });
+      const retainedSummaries = config.continuation?.retainedSummaries?.enabled === true
+        ? createRetainedSummaries({ stateDir: api.runtime.state.resolveStateDir(), openSqliteWorkerStore }) : undefined;
       continuation = config.continuation ? createTaskContinuation({ config: { ...config, hostConfig: api.config }, authorize,
         tasks: api.runtime.tasks, subagent: api.runtime.subagent, system: api.runtime.system, session: api.runtime.agent.session,
         isNativeChild: ctx => isSubagentSessionKey(ctx.sessionKey) || isAcpSessionKey(ctx.sessionKey),
-        confirmedReplacement: runtime.confirmedReplacement, logger: api.logger }) : undefined;
+        confirmedReplacement: runtime.confirmedReplacement, logger: api.logger, retainedSummaries }) : undefined;
       api.registerTool(runtime.toolFactory, { names: ['rein_task'], optional: true });
       if (continuation) {
         api.registerTool(continuation.toolFactory, { names: ['rein_continuation'], optional: true });
         api.on('after_tool_call', continuation.afterToolCall);
         api.on('gateway_start', continuation.gatewayStart);
+        api.on('gateway_stop', continuation.gatewayStop);
       }
       api.on('before_agent_run', async (event, ctx) => {
         const admitted = await runtime.beforeAgentRun(event, ctx);

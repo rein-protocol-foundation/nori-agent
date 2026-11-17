@@ -57,6 +57,114 @@ Configuration activation does not complete #57 or the wider product milestone. N
 raw history export/import seam; preserve current isolated topology and coordinate releases.
 See [implementation, evidence, limitations and recovery](community-private-memory.md).
 
+## 2026-11-16 — Native Slack buttons for partnership test mail
+
+SA-M3-01–05 / #59; owner Codex; PR #99. **IMPLEMENTED / LOCAL VERIFIED; button deployment
+and real-user acceptance pending.** The leading-space command workaround is superseded by
+native “批准并发送测试邮件”, “取消” and “刷新送达状态” buttons. Full draft preview remains in
+the original thread. The plugin uses public native outbound and interactive registration APIs,
+with persisted nonce/message/scope binding, current host authorization and membership checks.
+Legacy commands and stored checkpoints remain compatible; no vendor changes or state migration.
+
+Verification: 27 focused tests pass; full suite after merging main: 1441 passed / 4 conditional skips / 0 failures.
+The pinned native Slack outbound adapter also preserves one exact card, action values and
+thread receipt with injected transport.
+The initial full-suite attempt in the incomplete worktree failed on missing dependencies; an
+isolated verification copy with existing local dependencies passes without changing other worktrees. Real pinned loader/Gateway fixture `nori-partnership-6zW9cY`
+passes distinct-process preparation/button approval/legacy command checks; seven button actions
+produce POST deltas `[0, 0, 1, 0, 0, 0, 0]`, with zero model calls for decisions and one exact
+synthetic email. It also verifies cancellation, duplicate no-op and delivered reconciliation.
+Slack/provider transport remains synthetic. The earlier real command-based delivery evidence
+below does not establish button usability. Next: updated PR CI/review, authorized deployment,
+then actual Slack card/approval/test-recipient delivery verification. No milestone expansion.
+
+## NORI-AI-NEWS bilingual and formatting correction — November 16, 2026
+
+Owner Codex. **LIVE VERIFIED**. User requests Chinese and English editions in the same
+Slack/Discord channels, without pagination and with concise local issuance timestamps.
+Original 14 Chinese messages corrected in place; original delivery ledgers retained.
+SchemaVersion 2 pairs both languages per event and preserves legacy receipt verification.
+English supplements require exact original Chinese content/routes and complete receipts.
+39 focused tests, scaffold, whitespace and 60 native fallback checks pass. Existing native
+jobs now use the bilingual prompt. All 20 English supplement receipts confirmed; repeated
+publication creates no duplicates. API readback matches all 34 messages; native clients show
+rendered cards and concise times. A native Nori preview-only run generated and validated
+two bilingual stories in 35 seconds, with no delivery; its disabled temporary job was removed.
+Merge/rollout evidence is tracked in [PR #100](https://github.com/rein-protocol-foundation/nori-agent/pull/100).
+The next scheduled bilingual run remains future evidence. [Runbook and evidence](ai-news.md). No unrelated milestone advanced.
+
+
+## Indefinite summary copies and live task acceptance — November 16, 2026
+
+Owner Codex, runtime-verified Astra High; implementation verified Sol High. Owner selected
+indefinite server retention and preservation of Slack chat. Optional minimal summary storage uses
+public native SQLite worker APIs, current owner/audience checks, pagination, reset continuity and
+non-resurrecting deletion of retained copies only. No native database mutation, vendor edit or
+history migration. 70 focused tests and 1436 full-suite tests pass, with 4 existing skips; actual
+plugin loader passes. Native cleanup is simulated in fixtures, not a live-maintenance acceptance.
+PR #94 conflict resolution preserved both independent document entries, 56 focused tests and seven
+CI checks passed; merged/deployed as 66700d0 at 19:02:33 UTC. Slack configuration activation was
+rejected by automatic approval review; exact settings await user confirmation. Existing ACP
+produced two actual blocked runs and code independently passing 13 tests; startup required human
+correction, so full autonomous development is not accepted. Native research delivered in the original
+thread while ordinary chat/progress worked during execution; source review required two corrections.
+A narrowly scoped distro bubblewrap/AppArmor repair is prepared but awaits explicit approval.
+PR #97 review at f6dd3df has no findings; no feature activation or shared release yet. [Live record](task-lifecycle-live-2026-11-16.md),
+[summary contract/rollback](task-summary-retention.md). No product milestone advanced.
+
+
+## Task stop/change, recovery and budget handoff — November 16, 2026
+
+Tracking #58 / SA-M2-01–05. Owner: Codex, runtime-verified GPT-6 Astra Medium as requested.
+**IMPLEMENTED / LOCAL VERIFIED; no new deployment or live acceptance.** Reused already-fetched
+main `332cdf0` after discovering #87–#91 superseded the initial checkout. Prior tracked edits
+were backed up in a retained stash, restored and merged with all upstream records; untracked PRD,
+planning and runtime investigation files were preserved. No new commit/push/PR/merge to remote.
+
+Added explicit pending/failed/confirmed/not-needed cancellation evidence, known-unlaunched custody
+release for stop/deadline races, reconciliation on all-flow status, foreign-run wait rejection,
+and concrete partial evidence/gaps at limits. No scheduler, vendor, mail or business-tool changes.
+Ten new controller tests cover scope/stop/restart/limits/authority/ACP uncertainty. The budget
+handoff test first exposed loss of concrete gaps, then passed after repair. See the
+[contract and handoff](task-continuation-controls.md) for confirmation points and remaining windows.
+
+Checks: 53 targeted pass; full repository 1418 pass / 4 conditional skips / 0 fail on the final version.
+Final review additionally prevents a stopped supplement inheriting its predecessor’s known effects. Isolated two-process native seam passes.
+Both probes initially hit sandbox loopback EPERM; permitted reruns used synthetic transports only.
+M1 native probe failed waiting for an independent ACP cancel report, then passed standalone unchanged;
+retain both results. Syntax/scaffold/local-link/diff and preservation checks passed.
+Existing #91 real acceptance is referenced, not re-executed. Updated stale delivery-plan #54 next
+steps to respect November 15 closure. No deployment, external send or paid inference occurred.
+
+Remaining: new control races need separately authorized real-entry/provider acceptance; no exactly-once
+or arbitrary-crash guarantee. Selected retention/delete is still unsupported and duration undecided;
+ACP hard deadline remains unavailable. Next: review this local diff and authorize the bounded live
+control acceptance if desired; monitor the intermittent M1 report observation failure. Rollback
+reverts only this task's runtime/test delta; no state/history migration or deletion occurred.
+
+Review follow-up: reproduced and fixed stale provisional cancellation evidence after native promotion;
+54 focused tests and final full suite (1419 passed / 4 conditional skips / 0 failures) pass. Owner now authorizes the separate commit/PR and CI/review follow-up only.
+Based on `64d0ff1` (#93); unrelated working changes remain uncommitted. No merge/deployment.
+
+CI follow-up: run 43857871202 reproduced the cancelled ACP report fixture failure. The native background-task notice was present, but the scripted model recognized only the announce prompt. Added exact-current-run notification decoding and negative cases without changing production behavior or weakening delivery assertions. 55 targeted tests and native nori-task-loop-43csHm pass; CI/review rerun on the amended PR follows.
+
+Review race follow-up: concurrent all-flow status during launch authorization could leave a known-unlaunched Flow stuck after its attempt was released. Reproduced, restored the Flow phase and cleared only obsolete launch uncertainty; restart reuses the same attempt. 56 targeted tests and final full suite 1421 passed / 4 conditional skips / 0 failures. PR #94 remains unmerged; final CI/review pending.
+
+## NORI-AI-NEWS — November 16, 2026
+
+Owner: Codex. **ENABLED / FIRST SCHEDULED DELIVERY VERIFIED**. Nine public feeds and
+native daily 09:00 / Monday 09:15 jobs (America/Los_Angeles). On November 16 the daily
+job started at 09:00:00.020 and sent nine stories as three messages per platform by
+09:03:21; the 09:15 weekly run reused all eight original receipts without re-sending.
+Slack desktop and Discord browser rendering verified, together with both native channel
+payloads. Nine original-link buttons and no exposed Markdown or duplicate bodies observed.
+28 focused Python and eight CI-scope tests pass; Python news tests now run in scaffold CI.
+First interrupted weekly rehearsal is retained as failed evidence. No private runtime data or
+unrelated shared-worktree changes included. [Exact evidence and recovery](ai-news.md).
+Repository rollout: [PR #96](https://github.com/rein-protocol-foundation/nori-agent/pull/96).
+Recovery: retain the native jobs and per-edition receipts across deployments.
+No unrelated product milestone advanced.
+
 ## 2026-11-16 — Partnership production activation and Slack command identity
 
 SA-M3-01–05 / #59; owner Codex. User authorized production integration and one real test
@@ -71,6 +179,28 @@ boundary; retain native authorization, live membership, configured approver and 
 22 focused tests pass, including lowercase approval, forged/wrong identity rejection and duplicate
 no-op. Live approval/send/reconciliation remain pending deployment of this compatibility fix.
 No secrets or runtime records are included here; existing acceptance evidence is not overwritten.
+
+Deployment follow-up: the owner explicitly authorized merging PR #95. All seven CI checks
+passed and review had no findings. Merge `e2c4083` completed at 17:28:25 UTC; the normal
+updater reported `updated` at 17:31:28 UTC, with all four application services active.
+The original version-1 draft survived restart, still awaiting approval with no send intent
+or receipt. The connected Slack sender appended attribution to the approval command;
+strict argument validation rejected it before dispatch. The initial diagnosis of ineffective
+computer-control input was incorrect: the owner's Slackbot screenshot showed that Slack
+intercepts a leading `/` as an unregistered app slash command.
+
+**LIVE TEST PASS, November 16 at 17:21–17:22 America/Los_Angeles.** Under the owner's
+existing test-send authorization, Codex submitted the exact saved approval through the
+authenticated administrator's Slack web UI with one space before `/partnership`. The original
+version-1 checkpoint resumed after intervening deployments. Resend accepted the email to the
+designated test address; read-only reconciliation matched the exact sender, recipient, subject
+and body and recorded `delivered`. A repeated approval returned the same receipt and retained
+the original decision/send-intent timestamps. [Slack acceptance and delivery evidence](https://reinprotocolf-e2q1425.slack.com/archives/C0C4L0YN814/p1794878546727399).
+Runtime revision: `9ed4cb2`, including PR #95. This verifies the authorized test workflow and
+provider-reported delivery, not inbox placement, reading, or real-partner outreach authority.
+The preview, skill and runbook now explain plain-text submission with a leading space and no
+connector attribution. These wording changes require publication; the working production
+path uses the already deployed implementation. No runtime records or credentials committed.
 
 ## 2026-11-15 — Community runtime ticket accepted and closed
 

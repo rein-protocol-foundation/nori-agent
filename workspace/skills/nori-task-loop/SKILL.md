@@ -63,9 +63,13 @@ repetition rather than claiming exactly-once delivery.
 Research timeouts are bounded at native launch. ACP deadlines are checked on native events/status
 and recovery; this adapter has no timer and cannot promise hard wall-clock termination of ACP.
 A launch race can leave admitted effects uncertain; wait for evidence and never respawn blindly.
-Native terminal flows use upstream's fixed seven-day cleanup. Selected retention, explicit deletion
-and summaries surviving native cleanup are unsupported at this pin; do not promise them or store
-private history in workspace skills. Missing/expired artifacts are unavailable, not success.
+Native terminal flows retain upstream's fixed seven-day cleanup. When retained summaries are
+explicitly enabled, new tasks keep a minimal server-side terminal copy indefinitely. Use
+list_summaries (follow nextCursor), read_summary and user-requested delete_summary for that copy.
+Deletion does not erase native Flow/Task records, Slack chat, external artifacts or backups.
+Report summaryRetention failures, and never promise retention without a confirmed saved copy.
+Saved references do not prove artifact availability: use an authorized existing read tool when
+checking delivery; report missing artifacts explicitly. Do not store task history in shared skills.
 
 The remaining sections describe legacy M1 tools when continuation is absent, and unmanaged M1
 runs already in progress. Do not apply legacy replacement controls to managed continuation runs.
@@ -83,6 +87,12 @@ the full criteria remain in the authorized conversation and execution input, not
 in the task-status title. Research uses
 `runtime="subagent"` and `cleanup="keep"`, retaining native completion announcement through the
 parent and its captured reply route. Omit `completionTarget`; test the default announcement. Do not select parent-only silent delivery for this pilot.
+The ordinary agents_list result describes native subagent admission; it is not an inventory of
+configured ACP harnesses. Use the host-provided ACP backend/harness configuration and attempt
+the native sessions_spawn route before declaring a configured harness unavailable. A concrete
+spawn error is evidence; a missing ordinary-agent list entry is not. Do not scan authentication
+directories, change permissions or start a replacement client to bypass an execution failure.
+After two failures of the same cause, preserve run/diff/test evidence and report the blocker.
 Coding uses the existing configured ACP/Codex backend, `runtime="acp"`,
 `thread=false`, `streamTo="parent"`, with the operator's existing harness/cwd and client-native
 authentication. Do not copy login tokens or route coding-client auth through Magpie.

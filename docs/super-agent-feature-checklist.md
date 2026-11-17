@@ -1,12 +1,12 @@
 # Nori Super Agent — Feature Checklist 与范围复审
 
-更新：2026-11-15（America/Los_Angeles）。范围负责人：项目负责人；文档维护：Codex。
+更新：2026-11-16（America/Los_Angeles）。范围负责人：项目负责人；文档维护：Codex。
 
 **当前依据为 [PRD v0.7](super-agent-nori-prd-en.md) 和[剩余开发与验收计划](super-agent-delivery-plan.md)。**
 通用工具优先 OpenClaw 原生与社区集成；Super Agent 聚焦任务协调与完成能力。
 已有 Rein 内部工具和邮件工作流保留，内部业务工具扩展移至 Super Agent 验收之后，由 Nori 主导。
 邮件真实发送验收不再是 Super Agent 完成门槛。下列既有编号仅用于追溯，历史证据不升级为当前验收。
-共享 Gateway／社区上线独立跟踪，原有安全门槛不撤销。远端 tickets 尚未同步，本次仅修改本地文档。
+共享 Gateway／社区上线独立跟踪，原有安全门槛不撤销。11月16日负责人已选择服务器摘要无期限保留、默认不删除、Slack原文保留；实现与验收分别追踪于 #97 和[真实记录](task-lifecycle-live-2026-11-16.md)。远端 tickets 的旧状态需另行同步。
 
 ## 维护方式
 
@@ -62,7 +62,7 @@
 | [ ] | SA-M2-03 | 重启后通过真实 native 入口协调 goal/limits/cancellation/outcomes；不盲重试未知外部结果 | CORE IMPLEMENTED / STATIC ONLY；真实 session inventory + native wake + durable inventory；同 owner/audience 接受合并回复；未知效果不盲重试；重启未验收 |
 | [ ] | SA-M2-04 | 取消后不再委派；原生取消未完成/失败如实报告，迟到结果不重开任务 | CORE IMPLEMENTED / STATIC ONLY；持久 stop、native cancel + settlement；无原子 launch/stop，竞争窗口与副作用不作零发生保证 |
 | [ ] | SA-M2-05 | 次数/runtime/无进展上限跨重启与再次委派保持，输出部分结果与缺口 | CORE IMPLEMENTED / STATIC ONLY；次数/期限/无进展跨 scope 保留，部分报告；research 原生 timeout 有界，ACP 期限仅协调时检查；未验收 |
-| [ ] | SA-M2-06 | native run 清理后，授权用户可按选定期限检索最小摘要/链接；期限（原 30 天）待定，显式删除优先 | UNSUPPORTED / #58；native Flow 固定七天清理，无 public 自选期限/显式 delete；不模拟额外保留，不声称产品完成 |
+| [ ] | SA-M2-06 | native run 清理后，授权用户可检索服务器无期限保留的最小摘要/链接；不自动删除，显式删除仅按授权范围且保留Slack原文 | IMPLEMENTED BUT UNVERIFIED / #58、#97；public SQLite worker摘要副本本地70定向/1436全仓通过，4既有跳过；native cleanup仍为fixture模拟，真实读取/删除/重启待验收 |
 | [ ] | SA-M3-01 | 真实 Slack：准备→展示精确草稿/测试收件人→审批暂停→继续或取消→报告 | 本地原生合成 ingress/命令/展示/报告通过；真实 Slack 待验收 / [#59 证据](partnership-workflow.md) |
 | [ ] | SA-M3-02 | 决定绑定 approver/task/checkpoint/material；未授权、过期、重复、取消后批准不发送 | 本地绑定、线程隔离、撤权、过期、重复与取消测试通过；真实验收待完成 / #59 |
 | [ ] | SA-M3-03 | 仅向指定测试收件人发送获批版本并记录回执，区分 API 接受与已送达 | 合成 Provider 精确请求及只读回执核对通过；未发真实邮件 / #59 |
@@ -116,7 +116,7 @@ M3 现为已实现／本地验证通过，产品复选框保持未勾选。M1 #7
 | [ ] | SA-D02a | 实际 native storage/authority/reply seam 的设计与验证待完成，不是产品方向未定 |
 | [x] | SA-D03 | 原生优先；Magpie 管理推理；Community Qwen-first 按问题升级；Slack 默认动态且可手动控制；不再默认禁用 Jev |
 | [x] | SA-D04 | M1 复用研究子代理与 ACP 编程，包含查询/change/stop；Codex 先复用，其他客户端逐项验证 |
-| [ ] | SA-D05 | M2 切片顺序与摘要保留期限（原 30 天）待确认；不得据此另建平台 |
+| [x] | SA-D05 | 2026-11-16：摘要在服务器无期限保留，默认不删除，Slack原文保留；M2执行顺序见剩余计划，不据此另建平台；此勾选仅确认产品决定 |
 | [x] | SA-D06 | 2026-11-15 范围已确认：保留可选邮件集成，不作为 Super Agent 完成门槛；发送时原有审批/去重/未知结果核对要求不变 |
 | [x] | SA-D07 | v0.6 文档与 tickets 修订已授权；功能实现/生产不属于本次任务 |
 | [x] | SA-D08 | 可信 Slack 普通操作无冗余角色门槛；系统 Cron 无需在线人类；保留业务专有权限 |
@@ -129,7 +129,7 @@ M3 现为已实现／本地验证通过，产品复选框保持未勾选。M1 #7
 - 原 SDK worktree `nori-m0-foundation/rein-agent` 保留 candidate gitlink 和三个未跟踪文件：`docs/m0-sdk-upgrade.md`、`scripts/probe-native-knowledge.mjs`、`tests/fixtures/native-knowledge-gateway.ts`。本次未移动或修改；最新 probe 不能直接声称通过。
 - SDK notes 中凭据失败已由 #61 后续记录修复；但 memory、deadline、auxiliary/media 并未因此全部解决。
 - 此前审计 M1 worktree 为 `412f88c9`，当时没有独有实现；目录存在不等于任务已开始。
-- 下一步按 #60/#66 验证内部 native 权限/存储/回复接缝；#54/#55/#56 优先配置与复用，#67/#68 分别跟踪路由和用量。保留期限/M3 首轮必要性仍待决定；此轮停在文档与任务跟踪。
+- 下一步按 #60/#66 验证内部 native 权限/存储/回复接缝；#54/#55/#56 优先配置与复用，#67/#68 分别跟踪路由和用量。该历史阶段保留期限/M3首轮必要性待定；已分别被11月16日无期限决定和11月15日可选邮件范围取代。
 - 成本：Sol Low 维护文档/证据；Sol Medium 执行边界清晰的夹具/适配；Astra High 处理范围、权限契约与架构阻塞。先 targeted checks，避免为了重复确认已有证据运行完整套件或付费推理。
 
 ## 可信 Slack 与系统 Cron

@@ -57,9 +57,72 @@ Configuration activation does not complete #57 or the wider product milestone. N
 raw history export/import seam; preserve current isolated topology and coordinate releases.
 See [implementation, evidence, limitations and recovery](community-private-memory.md).
 
+## NORI-AI-NEWS bilingual and formatting correction — November 16, 2026
+
+Owner Codex. **LIVE VERIFIED**. User requests Chinese and English editions in the same
+Slack/Discord channels, without pagination and with concise local issuance timestamps.
+Original 14 Chinese messages corrected in place; original delivery ledgers retained.
+SchemaVersion 2 pairs both languages per event and preserves legacy receipt verification.
+English supplements require exact original Chinese content/routes and complete receipts.
+39 focused tests, scaffold, whitespace and 60 native fallback checks pass. Existing native
+jobs now use the bilingual prompt. All 20 English supplement receipts confirmed; repeated
+publication creates no duplicates. API readback matches all 34 messages; native clients show
+rendered cards and concise times. A native Nori preview-only run generated and validated
+two bilingual stories in 35 seconds, with no delivery; its disabled temporary job was removed.
+Merge/rollout evidence is tracked in [PR #100](https://github.com/rein-protocol-foundation/nori-agent/pull/100).
+The next scheduled bilingual run remains future evidence. [Runbook and evidence](ai-news.md). No unrelated milestone advanced.
+
+
+## 2026-11-16：任务摘要保留本地验证与真实任务验收进行中
+
+SA-M2-06；Owner Codex/Astra High。用户决定无期限服务器保留摘要且保留Slack原文。
+[可选摘要实现](task-summary-retention.md) 70定向、1436全仓通过/4既有跳过，实际plugin loader通过。
+实际public worker覆盖九天旧摘要重启、分页、跨owner拒绝、会话reset连续性、并发删写和tombstone。
+原生Flow cleanup是fixture模拟；真实用户保留/删除未通过前保持待验收。
+[真实任务记录](task-lifecycle-live-2026-11-16.md)：#94七项CI通过后合并部署66700d0；
+研究原线程交付及后台聊天/实际进度已观察；官方来源抽查后Nori补充两项勘误。
+ACP产出代码独立13项测试通过，但两次terminal_outcome=blocked且有人工作业纠正，
+不能把native succeeded或accepted算完整自主开发成功。配置启用与定向沙箱修复待明确批准。
+
+
+## Task stop/change and recovery controls — November 16, 2026
+
+#58 / SA-M2-01–05; owner Codex (runtime-verified Astra Medium). **LOCAL VERIFIED**.
+[Evidence and exact limits](task-continuation-controls.md): 53 targeted tests pass, including 10 new
+continuation cases; full repository 1418 passed / 4 existing conditional skips / 0 failures on the final version. Native seam `nori-continuation-YSnloe` passes actual
+two-process persistence/wake/linkage/original-thread behavior with synthetic transport/model.
+Policy-disabled M1 `nori-task-loop-pUfNLP` failed waiting for an independent ACP cancellation
+report; unchanged standalone `nori-task-loop-KDVHQy` passes. Failure retained, assertion unchanged.
+New controller cancellation races are synthetic, not live provider settlement acceptance. Existing
+#91 live recovery scope remains accepted at its recorded version; no broader product check advanced.
+Next: separately authorized real stop/change race acceptance; selected retention/delete SDK contract
+and product duration remain unresolved. #54 strict whole-chain enhancement is deferred by owner.
+
 Production follow-up (2026-11-16, Codex, SA-M3-01–05/#59): live Slack draft preview verified;
-command identity normalization fixed with 22 passing focused tests. Real send/delivery remains
-pending the fix deployment. See the dated implementation record.
+command identity normalization fixed with 22 passing focused tests. PR #95 passed all seven
+CI checks/review and deployed as `e2c4083`; the original pending draft survived restart.
+**LIVE TEST PASS at 17:21–17:22 America/Los_Angeles:** a leading space lets Slack submit the
+exact approval as plain text. The original checkpoint resumed, Resend accepted the designated
+test email and reconciliation verified `delivered`; repeated approval retained the same receipt
+and original send intent. Runtime `9ed4cb2` includes #95. Connector attribution and bare-slash
+client interception are recorded failures, not input-control failures. See the dated
+implementation record for [Slack evidence](https://reinprotocolf-e2q1425.slack.com/archives/C0C4L0YN814/p1794878546727399).
+Provider delivery does not establish inbox placement/reading or real-partner sending authority.
+
+## NORI-AI-NEWS — November 16, 2026
+
+Owner: Codex. **ENABLED / FIRST SCHEDULED DELIVERY VERIFIED**. Nine public feeds and
+native daily 09:00 / Monday 09:15 jobs (America/Los_Angeles). On November 16 the daily
+job started at 09:00:00.020 and sent nine stories as three messages per platform by
+09:03:21; the 09:15 weekly run reused all eight original receipts without re-sending.
+Slack desktop and Discord browser rendering verified, together with both native channel
+payloads. Nine original-link buttons and no exposed Markdown or duplicate bodies observed.
+28 focused Python and eight CI-scope tests pass; Python news tests now run in scaffold CI.
+First interrupted weekly rehearsal is retained as failed evidence. No private runtime data or
+unrelated shared-worktree changes included. [Exact evidence and recovery](ai-news.md).
+Repository rollout: [PR #96](https://github.com/rein-protocol-foundation/nori-agent/pull/96).
+Recovery: retain the native jobs and per-edition receipts across deployments.
+No unrelated product milestone advanced.
 
 ## 2026-11-15 — Community runtime ticket accepted and closed
 
@@ -119,6 +182,7 @@ Next: assign bounded work from the plan and record environment-specific results 
 | --- | --- | --- |
 | Slack reaction permission / #77 / C02 support; 2026-11-13; Codex | **LIVE API VERIFIED / CONFIGURATION ONLY**. Reproduced `missing_scope`; added only `reactions:write` and completed operator-confirmed reauthorization. Same deployed credential and bot identity passed add/read-back/remove/cleanup; service PID unchanged. [Evidence](implementation-and-deployment.md). | Automatic acknowledgement timing, model-selected reactions and other conversation types not retested. Observe next normal mention; no C02, AC01–AC20 or product milestone advancement. |
 | PR #83 compatibility / SA-M1-01–05; 2026-11-13; Codex | **LOCAL VERIFIED / CI FOLLOW-UP**. Cancelled completion prompt reads native owner-bound state before admission. 21 targeted tests; full suite 1393 pass / 4 skips / 0 fail; native `bQmAto` / `VDTCWA` pass, including standalone cancelled delivery. | Latest-head CI/review pending. No AC01–AC20 or product milestone advancement. [Evidence](implementation-and-deployment.md). |
+| SA-M3-01–05 / #59; Slack button interaction; 2026-11-16; Codex | **IMPLEMENTED / LOCAL VERIFIED**. PR #99; 27 focused tests and pinned Gateway restart/interactive-dispatch fixture pass: native button registration, exact draft, wrong-user/thread rejection, duplicate/cancel refusal, one synthetic send, receipt refresh without model calls. | Real Slack card click and provider delivery on the new revision remain pending deployment; previous command-based live evidence is not button acceptance. Next: CI/review and authorized live verification. |
 | SA-M3-01–05 / #59; 2026-11-13; Codex Astra Medium / verified Sol High | **IMPLEMENTED / LOCAL VERIFIED; product acceptance pending**. [Evidence](partnership-workflow.md): 21 focused tests; full suite 1390 passed / 4 conditional skips / 0 failed. Native `nori-partnership-qS7WYp` verifies loader enable/disable, exact preview, human command without model inference, distinct-process checkpoint recovery, unauthorized/wrong-thread/duplicate/cancel refusal, one synthetic POST and read-only delivery evidence. Captured-template restart failure fixed with durable versioned template; earlier failures retained. | No real Slack/mail/provider acceptance, deployment or remote CI claimed. M1 #74 merged; M2 #58 owner-closed with delivery evidence still unverified and separate changes preserved. Review local source, then separately authorize deployed-profile and designated-test-recipient acceptance; no M0/M1/M2 or AC01–AC20 advancement. |
 | #58 / PRs #87–#90; 2026-11-15; Codex / Sol High | **SCOPED LIVE PASS**: same-owner two-task actual OCI restart, no manual continue, invalid spawn/review correction, both Flows succeeded/complete; real merged Slack reply independently verified. Config restored, no active tasks. [Full evidence](task-continuation-live-2026-11-15.md). | Covers observed scenarios, not exactly-once delivery, all crash/provider races or unsupported retention/delete. Earlier failures retained. |
 | #58 / PR #89; 2026-11-15; Codex | Seven CI checks passed; live successful-drain timing reproduced missing wait cache with durable succeeded tasks. Native source authority verified; 43 targeted regressions pass for narrow absent-cache recovery. | Final closure retest pending; no blanket terminal-status or exception fallback. [Evidence](task-continuation-live-2026-11-15.md). |

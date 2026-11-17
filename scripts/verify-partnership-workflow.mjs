@@ -101,10 +101,24 @@ try {
   assert.equal(prepared?.status, 'awaiting_approval', JSON.stringify(evidence().tools));
   const cancelled = evidence().tools.find(t => t.name === 'rein_partnership' && t.params?.subject === 'Synthetic cancelled draft')?.result?.details;
   assert.equal(cancelled?.status, 'awaiting_approval');
-  assert.equal(evidence().mail.length, 0); assert.ok(prepared.approveCommand); assert.ok(prepared.checkpointId);
+  assert.equal(evidence().mail.length, 0); assert.equal(prepared.approvalMode, 'buttons'); assert.ok(prepared.checkpointId);
+  assert.equal(prepared.approveCommand, undefined, 'the model must not receive copy/paste approval instructions');
+  // Keep exercising the legacy command path, including tasks prepared by the button UI.
+  for (const item of [prepared, cancelled]) {
+    const tail = `${item.taskId} ${item.version} ${item.digest} ${item.checkpointId}`;
+    item.approveCommand = `/partnership approve ${tail}`; item.cancelCommand = `/partnership cancel ${tail}`;
+  }
   assert.ok(evidence().sent.some(s => String(s.threadId ?? s.thread) === '1000.001' && s.text.includes(draft.to) &&
-    s.text.includes(draft.subject) && s.text.includes(draft.text) && s.text.includes(prepared.approveCommand)), 'deterministic preview must show the exact full body and approval command in the original thread');
+    s.text.includes(draft.subject) && s.text.includes(draft.text) && s.text.includes('无需输入命令')), 'deterministic preview must show the exact full body and direct users to buttons in the original thread');
+  assert.equal(evidence().sent.filter(s => s.blocks?.some(b => b.type === 'actions')).length, 2);
   const callsBefore = modelCalls;
+  await phase('buttons');
+  assert.equal(modelCalls, callsBefore, 'button callbacks must bypass the model');
+  assert.deepEqual(evidence().clicks.map(c => c.mailAfter - c.mailBefore), [0, 0, 1, 0, 0, 0, 0]);
+  assert.ok(evidence().clicks.every(c => c.matched && c.handled), 'native registry must dispatch every button to the plugin');
+  assert.equal(evidence().interactiveErrors.length, 2);
+  assert.ok(evidence().updatedCards.some(c => c.text.includes('已确认送达')));
+  assert.ok(evidence().updatedCards.some(c => c.text.includes('已取消') && !c.blocks.some(b => b.type === 'actions')));
   writeFileSync(commandsPath, JSON.stringify([
     { text: prepared.approveCommand, options: { sender: 'UBOB0001' } },
     { text: prepared.approveCommand, options: { thread: '1000.999' } },
@@ -117,7 +131,7 @@ try {
   assert.notEqual(e.phases[0].pid, e.phases[1].pid, 'restart must use a different Gateway process');
   assert.equal(modelCalls, callsBefore, 'approval commands must bypass the model');
   assert.equal(e.mail.length, 1, 'unauthorized/foreign-thread/duplicate approvals must not send');
-  assert.deepEqual(e.dispatches.filter(d => d.text.startsWith('/partnership')).map(d => d.mailAfter - d.mailBefore), [0, 0, 1, 0, 0, 0, 0]);
+  assert.deepEqual(e.dispatches.filter(d => d.text.startsWith('/partnership')).map(d => d.mailAfter - d.mailBefore), [0, 0, 0, 0, 0, 0, 0]);
   assert.deepEqual(e.mail[0].body.to, [draft.to]); assert.equal(e.mail[0].body.text, draft.text); assert.equal(e.mail[0].body.subject, draft.subject); assert.ok(e.mail[0].key);
   const replies = e.sent.filter(s => s.request?.startsWith('/partnership'));
   assert.ok(replies.some(s => /accepted/.test(s.text) && s.text.includes('fixture-receipt-1')));

@@ -18,11 +18,19 @@
 > and migration-gate wording below; it does not itself establish acceptance.
 
 - **Version**: v0.7, English edition
-- **Updated**: November 15, 2026 (America/Los_Angeles); owner-confirmed tool and business scope
-- **Status**: Scope clarified by the owner. Complete general task coordination using OpenClaw native/community tools; expand Rein internal business tools only after Super Agent acceptance. Preserve existing capabilities. Partnership mail is an optional delivered integration, not a completion gate. Retention and native enforcement gaps remain open. Documentation only; no runtime acceptance or production authorization.
+- **Updated**: November 16, 2026 (America/Los_Angeles); owner-confirmed indefinite summary retention
+- **Status**: Scope clarified by the owner. Complete general task coordination using OpenClaw native/community tools; expand Rein internal business tools only after Super Agent acceptance. Preserve existing capabilities. Partnership mail is an optional delivered integration, not a completion gate. Indefinite server summary retention is selected; implementation and native enforcement acceptance remain open. This PRD alone grants no production authorization.
 - **Repository baseline**: [nori-agent `3a0dbb4`](https://github.com/rein-protocol-foundation/nori-agent/tree/3a0dbb4ff98dc6b38110febb6272d9973a971b4a)
 
 > **v0.6 decision:** Prefer native configuration, then existing community open-source integration, then a necessary thin adapter backed by a concrete gap. This supersedes v0.5.2's default-disabled Dynamic Router, preselected upstream extensions and fixed 30-day retention requirement. Historical source slices and failed probes remain evidence, not mandatory final designs. See the [feature checklist](super-agent-feature-checklist.md) and [decision tracker #65](https://github.com/rein-protocol-foundation/nori-agent/issues/65). Only documents and tickets change in this task.
+
+## Retention decision — November 16, 2026
+
+The owner selected indefinite server retention for minimal task summaries, with no automatic
+expiry or deletion. Nori must preserve Slack original chat. Explicitly authorized deletion affects
+only the named summary copy and must describe other surviving copies, native records, files and
+backups. This replaces the previously undecided duration; implementation and real-entry acceptance
+are tracked separately in [the summary contract](task-summary-retention.md).
 
 ## Current scope and completion contract — November 15, 2026
 
@@ -188,7 +196,7 @@ These agreements define Nori integration behavior, not a new runtime state machi
 - **Bounded execution**: Apply configured runtime and attempt limits to every background task, reusing native controls where available. Record the effective limits; carry attempt accounting across redelegation and restart. A further attempt must address an identified gap. At a limit or repeated lack of progress, stop new work and report partial outputs, remaining gaps, and a proposed next step. Resume only under an explicit user instruction or an already authorized policy; do not silently reset limits.
 - **Identity and approval**: Bind task lookup, result delivery, changes, cancellation, and approval to the existing trusted identity and audience permissions. Delegation must not expand the initiating task's authority. Bind each approval to an authorized approver, task, exact action, target, and material version. Material changes invalidate the prior approval. Reject unauthorized, stale, duplicate, or post-cancellation decisions without executing the action again. Existing authorization remains valid within its scope; ordinary read-only work does not acquire an approval requirement merely because it is delegated.
 - **Changes and cancellation**: Update the goal and completion criteria when an authorized user changes direction, then stop or reconcile incompatible work. Late results from an earlier scope cannot establish completion of the revised task. Cancellation stops new delegation and requests native cancellation of active work. Report cancellation as pending until active work settles, and surface cancellation failures. Describe external actions already performed or of uncertain outcome separately; cancellation does not imply rollback. Check uncertain outcomes before any retry.
-- **Retention and retrieval**: Retain the task identifier, owner/audience association, latest goal and completion criteria, final status, result summary, and deliverable links in existing access-controlled storage for an explicitly configured period. The former 30-day value is a pending product parameter, not a fixed acceptance requirement or a reason to create an independent history platform. Preserve open-task associations while work remains active. Native run records may expire earlier; their cleanup must not erase this minimal summary. Reuse existing storage and do not archive full transcripts by default. After expiry or artifact removal, report unavailability rather than reconstructing an outcome. Explicit deletion and existing privacy requirements take precedence.
+- **Retention and retrieval**: Retain the task identifier, owner/audience association, latest goal and completion criteria, final status, result summary, and deliverable links indefinitely on the server in access-controlled storage. Do not automatically expire or delete summaries, and do not delete Slack original chat. Preserve open-task associations while work remains active. Native run records may expire earlier; their cleanup must not erase a successfully retained minimal summary. Use supported native storage interfaces without archiving full transcripts or creating an independent history platform. Missing artifacts remain unavailable until actually verified. Explicitly authorized summary deletion must state its exact boundary and any surviving native records, Slack chat, external files or backups; existing privacy requirements continue to apply.
 - **Completion evidence**: Deliver outputs with enough evidence to check the agreed criteria, identifying unresolved gaps and unavailable artifacts. Report completed, blocked, limited, and cancelled outcomes distinctly using native states and summaries. A successful child run alone does not prove the user's task is complete.
 
 ## 4 Version and Capability Boundaries
@@ -210,7 +218,7 @@ Each task milestone delivers one demonstrable end-to-end lifecycle through small
 | Milestone | Product deliverable | Dependency / current decision |
 | --- | --- | --- |
 | M1: internal Slack task loop | Authorized research/native child and coding/existing ACP, progress, change/stop and delivery | First delivery priority; own task/identity/storage/provider boundaries and #66 affected-path compatibility required |
-| M2: continuation and recovery | Review results, follow up, handle changes/cancellation/restart, retain minimal summaries | Depends on M1; feature slicing and retention parameter under review |
+| M2: continuation and recovery | Review results, follow up, handle changes/cancellation/restart, retain minimal summaries | Depends on M1; indefinite server retention selected November 16, live acceptance pending |
 | Optional partnership-mail integration (historical M3) | Preserve delivered exact-action-approved draft and test-send workflow | Not a Super Agent completion gate; uses its actual authority/checkpoint/mail seams, not blanket completion of all continuation features; live acceptance separate |
 | M0: shared Gateway and Discord Community migration | Distinct persistent agents, public workspace, scoped callers/memory/provider limits, preserved-state cutover | Independent milestone; #54/#55/#56/#67/#68 provide applicable behavior gates for #57; not a blanket gate on internal Slack delivery |
 
@@ -259,7 +267,7 @@ Do not read milestone numbers as execution order. M0 retains privacy, memory and
 - Restart during unfinished work. The selected recovery entry point rechecks the persisted goal, limits, cancellation intent, and child outcomes without requiring the user to recreate the task. It resumes eligible work or reports a concrete blocker. A controlled uncertain-action fixture confirms that an unknown external outcome is not blindly retried; no real outreach is needed for this check.
 - Cancel active work and deliver a late child result. No new delegation occurs; pending or failed cancellation is reported accurately, and the late result does not reopen the task.
 - Force the configured attempt/runtime limit or repeated no-progress condition. Nori stops new work and returns partial outputs and the remaining gap; redelegation or restart does not reset the task's limit accounting.
-- In a later authorized conversation, retrieve the original task summary and deliverable links after simulated native run cleanup. Verify the explicitly selected retention period without a calendar-length test (duration, formerly 30 days, remains a product decision); missing artifacts are explicitly identified.
+- In a later authorized conversation, retrieve the original task summary and deliverable links after simulated native run cleanup. Verify that server summaries have no automatic expiry, survive restart and remain access-controlled; explicitly authorized copy deletion cannot resurrect a summary and must not delete Slack chat. Missing artifacts are explicitly identified. Simulated cleanup and actual native maintenance evidence must be distinguished.
 
 ### Optional Delivered Partnership-Mail Workflow (historical M3)
 

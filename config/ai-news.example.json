@@ -1,0 +1,12 @@
+{
+  "stateDirectory": "/home/ubuntu/rein-agent/runtime/ai-news/state",
+  "nodeExecutable": "/home/ubuntu/rein-agent/.toolchain/node_modules/node/bin/node",
+  "launchers": {
+    "slack": "/home/ubuntu/rein-agent/runtime/oci-deploy/slack.mjs",
+    "discord": "/home/ubuntu/rein-agent/runtime/discord-catalog-prod/run.mjs"
+  },
+  "targets": {
+    "slack": "channel:REPLACE_WITH_SLACK_CHANNEL_ID",
+    "discord": "channel:REPLACE_WITH_DISCORD_CHANNEL_ID"
+  }
+}
