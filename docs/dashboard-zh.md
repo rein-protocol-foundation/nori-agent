@@ -12,6 +12,10 @@ Provider 管理继续使用原生 Magpie 页。
 
 ## 合并 Gateway 后的界面
 
+2026-11-17 已完成线上切换：实际管理工作台只显示“打开 Nori”，原生 Agents 保留主助手、
+开发沙箱、开发控制器和编程执行器，并新增 Community。真实登录、重启后认证与 WebSocket、
+Slack 数据保留和两渠道收发均通过。[验收与回滚](shared-gateway-acceptance-2026-11-17.md)。
+
 `configureCommunityGateway` 可接收现有私有 `dashboardConfig`，生成只含主 Gateway 的候选
 Dashboard 配置。它要求端口和 `gateway.controlUi.basePath` 同时匹配，保留该路由、管理身份、
 登录密钥哈希和其他入口设置，避免误连旧 Discord 实例。候选配置不会写盘或部署。
@@ -23,8 +27,8 @@ Slack / Discord 仍是渠道名称，可出现在会话来源和渠道设置中�
 不要为改显示名称重建 Slack 状态或目录。内部原生路径可继续为 `/slack`，用户按钮只指向
 `/dashboard`；旧 `/dashboard?instance=discord` 选择链接会回到唯一 Gateway。旧 `/discord/`
 原生深链接需在切换时更新书签，当前改动不承诺跨实例深链接或会话 ID 重定向。
-回滚到独立服务时恢复原实例列表，页面自动恢复多入口。仍需真实验证登录、WebSocket、
-原生 Agents 列表、Slack 历史和两渠道收发；本地页面预览不等于迁移验收。
+回滚到独立服务时恢复原实例列表，页面自动恢复多入口。后续切换仍应验证登录、WebSocket、
+原生 Agents 列表、Slack 历史和两渠道收发；本次真实验收记录见上方链接。
 
 ## 会话范围
 
