@@ -60,9 +60,12 @@ No unrelated product milestone advanced.
 
 ## Partnership production follow-up — November 16, 2026
 
-SA-M3-01–05 / #59; Codex. Live draft preview passed after configuration activation; native
-Slack lowercase command identities require a boundary fix. 22 focused tests pass. Actual
-approval/send/delivery evidence pending deployment; no broader milestone advanced.
+SA-M3-01–05 / #59; Codex. **AUTHORIZED LIVE TEST PASSED**: exact Slack draft, administrator
+approval, one designated-recipient email, provider `delivered` reconciliation and duplicate
+approval retaining the same receipt verified on November 16. PR #95 fixed lowercase command
+identity; a leading space avoids Slack's client slash-command interception. Preview guidance
+is corrected in source; see the [dated evidence](implementation-and-deployment.md).
+No broader milestone or real-partner outreach authority is inferred.
 
 ## 2026-11-15 — Community runtime ticket accepted and closed
 
@@ -149,6 +152,23 @@ normal mention. No milestone advancement. [Evidence](implementation-and-deployme
 SA-M1-01–05 / #60; owner Codex. Prompt-before-admission cancellation guard corrected;
 21 targeted tests and full suite 1393 pass / 4 skips / 0 failures. Native probes
 `bQmAto` / `VDTCWA` pass; latest-head CI/review pending; no product milestone advancement. [Dated evidence](implementation-and-deployment.md).
+
+## SA-M3-01–05 / #59 — November 16, 2026 production follow-up
+
+Owner: Codex. **DEPLOYED / AUTHORIZED LIVE TEST PASSED**. PR #95 passed seven CI checks
+and review; owner-authorized merge deployed `e2c4083`. Acceptance on successor `9ed4cb2`
+verified the original Slack draft/checkpoint across restart, exact approval, Resend acceptance,
+`delivered` reconciliation and duplicate approval returning the same receipt. Connector-added
+attribution and Slack's bare-slash interception explain the earlier failures. The original leading-space guidance is superseded by the button interaction work below. [Dated evidence](implementation-and-deployment.md).
+
+## SA-M3-01–05 / #59 — Slack button interaction, November 16, 2026
+
+Owner: Codex. **IMPLEMENTED / LOCAL VERIFIED; live button acceptance pending.** PR #99
+replaces copy/paste approval commands with native approve/send, cancel and delivery-refresh
+buttons. 27 focused tests and the pinned Gateway restart/interactive-dispatch fixture pass.
+One synthetic POST, no model decision calls, persisted card scope and legacy compatibility.
+Next: CI/review, deployment and actual Slack button acceptance. Existing command-based delivery
+evidence remains valid but does not verify this new UI. [Dated evidence](implementation-and-deployment.md).
 
 ## SA-M3-01–05 / #59 — November 13, 2026
 

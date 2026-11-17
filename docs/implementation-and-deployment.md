@@ -1,5 +1,26 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-16 — Native Slack buttons for partnership test mail
+
+SA-M3-01–05 / #59; owner Codex; PR #99. **IMPLEMENTED / LOCAL VERIFIED; button deployment
+and real-user acceptance pending.** The leading-space command workaround is superseded by
+native “批准并发送测试邮件”, “取消” and “刷新送达状态” buttons. Full draft preview remains in
+the original thread. The plugin uses public native outbound and interactive registration APIs,
+with persisted nonce/message/scope binding, current host authorization and membership checks.
+Legacy commands and stored checkpoints remain compatible; no vendor changes or state migration.
+
+Verification: 27 focused tests pass; full suite after merging main: 1441 passed / 4 conditional skips / 0 failures.
+The pinned native Slack outbound adapter also preserves one exact card, action values and
+thread receipt with injected transport.
+The initial full-suite attempt in the incomplete worktree failed on missing dependencies; an
+isolated verification copy with existing local dependencies passes without changing other worktrees. Real pinned loader/Gateway fixture `nori-partnership-6zW9cY`
+passes distinct-process preparation/button approval/legacy command checks; seven button actions
+produce POST deltas `[0, 0, 1, 0, 0, 0, 0]`, with zero model calls for decisions and one exact
+synthetic email. It also verifies cancellation, duplicate no-op and delivered reconciliation.
+Slack/provider transport remains synthetic. The earlier real command-based delivery evidence
+below does not establish button usability. Next: updated PR CI/review, authorized deployment,
+then actual Slack card/approval/test-recipient delivery verification. No milestone expansion.
+
 ## NORI-AI-NEWS bilingual and formatting correction — November 16, 2026
 
 Owner Codex. **LIVE VERIFIED**. User requests Chinese and English editions in the same
@@ -101,6 +122,28 @@ boundary; retain native authorization, live membership, configured approver and 
 22 focused tests pass, including lowercase approval, forged/wrong identity rejection and duplicate
 no-op. Live approval/send/reconciliation remain pending deployment of this compatibility fix.
 No secrets or runtime records are included here; existing acceptance evidence is not overwritten.
+
+Deployment follow-up: the owner explicitly authorized merging PR #95. All seven CI checks
+passed and review had no findings. Merge `e2c4083` completed at 17:28:25 UTC; the normal
+updater reported `updated` at 17:31:28 UTC, with all four application services active.
+The original version-1 draft survived restart, still awaiting approval with no send intent
+or receipt. The connected Slack sender appended attribution to the approval command;
+strict argument validation rejected it before dispatch. The initial diagnosis of ineffective
+computer-control input was incorrect: the owner's Slackbot screenshot showed that Slack
+intercepts a leading `/` as an unregistered app slash command.
+
+**LIVE TEST PASS, November 16 at 17:21–17:22 America/Los_Angeles.** Under the owner's
+existing test-send authorization, Codex submitted the exact saved approval through the
+authenticated administrator's Slack web UI with one space before `/partnership`. The original
+version-1 checkpoint resumed after intervening deployments. Resend accepted the email to the
+designated test address; read-only reconciliation matched the exact sender, recipient, subject
+and body and recorded `delivered`. A repeated approval returned the same receipt and retained
+the original decision/send-intent timestamps. [Slack acceptance and delivery evidence](https://reinprotocolf-e2q1425.slack.com/archives/C0C4L0YN814/p1794878546727399).
+Runtime revision: `9ed4cb2`, including PR #95. This verifies the authorized test workflow and
+provider-reported delivery, not inbox placement, reading, or real-partner outreach authority.
+The preview, skill and runbook now explain plain-text submission with a leading space and no
+connector attribution. These wording changes require publication; the working production
+path uses the already deployed implementation. No runtime records or credentials committed.
 
 ## 2026-11-15 — Community runtime ticket accepted and closed
 

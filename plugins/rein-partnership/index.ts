@@ -3,6 +3,7 @@ import { definePluginEntry } from 'openclaw/plugin-sdk/plugin-entry';
 import { createSlackDevelopmentAuthorizer } from '../rein-router/slack-development.mjs';
 import { createNativeLobster } from './native.mjs';
 import { createResendMail } from './mail.mjs';
+import { createSlackControlPublisher, partnershipNamespace } from './slack-controls.mjs';
 import { validatePartnershipConfig, assertPartnershipRuntimeConfig, createPartnershipWorkflow } from './workflow.mjs';
 
 export default definePluginEntry({
@@ -17,8 +18,10 @@ export default definePluginEntry({
       authorize: createSlackDevelopmentAuthorizer({ config: { developmentChannels: [config.channel] } }),
       lobster: createNativeLobster({ stateDir: path.join(stateDir, 'lobster') }),
       mail: createResendMail({ apiKey: process.env[config.apiKeyEnvVar] }),
+      publishControls: createSlackControlPublisher(api),
     });
     api.registerTool(runtime.toolFactory, { names: ['rein_partnership'], optional: true });
+    api.registerInteractiveHandler({ channel: 'slack', namespace: partnershipNamespace, handler: runtime.interactive });
     api.registerCommand({ name: 'partnership', description: 'Approve, cancel, inspect or reconcile a saved partnership test draft.',
       channels: ['slack'], requireAuth: true, acceptsArgs: true, handler: runtime.command });
     api.on('before_agent_run', runtime.beforeAgentRun, { priority: 200, timeoutMs: 9000 });

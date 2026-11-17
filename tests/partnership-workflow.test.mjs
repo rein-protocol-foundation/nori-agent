@@ -9,6 +9,7 @@ import { once } from 'node:events';
 import { createPartnershipWorkflow, validatePartnershipConfig, assertPartnershipRuntimeConfig } from '../plugins/rein-partnership/workflow.mjs';
 import { createNativeLobster } from '../plugins/rein-partnership/native.mjs';
 import { createPartnershipStore } from '../plugins/rein-partnership/store.mjs';
+import { createSlackControlPublisher, partnershipControls } from '../plugins/rein-partnership/slack-controls.mjs';
 
 const base = { enabled: true, channel: { accountId: 'default', workspaceId: 'TTEST001', channelId: 'CTEST001', agentId: 'main', botTokenEnvVar: 'SLACK_BOT_TOKEN' },
   from: 'noreply@example.org', testRecipients: ['test@example.org'], approvalTtlMs: 60_000 };
@@ -27,7 +28,8 @@ async function fixture(t, options = {}) {
     async retrieve(id) { gets.push(id); return { id, from: base.from, to: [args.to], subject: args.subject, text: args.text, last_event: 'delivered' }; },
   };
   const lobster = options.lobster ?? createNativeLobster({ stateDir: path.join(stateDir, 'lobster') });
-  const make = (changes = {}) => createPartnershipWorkflow({ config, authorize: async () => member, stateDir, lobster, mail, clock: () => now, ...changes });
+  const make = (changes = {}) => createPartnershipWorkflow({ config, authorize: async () => member, stateDir, lobster, mail, clock: () => now,
+    publishControls: options.publishControls, ...changes });
   let runtime = make();
   async function prepare(input = {}, context = {}, toolContext = {}) {
     const ctx = { ...source, ...context, runId: randomUUID() };
@@ -260,4 +262,78 @@ test('native Slack lowercase command identity retains exact approver and current
   assert.equal(seen.at(-1), 'UALICE01');
   await f.command(draft.approveCommand, { senderId: 'ualice01' });
   assert.equal(f.posts.length, 1);
+});
+
+async function buttonFixture(t) {
+  const cards = [], updates = [], errors = [];
+  const f = await fixture(t, { publishControls: async ({ details, nonce }) => {
+    const messageId = `2000.${cards.length + 1}`;
+    cards.push({ details, nonce, messageId, ...partnershipControls(details, nonce) }); return messageId;
+  } });
+  const click = async (card, action = 'approve', changes = {}) => f.runtime.interactive({ channel: 'slack', accountId: 'default',
+    conversationId: 'CTEST001', senderId: 'UALICE01', threadId: '1000.001', auth: { isAuthorizedSender: true },
+    interaction: { namespace: 'rein-partnership', kind: 'button', messageTs: card.messageId,
+      payload: `${action}:${card.details.taskId}:${card.nonce}` },
+    respond: { editMessage: async value => updates.push(value), reply: async value => errors.push(value) }, ...changes });
+  return { ...f, cards, updates, errors, click };
+}
+
+test('Slack buttons approve exact draft after restart, replace actions, reconcile delivery, and never resend', async t => {
+  const f = await buttonFixture(t), draft = await f.prepare();
+  assert.equal(draft.approvalMode, 'buttons'); assert.match(f.previews[0].text, /无需输入命令/);
+  assert.ok(!f.previews[0].text.includes('/partnership approve'));
+  const card = f.cards[0]; assert.deepEqual(card.blocks.at(-1).elements.map(b => b.text.text), ['批准并发送测试邮件', '取消']);
+  f.restart();
+  assert.equal((await f.click(card)).handled, true);
+  assert.equal(f.errors.length, 0); assert.equal(f.posts.length, 1); assert.deepEqual(f.posts[0].material, draft.material);
+  assert.deepEqual(f.updates.at(-1).blocks.at(-1).elements.map(b => b.text.text), ['刷新送达状态']);
+  await f.click(card); assert.equal(f.posts.length, 1);
+  await f.click(card, 'reconcile'); assert.equal(f.gets.length, 1); assert.match(f.updates.at(-1).text, /已确认送达/);
+});
+
+test('Slack button binding rejects wrong native authority, message, scope, namespace, user, and nonce', async t => {
+  const f = await buttonFixture(t); await f.prepare(); const card = f.cards[0];
+  for (const changes of [{ senderId: 'UBOB0001' }, { accountId: 'other' }, { conversationId: 'COTHER01' },
+    { threadId: '1000.999' }, { threadId: undefined }, { channel: 'discord' }, { auth: { isAuthorizedSender: false } },
+    { interaction: { namespace: 'rein-partnership', kind: 'button', messageTs: '9999.1', payload: `approve:${card.details.taskId}:${card.nonce}` } },
+    { interaction: { namespace: 'other', kind: 'button', messageTs: card.messageId, payload: `approve:${card.details.taskId}:${card.nonce}` } },
+    { interaction: { namespace: 'rein-partnership', kind: 'button', messageTs: card.messageId, payload: `approve:${card.details.taskId}:${randomUUID()}` } }]) {
+    const before = f.errors.length; await f.click(card, 'approve', changes); assert.equal(f.errors.length, before + 1);
+  }
+  f.setMember(false); await f.click(card); assert.match(f.errors.at(-1).text, /未通过审批权限检查/);
+  assert.equal(f.posts.length, 0); assert.equal(f.updates.length, 0);
+});
+
+test('Slack stale and cancelled cards cannot send, expiry updates card without active approval buttons', async t => {
+  const f = await buttonFixture(t), old = await f.prepare();
+  await f.prepare({ taskId: old.taskId, expectedVersion: old.version, text: 'New draft' });
+  await f.click(f.cards[0]); assert.equal(f.posts.length, 0); assert.match(f.errors.at(-1).text, /此卡片不可用/);
+  await f.click(f.cards[1], 'cancel'); await f.click(f.cards[1]); assert.equal(f.posts.length, 0);
+  assert.match(f.updates.at(-1).text, /已取消/); assert.ok(!f.updates.at(-1).blocks.some(b => b.type === 'actions'));
+  await f.prepare(); f.advance(60_000); await f.click(f.cards[2]); assert.match(f.updates.at(-1).text, /已过期/);
+  assert.equal(f.posts.length, 0);
+});
+
+test('Slack publication failure and UI update failure never authorize a retry', async t => {
+  const failed = await fixture(t, { publishControls: async () => { throw Error('transport'); } });
+  const blocked = await failed.prepare(); assert.equal(blocked.status, 'blocked');
+  assert.equal((await failed.command(`/partnership approve ${blocked.taskId} ${blocked.version} ${blocked.digest} ${blocked.checkpointId}`)).status, 'blocked');
+  assert.equal(failed.posts.length, 0);
+  const f = await buttonFixture(t); await f.prepare();
+  await f.click(f.cards[0], 'approve', { respond: { editMessage: async () => { throw Error('transport'); }, reply: async value => f.errors.push(value) } });
+  assert.equal(f.posts.length, 1); assert.match(f.errors.at(-1).text, /操作已记录/);
+  await f.click(f.cards[0]); assert.equal(f.posts.length, 1);
+});
+
+test('Slack control publisher uses native account/thread, custody hooks and an accepted message receipt', async () => {
+  let sent, checks = 0;
+  const publish = createSlackControlPublisher({ config: { channels: { slack: {} } }, runtime: { channel: { outbound: {
+    loadAdapter: async channel => { assert.equal(channel, 'slack'); return { sendPayload: async ctx => {
+      sent = ctx; ctx.assertDirectAdapterHandoff(); await ctx.onPlatformSendDispatch(); return { channel: 'slack', messageId: '2000.1' };
+    } }; },
+  } } } });
+  assert.equal(await publish({ details: { status: 'awaiting_approval', taskId: randomUUID(), version: 1, material: args }, nonce: randomUUID(),
+    source: { ...source, threadId: '1000.001' }, current: async () => checks++, assertInvocationCurrent: () => checks++ }), '2000.1');
+  assert.equal(checks, 3); assert.equal(sent.threadId, '1000.001'); assert.equal(sent.to, 'channel:CTEST001');
+  assert.equal(sent.accountId, 'default'); assert.equal(sent.payload.channelData.slack.blocks.at(-1).type, 'actions');
 });
