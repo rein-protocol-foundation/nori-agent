@@ -37,11 +37,34 @@ def snapshot(count=1, edition="daily"):
             "sources": [{"id": "fixture", "ok": True, "entries": count, "rejected": 0}], "candidates": items}
 
 
-def draft(value):
+def legacy_draft(value):
     return {"items": [{"id": item["id"], "title": "研究团队发布新的语言模型",
                        "summary": "研究团队公布了一项新模型，并提供公开技术说明供开发者核查。",
                        "comment": "我会先在公开样例上检查长文本表现，再判断是否值得用于公益项目的材料整理。"}
                       for item in value["candidates"]]}
+
+
+def draft(value):
+    original = legacy_draft(value)
+    return {"schemaVersion": 2, "items": [{"id": item["id"],
+        "zh": {key: item[key] for key in ("title", "summary", "comment")},
+        "en": {"title": "Researchers publish a new language model",
+               "summary": "The team published a model with public technical notes that developers can inspect.",
+               "comment": "I would test the public examples on long documents before using this model to organize nonprofit project materials."}}
+        for item in original["items"]]}
+
+
+def completed_legacy(directory, value):
+    cfg = config(directory)
+    binding = news._legacy_binding(cfg, value, legacy_draft(value))
+    chunks = {platform + ":" + str(index): {"status": "sent", "receipt": {
+        "messageId": f"fixture-legacy-{platform}-{index}", "channel": platform,
+        "target": cfg["targets"][platform]}}
+        for platform in ("slack", "discord") for index in range(len(binding["messages"][platform]))}
+    ledger = {"fingerprint": news._fingerprint(binding), "binding": binding, "chunks": chunks}
+    path = Path(directory) / "delivery" / (value["editionId"] + ".json")
+    news.write_json(path, ledger)
+    return path, ledger
 
 
 def config(directory):
@@ -153,7 +176,7 @@ class CollectionTests(unittest.TestCase):
             _, value = news.collect(directory, now=NOW, sources=[SOURCE, bad], fetcher=fetch)
             text = news.render(value, draft(value))["slack"][0]
             self.assertIn("1/2", text)
-            self.assertIn("获取失败", text)
+            self.assertIn("来源：1/2 可用", text)
             _, weekly = news.collect(directory, edition="weekly", now=NOW, sources=[SOURCE],
                                      fetcher=lambda _: b"<rss><channel/></rss>")
             self.assertEqual(len(weekly["candidates"]), 1)
@@ -165,7 +188,7 @@ class CollectionTests(unittest.TestCase):
             with self.assertRaises(news.NewsError):
                 news.collect(directory, now=NOW, sources=[SOURCE], fetcher=lambda _: feed(date=""))
             _, value = news.collect(directory, now=NOW, sources=[SOURCE], fetcher=lambda _: b"<rss><channel/></rss>")
-            self.assertIn("没有符合时间范围", news.render(value, {"items": []})["slack"][0])
+            self.assertIn("没有符合时间范围", news.render(value, {"schemaVersion": 2, "items": []})["slack"][0])
 
     def test_future_dates_and_changed_date_do_not_recycle(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -182,7 +205,7 @@ class EditorialTests(unittest.TestCase):
         value = snapshot(10)
         result = news.render(value, draft(value))
         self.assertEqual(result["slack"], result["discord"])
-        self.assertLessEqual(len(result["slack"]), 5)
+        self.assertLessEqual(len(result["slack"]), 20)
         self.assertEqual(sum(t.count("Nori 点评：") for t in result["slack"]), 10)
         for text, card in zip(result["discord"], result["presentations"]):
             self.assertLess(news.utf16_length(text), 1800)
@@ -199,23 +222,27 @@ class EditorialTests(unittest.TestCase):
         before = json.dumps(value, sort_keys=True)
         result = news.render(value, draft(value))
         text = "\n".join(result["slack"])
-        self.assertIn("Nori AI 周报 · 2026年", text)
-        self.assertIn("11月9日 00:00 至 11月16日 00:00（洛杉矶时间，结束时刻不含）", text)
-        self.assertIn("Fixture News · 11月15日 11:00", text)
+        self.assertIn("Nori AI 周报 · 中文", text)
+        self.assertIn("Nori AI Weekly · English", text)
+        self.assertIn("11 月 16 日 9:00 PST", text)
+        self.assertIn("Nov 16, 9:00 AM PST", text)
+        self.assertIn("Fixture News · 11 月 15 日 11:00 PST", text)
         self.assertNotIn("America/Los_Angeles", text)
-        self.assertNotRegex(text, r"\d{4}-\d\d-\d\dT|\d\d:\d\d:\d\d|[+-]\d\d:\d\d")
+        self.assertNotIn("结束时刻", text)
+        self.assertNotRegex(text, r"第\s*\d+.*页|(?i:part|page)\s+\d+|\d{4}-\d\d-\d\dT|\d\d:\d\d:\d\d")
         self.assertEqual(before, json.dumps(value, sort_keys=True))
-        for index, card in enumerate(result["presentations"], 1):
-            self.assertTrue(card["title"].endswith(f"第 {index}/{len(result['presentations'])} 页"))
-            self.assertEqual(sum("Nori AI 周报" in b.get("text", "") for b in card["blocks"]), 0)
-        one = news.render(snapshot(), draft(snapshot()))
-        self.assertNotIn("页", one["presentations"][0]["title"])
+        for card in result["presentations"]:
+            self.assertNotIn("页", card["title"])
+            self.assertEqual(sum("Nori AI" in b.get("text", "") for b in card["blocks"]), 0)
 
-    def test_cross_year_window_names_both_years(self):
+    def test_weekly_coverage_range_stays_short(self):
         value = snapshot(0)
         value.update(news.edition_window("weekly", news.parse_date("2027-01-04T09:00:00-08:00"), "America/Los_Angeles"))
-        text = news.render(value, {"items": []})["slack"][0]
-        self.assertIn("2026年12月28日 00:00 至 2027年1月4日 00:00", text)
+        value["collectedAt"] = "2027-01-04T17:00:00Z"
+        text = "\n".join(news.render(value, {"schemaVersion": 2, "items": []})["slack"])
+        self.assertIn("本期：12 月 28 日–1 月 3 日", text)
+        self.assertIn("Week: Dec 28–Jan 3", text)
+        self.assertIn("Jan 4, 9:00 AM PST", text)
 
     def test_formatting_injection_rejected(self):
         value = snapshot()
@@ -223,7 +250,7 @@ class EditorialTests(unittest.TestCase):
                      "中文\n标题", "[中文链接](https://example.org)", "中文\u202e文字", "值得注意的是新模型发布"):
             with self.subTest(text=text):
                 data = draft(value)
-                data["items"][0]["title"] = text
+                data["items"][0]["zh"]["title"] = text
                 with self.assertRaises(news.NewsError):
                     news.render(value, data)
 
@@ -244,8 +271,8 @@ class EditorialTests(unittest.TestCase):
         value = snapshot(10)
         data = draft(value)
         for item in data["items"]:
-            item["summary"] = "中" + "😀" * 279
-            item["comment"] = "文" + "😀" * 179
+            item["zh"]["summary"] = "中" + "😀" * 279
+            item["zh"]["comment"] = "文" + "😀" * 179
         result = news.render(value, data)
         self.assertTrue(all(news.utf16_length(t) < 1800 for t in result["discord"]))
         value = snapshot()
@@ -257,7 +284,7 @@ class EditorialTests(unittest.TestCase):
     def test_immutable_snapshot_window_and_empty_claim(self):
         value = snapshot()
         with self.assertRaises(news.NewsError):
-            news.render(value, {"items": []})
+            news.render(value, {"schemaVersion": 2, "items": []})
         value["editionId"] = "daily-2026-11-15"
         with self.assertRaises(news.NewsError):
             news.render(value, draft(value))
@@ -272,13 +299,13 @@ class DeliveryTests(unittest.TestCase):
             self.assertEqual(calls, [])
             first = news.publish(cfg, value, draft(value), send=True, runner=sender(calls))
             self.assertEqual(first["status"], "sent")
-            self.assertEqual(len(calls), 2)
+            self.assertEqual(len(calls), 4)
             self.assertIn("--presentation", calls[0])
             self.assertTrue(all("--message" not in call for call in calls))
             self.assertEqual(news.publish(cfg, value, draft(value), send=True, runner=sender(calls))["status"], "sent")
-            self.assertEqual(len(calls), 2)
+            self.assertEqual(len(calls), 4)
             changed = draft(value)
-            changed["items"][0]["comment"] += "还需要进一步检查。"
+            changed["items"][0]["zh"]["comment"] += "还需要进一步检查。"
             with self.assertRaises(news.NewsError):
                 news.publish(cfg, value, changed, send=True, runner=sender(calls))
 
@@ -289,7 +316,7 @@ class DeliveryTests(unittest.TestCase):
             def runner(command, **kwargs):
                 ledger = news.read_json(Path(directory) / "delivery" / (value["editionId"] + ".json"))
                 platform = command[command.index("--channel") + 1]
-                self.assertEqual(ledger["chunks"][platform + ":0"]["status"], "intent")
+                self.assertEqual(ledger["chunks"][platform + (":zh:0" if "中文" in command[command.index("--presentation") + 1] else ":en:0")]["status"], "intent")
                 if platform == "slack":
                     calls.append(command)
                     raise subprocess.TimeoutExpired(command, 90)
@@ -297,9 +324,9 @@ class DeliveryTests(unittest.TestCase):
             result = news.publish(cfg, value, draft(value), send=True, runner=runner)
             self.assertEqual(result["status"], "incomplete")
             self.assertEqual(result["platforms"]["discord"], "sent")
-            self.assertEqual(len(calls), 2)
+            self.assertEqual(len(calls), 3)
             news.publish(cfg, value, draft(value), send=True, runner=runner)
-            self.assertEqual(len(calls), 2)
+            self.assertEqual(len(calls), 3)
 
     def test_process_interruption_keeps_intent_and_suppresses_resend(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -310,7 +337,7 @@ class DeliveryTests(unittest.TestCase):
                 news.publish(config(directory), value, draft(value), send=True, runner=interrupt)
             result = news.publish(config(directory), value, draft(value), send=True, runner=sender(calls))
             self.assertEqual(result["status"], "incomplete")
-            self.assertEqual(len(calls), 1)
+            self.assertEqual(len(calls), 2)
             self.assertEqual(calls[0][calls[0].index("--channel") + 1], "discord")
 
     def test_partial_chunk_failure_preserves_earlier_receipts(self):
@@ -327,8 +354,8 @@ class DeliveryTests(unittest.TestCase):
             result = news.publish(config(directory), value, draft(value), send=True, runner=runner)
             self.assertEqual(result["status"], "incomplete")
             ledger = news.read_json(result["ledger"])
-            self.assertEqual(ledger["chunks"]["slack:0"]["status"], "sent")
-            self.assertEqual(ledger["chunks"]["slack:1"]["status"], "uncertain")
+            self.assertEqual(ledger["chunks"]["slack:zh:0"]["status"], "sent")
+            self.assertEqual(ledger["chunks"]["slack:zh:1"]["status"], "uncertain")
             self.assertEqual(result["platforms"]["discord"], "sent")
             previous = len(calls)
             news.publish(config(directory), value, draft(value), send=True, runner=runner)
@@ -367,6 +394,203 @@ class DeliveryTests(unittest.TestCase):
                 result = news.read_json(Path(directory) / (platform + ".json"))
                 self.assertIn("message", result["messages"][0])
                 self.assertIn("presentation", result["messages"][0])
+
+
+class BilingualTests(unittest.TestCase):
+    def test_same_events_order_links_and_full_chinese_before_english(self):
+        value = snapshot(4)
+        data = draft(value)
+        data["items"] = [data["items"][i] for i in (3, 1, 0)]
+        result = news.render(value, data)
+        expected = [item["id"] for item in data["items"]]
+        languages = result["languages"]
+        self.assertEqual(languages, sorted(languages, key=lambda lang: lang == "en"))
+        self.assertEqual(result["slack"], result["discord"])
+        for language in ("zh", "en"):
+            indexes = [i for i, lang in enumerate(languages) if lang == language]
+            self.assertEqual([identifier for i in indexes for identifier in result["itemIds"][i]], expected)
+            body = "\n".join(result["slack"][i] for i in indexes)
+            for identifier in expected:
+                url = next(item["url"] for item in value["candidates"] if item["id"] == identifier)
+                self.assertEqual(body.count(url), 1)
+            for i in indexes:
+                self.assertLess(news.utf16_length(result["slack"][i]), 1800)
+                self.assertLess(news.utf16_length(news._native_fallback(result["presentations"][i])), 1800)
+                self.assertLessEqual(len(result["itemIds"][i]), 3)
+        self.assertEqual(sum(t.count("Nori 点评：") for t in result["slack"]), 3)
+        self.assertEqual(sum(t.count("Nori's take:") for t in result["slack"]), 3)
+
+    def test_english_validation_and_both_versions_precede_any_send(self):
+        value = snapshot()
+        for title in ("A **new** model", "A model @everyone", "<b>A new model</b>",
+                      "A model\nlaunch", "A model https://example.org/", "As an AI I see a model", "新的语言模型发布", "Part 1/2: The model"):
+            data = draft(value)
+            data["items"][0]["en"]["title"] = title
+            with tempfile.TemporaryDirectory() as directory:
+                calls = []
+                with self.subTest(title=title), self.assertRaises(news.NewsError):
+                    news.publish(config(directory), value, data, send=True, runner=sender(calls))
+                self.assertEqual(calls, [])
+                self.assertFalse((Path(directory) / "delivery").exists())
+        data = draft(value)
+        del data["items"][0]["en"]
+        with self.assertRaises(news.NewsError):
+            news.render(value, data)
+        with self.assertRaises(news.NewsError):
+            news.render(value, legacy_draft(value))
+
+    def test_natural_english_lengths_and_native_budget(self):
+        value = snapshot(10)
+        data = draft(value)
+        for item in data["items"]:
+            item["en"]["title"] = "Researchers publish a new model with public technical notes"
+            item["en"]["summary"] = ("Developers can inspect the public examples and compare the documented limits. " * 7).strip()
+            item["en"]["comment"] = ("I would check document accuracy before adopting this model. " * 6).strip()
+        result = news.render(value, data)
+        for card in result["presentations"]:
+            self.assertLess(news.utf16_length(news._native_fallback(card)), 1800)
+        data["items"][0]["en"]["summary"] = "x" * 601
+        with self.assertRaises(news.NewsError):
+            news.render(value, data)
+
+    def test_timestamp_dst_uses_issuance_and_local_abbreviation(self):
+        zone = news.ZoneInfo("America/Los_Angeles")
+        for timestamp, zh, en in (
+            ("2026-03-08T09:30:00Z", "3 月 8 日 1:30 PST", "Mar 8, 1:30 AM PST"),
+            ("2026-03-08T10:30:00Z", "3 月 8 日 3:30 PDT", "Mar 8, 3:30 AM PDT"),
+            ("2026-11-01T08:30:00Z", "11 月 1 日 1:30 PDT", "Nov 1, 1:30 AM PDT"),
+            ("2026-11-01T09:30:00Z", "11 月 1 日 1:30 PST", "Nov 1, 1:30 AM PST")):
+            instant = news.parse_date(timestamp)
+            self.assertEqual(news.issue_time(instant, zone, "zh"), zh)
+            self.assertEqual(news.issue_time(instant, zone, "en"), en)
+
+    def test_english_uncertainty_blocks_resends_and_freezes_whole_edition(self):
+        value = snapshot()
+        with tempfile.TemporaryDirectory() as directory:
+            calls = []
+            def runner(command, **kwargs):
+                presentation = json.loads(command[command.index("--presentation") + 1])
+                if command[command.index("--channel") + 1] == "slack" and "English" in presentation["title"]:
+                    calls.append(command)
+                    raise subprocess.TimeoutExpired(command, 90)
+                return sender(calls)(command, **kwargs)
+            result = news.publish(config(directory), value, draft(value), send=True, runner=runner)
+            self.assertEqual(result["status"], "incomplete")
+            ledger = news.read_json(result["ledger"])
+            self.assertEqual(ledger["chunks"]["slack:zh:0"]["status"], "sent")
+            self.assertEqual(ledger["chunks"]["slack:en:0"]["status"], "uncertain")
+            self.assertEqual(len(calls), 4)
+            news.publish(config(directory), value, draft(value), send=True, runner=runner)
+            self.assertEqual(len(calls), 4)
+            changed = draft(value)
+            changed["items"][0]["en"]["comment"] += " I would also inspect source attribution."
+            with self.assertRaises(news.NewsError):
+                news.publish(config(directory), value, changed, send=True, runner=runner)
+            self.assertEqual(len(calls), 4)
+
+
+class LegacyCompatibilityTests(unittest.TestCase):
+    def test_exact_legacy_fingerprints_are_frozen(self):
+        for count, edition, fingerprint in (
+            (1, "daily", "82108cbade3a1c8e66e6de6a84bb6ffbf1a1364293d3e62ab5c4a494f6c76662"),
+            (10, "weekly", "164e2c1274e13e2b075685426ea93eba12c93be99709dec7ff0c6fa8c84d2f61")):
+            value = snapshot(count, edition)
+            binding = news._legacy_binding(config("/tmp/fixture"), value, legacy_draft(value))
+            self.assertEqual(news._fingerprint(binding), fingerprint)
+            self.assertEqual(news._legacy_binding(config("/tmp/fixture"), value, draft(value)), binding)
+
+    def test_completed_legacy_is_verified_no_op_and_never_rewritten(self):
+        value = snapshot()
+        with tempfile.TemporaryDirectory() as directory:
+            path, _ = completed_legacy(directory, value)
+            before, calls = path.read_bytes(), []
+            for data in (legacy_draft(value), draft(value)):
+                result = news.publish(config(directory), value, data, send=True, runner=sender(calls))
+                self.assertEqual(result["status"], "sent")
+                self.assertTrue(result["legacy"])
+            self.assertEqual(calls, [])
+            self.assertEqual(path.read_bytes(), before)
+            changed = draft(value)
+            changed["items"][0]["zh"]["title"] += "新消息"
+            with self.assertRaises(news.NewsError):
+                news.publish(config(directory), value, changed, send=True, runner=sender(calls))
+            cfg = config(directory)
+            cfg["targets"]["slack"] = "channel:C999999999"
+            with self.assertRaises(news.NewsError):
+                news.publish(cfg, value, draft(value), send=True, runner=sender(calls))
+            self.assertEqual(path.read_bytes(), before)
+
+    def test_no_new_legacy_publications(self):
+        value = snapshot()
+        with tempfile.TemporaryDirectory() as directory:
+            calls = []
+            with self.assertRaises(news.NewsError):
+                news.publish(config(directory), value, legacy_draft(value), send=True, runner=sender(calls))
+            self.assertEqual(calls, [])
+
+    def test_english_supplement_separate_bound_ledger_and_idempotency(self):
+        value = snapshot(4)
+        with tempfile.TemporaryDirectory() as directory:
+            path, original = completed_legacy(directory, value)
+            before, calls = path.read_bytes(), []
+            preview = news.publish_translation(config(directory), value, draft(value), runner=sender(calls))
+            self.assertEqual(preview["languages"], ["en"] * len(preview["languages"]))
+            self.assertEqual(calls, [])
+            result = news.publish_translation(config(directory), value, draft(value), send=True, runner=sender(calls))
+            self.assertEqual(result["status"], "sent")
+            previous = len(calls)
+            ledger = news.read_json(result["ledger"])
+            self.assertEqual(ledger["binding"]["originalFingerprint"], original["fingerprint"])
+            self.assertEqual(ledger["kind"], "legacy-english-supplement")
+            self.assertTrue(all(":en:" in key for key in ledger["chunks"]))
+            self.assertTrue(all("English" in json.loads(call[call.index("--presentation") + 1])["title"] for call in calls))
+            news.publish_translation(config(directory), value, draft(value), send=True, runner=sender(calls))
+            self.assertEqual(len(calls), previous)
+            self.assertEqual(path.read_bytes(), before)
+            changed = draft(value)
+            changed["items"][0]["en"]["comment"] += " This also needs an attribution check."
+            with self.assertRaises(news.NewsError):
+                news.publish_translation(config(directory), value, changed, send=True, runner=sender(calls))
+            self.assertEqual(len(calls), previous)
+
+    def test_missing_partial_uncertain_or_changed_legacy_blocks_translation(self):
+        value = snapshot()
+        for mutation in (lambda ledger: ledger["chunks"].pop("slack:0"),
+                         lambda ledger: ledger["chunks"]["slack:0"].update(status="uncertain"),
+                         lambda ledger: ledger["chunks"]["slack:0"].update(status="intent"),
+                         lambda ledger: ledger["chunks"]["slack:0"]["receipt"].update(messageId=""),
+                         lambda ledger: ledger.update(fingerprint="changed")):
+            with tempfile.TemporaryDirectory() as directory:
+                path, ledger = completed_legacy(directory, value)
+                mutation(ledger)
+                news.write_json(path, ledger)
+                before, calls = path.read_bytes(), []
+                with self.assertRaises(news.NewsError):
+                    news.publish_translation(config(directory), value, draft(value), send=True, runner=sender(calls))
+                self.assertEqual(path.read_bytes(), before)
+                self.assertEqual(calls, [])
+                with self.assertRaises(news.NewsError):
+                    news.publish(config(directory), value, draft(value), send=True, runner=sender(calls))
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaises(news.NewsError):
+                news.publish_translation(config(directory), value, draft(value), send=True)
+
+    def test_supplement_uncertainty_never_changes_original_or_retries(self):
+        value = snapshot()
+        with tempfile.TemporaryDirectory() as directory:
+            path, _ = completed_legacy(directory, value)
+            before, calls = path.read_bytes(), []
+            def runner(command, **kwargs):
+                if command[command.index("--channel") + 1] == "slack":
+                    calls.append(command)
+                    raise subprocess.TimeoutExpired(command, 90)
+                return sender(calls)(command, **kwargs)
+            result = news.publish_translation(config(directory), value, draft(value), send=True, runner=runner)
+            self.assertEqual(result["status"], "incomplete")
+            self.assertEqual(len(calls), 2)
+            news.publish_translation(config(directory), value, draft(value), send=True, runner=runner)
+            self.assertEqual(len(calls), 2)
+            self.assertEqual(path.read_bytes(), before)
 
 
 class EvidenceTests(unittest.TestCase):

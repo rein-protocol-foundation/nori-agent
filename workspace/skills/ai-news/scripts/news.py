@@ -402,7 +402,8 @@ def collect(state_dir, edition="daily", timezone_name="America/Los_Angeles", now
     return path, snapshot
 
 
-def editorial_text(value, label, minimum, maximum):
+# Frozen v1 rendering dependencies: only verify old receipts, never publish new v1 messages.
+def _legacy_editorial_text(value, label, minimum, maximum):
     if not isinstance(value, str) or value != value.strip() or not minimum <= len(value) <= maximum:
         raise NewsError(label + " has invalid length or surrounding whitespace")
     if (any(unicodedata.category(c) in {"Cc", "Cf", "Cs"} for c in value)
@@ -418,7 +419,7 @@ def editorial_text(value, label, minimum, maximum):
     return value
 
 
-def validate(snapshot, draft):
+def _legacy_validate(snapshot, draft):
     if not isinstance(draft, dict) or set(draft) != {"items"} or not isinstance(draft["items"], list):
         raise NewsError('draft must have exactly one field: "items"')
     if len(draft["items"]) > 10:
@@ -448,9 +449,9 @@ def validate(snapshot, draft):
             raise NewsError("unknown or duplicate candidate ID")
         seen.add(identifier)
         result.append({**known[identifier],
-                       "title": editorial_text(item["title"], "title", 4, 80),
-                       "summary": editorial_text(item["summary"], "summary", 12, 280),
-                       "comment": editorial_text(item["comment"], "comment", 20, 180)})
+                       "title": _legacy_editorial_text(item["title"], "title", 4, 80),
+                       "summary": _legacy_editorial_text(item["summary"], "summary", 12, 280),
+                       "comment": _legacy_editorial_text(item["comment"], "comment", 20, 180)})
     return result
 
 
@@ -458,8 +459,8 @@ def utf16_length(text):
     return len(text.encode("utf-16-le")) // 2
 
 
-def render(snapshot, draft):
-    items = validate(snapshot, draft)
+def _legacy_render(snapshot, draft):
+    items = _legacy_validate(snapshot, draft)
     zone = ZoneInfo(snapshot["timezone"])
     start, end = parse_date(snapshot["start"]), parse_date(snapshot["end"])
     expected = edition_window(snapshot["edition"], end, snapshot["timezone"])
@@ -528,12 +529,194 @@ def render(snapshot, draft):
             "presentations": cards}
 
 
+
+def editorial_text(value, label, minimum, maximum, language):
+    if not isinstance(value, str) or value != value.strip() or not minimum <= len(value) <= maximum:
+        raise NewsError(label + " has invalid length or surrounding whitespace")
+    if (any(unicodedata.category(c) in {"Cc", "Cf", "Cs"} for c in value)
+            or re.search(r"[`*_~<>\[\]{}|\\@#]", value)
+            or re.match(r"(?:\d+[.)]|[-+])\s", value)
+            or re.search(r"(?:https?://|www\.)", value, re.I)):
+        raise NewsError(label + " must be plain text without markup, mentions or links")
+    has_han = bool(re.search(r"[\u3400-\u9fff]", value))
+    if language == "zh":
+        if not has_han:
+            raise NewsError(label + " must contain Chinese text")
+        cliches = ("作为人工智能", "作为一个AI", "作为AI", "值得注意的是", "综上所述", "让我们拭目以待",
+                   "令人兴奋的", "革命性", "颠覆性", "赋能", "开启新纪元", "不可否认", "不容忽视")
+    else:
+        if has_han or not re.search(r"[A-Za-z]", value):
+            raise NewsError(label + " must be an English version")
+        cliches = ("as an ai", "as a language model", "it is worth noting", "it's worth noting",
+                   "in conclusion", "game-changing", "game changing", "revolutionary", "groundbreaking",
+                   "unlock the potential", "ever-evolving", "let's dive", "delve into", "seamlessly")
+    if any(phrase.lower() in value.lower() for phrase in cliches):
+        raise NewsError(label + " contains generic AI/promotional phrasing")
+    if re.search(r"(?:第\s*\d+\s*[/／]\s*\d+\s*页|\b(?:part|page)\s+\d+\s*(?:/|of)\s*\d+)", value, re.I):
+        raise NewsError(label + " must not contain page or part markers")
+    return value
+
+
+def validate(snapshot, draft):
+    if (not isinstance(draft, dict) or set(draft) != {"schemaVersion", "items"}
+            or type(draft["schemaVersion"]) is not int or draft["schemaVersion"] != 2
+            or not isinstance(draft["items"], list)):
+        raise NewsError("new editions require schemaVersion 2 and bilingual items")
+    if len(draft["items"]) > 10:
+        raise NewsError("an edition can contain at most ten events in each language")
+    known = {}
+    start, end = parse_date(snapshot["start"]), parse_date(snapshot["end"])
+    expected = edition_window(snapshot["edition"], end, snapshot["timezone"])
+    if any(expected[key] != snapshot[key] for key in ("editionId", "start", "end")):
+        raise NewsError("snapshot edition identity/window mismatch")
+    parse_date(snapshot["collectedAt"])
+    for candidate in snapshot["candidates"]:
+        url = public_url(candidate["url"])
+        identifier = candidate["id"]
+        if (identifier in known or url != candidate["url"]
+                or hashlib.sha256(url.encode()).hexdigest()[:24] != identifier
+                or not start <= parse_date(candidate["publishedAt"]) < end):
+            raise NewsError("snapshot contains invalid, duplicate or out-of-window candidates")
+        known[identifier] = candidate
+    if not any(source["ok"] for source in snapshot["sources"]):
+        raise NewsError("snapshot has no successful source")
+    if known and not draft["items"]:
+        raise NewsError("do not call a nonempty candidate window empty; select relevant events")
+    seen, result = set(), []
+    limits = {"zh": {"title": (4, 80), "summary": (12, 280), "comment": (20, 180)},
+              "en": {"title": (8, 140), "summary": (20, 600), "comment": (30, 420)}}
+    for item in draft["items"]:
+        if not isinstance(item, dict) or set(item) != {"id", "zh", "en"}:
+            raise NewsError("each bilingual item requires exactly id, zh, en")
+        identifier = item["id"]
+        if not isinstance(identifier, str) or identifier not in known or identifier in seen:
+            raise NewsError("unknown or duplicate candidate ID")
+        seen.add(identifier)
+        selected = {**known[identifier]}
+        for language in ("zh", "en"):
+            version = item[language]
+            if not isinstance(version, dict) or set(version) != {"title", "summary", "comment"}:
+                raise NewsError(language + " requires exactly title, summary, comment")
+            selected[language] = {field: editorial_text(version[field], language + "." + field,
+                *bounds, language) for field, bounds in limits[language].items()}
+        result.append(selected)
+    return result
+
+
+_MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+
+def issue_time(value, zone, language):
+    local = value.astimezone(zone)
+    abbreviation = local.tzname() or "UTC"
+    if language == "zh":
+        return f"{local.month} 月 {local.day} 日 {local.hour}:{local.minute:02d} {abbreviation}"
+    hour = local.hour % 12 or 12
+    return f"{_MONTHS[local.month - 1]} {local.day}, {hour}:{local.minute:02d} {'AM' if local.hour < 12 else 'PM'} {abbreviation}"
+
+
+def _native_fallback(card):
+    """Exact public SDK fallback for our text/context/URL-button subset."""
+    lines = [card["title"]]
+    for block in card["blocks"]:
+        if block["type"] in {"text", "context"}:
+            lines.append(block["text"])
+        elif block["type"] == "buttons":
+            lines.append("\n".join("- " + button["label"] + ": " + button["action"]["url"]
+                                   for button in block["buttons"]))
+    return "\n\n".join(lines)
+
+
+def _render_language(snapshot, items, language):
+    zone = ZoneInfo(snapshot["timezone"])
+    daily = snapshot["edition"] == "daily"
+    heading = (("Nori AI 日报 · 中文" if daily else "Nori AI 周报 · 中文") if language == "zh"
+               else ("Nori AI Daily · English" if daily else "Nori AI Weekly · English"))
+    context = issue_time(parse_date(snapshot["collectedAt"]), zone, language)
+    if not daily:
+        start = parse_date(snapshot["start"]).astimezone(zone)
+        last = parse_date(snapshot["end"]).astimezone(zone) - timedelta(days=1)
+        if language == "zh":
+            context += f"\n本期：{start.month} 月 {start.day} 日–{last.month} 月 {last.day} 日"
+        else:
+            context += f"\nWeek: {_MONTHS[start.month - 1]} {start.day}–{_MONTHS[last.month - 1]} {last.day}"
+    failed = sum(not source["ok"] for source in snapshot["sources"])
+    rejected = sum(source.get("rejected", 0) for source in snapshot["sources"])
+    if failed or rejected:
+        available, total = len(snapshot["sources"]) - failed, len(snapshot["sources"])
+        if language == "zh":
+            context += f"\n来源：{available}/{total} 可用"
+            if rejected:
+                context += f"；跳过 {rejected} 条日期或链接无效的记录"
+        else:
+            context += f"\nSources: {available}/{total} available"
+            if rejected:
+                context += f"; {rejected} entries with invalid dates or links skipped"
+    if not daily and len(items) < 10:
+        context += (f"\n本期精选 {len(items)} 条。" if language == "zh"
+                    else f"This edition includes {len(items)} selected stories.")
+    chunks, cards, identifiers = [], [], []
+    current, blocks, current_ids = heading + "\n" + context, [{"type": "context", "text": context}], []
+    def flush():
+        card = {"title": heading, "tone": "info", "blocks": blocks.copy()}
+        if utf16_length(current) > MAX_CHUNK_UNITS or utf16_length(_native_fallback(card)) > MAX_CHUNK_UNITS:
+            raise NewsError("one article exceeds the message limit; shorten both language versions")
+        chunks.append(current)
+        cards.append(card)
+        identifiers.append(current_ids.copy())
+    if not items:
+        empty = ("本期在成功获取的来源中，没有符合时间范围的新闻；其他来源仍可能有新消息。" if language == "zh"
+                 else "No in-window stories were found in the sources retrieved successfully. Other sources may have news.")
+        current += "\n\n" + empty
+        blocks.append({"type": "text", "text": empty})
+    for index, item in enumerate(items, 1):
+        version = item[language]
+        story = (f"{index}．{version['title']}\n摘要：{version['summary']}\nNori 点评：{version['comment']}"
+                 if language == "zh" else f"{index}. {version['title']}\nSummary: {version['summary']}\nNori's take: {version['comment']}")
+        metadata = clean_text(item["source"], 80) + " · " + issue_time(parse_date(item["publishedAt"]), zone, language)
+        block_text = story + "\n" + metadata + "\n" + item["url"]
+        additions = ([{"type": "divider"}] if blocks else []) + [
+            {"type": "text", "text": story}, {"type": "context", "text": metadata},
+            {"type": "buttons", "buttons": [{"label": "阅读原文" if language == "zh" else "Read original",
+              "action": {"type": "url", "url": item["url"]}}]}]
+        joined = current + ("\n\n" if current else "") + block_text
+        proposed = {"title": heading, "tone": "info", "blocks": blocks + additions}
+        if len(current_ids) >= 3 or utf16_length(joined) > MAX_CHUNK_UNITS or utf16_length(_native_fallback(proposed)) > MAX_CHUNK_UNITS:
+            flush()
+            current, blocks, current_ids = "", [], []
+            additions = additions[1:] if additions[0]["type"] == "divider" else additions
+            joined = block_text
+        current = joined
+        blocks.extend(additions)
+        current_ids.append(item["id"])
+        # Do not split a story across messages or silently truncate either version.
+        if utf16_length(_native_fallback({"title": heading, "blocks": blocks})) > MAX_CHUNK_UNITS:
+            raise NewsError("one article exceeds the message limit; shorten both language versions")
+    flush()
+    return chunks, cards, identifiers
+
+
+def render(snapshot, draft):
+    items = validate(snapshot, draft)
+    chunks, cards, identifiers, languages = [], [], [], []
+    for language in ("zh", "en"):
+        texts, presentations, selected = _render_language(snapshot, items, language)
+        chunks.extend(texts)
+        cards.extend(presentations)
+        identifiers.extend(selected)
+        languages.extend([language] * len(texts))
+    return {"schemaVersion": 2, "editionId": snapshot["editionId"], "slack": chunks,
+            "discord": chunks.copy(), "presentations": cards, "languages": languages,
+            "itemIds": identifiers}
+
+
 def preview(snapshot, draft, output_dir):
     messages = render(snapshot, draft)
     for platform in ("slack", "discord"):
         write_json(Path(output_dir) / (platform + ".json"),
-                   {"editionId": messages["editionId"], "messages": [
-                       {"message": text, "presentation": messages["presentations"][index]}
+                   {"schemaVersion": 2, "editionId": messages["editionId"], "messages": [
+                       {"language": messages["languages"][index], "itemIds": messages["itemIds"][index],
+                        "message": text, "presentation": messages["presentations"][index]}
                        for index, text in enumerate(messages[platform])]})
     return messages
 
@@ -596,55 +779,132 @@ def validate_config(config):
             raise NewsError("target must be an exact channel ID, not a channel name")
 
 
+
+def _fingerprint(binding):
+    return hashlib.sha256(json.dumps(binding, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
+
+
+def _route_binding(config, messages):
+    return {"messages": messages, "targets": config["targets"],
+            "launchers": config["launchers"], "nodeExecutable": config["nodeExecutable"]}
+
+
+def _legacy_binding(config, snapshot, draft):
+    if isinstance(draft, dict) and draft.get("schemaVersion") == 2:
+        validate(snapshot, draft)
+        draft = {"items": [{"id": item["id"], **item["zh"]} for item in draft["items"]]}
+    return _route_binding(config, _legacy_render(snapshot, draft))
+
+
+def _verify_legacy(config, snapshot, draft, ledger):
+    if "schemaVersion" in ledger:
+        raise NewsError("translation requires an original legacy Chinese delivery ledger")
+    binding = _legacy_binding(config, snapshot, draft)
+    if (ledger.get("binding") != binding or ledger.get("fingerprint") != _fingerprint(binding)
+            or _fingerprint(ledger["binding"]) != ledger["fingerprint"]):
+        raise NewsError("Chinese draft or routes do not match the frozen legacy edition")
+    expected = {platform + ":" + str(index) for platform in ("slack", "discord")
+                for index in range(len(binding["messages"][platform]))}
+    chunks = ledger.get("chunks", {})
+    if set(chunks) != expected:
+        raise NewsError("legacy edition is incomplete; operator reconciliation is required")
+    for key in expected:
+        platform = key.split(":", 1)[0]
+        entry = chunks[key]
+        receipt = entry.get("receipt", {})
+        if (entry.get("status") != "sent" or not isinstance(receipt.get("messageId"), str)
+                or not receipt["messageId"].strip() or receipt.get("channel") != platform
+                or receipt.get("target") != config["targets"][platform]):
+            raise NewsError("legacy edition has uncertain or unverified delivery; translation is blocked")
+    return binding
+
+
+def _deliver(config, messages, path, binding, kind, runner):
+    fingerprint = _fingerprint(binding)
+    ledger = read_json(path) if path.exists() else {
+        "schemaVersion": 2, "kind": kind, "fingerprint": fingerprint, "binding": binding, "chunks": {}}
+    if (ledger.get("schemaVersion") != 2 or ledger.get("kind") != kind
+            or ledger.get("fingerprint") != fingerprint or ledger.get("binding") != binding):
+        raise NewsError("edition content or routing is immutable after the first delivery intent")
+    outcomes = {}
+    for platform in ("slack", "discord"):
+        counters = {"zh": 0, "en": 0}
+        try:
+            for index, language in enumerate(messages["languages"]):
+                key = platform + ":" + language + ":" + str(counters[language])
+                counters[language] += 1
+                old = ledger["chunks"].get(key)
+                if old:
+                    if old["status"] == "sent":
+                        receipt = old.get("receipt", {})
+                        if (receipt.get("channel") != platform or receipt.get("target") != config["targets"][platform]
+                                or not isinstance(receipt.get("messageId"), str) or not receipt["messageId"].strip()):
+                            raise NewsError("stored receipt is invalid; operator reconciliation required")
+                        continue
+                    raise NewsError("uncertain delivery; inspect native channel history before operator reconciliation")
+                ledger["chunks"][key] = {"status": "intent", "at": iso(datetime.now(UTC))}
+                write_json(path, ledger)
+                command = [config["nodeExecutable"], config["launchers"][platform],
+                           "message", "send", "--channel", platform, "--target", config["targets"][platform],
+                           "--presentation", json.dumps(messages["presentations"][index], ensure_ascii=False), "--json"]
+                try:
+                    completed = runner(command, capture_output=True, text=True, timeout=90, check=False)
+                    if completed.returncode != 0:
+                        raise NewsError("native sender exited unsuccessfully")
+                    receipt = verified_receipt(completed.stdout, platform, config["targets"][platform])
+                    ledger["chunks"][key] = {"status": "sent", "receipt": receipt, "at": iso(datetime.now(UTC))}
+                    write_json(path, ledger)
+                except Exception as exc:
+                    ledger["chunks"][key] = {"status": "uncertain", "reason": type(exc).__name__, "at": iso(datetime.now(UTC))}
+                    write_json(path, ledger)
+                    raise NewsError("delivery uncertain; automatic resend is blocked") from exc
+            outcomes[platform] = "sent"
+        except NewsError as exc:
+            outcomes[platform] = str(exc)
+    return {"editionId": messages["editionId"], "status": "sent" if all(value == "sent" for value in outcomes.values())
+            else "incomplete", "platforms": outcomes, "ledger": str(path)}
+
+
 def publish(config, snapshot, draft, send=False, runner=subprocess.run):
     validate_config(config)
-    messages = render(snapshot, draft)
-    if not send:
-        return {"status": "preview", **messages}
-    # Bind both content and route. Changing either after any send intent is unsafe.
-    binding = {"messages": messages, "targets": config["targets"],
-               "launchers": config["launchers"], "nodeExecutable": config["nodeExecutable"]}
-    fingerprint = hashlib.sha256(json.dumps(binding, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
+    path = Path(config["stateDirectory"]) / "delivery" / (snapshot["editionId"] + ".json")
+    # Existing legacy receipts are verified through their exact frozen renderer;
+    # never generate a new legacy publication or rewrite its original ledger.
     with state_lock(config["stateDirectory"]):
-        path = Path(config["stateDirectory"]) / "delivery" / (messages["editionId"] + ".json")
-        ledger = read_json(path) if path.exists() else {"fingerprint": fingerprint, "binding": binding, "chunks": {}}
-        if ledger["fingerprint"] != fingerprint:
-            raise NewsError("edition content or routing is immutable after the first delivery intent")
-        outcomes = {}
-        for platform in ("slack", "discord"):
-            try:
-                for index, _message in enumerate(messages[platform]):
-                    key = platform + ":" + str(index)
-                    old = ledger["chunks"].get(key)
-                    if old:
-                        if old["status"] == "sent":
-                            continue
-                        raise NewsError("uncertain delivery; inspect native channel history before operator reconciliation")
-                    ledger["chunks"][key] = {"status": "intent", "at": iso(datetime.now(UTC))}
-                    write_json(path, ledger)
-                    command = [config["nodeExecutable"], config["launchers"][platform],
-                               "message", "send", "--channel", platform,
-                               "--target", config["targets"][platform],
-                               "--presentation", json.dumps(messages["presentations"][index], ensure_ascii=False), "--json"]
-                    try:
-                        completed = runner(command, capture_output=True, text=True, timeout=90, check=False)
-                        if completed.returncode != 0:
-                            raise NewsError("native sender exited unsuccessfully")
-                        receipt = verified_receipt(completed.stdout, platform, config["targets"][platform])
-                        ledger["chunks"][key] = {"status": "sent", "receipt": receipt,
-                                                  "at": iso(datetime.now(UTC))}
-                        write_json(path, ledger)
-                    except Exception as exc:
-                        ledger["chunks"][key] = {"status": "uncertain", "reason": type(exc).__name__,
-                                                  "at": iso(datetime.now(UTC))}
-                        write_json(path, ledger)
-                        raise NewsError("delivery uncertain; automatic resend is blocked") from exc
-                outcomes[platform] = "sent"
-            except NewsError as exc:
-                outcomes[platform] = str(exc)
-        return {"editionId": messages["editionId"], "status": "sent" if all(
-            value == "sent" for value in outcomes.values()) else "incomplete", "platforms": outcomes,
-                "ledger": str(path)}
+        if path.exists():
+            existing = read_json(path)
+            if "schemaVersion" not in existing:
+                _verify_legacy(config, snapshot, draft, existing)
+                return {"editionId": snapshot["editionId"], "status": "sent", "legacy": True,
+                        "platforms": {"slack": "sent", "discord": "sent"}, "ledger": str(path)}
+        messages = render(snapshot, draft)
+        if not send:
+            return {"status": "preview", **messages}
+        binding = {"schemaVersion": 2, "draft": draft, **_route_binding(config, messages)}
+        return _deliver(config, messages, path, binding, "bilingual", runner)
+
+
+def publish_translation(config, snapshot, draft, send=False, runner=subprocess.run):
+    validate_config(config)
+    messages = render(snapshot, draft)
+    indexes = [index for index, language in enumerate(messages["languages"]) if language == "en"]
+    english = {**messages, "slack": [messages["slack"][i] for i in indexes],
+               "discord": [messages["discord"][i] for i in indexes],
+               "presentations": [messages["presentations"][i] for i in indexes],
+               "languages": ["en"] * len(indexes), "itemIds": [messages["itemIds"][i] for i in indexes]}
+    directory = Path(config["stateDirectory"]) / "delivery"
+    with state_lock(config["stateDirectory"]):
+        original_path = directory / (snapshot["editionId"] + ".json")
+        if not original_path.exists():
+            raise NewsError("English supplement requires the original completed legacy ledger")
+        original = read_json(original_path)
+        _verify_legacy(config, snapshot, draft, original)
+        if not send:
+            return {"status": "preview", "originalFingerprint": original["fingerprint"], **english}
+        binding = {"schemaVersion": 2, "originalFingerprint": original["fingerprint"],
+                   "draft": draft, **_route_binding(config, english)}
+        path = directory / (snapshot["editionId"] + "-translation-en.json")
+        return _deliver(config, english, path, binding, "legacy-english-supplement", runner)
 
 
 def main(argv=None):
@@ -658,7 +918,7 @@ def main(argv=None):
     article = commands.add_parser("evidence")
     article.add_argument("--snapshot", required=True)
     article.add_argument("--id", required=True)
-    for name in ("preview", "publish"):
+    for name in ("preview", "publish", "publish-translation"):
         sub = commands.add_parser(name)
         sub.add_argument("--snapshot", required=True)
         sub.add_argument("--draft", required=True)
@@ -679,7 +939,8 @@ def main(argv=None):
         elif args.command == "preview":
             result = preview(read_json(args.snapshot), read_json(args.draft), args.output_dir)
         else:
-            result = publish(read_json(args.config), read_json(args.snapshot), read_json(args.draft), args.send)
+            operation = publish_translation if args.command == "publish-translation" else publish
+            result = operation(read_json(args.config), read_json(args.snapshot), read_json(args.draft), args.send)
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 1 if result.get("status") == "incomplete" else 0
     except (NewsError, OSError, KeyError, TypeError, json.JSONDecodeError) as exc:
