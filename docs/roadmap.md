@@ -1,5 +1,47 @@
 # Nori-Agent implementation roadmap
 
+## 任务摘要无期限保留与真实任务验收 — 2026-11-16
+
+用户选择服务器摘要无期限保留、默认不删除，Slack原文保留。可选摘要薄适配已实现并本地验证；
+仅新任务opt-in，公开native SQLite worker、自有私有库、当前owner/audience授权、分页、重启、
+删除副本及防复活tombstone。1436 tests pass / 4 existing skips；70 focused pass；真实loader通过。
+原生七天cleanup仅fixture模拟，真实保留/删除尚待Slack验收，不推进产品完成。
+任务控制PR #94已合并并部署66700d0；研究交付/后台聊天/实际进度已观察，勘误已补充。
+真实编码产物独立13测试通过，但ACP两次blocked，完整自主验收未通过；配置与沙箱修复待批准。
+详见[摘要契约](task-summary-retention.md)与[真实验收记录](task-lifecycle-live-2026-11-16.md)。
+负责人Codex；下一步完成实际入口验证。
+
+
+## Task stop/change and recovery follow-up — November 16, 2026
+
+#58 / SA-M2-01–05; owner Codex (runtime-verified Astra Medium).
+**IMPLEMENTED / LOCAL VERIFIED; new live race acceptance pending.** Reconciled the stale checkout
+with `332cdf0` and retained prior PRD/planning/runtime edits. #87–#91 already establish scoped live
+restart/supplement/merged-delivery acceptance; do not redo that development. New changes preserve
+explicit cancellation outcomes, release known-unlaunched reservations, reconcile all-owner status,
+reject foreign settlement receipts and retain concrete gaps on budget exhaustion.
+[Contract, failures and checks](task-continuation-controls.md): 53 targeted checks pass; full suite
+1418 pass / 4 conditional skips / 0 failures on the final version. Native two-process seam
+passes; policy-disabled M1 probe failed its ACP report wait once and passed standalone unchanged.
+No new deployment/live acceptance. Retention/delete and ACP hard deadline remain unsupported;
+#54's accepted Community scope does not waive internal controls. Next: authorized real-entry
+stop/change acceptance; product retention/SDK decision separately. Existing unrelated work retained.
+
+## NORI-AI-NEWS — November 16, 2026
+
+Owner: Codex. **ENABLED / FIRST SCHEDULED DELIVERY VERIFIED**. Nine public feeds and
+native daily 09:00 / Monday 09:15 jobs (America/Los_Angeles). On November 16 the daily
+job started at 09:00:00.020 and sent nine stories as three messages per platform by
+09:03:21; the 09:15 weekly run reused all eight original receipts without re-sending.
+Slack desktop and Discord browser rendering verified, together with both native channel
+payloads. Nine original-link buttons and no exposed Markdown or duplicate bodies observed.
+28 focused Python and eight CI-scope tests pass; Python news tests now run in scaffold CI.
+First interrupted weekly rehearsal is retained as failed evidence. No private runtime data or
+unrelated shared-worktree changes included. [Exact evidence and recovery](ai-news.md).
+Repository rollout: [PR #96](https://github.com/rein-protocol-foundation/nori-agent/pull/96).
+Recovery: retain the native jobs and per-edition receipts across deployments.
+No unrelated product milestone advanced.
+
 ## Partnership production follow-up — November 16, 2026
 
 SA-M3-01–05 / #59; Codex. **AUTHORIZED LIVE TEST PASSED**: exact Slack draft, administrator

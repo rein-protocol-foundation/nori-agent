@@ -1,9 +1,12 @@
 # Native task continuation
 
 Tracking: SA-M2-01–06 / [#58](https://github.com/rein-protocol-foundation/nori-agent/issues/58).
-Updated 2026-11-13, America/Los_Angeles. Owner: Codex orchestrator / runtime-verified
-GPT-6.1 Sol High implementation worker. **CORE IMPLEMENTED / STATIC CHECKS ONLY**.
-Product acceptance remains open; SA-M2-06 selected retention/deletion remains unsupported.
+Updated 2026-11-16, America/Los_Angeles. Owner: Codex (runtime-verified Astra Medium).
+**CORE IMPLEMENTED; SCOPED LIVE RECOVERY ACCEPTED; CONTROL FOLLOW-UP LOCALLY VERIFIED.**
+PRs #87–#91 already record [real two-task restart/supplement/delivery acceptance](task-continuation-live-2026-11-15.md).
+The new [stop/change and budget handoff follow-up](task-continuation-controls.md) has separate local evidence.
+Broader product acceptance remains open. The optional [retained summary adapter](task-summary-retention.md)
+is locally verified; real-user retention/deletion acceptance remains pending.
 
 ## Opt-in native implementation
 
@@ -31,7 +34,9 @@ separate history store, synthetic owner inventory or replacement sessions are in
   associates available canonical backing without replacing its identity. A missing receipt/backing
   blocks retries; it never fabricates a run or infers a failed launch from an observation gap.
 - `status`: reads native evidence and reconciles runs, stop/change intent and deadlines. Native
-  cancellation plus terminal `waitForRun` evidence is required before replacement readiness.
+  settlement evidence is required before replacement readiness; see the pinned durable subagent
+  proofs below. ACP still requires a terminal `waitForRun` observation. Listing all flows now reconciles
+  each authorized flow, including pending stop intent, rather than returning stale state.
 - `review`: compares current-scope criteria with actual settled terminal evidence. A semantic model
   review records result/gaps/effect certainty. Complete requires succeeded native backing, no gaps
   and known effects; continue permits a bounded supplement for concrete gaps. Uncertain effects or
@@ -72,11 +77,11 @@ is not established by the public evidence available here.
 
 ## Remaining native limitations
 
-- **SA-M2-06 is unsupported:** public managed Flows expose no selected retention or explicit delete
-  API, and terminal cleanup is fixed at seven days. No duration was selected and no extended
-  retention is simulated by keeping completed flows active. Retrieval after native cleanup is
-  unavailable. This requirement is still open; a supported upstream retention/deletion contract is
-  needed. Retained summaries/links and user deletion acceptance are not claimed.
+- **SA-M2-06 now has an opt-in retained-copy implementation:** the owner selected indefinite server
+  retention on November 16. Public native worker storage keeps minimal new terminal summaries;
+  see [retention scope and verification](task-summary-retention.md). Native Flow cleanup remains
+  seven days and has no full-copy delete API. Explicit deletion clears only the retained copy;
+  native Task/Flow, Slack/chat, files and backups remain. Real-user acceptance is pending.
 - Native launch and flow revision are not one atomic transaction. The canonical pre-launch hook
   rechecks scope/stop after reservation; a stop racing native admission can still admit work before
   the accepted receipt is reconciled and cancelled. A crash before receipt persistence leaves an
@@ -172,7 +177,10 @@ Local paths, `--link` and `--force` do not establish official provenance. The se
 active-index/retained-summary design therefore cannot run in the real local Rein plugin.
 The public managed-flow API has no delete operation, and its fixed seven-day terminal cleanup
 cannot stand in for an explicitly selected product retention policy. No retention duration,
-including the formerly proposed 30 days, was chosen. No cleanup timestamp was fabricated.
+including the formerly proposed 30 days, was chosen at that stage. No cleanup timestamp was fabricated.
+The November 16 owner decision now selects indefinite server copies through the separate public
+SQLite-worker interface; see [retained summaries](task-summary-retention.md). Native Flow retention
+and the historical keyed-store refusal are unchanged.
 
 ### Same-session recovery loses per-flow reply routes
 

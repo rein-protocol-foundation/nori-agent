@@ -19,6 +19,77 @@ Slack/provider transport remains synthetic. The earlier real command-based deliv
 below does not establish button usability. Next: updated PR CI/review, authorized deployment,
 then actual Slack card/approval/test-recipient delivery verification. No milestone expansion.
 
+## Indefinite summary copies and live task acceptance — November 16, 2026
+
+Owner Codex, runtime-verified Astra High; implementation verified Sol High. Owner selected
+indefinite server retention and preservation of Slack chat. Optional minimal summary storage uses
+public native SQLite worker APIs, current owner/audience checks, pagination, reset continuity and
+non-resurrecting deletion of retained copies only. No native database mutation, vendor edit or
+history migration. 70 focused tests and 1436 full-suite tests pass, with 4 existing skips; actual
+plugin loader passes. Native cleanup is simulated in fixtures, not a live-maintenance acceptance.
+PR #94 conflict resolution preserved both independent document entries, 56 focused tests and seven
+CI checks passed; merged/deployed as 66700d0 at 19:02:33 UTC. Slack configuration activation was
+rejected by automatic approval review; exact settings await user confirmation. Existing ACP
+produced two actual blocked runs and code independently passing 13 tests; startup required human
+correction, so full autonomous development is not accepted. Native research delivered in the original
+thread while ordinary chat/progress worked during execution; source review required two corrections.
+A narrowly scoped distro bubblewrap/AppArmor repair is prepared but awaits explicit approval.
+PR #97 review at f6dd3df has no findings; no feature activation or shared release yet. [Live record](task-lifecycle-live-2026-11-16.md),
+[summary contract/rollback](task-summary-retention.md). No product milestone advanced.
+
+
+## Task stop/change, recovery and budget handoff — November 16, 2026
+
+Tracking #58 / SA-M2-01–05. Owner: Codex, runtime-verified GPT-6 Astra Medium as requested.
+**IMPLEMENTED / LOCAL VERIFIED; no new deployment or live acceptance.** Reused already-fetched
+main `332cdf0` after discovering #87–#91 superseded the initial checkout. Prior tracked edits
+were backed up in a retained stash, restored and merged with all upstream records; untracked PRD,
+planning and runtime investigation files were preserved. No new commit/push/PR/merge to remote.
+
+Added explicit pending/failed/confirmed/not-needed cancellation evidence, known-unlaunched custody
+release for stop/deadline races, reconciliation on all-flow status, foreign-run wait rejection,
+and concrete partial evidence/gaps at limits. No scheduler, vendor, mail or business-tool changes.
+Ten new controller tests cover scope/stop/restart/limits/authority/ACP uncertainty. The budget
+handoff test first exposed loss of concrete gaps, then passed after repair. See the
+[contract and handoff](task-continuation-controls.md) for confirmation points and remaining windows.
+
+Checks: 53 targeted pass; full repository 1418 pass / 4 conditional skips / 0 fail on the final version.
+Final review additionally prevents a stopped supplement inheriting its predecessor’s known effects. Isolated two-process native seam passes.
+Both probes initially hit sandbox loopback EPERM; permitted reruns used synthetic transports only.
+M1 native probe failed waiting for an independent ACP cancel report, then passed standalone unchanged;
+retain both results. Syntax/scaffold/local-link/diff and preservation checks passed.
+Existing #91 real acceptance is referenced, not re-executed. Updated stale delivery-plan #54 next
+steps to respect November 15 closure. No deployment, external send or paid inference occurred.
+
+Remaining: new control races need separately authorized real-entry/provider acceptance; no exactly-once
+or arbitrary-crash guarantee. Selected retention/delete is still unsupported and duration undecided;
+ACP hard deadline remains unavailable. Next: review this local diff and authorize the bounded live
+control acceptance if desired; monitor the intermittent M1 report observation failure. Rollback
+reverts only this task's runtime/test delta; no state/history migration or deletion occurred.
+
+Review follow-up: reproduced and fixed stale provisional cancellation evidence after native promotion;
+54 focused tests and final full suite (1419 passed / 4 conditional skips / 0 failures) pass. Owner now authorizes the separate commit/PR and CI/review follow-up only.
+Based on `64d0ff1` (#93); unrelated working changes remain uncommitted. No merge/deployment.
+
+CI follow-up: run 43857871202 reproduced the cancelled ACP report fixture failure. The native background-task notice was present, but the scripted model recognized only the announce prompt. Added exact-current-run notification decoding and negative cases without changing production behavior or weakening delivery assertions. 55 targeted tests and native nori-task-loop-43csHm pass; CI/review rerun on the amended PR follows.
+
+Review race follow-up: concurrent all-flow status during launch authorization could leave a known-unlaunched Flow stuck after its attempt was released. Reproduced, restored the Flow phase and cleared only obsolete launch uncertainty; restart reuses the same attempt. 56 targeted tests and final full suite 1421 passed / 4 conditional skips / 0 failures. PR #94 remains unmerged; final CI/review pending.
+
+## NORI-AI-NEWS — November 16, 2026
+
+Owner: Codex. **ENABLED / FIRST SCHEDULED DELIVERY VERIFIED**. Nine public feeds and
+native daily 09:00 / Monday 09:15 jobs (America/Los_Angeles). On November 16 the daily
+job started at 09:00:00.020 and sent nine stories as three messages per platform by
+09:03:21; the 09:15 weekly run reused all eight original receipts without re-sending.
+Slack desktop and Discord browser rendering verified, together with both native channel
+payloads. Nine original-link buttons and no exposed Markdown or duplicate bodies observed.
+28 focused Python and eight CI-scope tests pass; Python news tests now run in scaffold CI.
+First interrupted weekly rehearsal is retained as failed evidence. No private runtime data or
+unrelated shared-worktree changes included. [Exact evidence and recovery](ai-news.md).
+Repository rollout: [PR #96](https://github.com/rein-protocol-foundation/nori-agent/pull/96).
+Recovery: retain the native jobs and per-edition receipts across deployments.
+No unrelated product milestone advanced.
+
 ## 2026-11-16 — Partnership production activation and Slack command identity
 
 SA-M3-01–05 / #59; owner Codex. User authorized production integration and one real test

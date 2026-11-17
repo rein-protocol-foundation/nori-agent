@@ -42,3 +42,16 @@ export function countTaskLoopToolResults(messages, at) {
   return messages.slice(at + 1).filter(m => m.role === 'tool' &&
     m.content !== 'Skipped to process an incoming message.').length;
 }
+
+// The native task fallback may deliver cancellation through a background-task
+// wake rather than subagent_announce. Decode that current model-visible notice;
+// this is fixture logic only, never runtime identity or cancellation authority.
+export function hasTaskLoopCancellationNotice(messages, { runId, childSessionKey, label, status, nativeStatus }) {
+  if (!runId || !label || selectTaskLoopModelInput(messages).sourceSessionKey !== childSessionKey ||
+      (status !== 'cancelled' && nativeStatus !== 'cancelled')) return false;
+  const lastFinal = messages.findLastIndex(m => m.role === 'assistant' && !m.tool_calls?.length);
+  const notice = `Background task cancelled: ${label} (run ${runId.slice(0, 8)}).`;
+  return messages.slice(lastFinal + 1).some(m => m.role === 'user' &&
+    (typeof m.content === 'string' ? [m.content] : (m.content ?? []).filter(p => p.type === 'text').map(p => p.text))
+      .some(text => text.startsWith('<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>') && text.includes(notice)));
+}

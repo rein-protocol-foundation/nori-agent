@@ -13,13 +13,17 @@
       "taskLoop": { "type": "boolean", "default": false, "description": "Use additive native task controls without the legacy restricted controller policy. Local pilot only; preserve existing native tools and bindings." },
       "continuation": {
         "type": "object", "additionalProperties": false,
-        "description": "Opt-in native managed-flow continuation; custom retention/deletion is unsupported.",
+        "description": "Opt-in native managed-flow continuation; optional minimal terminal-summary copies are retained indefinitely when enabled.",
         "properties": {
           "enabled": { "type": "boolean", "default": false },
           "maxAttempts": { "type": "integer", "minimum": 1, "maximum": 12, "default": 4 },
           "maxNoProgress": { "type": "integer", "minimum": 1, "maximum": 12, "default": 2 },
           "maxRuntimeMs": { "type": "integer", "minimum": 1, "maximum": 86400000, "default": 3600000 },
-          "maxActiveFlows": { "type": "integer", "minimum": 1, "maximum": 64, "default": 16 }
+          "maxActiveFlows": { "type": "integer", "minimum": 1, "maximum": 64, "default": 16 },
+          "retainedSummaries": {
+            "type": "object", "additionalProperties": false, "required": ["enabled"],
+            "properties": { "enabled": { "type": "boolean", "default": false } }
+          }
         }
       },
       "channel": {
