@@ -134,6 +134,14 @@ Slack/Discord 界面卡片、简介、评论、链接及简洁时间正常。Nor
 [操作与证据](ai-news.md)；不推进无关产品里程碑。
 
 
+## 2026-11-16：限定真实验收收尾
+
+Owner Codex / Astra High。运行副本d90578704cfe采用公共api.runtimeSource稳定摘要worker身份，终态关联保留准确原生引用。75定向与原生配置/loader通过；仅Slack重启至PID533146，Discord/Router/Web未变。真实Slack回读确认无期限摘要、删除防复活，以及新单次ACP复验native_wait/complete跨重启保留。原开发flow缺少结算证据的缺口仍在，未伪造完成。PR #98保持开放，未触发全服务自动部署。 [完整证据与限制](task-lifecycle-activation-2026-11-16.md)。
+
+## 获批配置与定向沙箱修复 — 2026-11-16
+
+负责人Codex/Astra High。用户明确批准私有测试频道任务工具/续接/上下文/原线程回复与仅重启Slack，并批准指定bubblewrap及Ubuntu定向AppArmor profile。完整配置备份、原生校验通过；仅Slack PID改变。一包安装、零升级/删除，全局限制不变；实际ACP二进制探针验证工作区可写、工作区外写入/宿主loopback连接被拒。真实摘要回读/改向/停止/副本删除和scope隔离已观察；Nori新增stdin功能独立18测试通过。终态后置Task-Flow关联拒绝仍在修复，重启保留待验证；[完整证据与限制](task-lifecycle-activation-2026-11-16.md)。
+
 ## 摘要无期限保留与真实任务验收 — 2026-11-16
 
 负责人Codex（运行时Astra High）；实现Sol High已核实。用户明确摘要服务器无期限保留、
@@ -148,6 +156,8 @@ fixture模拟，不冒充真实维护验收。#94保留双方文档解决冲突�
 [真实记录](task-lifecycle-live-2026-11-16.md)、[摘要边界与回滚](task-summary-retention.md)。
 未宣称产品完成。
 
+
+发布跟进：#97最终七项CI通过并合并为9ed4cb2；updater于19:50:59 UTC完成部署，四服务健康。69个静态文件内容、权限和归属全部一致，Discord私有插件/启动器及root公共只读工作区保留。原生在线DB旁路读取被锁拒绝，不声称独立逐条历史复验。rein-acp仍关闭；运行配置和沙箱修复待具体批准，回滚与限制见真实记录，不推进产品完成。
 
 ## 任务停止、改向、重启恢复与预算交接 — 2026-11-16
 

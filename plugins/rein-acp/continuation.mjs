@@ -12,6 +12,7 @@ const unwrap = event => event.toolName === 'tool_call'
 const output = details => ({ content: [{ type: 'text', text: JSON.stringify(details) }], details });
 const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const last = state => state.attempts.at(-1);
+const missingBackingNotice = 'Accepted run has no current owner-bound native task backing; no retry.';
 const launchUnknownNotice = 'Launch admission has no durable accepted receipt. Inspect native evidence; no retry is allowed.';
 // Native task cancellation uses this exact marker for a provisional kill. The
 // public cancel API promotes it only after checking the owning run tree.
@@ -161,18 +162,29 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
       state.phase = 'outcome_unknown';
       state.notice = launchUnknownNotice;
     } else if (attempt?.runId && !task) {
-      state.phase = 'outcome_unknown'; state.notice = 'Accepted run has no current owner-bound native task backing; no retry.';
+      state.phase = 'outcome_unknown'; state.notice = missingBackingNotice;
     } else if (task) {
-      if (!attempt.linked && !wasTerminal) {
+      // runTask creates a queued/running managed projection. Public native
+      // custody refuses creating one for already-terminal canonical backing;
+      // retain its exact references without claiming a projection was linked.
+      if (!attempt.linked && !wasTerminal && !terminalRun(task.status)) {
         const linked = await flowsFor(flow.ownerKey).runTask({ flowId: flow.flowId, runtime: task.runtime,
           sourceId: task.sourceId, runId: task.runId, childSessionKey: task.childSessionKey, agentId: task.agentId,
-          task: task.title, ...(terminalRun(task.status) ? {} : { status: task.status }), startedAt: task.startedAt });
+          task: task.title, status: task.status, startedAt: task.startedAt });
         if (!linked.created) throw Error(`rein_continuation_link_${linked.reason}`);
-        attempt.linked = true;
+        attempt.linked = true; delete attempt.linkage;
         flow = await flowsFor(flow.ownerKey).get(flow.flowId);
         // Linking can change native revision; keep the durable stop/scope observed by another turn.
         if (digest(flow.stateJson) !== originalState) return reconcile(flow, cfg);
       }
+      if (state.notice === missingBackingNotice) {
+        // Only the exact owner/run/child/runtime backing checked by nativeTask
+        // disproves this warning. Keep the first recovery receipt as bounded audit.
+        attempt.backingRecovery ??= { notice: state.notice, at: clock(), ownerKey: task.ownerKey,
+          taskId: task.id, runId: task.runId, childSessionKey: task.childSessionKey, runtime: task.runtime };
+        delete state.notice;
+      }
+      if (!attempt.linked && terminalRun(task.status)) attempt.linkage = 'terminal_reference_only';
       attempt.taskId = task.id; attempt.nativeStatus = task.status;
       attempt.evidence = { progress: task.progressSummary ?? null, result: task.terminalSummary ?? null, error: task.error ?? null,
         deliveryStatus: task.deliveryStatus };
@@ -216,8 +228,28 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
     if (state.phase === 'stopped' || state.phase === 'limited' || wasTerminal) return persist(flow, state, 'fail');
     return digest(state) === digest(flow.stateJson) ? flow : persist(flow, state);
   }
-  const view = flow => ({ flowId: flow.flowId, nativeStatus: flow.status, ...flow.stateJson,
-    origin: flow.requesterOrigin, ...(flow.summaryRetention ? { summaryRetention: flow.summaryRetention } : {}), delivery: 'Native delivery evidence only; parent report receipt is not established by agent_end.' });
+  const view = flow => {
+    const state = { ...flow.stateJson }, attempt = last(state), report = state.report;
+    // Older completed records can carry the warning even though the same exact
+    // attempt later received a settled completion review. Reclassify only this
+    // presentation; preserve the stored record and do not infer current backing.
+    if (state.notice === missingBackingNotice && flow.status === 'succeeded' && state.phase === 'complete' &&
+        !state.stopRequested && !state.pendingChange && attempt?.nativeStatus === 'succeeded' && attempt.reviewed === true &&
+        string(attempt.taskId, 512) && string(attempt.runId, 512) && string(attempt.childSessionKey, 1024) &&
+        attempt.scopeRevision === state.scopeRevision && report?.scopeRevision === state.scopeRevision &&
+        report.runId === attempt.runId && report.outcome === 'complete' && string(report.evidence) &&
+        (report.gaps == null || report.gaps === '') && ['none', 'confirmed'].includes(report.effects) &&
+        attempt.review && digest(attempt.review) === digest(report) && /^[a-f0-9]{64}$/.test(attempt.settlement?.key ?? '') &&
+        Number.isFinite(attempt.settlement?.endedAt) &&
+        ['native_wait', 'native_terminal_receipt', 'native_succeeded_record'].includes(attempt.settlement?.source)) {
+      state.historicalNotice = { text: state.notice, status: 'superseded_by_settled_complete_review',
+        runId: attempt.runId, scopeRevision: state.scopeRevision, settlementSource: attempt.settlement.source,
+        currentBackingAvailability: 'not_rechecked' };
+      delete state.notice;
+    }
+    return { flowId: flow.flowId, nativeStatus: flow.status, ...state,
+      origin: flow.requesterOrigin, ...(flow.summaryRetention ? { summaryRetention: flow.summaryRetention } : {}), delivery: 'Native delivery evidence only; parent report receipt is not established by agent_end.' };
+  };
   const current = async (ctx, invocation) => {
     ctx.assertInvocationCurrent?.();
     const turn = turns.get(ctx.runId ?? invocation?.runId);

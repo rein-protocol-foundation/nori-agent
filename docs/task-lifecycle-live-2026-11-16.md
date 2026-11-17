@@ -102,3 +102,27 @@ Legacy Landlock 探针分别遇到只读配置和 `:workspace` profile 不兼容
 真实摘要读取/显式删除/重启、防越权控制与改向/取消仍待启用后验收。
 
 历史 11 月 15 日双任务重启/主动补充/合并交付证据继续有效，本次不将其重复记为新验收。
+
+## 代码发布完成，运行配置仍待批准 — 19:50:59 UTC
+
+PR #97 最终头 `44a5e97373db7c2a6b8847a554adde18fa684d00` 七项 CI 全通过，
+运行实现与无发现审阅版本 `f6dd3df` 一致。并行 Discord 维护明确释放窗口后，
+19:47:47 UTC 合并为 `9ed4cb29bc77120242cd500b7e7353118edbfdf1`；
+现有 updater 于 19:50:59 UTC（洛杉矶 11:50:59）完成健康部署，transaction 已清空。
+
+部署前确认 updater 整体保留 runtime，独立 Discord 插件及 profile 在其范围内；
+服务器 root-owned 公共工作区位于代码替换范围之外。69 个静态文件在部署前后内容散列、
+权限、uid/gid 全部一致，包括 Discord 私有配置/启动器/隔离验证器、独立 router 插件、
+公共只读工作区和 Slack 配置。四项服务均 active/running、Result=success。
+运行中的原生数据库拒绝旁路读取；未改权限或强行打开，不声称本次独立逐条历史复验。
+数据库保留依赖 updater 停服后的私有状态校验；并行 Discord 真实历史验收仍按其记录范围有效。
+
+线上 `plugins.entries.rein-acp.enabled=false`，taskLoop/continuation/retainedSummaries
+未配置。本次未启用任务工具、上下文注入或摘要保留，未安装 bubblewrap、未改安全策略。
+摘要真实读取、显式删除及重启验收仍等待具体配置批准，完整自主开发验收仍受沙箱阻塞。
+完整回滚 release：`/home/ubuntu/nori-releases/previous-candidate-9ed4cb29bc77-f98a2148`。
+共享部署窗口已交回并行维护；下次重启仍需重新协调，不能覆盖 Discord 的独立 router 修复。
+
+19:28:06 UTC Nori 已在原编码线程补交两份完整文件（含未跟踪测试），并明确两次 blocked、
+未提交/未发布/未部署；独立收集的五文件验收包保存在本机临时目录，不纳入产品仓库。
+该补交修正了产物完整性，不消除 ACP 沙箱及人工干预限制。

@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, stat, mkdir, symlink, readFile } from 'node:fs/promises';
+import { mkdtemp, rm, stat, mkdir, symlink, readFile, copyFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
-import { createRetainedSummaries } from '../plugins/rein-acp/retained-summaries.mjs';
+import { createRetainedSummaries, retainedSummaryBackendUrlForRuntime } from '../plugins/rein-acp/retained-summaries.mjs';
 import { validateAcpConfig } from '../plugins/rein-acp/runtime.mjs';
 
 const sdk = process.env.REIN_TEST_SQLITE_SDK ?? new URL('../vendor/openclaw/dist/plugin-sdk/sqlite-runtime.js', import.meta.url).href;
@@ -15,7 +16,8 @@ const summary = { flowId: 'synthetic-flow', source, nativeRevision: 1, createdAt
 async function setup(t) {
   const stateDir = await mkdtemp(join(tmpdir(), 'rein-summary-worker-'));
   const { openSqliteWorkerStore } = await import(sdk);
-  const create = () => createRetainedSummaries({ stateDir, openSqliteWorkerStore });
+  const create = () => createRetainedSummaries({ stateDir, openSqliteWorkerStore,
+    backendModuleUrl: new URL('../plugins/rein-acp/retained-summaries-backend.mjs', import.meta.url) });
   const stores = [];
   t.after(async () => { for (const store of stores) await store.close(); await rm(stateDir, { recursive: true, force: true }); });
   return { stateDir, store() { const store = create(); stores.push(store); return store; } };
@@ -96,4 +98,46 @@ test('worker pages are bounded, continue explicitly and reject malformed or cros
   for (const cursor of ['', 'not-json', 'a'.repeat(257), Buffer.from('{}').toString('base64url')])
     await assert.rejects(store.list(source, { cursor }), /cursor_invalid/);
   await assert.rejects(store.list({ ...source, sessionKey: 'foreign-owner' }, { cursor: first.nextCursor }), /cursor_invalid/);
+});
+
+
+test('different captured store modules share one stable backend URL and database across overlapping lifetimes', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'rein-summary-captures-'));
+  const stateDir = join(directory, 'state'); await mkdir(stateDir);
+  const { openSqliteWorkerStore } = await import(sdk);
+  const stableBackend = new URL('../plugins/rein-acp/retained-summaries-backend.mjs', import.meta.url);
+  const stores = [];
+  t.after(async () => { for (const store of stores) await store.close(); await rm(directory, { recursive: true, force: true }); });
+  for (const name of ['capture-a', 'capture-b']) {
+    const capture = join(directory, name); await mkdir(capture);
+    await copyFile(new URL('../plugins/rein-acp/retained-summaries.mjs', import.meta.url), join(capture, 'retained-summaries.mjs'));
+    await copyFile(stableBackend, join(capture, 'retained-summaries-backend.mjs'));
+    const captured = await import(pathToFileURL(join(capture, 'retained-summaries.mjs')).href);
+    stores.push(captured.createRetainedSummaries({ stateDir, openSqliteWorkerStore, backendModuleUrl: stableBackend }));
+  }
+  const [first, second] = stores;
+  assert.equal(await first.put(summary), 'retained');
+  // Before the fix the second real broker open rejects because import.meta.url
+  // chooses capture-b's backend while capture-a still owns this exact database.
+  assert.deepEqual(await second.read(source, summary.flowId), summary);
+  await second.delete(source, summary.flowId, Date.now());
+  assert.equal(await first.put({ ...summary, nativeRevision: 99 }), 'deleted');
+  assert.equal(await first.read(source, summary.flowId), null);
+  await first.close();
+  assert.equal(await second.put({ ...summary, flowId: 'other-summary' }), 'retained');
+  await second.close();
+  assert.equal(await first.put({ ...summary, nativeRevision: 100 }), 'deleted');
+  assert.equal((await first.list(source)).summaries[0].flowId, 'other-summary');
+});
+
+
+test('backend identity requires the selected absolute runtime source and an explicit static local URL', () => {
+  for (const runtimeSource of [undefined, null, '', 'relative/index.ts', 'file:///tmp/index.ts', '/tmp/bad\0/index.ts'])
+    assert.throws(() => retainedSummaryBackendUrlForRuntime(runtimeSource), /runtime_source_required/);
+  const physicalEntry = join(tmpdir(), 'synthetic runtime', 'dist', 'index.js');
+  assert.equal(retainedSummaryBackendUrlForRuntime(physicalEntry).href,
+    pathToFileURL(join(tmpdir(), 'synthetic runtime', 'dist', 'retained-summaries-backend.mjs')).href);
+  for (const backendModuleUrl of [undefined, null, 'relative/backend.mjs', '/tmp/backend.mjs',
+    'https://example.invalid/backend.mjs', 'file:///tmp/backend.mjs?capture=1', 'file:///tmp/backend.mjs#capture'])
+    assert.throws(() => createRetainedSummaries({ stateDir: '/unused', backendModuleUrl }), /backend_module_url_required/);
 });
