@@ -23,8 +23,11 @@ Do not invoke a shell, a general mail tool or a Lobster resume tool to bypass th
 Approval belongs to the human through the host's authenticated approval entry point. The model
 cannot approve by echoing a command, inferring intent, setting a boolean or treating silence as
 consent. If the connected surface lacks that entry point, explain the blocker and retain a draft.
-The current adapter supplies native `/partnership` commands in the configured trusted Slack
-conversation. Other channels may use this skill for drafts but gain no execution authority.
+The current adapter supplies OpenClaw text commands beginning with `/partnership` in the
+configured trusted Slack conversation. These are not registered Slack app slash commands.
+Tell the approver to reply in the same thread with one space before `/`, followed by the exact
+command, as plain text. Do not append a signature or connector attribution; extra arguments
+are rejected. Other channels may use this skill for drafts but gain no execution authority.
 
 Use the returned status/receipt to report outcomes: awaiting approval, cancelled, blocked,
 provider accepted, or delivery verified. A provider message ID proves API acceptance only.

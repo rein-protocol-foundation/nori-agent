@@ -79,6 +79,10 @@ test-recipient capability only; a real send still needs the exact current human 
 
 The preparation result shows the exact sender, recipient, subject, full body, version, expiry and
 approval commands. Material changes create a new version and invalidate the old decision.
+In Slack, these are OpenClaw text commands, not registered Slack app slash commands. Reply in
+the original thread with one leading space before `/partnership` so Slack submits a message.
+Send only the exact command; connector-added attribution or signatures cause strict argument
+validation to reject it. This applies to approve, cancel, status and reconcile alike.
 `/partnership status <task-id>` reads the current record in its original authorized scope.
 `/partnership reconcile <task-id>` retrieves provider evidence for an existing receipt; it does
 not send. API acceptance is distinct from verified delivery.

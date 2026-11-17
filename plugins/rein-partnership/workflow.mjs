@@ -20,7 +20,9 @@ export function formatPartnershipReport(details) {
     '', details.material.text, '', `Selected entry: ${details.material.entry}`, `Source task: ${details.material.sourceTaskId}`);
   if (details.approverId) lines.push(`Designated approver: ${details.approverId}`);
   if (details.expiresAt) lines.push(`Approval expires: ${new Date(details.expiresAt).toISOString()}`);
-  if (details.approveCommand) lines.push('', 'Approve this exact draft:', details.approveCommand, 'Cancel:', details.cancelCommand);
+  if (details.approveCommand) lines.push('',
+    'Slack: reply in this same thread as a plain-text message. Add one space before / so Slack does not intercept it as an app slash command. Send only the command, without a signature or connector attribution.',
+    'Approve this exact draft:', details.approveCommand, 'Cancel:', details.cancelCommand);
   if (details.receipt) lines.push(`Resend accepted: ${details.receipt.id}. ${details.receipt.deliveryVerified ? 'Provider evidence verified delivery.' : 'Delivery is not verified.'}`);
   if (details.providerEvidence) lines.push(`Latest provider event: ${details.providerEvidence.lastEvent ?? 'unknown'}`);
   if (details.blocker) lines.push(`Blocked: ${details.blocker}`);

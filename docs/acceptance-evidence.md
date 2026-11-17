@@ -1,8 +1,15 @@
 # Acceptance evidence
 
 Production follow-up (2026-11-16, Codex, SA-M3-01–05/#59): live Slack draft preview verified;
-command identity normalization fixed with 22 passing focused tests. Real send/delivery remains
-pending the fix deployment. See the dated implementation record.
+command identity normalization fixed with 22 passing focused tests. PR #95 passed all seven
+CI checks/review and deployed as `e2c4083`; the original pending draft survived restart.
+**LIVE TEST PASS at 17:21–17:22 America/Los_Angeles:** a leading space lets Slack submit the
+exact approval as plain text. The original checkpoint resumed, Resend accepted the designated
+test email and reconciliation verified `delivered`; repeated approval retained the same receipt
+and original send intent. Runtime `9ed4cb2` includes #95. Connector attribution and bare-slash
+client interception are recorded failures, not input-control failures. See the dated
+implementation record for [Slack evidence](https://reinprotocolf-e2q1425.slack.com/archives/C0C4L0YN814/p1794878546727399).
+Provider delivery does not establish inbox placement/reading or real-partner sending authority.
 
 ## 2026-11-15 — Community runtime ticket accepted and closed
 

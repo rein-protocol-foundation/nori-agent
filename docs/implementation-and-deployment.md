@@ -15,6 +15,28 @@ boundary; retain native authorization, live membership, configured approver and 
 no-op. Live approval/send/reconciliation remain pending deployment of this compatibility fix.
 No secrets or runtime records are included here; existing acceptance evidence is not overwritten.
 
+Deployment follow-up: the owner explicitly authorized merging PR #95. All seven CI checks
+passed and review had no findings. Merge `e2c4083` completed at 17:28:25 UTC; the normal
+updater reported `updated` at 17:31:28 UTC, with all four application services active.
+The original version-1 draft survived restart, still awaiting approval with no send intent
+or receipt. The connected Slack sender appended attribution to the approval command;
+strict argument validation rejected it before dispatch. The initial diagnosis of ineffective
+computer-control input was incorrect: the owner's Slackbot screenshot showed that Slack
+intercepts a leading `/` as an unregistered app slash command.
+
+**LIVE TEST PASS, November 16 at 17:21–17:22 America/Los_Angeles.** Under the owner's
+existing test-send authorization, Codex submitted the exact saved approval through the
+authenticated administrator's Slack web UI with one space before `/partnership`. The original
+version-1 checkpoint resumed after intervening deployments. Resend accepted the email to the
+designated test address; read-only reconciliation matched the exact sender, recipient, subject
+and body and recorded `delivered`. A repeated approval returned the same receipt and retained
+the original decision/send-intent timestamps. [Slack acceptance and delivery evidence](https://reinprotocolf-e2q1425.slack.com/archives/C0C4L0YN814/p1794878546727399).
+Runtime revision: `9ed4cb2`, including PR #95. This verifies the authorized test workflow and
+provider-reported delivery, not inbox placement, reading, or real-partner outreach authority.
+The preview, skill and runbook now explain plain-text submission with a leading space and no
+connector attribution. These wording changes require publication; the working production
+path uses the already deployed implementation. No runtime records or credentials committed.
+
 ## 2026-11-15 — Community runtime ticket accepted and closed
 
 #54 / SA-M0-06; scope owner: project owner; record owner: Codex.
