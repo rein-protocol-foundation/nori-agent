@@ -1,12 +1,13 @@
 # Community private memory and retained-history migration
 
 Status on 2026-11-17; owner: Codex; scope: SA-M0 private-memory boundary and #57 Community migration.
-The existing standalone Discord Gateway is isolated and uses the approved request limits.
-Moving it into the shared Gateway remains BLOCKED/on hold at the owner’s request.
-The November 17 scope permits discarding Discord history/data for consolidation while preserving
-local files where feasible; all Slack data must be preserved. Lossless Discord history import is
-no longer a mandatory gate. No deletion or migration is performed by this publishing update.
-No vendor source was changed. Main Slack capabilities and its running process were preserved.
+**Shared Gateway migration and real-channel acceptance are complete.** The owner lifted the hold;
+PR #103 (`496b9d30eaa1`) is deployed. Both channels use the retained main Gateway, the Dashboard has
+one entry, and Community has fresh `nori-community` state with isolated private memory. All Slack
+state/capabilities and all old Discord local files were retained. The standalone Discord unit is
+stopped/disabled. [Current evidence and recovery](shared-gateway-acceptance-2026-11-17.md).
+No vendor source was changed. The dated standalone activation evidence below remains historical;
+its original `main` owner and private plugin artifact paths do not describe the new live Community.
 
 ## Boundary and configuration
 
@@ -20,8 +21,8 @@ persistence and permitted retrieval remain enabled.
 Channel exclusions alone are insufficient: unclassified legacy sessions can bypass native dreaming
 channel filters. The public Community seed and all ancestors are therefore owned by root and not
 writable or replaceable by the Gateway identity. `verifyCommunityWorkspaceReadOnly` checks ownership,
-access, symlinks, hardlinks and ancestor permissions before every Discord launcher start. Private
-SQLite state remains writable in the original profile. Synthetic native dreaming attempts against
+access, symlinks, hardlinks and ancestor permissions before every Community-capable launcher start. Private
+SQLite state remains writable in its agent profile. Synthetic native dreaming attempts against
 unclassified private history were denied while the same sweep continued for main's writable workspace.
 The public seed is not a duplicate private workspace; shared reusable skills remain channel-independent.
 
@@ -38,7 +39,7 @@ retry reservation and fail-closed stale runs. Live configuration and model reque
 a production saturation/flood test was not performed. Before the final auxiliary-index check,
 17 actual model requests were recorded across 5 settled runs with no outstanding leases.
 
-## Production activation and recovery
+## Historical standalone activation and recovery — November 16
 
 Base runtime revision: `66700d062db7208827a8763fa95575fd434003a0`; OpenClaw pin:
 `4a11f89e840b2bb3eedcad2820ab25b8520905b6`. Activation succeeded at 19:30:15 UTC after
@@ -65,7 +66,7 @@ lacking a run lease. The narrow fix allows this static report only without a run
 and stale model-run status calls still require admission. Focused regressions cover this boundary.
 
 For future shared releases, preserve all runtime paths above and the independent root-owned seed.
-The private config currently loads the Discord-only router artifact. Replace it with the normal
+The former standalone config loaded the Discord-only router artifact. Replace it with the normal
 plugin only after the source fix is deployed and the same health and real-channel checks pass.
 Rollback restores config/launcher and restarts Discord under the updater lock; do not restore an old
 SQLite snapshot over newly accepted messages. The separate key can be disabled if rolling back its
@@ -123,18 +124,17 @@ import with explicit owner/key mapping, archive/event/actor/delivery references,
 and idempotent receipts. This finding remains valid, but the November 17 owner decision removes
 lossless Discord import as a required migration gate.
 
-The revised future path may initialize fresh Discord agent state instead of importing its old history.
+The completed November 17 migration initialized fresh Discord agent state instead of importing its old history.
 Discord history/data may be discarded when needed for consolidation; inventory and preserve its local
 files where feasible. All Slack data, including histories, files and existing runtime state, must be
 preserved. This exception does not permit resetting shared storage containing Slack data.
 The existing retained-history planner remains read-only and activation remains disabled; it does not
-implement the fresh-state path or authorize a cutover. Before resuming migration, prepare the scoped
-Discord state/configuration changes, local-file backups and recovery, prove Slack data preservation,
-and revalidate isolation and real-channel behavior in the shared topology.
+implement the fresh-state path or authorize a cutover. The completed cutover prepared the scoped
+Discord state/configuration changes, local-file backups and recovery, proved Slack data preservation,
+and revalidated isolation and real-channel behavior in the shared topology.
 
-For now, retain the isolated standalone Discord service and BLOCKED migration status as requested.
-The owner authorized pushing this branch and creating a draft PR, with no merge. No vendor edits,
-production deletions, migration, or new acceptance claims are part of that publishing step.
+The earlier draft-publication-only hold was subsequently lifted by the owner. The old standalone
+profile remains on disk for recovery, but its service is disabled after successful shared acceptance.
 
 
 ## Unified Admin Dashboard acceptance
@@ -143,4 +143,5 @@ After the shared cutover, the owner requires one Nori management entry rather th
 entry buttons. The single-instance landing page and optional matched Dashboard configuration output
 are implemented; main uses native “Nori · 主助手” display metadata. This is a presentation change,
 not an agent-ID rename or history merge. Keep split navigation until the topology actually changes.
-See [Dashboard configuration and checks](dashboard-zh.md). Live shared acceptance remains pending.
+See [Dashboard configuration and checks](dashboard-zh.md). Live shared acceptance passed on November 17;
+see the current evidence linked above.

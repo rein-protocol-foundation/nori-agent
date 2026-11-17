@@ -1,5 +1,16 @@
 # Nori-Agent implementation roadmap
 
+## 2026-11-17 — Shared Gateway migration completed
+
+SA-M0 / #57; owner Codex; **LIVE ACCEPTANCE PASSED**. PR #103 passed all seven CI checks and
+merged/deployed as `496b9d30eaa1`. One Gateway now serves Slack and Discord, and the authenticated
+Dashboard has one “打开 Nori” entry. All original Slack rows/configuration, four existing agent roles,
+12 original Cron definitions and SEO files were preserved; all 4,990 old Discord profile files remain.
+Real Slack tool/retained-summary checks and Discord resource/reset/restart/private-memory/public-scope
+checks passed. The standalone Discord service is disabled and automatic updates resumed.
+[Full evidence, limitations and recovery](shared-gateway-acceptance-2026-11-17.md).
+This supersedes earlier pending/hold entries below and completes this cutover scope, not the full roadmap.
+
 ## 2026-11-17 — Shared Gateway cutover resumed
 
 SA-M0 / #57; owner Codex. The owner lifted the migration hold and authorized deployment,

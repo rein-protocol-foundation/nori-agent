@@ -1,5 +1,15 @@
 # Nori-Agent 开发、验证与部署记录
 
+## 2026-11-17 — 共享 Gateway 与单入口迁移完成
+
+SA-M0 / #57；负责人 Codex；**线上真实验收通过**。PR #103 七项 CI 通过，合并并部署
+`496b9d30eaa1`。Slack 和 Discord 已共用 Gateway，管理工作台只显示“打开 Nori”。
+原有 Slack 数据行、能力配置、四个角色、12 个 Cron 定义和 SEO 文件全部保留；旧 Discord
+profile 的 4,990 个文件也原样保留。真实 Slack 工具／保留摘要、Discord 资源查询／重置／
+重启后的私信记忆及公共频道隔离均通过；旧独立 Discord 服务已停用，自动更新已恢复。
+[完整证据、验收范围与恢复步骤](shared-gateway-acceptance-2026-11-17.md)。
+本记录取代下方早先的暂缓与待验收状态；完成本次切换，不代表整个产品路线图已完成。
+
 ## 2026-11-17 — 恢复共享 Gateway 切换
 
 SA-M0 / #57；负责人 Codex。用户解除暂缓，授权部署、重启和真实 Slack/Discord 验收；
