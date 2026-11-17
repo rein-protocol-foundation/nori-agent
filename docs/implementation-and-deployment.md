@@ -1,5 +1,16 @@
 # Nori-Agent development, verification and deployment record
 
+## Development-channel Cron thread compatibility — November 17, 2026
+
+SA-OPS-01 / #66 follow-up; owner Codex. **LOCAL VERIFIED; RELEASE AUTHORIZED.**
+The owner authorized committing, merging and deploying the bounded Router patch, then real
+Slack creation, clock-triggered sandbox execution and original-thread delivery acceptance.
+The existing three-field configuration repair and SSH isolation remain in place. Production
+has since migrated to one shared Gateway; preserve its current 13 jobs and all channel state.
+43 targeted regressions on the updated main base and the prior full Node/native scheduler checks passed. Live creation
+was previously rejected and remains unaccepted until the source release and retest complete.
+[Evidence, exact checks and rollback](slack-development-cron-live-2026-11-16.md). No milestone advancement.
+
 ## 2026-11-17 — Shared Gateway migration completed
 
 SA-M0 / #57; owner Codex; **LIVE ACCEPTANCE PASSED**. PR #103 passed all seven CI checks and
