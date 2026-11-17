@@ -111,6 +111,37 @@ test('native exact channel projection accepts bare/prefixed ID and refuses other
   for (const channelId of [undefined,'COTHER01','channel:COTHER01',`slack:${source.chatId}`,`prefix:channel:${source.chatId}`])
     assert.equal((await gate.beforeToolCall(add('task'),{...tool(source),channelId})).block,true);
 });
+test('compact native thread projection corroborates only the same trusted run and conversation', async () => {
+  const ctx = { ...source, sessionKey: `${source.sessionKey}:thread:1000.001` };
+  const event = { toolName: 'tool_call', params: { id: 'openclaw:core:automations', args: add('thread').params } };
+  const gate = createCronIngress({channels:[channel],authorize:async()=>true,readJobs:async()=>[]});
+  const projected = { ...tool(ctx), channelId: 'cfixture1:thread:1000.001' };
+  assert.equal((await gate.beforeToolCall(event, projected)).block, true, 'session string alone grants nothing');
+  gate.observe({},ctx);
+  assert.match((await gate.beforeToolCall(event,projected)).params.args.job.description,/channel=CFIXTURE1 user=UALICE01/);
+  for (const delta of [
+    {channelId:'cfixture1:thread:1000.002'}, {channelId:'cother01:thread:1000.001'},
+    {channelId:'channel:cfixture1:thread:1000.001'}, {channelId:'cfixture1'},
+    {sessionKey:`${source.sessionKey}:thread:1000.002`}, {runId:'other'},
+    {requester:{...projected.requester,senderId:'UBOB0001'}},
+    {requester:{...projected.requester,accountId:'other'}},
+  ]) assert.equal((await gate.beforeToolCall(event,{...projected,...delta})).block,true,JSON.stringify(delta));
+  gate.end({},ctx);
+  assert.equal((await gate.beforeToolCall(event,projected)).block,true,'settled run cannot authorize later calls');
+  const revoked=createCronIngress({channels:[channel],authorize:async()=>false,readJobs:async()=>[]});
+  revoked.observe({},ctx);
+  assert.equal((await revoked.beforeToolCall(event,projected)).block,true,'current membership remains required');
+});
+test('native conversation projection refuses a source session outside its observed channel or agent', async () => {
+  for(const sessionKey of ['agent:main:slack:channel:cother01:thread:1000.001',
+    'agent:other:slack:channel:cfixture1:thread:1000.001',
+    'agent:main:slack:channel:cfixture1:thread:1000.001:thread:2000.001',
+    'agent:main:slack:channel:cfixture1:thread:not-a-slack-ts']) {
+    const ctx={...source,sessionKey};
+    const gate=createCronIngress({channels:[channel],authorize:async()=>true,readJobs:async()=>[]});gate.observe({},ctx);
+    assert.equal((await gate.beforeToolCall(add('foreign'),{...tool(ctx),channelId:sessionKey.split(':').slice(4).join(':')})).block,true);
+  }
+});
 test('audit merging never returns other owner/session/account stamps; old ownerless descriptions fail closed', async () => {
   const event={toolName:'automations',params:{action:'update',jobId:'private',job:{description:'new description'}}};
   for (const owner of [undefined,{agentId:'other',accountId:source.accountId,sessionKey:source.sessionKey},
