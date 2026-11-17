@@ -226,5 +226,18 @@ November 16 ledgers also pass exact binding verification. Both existing native j
 updated to the versioned bilingual prompt and retain their schedules and IDs. The runtime
 bundle was installed with an updater lock and a private rollback backup.
 
-Live English supplements, final client inspection and PR rollout are being verified;
-this does not claim the next clock-triggered bilingual edition has already run.
+The existing November 16 daily (9 events) and weekly (10 events) English supplements
+were delivered to both original channels: five English messages per edition/platform,
+20 confirmed new receipts in separate supplement ledgers. Each supplement was repeated
+once: no new send and byte-identical ledgers. Original 14 Chinese receipts are unchanged.
+A read-only API comparison verified all 34 live messages against corrected Chinese cards
+or English previews, including original links. Slack and Discord clients show native
+cards, source links and comments without exposed Markdown or pagination.
+
+English daily: [Slack](https://app.slack.com/archives/C0CHWFYNSRH/p1794881233249579),
+[Discord](https://discord.com/channels/1558049042494128219/1571846554145529887/1572070753170624533).
+English weekly: [Slack](https://app.slack.com/archives/C0CHWFYNSRH/p1794881150805549),
+[Discord](https://discord.com/channels/1558049042494128219/1571846554145529887/1572070406058156095).
+PR CI and merge-triggered rollout remain to be followed. The next clock-triggered
+bilingual edition has not run yet; November 16's original scheduled daily and weekly
+suppression evidence above remain the clock-triggered acceptance evidence.
