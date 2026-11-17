@@ -58,7 +58,7 @@ those changes follows the site's existing authorization policy.
 
 ## Native scheduling
 
-Intended schedules: daily 07:00 collection and Monday 07:15 private review, both
+Installed schedules: daily 07:00 collection and Monday 07:15 private review, both
 `America/Los_Angeles`, exact timing. Use the existing Slack gateway launcher only
 as the native automation CLI; these jobs do not send Slack messages.
 
@@ -96,9 +96,54 @@ timeouts, pagination, empty responses, partial failures, stale retention and loc
 Scaffold and native workspace discovery pass; `nori-seo` is eligible. All provider responses
 in the tests are synthetic.
 
-Current installation status: **local implementation verified; provider credentials and
-live authenticated collection pending user confirmation**. No scheduled collection
-or weekly review has been enabled by this change yet. No product milestone advanced.
+## Live installation — November 17, 2026
+
+[PR #102](https://github.com/rein-protocol-foundation/nori-agent/pull/102) passed all seven
+CI checks and deployed revision `8aebca51a41775eb28d4a7cfe87356d9c3d6b6ef` at
+21:51:40 UTC. Production services are healthy. Google project `rein-nori-seo` uses
+`nori-seo-reader@rein-nori-seo.iam.gserviceaccount.com`, no Cloud IAM roles,
+Search Console Restricted access and read-only OAuth. Provider API terms and persistent
+credential creation were explicitly confirmed by the operator. Bing uses the approved
+personal webmaster account's API key; the provider's account-wide scope still applies.
+Credentials exist only in the private server runtime; downloaded local copies were removed
+following successful server authentication. Local untracked `SECRETs.md` records locators.
+
+Actual OCI report at 21:53:41.141 UTC: Google `siteRestrictedUser`, one sitemap with
+no errors/warnings, eight successful empty analytics datasets. Bing's five methods
+succeeded, with one sitemap and empty traffic/query/page/crawl results. `no_data`
+establishes the connection but supplies no performance baseline. No unavailable metric
+was replaced with zero. The daily native command completed in 2.257 seconds with
+`completionStatus=succeeded`, exit 0 and `deliveryStatus=not-requested`.
+
+| Native job | ID | Schedule (America/Los_Angeles) |
+| --- | --- | --- |
+| Daily collection | `f9029c3c-fca0-4a60-87ca-e64a997c40f0` | Daily 07:00 |
+| Private review | `832f366e-f23b-42f1-a6b8-5bc1da9c4d68` | Monday 07:15 |
+
+Both jobs were created disabled and their inherited failure alerts explicitly disabled
+before rehearsal. They have no runner delivery. Main-agent native discovery reports
+`nori-seo` eligible/model-visible. Directory/file modes are 0700/0600. Runtime job IDs
+are recorded in `runtime/seo/jobs.json`; the exact weekly prompt is also retained there.
+An initial installer assumed the add command returned a bare job; native add returned a
+wrapper instead. Installation resumed by stable declaration key, keeping one daily job
+and creating no duplicate. No job ran before its failure alerts were disabled.
+
+The first weekly native run succeeded in 59.593 seconds and wrote private review files,
+but review inspection found incorrect weekly-window/date statements and unsupported
+permission speculation. The original file remains historical evidence. The prompt now
+requires Monday scheduling, overlapping rolling-window semantics, no false inference of
+permission failure from empty data, and explicit correction of prior unsupported claims.
+The corrected native review completed in 50.871 seconds with `completionStatus=succeeded`
+and no delivery. Its saved file explicitly retracts the earlier unsupported permission/fault
+claims, explains overlapping rolling windows, and sets the next review to Monday,
+November 23, 07:15 PT. The original `seo-review-2026-11-17T2154Z.md` is retained;
+`seo-review-2026-11-17T2156Z.md` matches `reviews/latest.md`, both mode 0600.
+Both native jobs are enabled, exact, with no delivery and `failureAlert=false`. Installation
+metadata is private `runtime/seo/installation.json`. Next collection: November 18, 07:00 PT;
+next standing review: November 23, 07:15 PT. No clock-triggered run is claimed yet.
+
+Manual rehearsals are distinct from future clock-triggered execution. No unrelated
+product milestone advanced.
 
 References: [Google authorization](https://developers.google.com/webmaster-tools/v1/how-tos/authorizing),
 [Search Analytics](https://developers.google.com/webmaster-tools/v1/searchanalytics/query),

@@ -32,6 +32,24 @@ timestamped file and `latest.md`. Existing reviews are retained. Include:
    unresolved items. If data is too sparse, explain the gap and defer quantitative
    optimization rather than manufacturing findings.
 
+Interpretation checks before saving:
+- Successful empty responses establish authenticated collection with no returned
+  performance rows. Repeated `no_data` alone does not establish an integration fault.
+  `siteRestrictedUser` is the intended read permission; do not speculate that it
+  hides rows or propose elevated access without an actual permission error or
+  specific provider evidence. An absent retained fallback is not evidence that
+  collection never succeeded; distinguish historical files from usable baselines.
+- Successive weekly 28-day windows overlap. For nonoverlapping comparisons use
+  the current and previous windows within the same Google report. Never claim
+  that weekly rolling windows are disjoint. Bing has its own period definitions.
+- The standing review schedule is Monday 07:15 America/Los_Angeles. State the
+  next Monday's calendar date, even when this review was triggered manually on
+  another weekday. Sitemap inventory counts describe the provider's recorded
+  crawl, not necessarily the website's current canonical sitemap count.
+- Correct any unsupported assertions in earlier reviews explicitly while keeping
+  the earlier files as historical records. Check dates and claims against report
+  fields before writing the new latest review.
+
 Only these internal review files may be written. Return a short local completion
 status and file locator; runner delivery and failure alerts are disabled. Website
 changes remain subject to the operator's existing authorization workflow.
