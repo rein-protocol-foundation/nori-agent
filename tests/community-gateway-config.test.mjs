@@ -34,7 +34,11 @@ const fixture = () => {
 };
 
 test('shared candidate preserves internal capability settings and isolates credentials, memory and requests', () => {
-  const input = fixture(), before = structuredClone(input);
+  const input = fixture();
+  input.discord.plugins.entries['rein-operations'].config.foundationDb.platform = 'slack';
+  input.discord.plugins.entries['rein-operations'].config.foundationDb.proposalChannelIds = ['LEGACY_SLACK'];
+  input.discord.plugins.entries['rein-operations'].config.foundationDb.boardChannelIds = ['LEGACY_SLACK'];
+  const before = structuredClone(input);
   const result = configureCommunityGateway(input), cfg = result.config;
   assert.deepEqual(input, before);
   assert.deepEqual(cfg.channels.slack, input.internal.channels.slack);
@@ -45,6 +49,10 @@ test('shared candidate preserves internal capability settings and isolates crede
   assert.deepEqual(profiles.main.foundationDb, input.internal.plugins.entries['rein-operations'].config.foundationDb);
   assert.equal(profiles['nori-community'].foundationDb.agentCredentialEnvVar, 'NORI_COMMUNITY_REIN_CREDENTIAL');
   assert.equal(result.environmentMapping.NORI_COMMUNITY_REIN_CREDENTIAL, 'REIN_CREDENTIAL');
+  assert.equal(profiles['nori-community'].foundationDb.platform, 'discord');
+  assert.deepEqual(profiles['nori-community'].foundationDb.proposalChannelIds, []);
+  assert.deepEqual(profiles['nori-community'].foundationDb.boardChannelIds, []);
+  assert.equal(profiles['nori-community'].foundationDb.proposalConfirmationKeyEnvVar, undefined);
   assert.equal(cfg.channels.discord.token, 'SYNTHETIC_TOKEN');
   assert.equal(cfg.channels.discord.dmPolicy, 'allowlist');
   assert.deepEqual(cfg.channels.discord.allowFrom, input.dmUserIds);

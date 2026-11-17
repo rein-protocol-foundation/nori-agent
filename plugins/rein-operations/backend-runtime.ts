@@ -48,6 +48,7 @@ export class BackendRuntimeError extends Error {
 }
 
 export interface CreateBackendRuntimeOptions {
+  communityOnly?: boolean;
   config?: unknown;
   env?: Record<string, string | undefined>;
   transport?: BackendTransport;
@@ -76,6 +77,7 @@ const codedConfigError =
 export function resolveBackendRuntimeConfig(options?: CreateBackendRuntimeOptions): ResolvedBackendConfig | null {
   return parseBackendConfig({
     config: options?.config,
+    allowEmptyGovernanceChannels: options?.communityOnly === true,
     ...(options?.env ? { env: options.env } : {}),
     error: codedConfigError(CONFIG_INVALID_CODE),
     envError: codedConfigError(ENV_VALUE_MISSING_CODE),

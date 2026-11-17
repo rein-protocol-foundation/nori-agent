@@ -122,3 +122,20 @@ test('backend relay and operation use the selected caller; model arguments canno
     }
   } finally { globalThis.fetch = originalFetch; }
 });
+
+
+test('Community query-only profile needs neither governance channels nor a signing key', async () => {
+  const p = profiles();
+  const db = p['nori-community'].foundationDb;
+  db.platform = 'discord'; db.proposalChannelIds = []; db.boardChannelIds = [];
+  delete db.proposalConfirmationKeyEnvVar;
+  const loaded = register(p);
+  const tools = loaded.create(context());
+  assert.ok(tools.some(tool => tool.name === 'rein_resources_search'));
+  assert.ok(tools.some(tool => tool.name === 'rein_identity_bind_start'));
+  assert.ok(!tools.some(tool => /proposal|poll|funds/.test(tool.name)));
+  const status = await tools.find(tool => tool.name === 'rein_status').execute('fixture', {});
+  assert.equal(status.details.foundationDbWriteToolsEnabled, false);
+  p.main.foundationDb.proposalChannelIds = [];
+  assert.throws(() => register(p), /proposalChannelIds/);
+});

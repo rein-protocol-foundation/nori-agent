@@ -79,6 +79,8 @@ export interface ParseBackendConfigOptions {
   config?: unknown;
   env?: Record<string, string | undefined>;
   requireConfirmationKey?: boolean;
+  /** Only capability-restricted Community registrations may omit governance channels. */
+  allowEmptyGovernanceChannels?: boolean;
   confirmationSigningKey?: string;
   error: BackendConfigErrorFactory;
   /**
@@ -187,8 +189,12 @@ export function parseBackendConfig(options: ParseBackendConfigOptions): Resolved
     factory('foundationDb.platform must name a platform the foundationDb.workspaces list enrolls');
   }
   const platform = declaredPlatform || workspaces[0].platform;
-  const proposalChannelIds = readChannelIdList(factory, 'proposalChannelIds', config.proposalChannelIds);
-  const boardChannelIds = readChannelIdList(factory, 'boardChannelIds', config.boardChannelIds);
+  const governanceChannels = (field: string, value: unknown): string[] =>
+    options.allowEmptyGovernanceChannels === true && options.requireConfirmationKey !== true &&
+      (value === undefined || (Array.isArray(value) && value.length === 0))
+      ? [] : readChannelIdList(factory, field, value);
+  const proposalChannelIds = governanceChannels('proposalChannelIds', config.proposalChannelIds);
+  const boardChannelIds = governanceChannels('boardChannelIds', config.boardChannelIds);
   const allowed = new Set(workspaces.flatMap(workspace => [...workspace.nativeChannelIds]));
   for (const channel of [...proposalChannelIds, ...boardChannelIds]) {
     if (!allowed.has(channel)) {
