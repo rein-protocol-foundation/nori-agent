@@ -257,16 +257,16 @@
                   "items": {
                     "type": "string"
                   },
-                  "minItems": 1,
-                  "description": "Approved native channel IDs where a member may ask about their own status, and where an active Contributor may submit a proposal. Each one must appear in some entry of workspaces."
+                  "minItems": 0,
+                  "description": "Approved native channel IDs where a member may ask about their own status, and where an active Contributor may submit a proposal. Each one must appear in some entry of workspaces. Community-only profiles use an empty list; internal profiles require approved channels at runtime."
                 },
                 "boardChannelIds": {
                   "type": "array",
                   "items": {
                     "type": "string"
                   },
-                  "minItems": 1,
-                  "description": "Approved native channel IDs for the Board; funds reads, poll creation, ballots and results are limited to these channels and to current directors. Each one must appear in some entry of workspaces."
+                  "minItems": 0,
+                  "description": "Approved native channel IDs for the Board; funds reads, poll creation, ballots and results are limited to these channels and to current directors. Each one must appear in some entry of workspaces. Community-only profiles use an empty list; internal profiles require approved channels at runtime."
                 },
                 "proposalConfirmationKeyEnvVar": {
                   "type": "string",

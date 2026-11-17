@@ -1,5 +1,152 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-17 — Shared Gateway migration completed
+
+SA-M0 / #57; owner Codex; **LIVE ACCEPTANCE PASSED**. PR #103 passed all seven CI checks and
+merged/deployed as `496b9d30eaa1`. One Gateway now serves Slack and Discord, and the authenticated
+Dashboard has one “打开 Nori” entry. All original Slack rows/configuration, four existing agent roles,
+12 original Cron definitions and SEO files were preserved; all 4,990 old Discord profile files remain.
+Real Slack tool/retained-summary checks and Discord resource/reset/restart/private-memory/public-scope
+checks passed. The standalone Discord service is disabled and automatic updates resumed.
+[Full evidence, limitations and recovery](shared-gateway-acceptance-2026-11-17.md).
+This supersedes earlier pending/hold entries below and completes this cutover scope, not the full roadmap.
+
+## 2026-11-17 — Shared Gateway cutover resumed
+
+SA-M0 / #57; owner Codex. The owner lifted the migration hold and authorized deployment,
+restarts and real Slack/Discord acceptance. The other deployment chat released its window.
+All Slack state/capabilities must remain; Community starts with a fresh agent database while
+retaining the old Discord profile and local files for recovery. PR #101 is deployed, but its
+single-entry UI still requires the actual topology/configuration cutover.
+
+Native rehearsal exposed legacy Slack governance fields in the standalone Discord backend config.
+The candidate now creates a Discord-only query/identity profile without governance channels or
+signing-key dependency. Community registration skips governance initialization; internal profiles
+retain strict validation and existing tool registration. Focused profile/config/router tests:
+18 passed; scaffold and native candidate schema validation passed. Live cutover and acceptance
+remain pending; this entry does not claim production completion. Next: reviewed source delivery,
+locked backup/cutover, data-preservation checks and actual channel/Dashboard verification.
+
+## NORI-SEO-DATA — November 17, 2026
+
+Owner: Codex. **LIVE CONNECTED / SCHEDULED; both native rehearsals verified.**
+[PR #102](https://github.com/rein-protocol-foundation/nori-agent/pull/102) passed all seven
+CI checks and deployed as `8aebca51a41775eb28d4a7cfe87356d9c3d6b6ef` at
+21:51:40 UTC. Google service account uses `siteRestrictedUser` and read-only OAuth;
+Bing's account-wide key is restricted to read methods in the collector. Both providers
+successfully returned sitemap inventory and empty performance datasets from the OCI host.
+Empty metrics remain unavailable, not zero. The native daily command rehearsal succeeded
+in 2.257 seconds. Native main-agent skill discovery and private file modes passed.
+The first weekly review wrote private files but misinterpreted rolling-window overlap and
+the next Monday's date; it also speculated about permissions without an API error.
+Those shortcomings were retained and the review prompt corrected. The second review succeeded
+in 50.871 seconds, explicitly corrected the earlier claims and preserved the original. Daily
+07:00 and Monday 07:15 PT jobs are enabled with delivery/failure alerts disabled. First
+clock-triggered execution is future evidence. [Runbook](seo-data.md). No product milestone advanced.
+
+## 2026-11-17 — PR #101 integration review
+
+SA-M0 / #57; owner Codex. Resolved four documentation-only conflicts against `b2bab84`, retaining
+both tasks’ evidence. 39 focused integration regressions passed. Review found that standalone
+Community could retain global identity aliases despite sender-scoped DMs. The common memory
+configuration boundary now rejects nonempty aliases without modifying the input or internal aliases;
+8 focused configuration tests pass, covering standalone rejection and empty-map compatibility.
+CI and final merge verification are tracked on PR #101. Shared migration/deployment remains on hold.
+
+## 2026-11-17 — Shared Gateway Dashboard entry prepared
+
+SA-M0 / #57; owner Codex; **implemented locally, not deployed**. The owner requires one Admin
+Dashboard entry after Gateway consolidation. The landing page now shows one “打开 Nori” action
+for a single configured Gateway and retains instance navigation for split deployments. The shared
+candidate optionally generates a Dashboard config matched to the retained main port/basePath,
+preserving authentication settings; native main display metadata becomes “Nori · 主助手”. Agent IDs,
+Slack state, other agent capabilities and vendor source are unchanged. Channel labels remain useful
+inside native sessions/settings; they are not separate management entrypoints.
+
+Validation: 10 focused Dashboard/candidate tests pass, including login, persistent cookie restart,
+proxy identity, WebSocket revocation and split/single navigation. Desktop/mobile synthetic previews
+pass with one action and no mobile horizontal overflow. An initial test incorrectly expected unknown
+paths to return 404; the existing Router fallback is outside this change, and that assertion was
+removed. Shared live UI/channel acceptance is pending the blocked migration; no milestone advances.
+Next: apply the candidate only with the actual shared cutover, then verify native Agents, WebSocket
+and all retained Slack data. [Configuration and recovery](dashboard-zh.md).
+
+## 2026-11-17 — Discord retention exception; draft PR publication authorized
+
+SA-M0 private-memory boundary / #57; owner Codex; scope decision: project owner.
+Shared-Gateway migration remains **BLOCKED/on hold** as requested. The owner permits discarding
+Discord history/data when needed for consolidation, while preserving local files where feasible.
+**All Slack data must be preserved.** Lossless Discord history import is therefore no longer a
+mandatory gate; the November 16 SDK finding remains historical evidence, not a requirement to wait
+for upstream before considering fresh Discord state. The current planner remains read-only and
+shared activation remains disabled. Next, when migration resumes: prepare fresh Discord state,
+inventory/backup local files, prove Slack data preservation and revalidate the shared topology.
+
+This update authorizes branch push and a draft PR only, with no merge or production deletion/cutover.
+Documentation/scaffold and diff checks cover this scope update; prior runtime evidence and its
+limitations remain unchanged. No product milestone advances. See [current scope and evidence](community-private-memory.md).
+
+## 2026-11-16 — Private Community memory activated; shared history migration blocked
+
+SA-M0 private-memory boundary / #57; owner Codex. Deployed native owner/audience-scoped
+session memory and approved request limits to the existing Discord Gateway, retaining its `main`
+database owner. Root-owned public seed prevents unclassified history from writing into shared files;
+main Slack configuration and running processes were preserved. A narrow model-free `rein_status`
+health compatibility fix was deployed only in Discord's private router artifact; failed health cutovers
+automatically restored configuration without deleting history. Corrected the existing backend's
+308 bare-domain redirect to its canonical origin and rebuilt the native keyword index.
+
+Real Discord passed DM reset recall, restart + reset recall, public-scope negative lookup, recovered
+catalog retrieval and post-rebuild `memory_search`; real Slack executed the requested calculation
+and returned 1147. Original 5 windows / 388 transcript event identities remain present. 71 focused
+regressions passed; native memory and offline migration fixtures passed. An initial local regression
+attempt lacked localhost permission; rerunning with permitted loopback passed. Real two-human-account
+DM isolation and application-command reset remain unproven (text `/reset` passed); synthetic legacy
+rotated-window `memory_search` can remain stale, so native `sessions_search` is required continuity.
+
+Shared-Gateway migration remains **BLOCKED**: this OpenClaw pin exposes no supported lossless
+cross-agent raw-history import. No vendor patch, ownership rewrite or history deletion was performed.
+Configuration activation does not complete #57 or the wider product milestone. Next: upstream atomic
+raw history export/import seam; preserve current isolated topology and coordinate releases.
+See [implementation, evidence, limitations and recovery](community-private-memory.md).
+
+## 2026-11-16 — Native Slack buttons for partnership test mail
+
+SA-M3-01–05 / #59; owner Codex; PR #99. **IMPLEMENTED / LOCAL VERIFIED; button deployment
+and real-user acceptance pending.** The leading-space command workaround is superseded by
+native “批准并发送测试邮件”, “取消” and “刷新送达状态” buttons. Full draft preview remains in
+the original thread. The plugin uses public native outbound and interactive registration APIs,
+with persisted nonce/message/scope binding, current host authorization and membership checks.
+Legacy commands and stored checkpoints remain compatible; no vendor changes or state migration.
+
+Verification: 27 focused tests pass; full suite after merging main: 1441 passed / 4 conditional skips / 0 failures.
+The pinned native Slack outbound adapter also preserves one exact card, action values and
+thread receipt with injected transport.
+The initial full-suite attempt in the incomplete worktree failed on missing dependencies; an
+isolated verification copy with existing local dependencies passes without changing other worktrees. Real pinned loader/Gateway fixture `nori-partnership-6zW9cY`
+passes distinct-process preparation/button approval/legacy command checks; seven button actions
+produce POST deltas `[0, 0, 1, 0, 0, 0, 0]`, with zero model calls for decisions and one exact
+synthetic email. It also verifies cancellation, duplicate no-op and delivered reconciliation.
+Slack/provider transport remains synthetic. The earlier real command-based delivery evidence
+below does not establish button usability. Next: updated PR CI/review, authorized deployment,
+then actual Slack card/approval/test-recipient delivery verification. No milestone expansion.
+
+## NORI-AI-NEWS bilingual and formatting correction — November 16, 2026
+
+Owner Codex. **LIVE VERIFIED**. User requests Chinese and English editions in the same
+Slack/Discord channels, without pagination and with concise local issuance timestamps.
+Original 14 Chinese messages corrected in place; original delivery ledgers retained.
+SchemaVersion 2 pairs both languages per event and preserves legacy receipt verification.
+English supplements require exact original Chinese content/routes and complete receipts.
+39 focused tests, scaffold, whitespace and 60 native fallback checks pass. Existing native
+jobs now use the bilingual prompt. All 20 English supplement receipts confirmed; repeated
+publication creates no duplicates. API readback matches all 34 messages; native clients show
+rendered cards and concise times. A native Nori preview-only run generated and validated
+two bilingual stories in 35 seconds, with no delivery; its disabled temporary job was removed.
+Merge/rollout evidence is tracked in [PR #100](https://github.com/rein-protocol-foundation/nori-agent/pull/100).
+The next scheduled bilingual run remains future evidence. [Runbook and evidence](ai-news.md). No unrelated milestone advanced.
+
+
 ## Scoped live acceptance closeout — November 16, 2026
 
 Owner Codex / Astra High. Release d90578704cfe uses api.runtimeSource for stable summary worker identity and exact terminal native references for late reconciliation. 75 focused tests and native config/runtime loading pass. Only Slack restarted (PID533146); Discord/Router/Web PIDs unchanged. Real Slack reads confirm indefinite summaries, deletion tombstone persistence and a new single-run ACP verification with native_wait/complete surviving restart. The original pre-fix ACP flow still lacks settled evidence; no completion was fabricated. PR #98 remains open to avoid an unauthorized full-service restart. [Full evidence and limitations](task-lifecycle-activation-2026-11-16.md).
@@ -95,6 +242,28 @@ boundary; retain native authorization, live membership, configured approver and 
 22 focused tests pass, including lowercase approval, forged/wrong identity rejection and duplicate
 no-op. Live approval/send/reconciliation remain pending deployment of this compatibility fix.
 No secrets or runtime records are included here; existing acceptance evidence is not overwritten.
+
+Deployment follow-up: the owner explicitly authorized merging PR #95. All seven CI checks
+passed and review had no findings. Merge `e2c4083` completed at 17:28:25 UTC; the normal
+updater reported `updated` at 17:31:28 UTC, with all four application services active.
+The original version-1 draft survived restart, still awaiting approval with no send intent
+or receipt. The connected Slack sender appended attribution to the approval command;
+strict argument validation rejected it before dispatch. The initial diagnosis of ineffective
+computer-control input was incorrect: the owner's Slackbot screenshot showed that Slack
+intercepts a leading `/` as an unregistered app slash command.
+
+**LIVE TEST PASS, November 16 at 17:21–17:22 America/Los_Angeles.** Under the owner's
+existing test-send authorization, Codex submitted the exact saved approval through the
+authenticated administrator's Slack web UI with one space before `/partnership`. The original
+version-1 checkpoint resumed after intervening deployments. Resend accepted the email to the
+designated test address; read-only reconciliation matched the exact sender, recipient, subject
+and body and recorded `delivered`. A repeated approval returned the same receipt and retained
+the original decision/send-intent timestamps. [Slack acceptance and delivery evidence](https://reinprotocolf-e2q1425.slack.com/archives/C0C4L0YN814/p1794878546727399).
+Runtime revision: `9ed4cb2`, including PR #95. This verifies the authorized test workflow and
+provider-reported delivery, not inbox placement, reading, or real-partner outreach authority.
+The preview, skill and runbook now explain plain-text submission with a leading space and no
+connector attribution. These wording changes require publication; the working production
+path uses the already deployed implementation. No runtime records or credentials committed.
 
 ## 2026-11-15 — Community runtime ticket accepted and closed
 

@@ -54,12 +54,20 @@ export function validateScopedPolicies(raw, routes, globalPaid) {
     }
     if (!Array.isArray(policy.origins) || !policy.origins.length || policy.origins.length > 32) fail();
     const origins = policy.origins.map(origin => {
-      keys(origin, ['platform', 'accountId', 'workspaceId', 'channelIds']);
+      keys(origin, ['platform', 'accountId', 'workspaceId', 'channelIds', 'directMessages']);
       if (!['slack', 'discord'].includes(origin.platform) || !id(origin.accountId) || !id(origin.workspaceId) || !list(origin.channelIds)) fail();
+      if (origin.directMessages !== undefined &&
+          (typeof origin.directMessages !== 'boolean' || origin.platform !== 'discord')) fail();
       return { ...origin, channelIds: [...origin.channelIds] };
     });
     if (origins.some(origin => origin.platform === 'discord') && !usageLimits) fail();
     const seen = new Set();
+    const directAccounts = new Set();
+    for (const origin of origins.filter(origin => origin.directMessages)) {
+      const key = JSON.stringify([origin.platform, origin.accountId]);
+      if (directAccounts.has(key)) fail();
+      directAccounts.add(key);
+    }
     for (const origin of origins) for (const channel of origin.channelIds) {
       const key = JSON.stringify([origin.platform, origin.accountId, channel]);
       if (seen.has(key)) fail(); // Never guess a workspace for an ambiguous native channel.
@@ -100,7 +108,10 @@ export function resolveScopedPolicy(policies, ctx, { hasAttachments = false, nat
   const channelId = ctx.channelContext?.chat?.id ?? ctx.chatId;
   if (!channelId || (ctx.chatId !== undefined && ctx.chatId !== channelId) ||
       (ctx.channelContext?.sender?.id !== undefined && ctx.channelContext.sender.id !== ctx.senderId)) return null;
-  const origin = policy.origins.find(origin => origin.platform === ctx.channel && origin.accountId === ctx.accountId && origin.channelIds.includes(channelId));
+  const origin = policy.origins.find(origin => origin.platform === ctx.channel && origin.accountId === ctx.accountId &&
+    (origin.channelIds.includes(channelId) || (origin.directMessages === true && ctx.channel === 'discord' &&
+      /^\d{17,20}$/.test(ctx.senderId) && /^\d{17,20}$/.test(channelId) &&
+      ctx.sessionKey === `agent:${ctx.agentId}:discord:${ctx.accountId}:direct:${ctx.senderId}`)));
   if (!origin) return null;
   const platform = policy.platforms[origin.platform];
   const channel = policy.channels.find(channel => channel.platform === origin.platform && channel.accountId === origin.accountId &&

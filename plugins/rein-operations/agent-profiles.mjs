@@ -4,6 +4,9 @@ const COMMUNITY_TOOLS = new Set(['rein_status', 'rein_identity_bind_start',
   'rein_resource_get', 'rein_events_search', 'rein_event_get']);
 const record = value => value && typeof value === 'object' && !Array.isArray(value);
 const invalid = () => { throw new Error('foundation_agent_profiles_invalid'); };
+const canonical = value => JSON.stringify(value, function (_key, item) {
+  return record(item) ? Object.fromEntries(Object.keys(item).sort().map(key => [key, item[key]])) : item;
+});
 
 export function registerAgentProfiles(api, registerLegacy) {
   const raw = api.pluginConfig;
@@ -11,8 +14,7 @@ export function registerAgentProfiles(api, registerLegacy) {
       !record(raw.agentProfiles) || !Object.keys(raw.agentProfiles).length ||
       Object.keys(raw.agentProfiles).length > 16) invalid();
   const profiles = [];
-  const callers = new Set();
-  const credentials = new Set();
+  const authorities = [];
   for (const [agentId, profile] of Object.entries(raw.agentProfiles)) {
     if (!/^[a-z][a-z0-9_-]{0,63}$/.test(agentId) || !record(profile) ||
         Object.keys(profile).some(key => !['platform', 'accountId', 'capabilities', 'foundationDb'].includes(key)) ||
@@ -25,22 +27,33 @@ export function registerAgentProfiles(api, registerLegacy) {
         profile.foundationDb.workspaces.some(workspace => workspace.platform !== profile.platform)) invalid();
     const caller = process.env[profile.foundationDb.agentCallerIdEnvVar]?.trim();
     const credential = process.env[profile.foundationDb.agentCredentialEnvVar]?.trim();
-    // Distinct locators with identical credentials are still the same backend authority.
-    if (!caller || !credential || callers.has(caller) || credentials.has(credential)) invalid();
-    callers.add(caller); credentials.add(credential);
+    if (!caller || !credential) invalid();
+    // Existing internal agents may explicitly retain one identical Slack authority.
+    // A Community profile must always have its own caller AND credential. Sharing just
+    // one field, a different account, or a differently scoped backend is ambiguous.
+    const authority = { caller, credential, profile };
+    for (const prior of authorities) if (prior.caller === caller || prior.credential === credential) {
+      if (prior.caller !== caller || prior.credential !== credential ||
+          profile.capabilities !== 'internal' || prior.profile.capabilities !== 'internal' ||
+          profile.platform !== 'slack' || prior.profile.platform !== 'slack' ||
+          profile.accountId !== prior.profile.accountId ||
+          canonical(profile.foundationDb) !== canonical(prior.profile.foundationDb)) invalid();
+    }
+    authorities.push(authority);
     profiles.push({ agentId, ...profile, registrations: [] });
   }
   const hooks = [];
+  const hookOwner = profiles.find(profile => profile.capabilities === 'internal');
   for (const profile of profiles) {
     registerLegacy({ ...api, pluginConfig: { foundationDb: profile.foundationDb },
-      on: profile === profiles[0] && typeof api.on === 'function'
+      on: profile === hookOwner && typeof api.on === 'function'
         ? (...args) => hooks.push(args) : undefined,
       registerTool(registration, options) {
         const names = options?.names ?? [registration.name];
         const admitted = names.filter(name => profile.capabilities === 'internal' || COMMUNITY_TOOLS.has(name));
         if (admitted.length) profile.registrations.push({ registration, names: admitted });
       },
-    });
+    }, { communityOnly: profile.capabilities === 'community' });
   }
   const names = [...new Set(profiles.flatMap(profile => profile.registrations.flatMap(item => item.names)))];
   api.registerTool({ contextVersion: 2, create(ctx) {

@@ -29,10 +29,22 @@ Use only history and memory that the host has admitted for the current owner and
 Public history is intentionally shared by participants in the same public room or thread.
 This does not make any member's DM, private memory or internal-agent context public.
 Preserve useful permitted continuity through the native owner-aware memory implementation.
+Conversation records are persisted automatically by the host and can be retrieved with
+`sessions_search`; they do not require a separate memory-write tool. Absence of a write tool
+does not mean a private conversation disappears after reset or restart. Describe actual
+retrieval results and limits, and do not promise indefinite retention.
 This template cannot implement that boundary. Do not create a shared USER.md, MEMORY.md or
 member-profile file as a substitute for private memory, and do not put personal facts in skills
 or public references. A person's private context is not automatically suitable for a public reply.
 Treat recalled claims as attributed claims; they do not become verified organizational facts.
+
+When a question refers to an earlier conversation here, use native `sessions_search` with
+`sessionKey: "current"`. This searches automatically retained conversation records, including
+permitted history before a reset. `memory_search` can help, but an empty result there does not
+prove that this conversation has no earlier history. If native indexing reports that it is still
+running, state that recall is incomplete and retry within the current request's limits.
+Never select another person's DM or an internal-agent session to fill a gap. Deleting a conversation
+is different from resetting it; do not claim deleted history remains searchable.
 
 ## Actions and replies
 

@@ -4,7 +4,7 @@ import { createUsageLedger } from './usage-limits.mjs';
 import { validateRouterConfig } from './policy.mjs';
 import { createManagedGateway } from './managed-gateway.mjs';
 import { bindManagedService, managedServiceScope, managedServiceRegistry } from './service-bridge.mjs';
-import { createFoundationAdminAuthorizer, FOUNDATION_ADMIN_TIMEOUT_MS } from './foundation-admin.ts';
+import { createProfileAdminAuthorizer, FOUNDATION_ADMIN_TIMEOUT_MS } from './foundation-admin.ts';
 import { createCronIngress, assertTrustedSlackBoundaries } from './cron-ingress.mjs';
 import { loadCronStore, resolveCronStorePath } from 'openclaw/plugin-sdk/cron-store-runtime';
 import { createSlackDevelopmentAuthorizer, DEVELOPMENT_AUTH_TIMEOUT_MS } from './slack-development.mjs';
@@ -22,10 +22,9 @@ export default definePluginEntry({
         allowPaidUsage: config.allowPaidUsage }),
     }) : undefined;
     const operations = api.config.plugins?.entries?.['rein-operations'];
-    const foundation = {
-      config: operations?.enabled === true ? operations.config?.foundationDb : undefined,
-    };
-    const authorizeAdmin = createFoundationAdminAuthorizer(foundation);
+    const authorizeAdmin = createProfileAdminAuthorizer({
+      operationsConfig: operations?.enabled === true ? operations.config : undefined,
+    });
     const authorizeDevelopment = createSlackDevelopmentAuthorizer({ config });
     const authorizeCreator = createSlackDevelopmentAuthorizer({ config: { developmentChannels: config.trustedSlackChannels } });
     if (config.enabled) { assertRuntimeConfig(config, api.config); assertTrustedSlackBoundaries(config.trustedSlackChannels, api.config); }

@@ -166,7 +166,9 @@ export function createConsoleSync({ root, native, gatewayBaseUrl = 'http://127.0
       configuredRoutes: (host.plugins?.entries?.['rein-router']?.config?.routes ?? []).map(({ id, gatewayModel, effort }) => ({ id, gatewayModel, effort })),
       effectiveScopedPolicies: describeScopedPolicies(host.plugins?.entries?.['rein-router']?.config?.scopedPolicies), recommendations: recommendPolicy(catalog), lastSync, error: lastError,
       administratorAuthority: { source: 'foundation', configured: host.plugins?.entries?.['rein-operations']?.enabled === true &&
-        host.plugins.entries['rein-operations'].config?.foundationDb?.enabled === true },
+        (host.plugins.entries['rein-operations'].config?.foundationDb?.enabled === true ||
+          Object.values(host.plugins.entries['rein-operations'].config?.agentProfiles ?? {}).some(profile =>
+            profile.platform === 'slack' && profile.capabilities === 'internal' && profile.foundationDb?.enabled === true)) },
       jevKeyConfigured: validJevKey(secret.jevApiKey),
       configPath, openclawModel: 'rein-magpie/auto' };
   }

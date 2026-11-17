@@ -1,6 +1,7 @@
 // Synthetic Slack/Resend transport; real host ingress, command dispatch, plugin and Lobster.
 import { readFileSync, existsSync, writeFileSync, renameSync } from 'node:fs';
 import { definePluginEntry } from 'openclaw/plugin-sdk/plugin-entry';
+import { createChannelInteractiveDispatcher } from 'openclaw/plugin-sdk/plugin-runtime';
 
 const evidencePath = process.env.PARTNERSHIP_EVIDENCE;
 const state = process[Symbol.for('rein.partnership.fixture')] ??= (existsSync(evidencePath) ? JSON.parse(readFileSync(evidencePath, 'utf8')) : { tools: [], sent: [], runs: [], mail: [], phases: [] });
@@ -34,7 +35,15 @@ export default definePluginEntry({ id: 'partnership-fixture', name: 'Synthetic p
   api.registerChannel({ id: 'slack', meta: { id: 'slack', label: 'Synthetic partnership Slack', selectionLabel: 'Synthetic partnership Slack', docsPath: '/channels/slack', blurb: 'Loopback only' },
     capabilities: { chatTypes: ['channel'], media: false, nativeCommands: false },
     config: { listAccountIds: () => ['default'], resolveAccount: (_cfg, accountId) => ({ accountId, enabled: true }), isEnabled: () => true, isConfigured: () => true },
-    outbound: { deliveryMode: 'direct', async sendText({ to, text, threadId }) { state.sent.push({ to, text, threadId, background: true }); save(); return { channel: 'slack', messageId: `partnership-${state.sent.length}` }; } },
+    outbound: { deliveryMode: 'direct',
+      async sendText({ to, text, threadId }) { state.sent.push({ to, text, threadId, background: true }); save(); return { channel: 'slack', messageId: `partnership-${state.sent.length}` }; },
+      async sendPayload({ to, payload, accountId, threadId, assertDirectAdapterHandoff, onPlatformSendDispatch }) {
+        assertDirectAdapterHandoff?.(); await onPlatformSendDispatch?.();
+        const messageId = `2000.${state.sent.length + 1}`;
+        state.sent.push({ to, text: payload.text, blocks: payload.channelData?.slack?.blocks, accountId, threadId, messageId }); save();
+        return { channel: 'slack', messageId };
+      },
+    },
     gateway: { async startAccount(ctx) {
       async function dispatch(text, { sender = 'UALICE01', channel = 'CFIXTURE1', thread = '1000.001' } = {}) {
         const account = 'default', agentId = 'main', sessionKey = `agent:main:slack:${account}:channel:${channel.toLowerCase()}`;
@@ -60,7 +69,28 @@ export default definePluginEntry({ id: 'partnership-fixture', name: 'Synthetic p
           await dispatch('PARTNERSHIP_PREPARE');
           await dispatch('PARTNERSHIP_PREPARE_CANCEL');
         }
-        else {
+        else if (phase === 'buttons') {
+          // The same public dispatcher used by the pinned native Slack adapter; transport and Slack auth are synthetic.
+          const interactive = createChannelInteractiveDispatcher({ channel: 'slack', interactiveKey: 'interaction' });
+          const cards = state.sent.filter(s => s.blocks?.some(b => b.type === 'actions'));
+          async function click(card, action, changes = {}) {
+            const value = card.blocks.find(b => b.type === 'actions').elements[0].value.replace(':approve:', `:${action}:`);
+            const interactionId = `click-${state.clicks?.length ?? 0}`;
+            const mailBefore = state.mail.length;
+            const result = await interactive({ data: value, dedupeId: interactionId,
+              ctx: { accountId: 'default', interactionId, conversationId: 'CFIXTURE1', senderId: 'UALICE01', threadId: '1000.001',
+                auth: { isAuthorizedSender: true }, interaction: { kind: 'button', actionId: `openclaw:callback_button:${action}`, messageTs: card.messageId, value }, ...changes },
+              conversation: { channel: 'slack', accountId: 'default', conversationId: '1000.001', parentConversationId: 'CFIXTURE1', threadId: '1000.001' },
+              respond: { acknowledge: async () => {}, reply: async value => { (state.interactiveErrors ??= []).push(value); save(); },
+                editMessage: async value => { (state.updatedCards ??= []).push(value); save(); } },
+            });
+            (state.clicks ??= []).push({ action, matched: result.matched, handled: result.handled, mailBefore, mailAfter: state.mail.length }); save();
+          }
+          await click(cards[0], 'approve', { senderId: 'UBOB0001' });
+          await click(cards[0], 'approve', { threadId: '1000.999' });
+          await click(cards[0], 'approve'); await click(cards[0], 'approve'); await click(cards[0], 'reconcile');
+          await click(cards[1], 'cancel'); await click(cards[1], 'approve');
+        } else {
           const commands = JSON.parse(readFileSync(process.env.PARTNERSHIP_COMMANDS, 'utf8'));
           for (const item of commands) await dispatch(item.text, item.options);
         }

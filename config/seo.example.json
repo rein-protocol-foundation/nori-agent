@@ -1,0 +1,11 @@
+{
+  "googleSite": "sc-domain:rein-protocol.org",
+  "bingSite": "https://www.rein-protocol.org/",
+  "googleCredentialsFile": "google-service-account.json",
+  "bingApiKeyFile": "bing-api-key.txt",
+  "outputDirectory": "reports",
+  "retention": 30,
+  "pageSize": 1000,
+  "maxPages": 10,
+  "minimumImpressions": 100
+}

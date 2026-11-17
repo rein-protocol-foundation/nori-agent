@@ -30,7 +30,24 @@ export default definePluginEntry({
   },
 });
 
-function registerOperations(api: OpenClawPluginApi) {
+function registerOperations(api: OpenClawPluginApi, { communityOnly = false } = {}) {
+    if (communityOnly) {
+      const runtime = createBackendRuntime({ config: api.pluginConfig?.foundationDb, communityOnly: true });
+      if (!runtime) throw new Error('community backend runtime is unavailable');
+      api.registerTool(createCommunityToolsRegistration({ runtime }), { names: [...COMMUNITY_TOOL_NAMES] });
+      api.registerTool(runtime.wrapRegistration(createIdentityToolsRegistration({ runtime, proofProvider: runtime.proofProvider })),
+        { names: [...IDENTITY_BIND_TOOL_NAMES] });
+      api.registerTool({ name: 'rein_status', description: 'Report Community capabilities without querying organization records.',
+        parameters: Type.Object({}, { additionalProperties: false }),
+        async execute() {
+          const details = { stage: 'development', implemented: ['rein_status', ...IDENTITY_BIND_TOOL_NAMES, ...COMMUNITY_TOOL_NAMES],
+            identityBindToolsEnabled: true, communityQueryToolsEnabled: true,
+            foundationDbReadToolsEnabled: false, foundationDbWriteToolsEnabled: false,
+            foundationDbCollectToolsEnabled: false, foundationDbFeedbackToolsEnabled: false, automationEnabled: false };
+          return { content: [{ type: 'text' as const, text: JSON.stringify(details) }], details };
+        } });
+      return;
+    }
     const proposalConfig = api.pluginConfig?.proposalTools;
     const proposalEnabled = Boolean(proposalConfig && typeof proposalConfig === 'object' && (proposalConfig as Record<string, unknown>).enabled === true);
     const foundationDbConfig = api.pluginConfig?.foundationDb;

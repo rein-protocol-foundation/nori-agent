@@ -1,5 +1,22 @@
 # Nori Super Agent Product Requirements Document
 
+> **November 17 Community scope update:** Push and draft PR creation are authorized; do not merge.
+> Shared-Gateway migration remains blocked/on hold. Future consolidation may discard Discord
+> history/data while preserving local files where feasible. All Slack data must be preserved.
+> Lossless Discord history import is no longer a gate. Fresh Discord state still needs implementation
+> and shared-topology verification; this scope change performs no deletion, cutover or acceptance.
+> After consolidation, Admin Dashboard must expose one Nori entry, with a channel-neutral main
+> display name; Slack/Discord remain channel labels within native sessions and settings.
+
+> **November 16 Community migration scope:** The owner explicitly confirms DeepSeek v4.1
+> Flash-first. Qwen-first, attachment delivery and thread-reply delivery are not gates for this
+> migration. Preserve the main assistant's existing capabilities and the read-only vendor pin.
+> Complete private-memory isolation, then migrate and verify real Slack and Discord entrypoints.
+> Approved Community admission limits: 6 requests/user/minute, 30/conversation/minute;
+> concurrent user/conversation/Community limits 2/4/8; 2,000 model requests/day including retries.
+> Request counts are not token or currency quotas. This supersedes contrary Community-first-model
+> and migration-gate wording below; it does not itself establish acceptance.
+
 - **Version**: v0.7, English edition
 - **Updated**: November 16, 2026 (America/Los_Angeles); owner-confirmed indefinite summary retention
 - **Status**: Scope clarified by the owner. Complete general task coordination using OpenClaw native/community tools; expand Rein internal business tools only after Super Agent acceptance. Preserve existing capabilities. Partnership mail is an optional delivered integration, not a completion gate. Indefinite server summary retention is selected; implementation and native enforcement acceptance remain open. This PRD alone grants no production authorization.
