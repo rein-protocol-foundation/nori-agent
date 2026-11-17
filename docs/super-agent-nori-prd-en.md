@@ -1,5 +1,11 @@
 # Nori Super Agent Product Requirements Document
 
+> **November 17 Community scope update:** Push and draft PR creation are authorized; do not merge.
+> Shared-Gateway migration remains blocked/on hold. Future consolidation may discard Discord
+> history/data while preserving local files where feasible. All Slack data must be preserved.
+> Lossless Discord history import is no longer a gate. Fresh Discord state still needs implementation
+> and shared-topology verification; this scope change performs no deletion, cutover or acceptance.
+
 > **November 16 Community migration scope:** The owner explicitly confirms DeepSeek v4.1
 > Flash-first. Qwen-first, attachment delivery and thread-reply delivery are not gates for this
 > migration. Preserve the main assistant's existing capabilities and the read-only vendor pin.

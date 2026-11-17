@@ -1,8 +1,11 @@
 # Community private memory and retained-history migration
 
-Status on 2026-11-16; owner: Codex; scope: SA-M0 private-memory boundary and #57 Community migration.
+Status on 2026-11-17; owner: Codex; scope: SA-M0 private-memory boundary and #57 Community migration.
 The existing standalone Discord Gateway is isolated and uses the approved request limits.
-Moving it into the shared Gateway remains blocked by the pinned upstream history-import boundary.
+Moving it into the shared Gateway remains BLOCKED/on hold at the owner’s request.
+The November 17 scope permits discarding Discord history/data for consolidation while preserving
+local files where feasible; all Slack data must be preserved. Lossless Discord history import is
+no longer a mandatory gate. No deletion or migration is performed by this publishing update.
 No vendor source was changed. Main Slack capabilities and its running process were preserved.
 
 ## Boundary and configuration
@@ -115,7 +118,20 @@ worker placement; actor-owner assignment does not rename an agent database. SQLi
 reject a copied `main` database as `nori-community`. Thus full raw history, archives and related state
 cannot yet be moved losslessly through supported extension interfaces.
 
-Needed upstream seam: versioned raw bundle export and atomic import with explicit owner/key mapping,
-archive/event/actor/delivery references, conflict validation and idempotent receipts. Until available,
-keep the now-isolated standalone Discord service. Do not edit schema ownership or private vendor APIs,
-drop old histories, or claim the shared-Gateway milestone complete.
+For a lossless migration, the missing upstream seam would be versioned raw bundle export and atomic
+import with explicit owner/key mapping, archive/event/actor/delivery references, conflict validation
+and idempotent receipts. This finding remains valid, but the November 17 owner decision removes
+lossless Discord import as a required migration gate.
+
+The revised future path may initialize fresh Discord agent state instead of importing its old history.
+Discord history/data may be discarded when needed for consolidation; inventory and preserve its local
+files where feasible. All Slack data, including histories, files and existing runtime state, must be
+preserved. This exception does not permit resetting shared storage containing Slack data.
+The existing retained-history planner remains read-only and activation remains disabled; it does not
+implement the fresh-state path or authorize a cutover. Before resuming migration, prepare the scoped
+Discord state/configuration changes, local-file backups and recovery, prove Slack data preservation,
+and revalidate isolation and real-channel behavior in the shared topology.
+
+For now, retain the isolated standalone Discord service and BLOCKED migration status as requested.
+The owner authorized pushing this branch and creating a draft PR, with no merge. No vendor edits,
+production deletions, migration, or new acceptance claims are part of that publishing step.

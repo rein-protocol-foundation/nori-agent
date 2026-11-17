@@ -1,5 +1,20 @@
 # Acceptance evidence
 
+## 2026-11-17 — Discord retention exception; draft PR publication authorized
+
+SA-M0 private-memory boundary / #57; owner Codex; scope decision: project owner.
+Shared-Gateway migration remains **BLOCKED/on hold** as requested. The owner permits discarding
+Discord history/data when needed for consolidation, while preserving local files where feasible.
+**All Slack data must be preserved.** Lossless Discord history import is therefore no longer a
+mandatory gate; the November 16 SDK finding remains historical evidence, not a requirement to wait
+for upstream before considering fresh Discord state. The current planner remains read-only and
+shared activation remains disabled. Next, when migration resumes: prepare fresh Discord state,
+inventory/backup local files, prove Slack data preservation and revalidate the shared topology.
+
+This update authorizes branch push and a draft PR only, with no merge or production deletion/cutover.
+Documentation/scaffold and diff checks cover this scope update; prior runtime evidence and its
+limitations remain unchanged. No product milestone advances. See [current scope and evidence](community-private-memory.md).
+
 ## 2026-11-16 — Private Community memory activated; shared history migration blocked
 
 SA-M0 private-memory boundary / #57; owner Codex. Deployed native owner/audience-scoped

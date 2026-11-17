@@ -1,12 +1,17 @@
 # Super Agent Nori：剩余开发与验收计划
 
+> 2026-11-17 最新决定：授权推送分支并创建草稿 PR，先不合并；共享 Gateway 迁移继续
+> 保留阻塞。后续合并 Gateway 可舍弃 Discord 历史和数据，尽量保留本地文件；Slack 所有
+> 数据必须保留。无损 Discord 历史导入不再是迁移门槛；空白状态迁移路径仍待实现与验证。
+> 此决定不表示已删除数据、执行迁移或完成验收。
+
 > 2026-11-16 用户补充：Community 保持 DeepSeek v4.1 Flash-first；Qwen-first、附件交付和
 > 线程回复不再作为本次迁移门槛。先补齐私有记忆隔离，保留主助手现有能力，不改 vendor，
 > 再迁移并由 Codex 在真实 Slack、Discord 发送和核验测试。批准的请求限额：用户／会话
 > 每分钟 6／30 次，并发用户／会话／Community 为 2／4／8，每日模型请求 2,000 次（含重试）。
 > 这是请求计数，不能冒充 token 或费用额度；本条更新范围，不宣称验收通过。
 
-更新：2026-11-16（America/Los_Angeles）。范围决定：项目负责人；本次整理：Codex。
+更新：2026-11-17（America/Los_Angeles）。范围决定：项目负责人；本次整理：Codex。
 状态：社区私有记忆已在独立 Discord 启用并完成限定真实验收；共享 Gateway 历史迁移仍阻塞，详见 [证据](community-private-memory.md)。其他任务状态由对应记录维护。依据：[PRD v0.7](super-agent-nori-prd-en.md)。
 本计划优先于旧记录中的任务顺序；历史编号仅作追溯，不作为任务名称或执行顺序。
 
