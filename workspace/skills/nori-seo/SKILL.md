@@ -30,6 +30,12 @@ credential files `0600`; avoid symlink components in every path. If an OS uses a
 The Google service-account email must already have access to the Search Console property and
 the API must already be enabled; this skill does not grant access or create keys.
 
+On the maintained Rein OCI installation, the operator-provisioned config is
+`/home/ubuntu/rein-agent/runtime/seo/config.json`; the pinned Node binary is
+`/home/ubuntu/rein-agent/.toolchain/node_modules/node/bin/node`. The latest private
+review is `/home/ubuntu/rein-agent/runtime/seo/reviews/latest.md`. Use these locators
+only from an authorized host/operator context; they grant no additional access.
+
 With an explicitly configured path (replace the example absolute path):
 
 ```sh

@@ -18,15 +18,20 @@ locked backup/cutover, data-preservation checks and actual channel/Dashboard ver
 
 ## NORI-SEO-DATA — November 17, 2026
 
-Owner: Codex. **LOCAL VERIFIED; live API access pending.** Add an optional
-native skill for private Google Search Console and Bing Webmaster collection. Google
-uses service-account read-only OAuth; Bing uses an account-wide API key with a fixed
-read-method allowlist in the collector. Console ownership is already verified but does
-not establish Nori API connectivity. Credentials, authenticated reads and native jobs
-remain pending the user's action-time confirmation. [Runbook](seo-data.md).
-Verification: 16 focused mocked-network tests, scaffold, whitespace and native workspace
-skill discovery pass. No live provider call was made. No product milestone advanced.
-Next: approved credential provisioning, live source/report checks and scheduler activation.
+Owner: Codex. **LIVE CONNECTED / SCHEDULED; both native rehearsals verified.**
+[PR #102](https://github.com/rein-protocol-foundation/nori-agent/pull/102) passed all seven
+CI checks and deployed as `8aebca51a41775eb28d4a7cfe87356d9c3d6b6ef` at
+21:51:40 UTC. Google service account uses `siteRestrictedUser` and read-only OAuth;
+Bing's account-wide key is restricted to read methods in the collector. Both providers
+successfully returned sitemap inventory and empty performance datasets from the OCI host.
+Empty metrics remain unavailable, not zero. The native daily command rehearsal succeeded
+in 2.257 seconds. Native main-agent skill discovery and private file modes passed.
+The first weekly review wrote private files but misinterpreted rolling-window overlap and
+the next Monday's date; it also speculated about permissions without an API error.
+Those shortcomings were retained and the review prompt corrected. The second review succeeded
+in 50.871 seconds, explicitly corrected the earlier claims and preserved the original. Daily
+07:00 and Monday 07:15 PT jobs are enabled with delivery/failure alerts disabled. First
+clock-triggered execution is future evidence. [Runbook](seo-data.md). No product milestone advanced.
 
 ## 2026-11-17 — PR #101 integration review
 
