@@ -3,9 +3,12 @@
 Task: **NORI-AI-NEWS** (explicit operator request, November 16, 2026). Owner: Codex.
 This optional editorial workflow does not advance unrelated product milestones.
 
-Nori prepares a Chinese daily digest of at most ten distinct AI events, and a weekly
-selection of the previous calendar week's ten most important verified events. Each
-entry has a short introduction, its original source link, and a concrete Nori comment.
+Nori prepares complete Chinese and English daily digests of at most ten distinct AI
+events, and a weekly selection of the previous calendar week's ten most important
+verified events. Both versions appear in the same configured channel, Chinese first,
+with identical event IDs, order and original links. Each entry in each language has a
+short introduction and a concrete Nori comment. Ten events means ten shared selections,
+not twenty different stories.
 The weekly edition ranks the full week again rather than concatenating daily posts.
 When fewer than ten reliable events are available, it states the shortfall instead of
 inventing or recycling news.
@@ -48,7 +51,10 @@ Do not patch vendored OpenClaw, replace a channel, copy private memories into th
 or change member authorization to enable a public newsletter.
 
 Native `presentation` cards provide titles, separators, source metadata and original-link
-buttons on Slack and Discord. The fallback is bounded Unicode/plain text with bare
+buttons on Slack and Discord. Headings identify the edition and language, never a page
+or message-part count. The issuance timestamp is concise (for example, `11 月 16 日 9:00 PST`
+and `Nov 16, 9:00 AM PST`); the displayed timezone follows daylight-saving changes.
+Weekly editions additionally show a short coverage-date range. The fallback is bounded Unicode/plain text with bare
 HTTPS links. Draft validation refuses Markdown/HTML syntax, mass mentions, invalid
 candidate IDs, excessive lengths and a bounded set of promotional clichés. This
 structural check supports editorial review; it cannot prove every claim or guarantee
@@ -145,8 +151,9 @@ the bot lacks Manage Channels; that permission was not added.
 Pause using the owning Slack launcher's `cron disable <job-id>` for each ID above. Resume
 with `cron enable <job-id>` after resolving the underlying problem; do not create replacement
 jobs. Reconcile any uncertain send against actual channel history before touching receipts.
-Keep the runtime skill at its recorded hashes for a published edition's retry, because the
-immutable fingerprint includes rendered content and destinations.
+Preserve the recorded binding for a published edition: the immutable fingerprint includes
+content and destinations. The bilingual sender retains a private, exact legacy renderer
+solely to verify completed Chinese-only receipts, never to generate new legacy sends.
 
 
 ### First clock-triggered acceptance — November 16, 2026
@@ -178,3 +185,46 @@ The existing source files match the production-installed skill hashes. The PR ad
 Python suite to the scaffold CI workflow so collection, dates/DST, formatting, limits, locked
 state, receipt validation and uncertain-send recovery continue to be checked in GitHub Actions.
 Private snapshots, drafts, ledgers, configuration backups and credentials are excluded from Git.
+
+
+## Bilingual editions and chat-native formatting — November 16, 2026
+
+Task NORI-AI-NEWS, owner Codex. User requested removal of pagination, concise issuance time,
+and complete Chinese/English versions in each existing channel. The source update uses
+schemaVersion 2 drafts with one shared items array; every item contains id plus zh/en
+objects, each with title, summary and comment. Structural pairing is enforced before any
+external send; semantic equivalence and natural writing remain editorial checks.
+
+The versioned [native job prompt](../templates/ai-news-job.md) is expanded with only
+`{{runtimeDirectory}}` and `{{edition}}` when updating the two existing native jobs.
+Schedules and target channel IDs remain the same. New bilingual editions freeze both
+languages and routes in one ledger, with platform/language/chunk receipts. A timeout or
+uncertain result still blocks automatic resend.
+
+Existing completed Chinese-only editions remain immutable sending records. Normal publish
+verifies the exact original binding and returns without a new message. Partial, uncertain,
+changed-content or changed-route legacy records require operator reconciliation. For an
+explicitly authorized English supplement, use `publish-translation --config … --snapshot …
+--draft … --send`: the sender verifies the complete original receipts and exact Chinese
+projection, sends only English, and records a separate ledger bound to the original
+fingerprint. It does not delete, rewrite or replace the original ledger. Repeating the
+same supplement skips confirmed English chunks; translation changes after intent are rejected.
+
+The already-posted Chinese daily/weekly messages were edited in place using their original
+message IDs. The existing bot authorization was reused; the native CLI edit contract does
+not expose structured card updates, so the bounded correction used the platforms' public
+[Slack update](https://docs.slack.dev/reference/methods/chat.update/) and
+[Discord message edit](https://github.com/discord/discord-api-docs/blob/main/developers/resources/message.mdx)
+APIs. Only headings and timestamp metadata changed; article bodies/links and all 14 original
+receipts remained intact. A private audit retains original message payloads, correction
+plans and edit confirmations under `runtime/ai-news/format-correction-20261116/`.
+
+Verification: 39 focused tests, scaffold and whitespace checks pass. Sixty comparisons
+against the native SDK fallback pass. The frozen legacy renderer matches the original
+AST (apart from private function names) and four fixture outputs exactly; both actual
+November 16 ledgers also pass exact binding verification. Both existing native jobs are
+updated to the versioned bilingual prompt and retain their schedules and IDs. The runtime
+bundle was installed with an updater lock and a private rollback backup.
+
+Live English supplements, final client inspection and PR rollout are being verified;
+this does not claim the next clock-triggered bilingual edition has already run.
