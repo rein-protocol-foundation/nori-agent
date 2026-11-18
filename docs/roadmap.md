@@ -1,5 +1,14 @@
 # Nori-Agent implementation roadmap
 
+## 2026-11-17：正式任务发布与自主开发闭环
+
+SA-M1/SA-M2/SA-M2-06；Owner Codex。PR #98最终候选a56081a七项CI通过（插件1486通过/4既有跳过），
+合并2aed6422并健康部署。rein-acp已从私有副本切回正式源码路径，共享Gateway与双Agent权限保持；
+5个Agent原历史行、82个私有文件保留。Nori新单次ACP完成--min-count开发，先失败、实现、父助手审阅，
+父助手和维护侧各23测试通过；native_wait/complete、无期限摘要真实回读、跨owner拒绝与缺失产物边界通过。
+旧ACP缺失结算的历史问题仍保留，不宣称完整PRD验收；[完整证据、调用失败及重启记录](task-lifecycle-closeout-2026-11-17.md)。
+
+
 ## Development-channel Cron thread compatibility — November 17, 2026
 
 SA-OPS-01 / #66 follow-up; owner Codex. **LOCAL VERIFIED; RELEASE AUTHORIZED.**

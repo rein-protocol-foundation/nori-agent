@@ -1,5 +1,18 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-17: formal task release and autonomous coding acceptance
+
+SA-M1/SA-M2/SA-M2-06; owner Codex. PR #98 candidate a56081a passed all seven CI checks
+(1486 plugin tests passed, four existing skips), merged as 2aed6422 and deployed healthy.
+rein-acp now loads from the standard source path. Shared Gateway topology and both agents'
+authority remain intact; all baseline history rows for five agents and 82 private files were preserved.
+Nori implemented --min-count through one new ACP run with failing tests first, implementation,
+parent review and 23 passing tests independently repeated by maintenance. Native settlement,
+complete review, indefinite summary readback, cross-owner denial and absent-artifact handling passed.
+The old ACP run still lacks durable settlement; no full-PRD completion claim is made.
+[Evidence, failed calls and restart record](task-lifecycle-closeout-2026-11-17.md).
+
+
 ## Development-channel Cron thread compatibility — November 17, 2026
 
 SA-OPS-01 / #66 follow-up; owner Codex. **LOCAL VERIFIED; RELEASE AUTHORIZED.**
