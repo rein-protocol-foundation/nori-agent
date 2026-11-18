@@ -1,5 +1,14 @@
 # Acceptance evidence
 
+## 2026-11-17：正式任务发布与自主开发闭环
+
+SA-M1/SA-M2/SA-M2-06；Owner Codex。PR #98最终候选a56081a七项CI通过（插件1486通过/4既有跳过），
+合并2aed6422并健康部署。rein-acp已从私有副本切回正式源码路径，共享Gateway与双Agent权限保持；
+5个Agent原历史行、82个私有文件保留。Nori新单次ACP完成--min-count开发，先失败、实现、父助手审阅，
+父助手和维护侧各23测试通过；native_wait/complete、无期限摘要真实回读、跨owner拒绝与缺失产物边界通过。
+旧ACP缺失结算的历史问题仍保留，不宣称完整PRD验收；[完整证据、调用失败及重启记录](task-lifecycle-closeout-2026-11-17.md)。
+
+
 ## Development-channel Cron repair — November 17, 2026
 
 SA-OPS-01 / #66 follow-up; owner Codex. **LIVE ACCEPTANCE PASSED; SCHEMA DEFAULT REGRESSION CORRECTED.**
@@ -139,6 +148,14 @@ Merge/rollout evidence is tracked in [PR #100](https://github.com/rein-protocol-
 The next scheduled bilingual run remains future evidence. [Runbook and evidence](ai-news.md). No unrelated milestone advanced.
 
 
+## 2026-11-16：限定范围最终真实结果
+
+SA-M1/SA-M2/SA-M2-06；Owner Codex。真实Slack验收确认3 retained/1空payload tombstone：旧摘要1147/6无到期、删除后status不复活、新ACP只读复验完整结算/父助手review/摘要跨重启回读。Nori自行开发stdin及父助手18测试通过。两个现场缺陷已修复，75定向通过；此前失败与旧flow run_not_settled仍如实保留。 [完整证据与限制](task-lifecycle-activation-2026-11-16.md)。
+
+## 2026-11-16：获批配置、真实摘要控制与ACP修复
+
+SA-M1/SA-M2/SA-M2-06；Owner Codex。实际配置/隔离探针及真实Slack摘要读取、改向、停止和显式副本删除见[逐项证据](task-lifecycle-activation-2026-11-16.md)。2份retained、1份空payload tombstone；原生Task/Flow和Slack原文保留。新ACP任务实际实现stdin功能，父助手与维护侧独立18测试通过；Flow终态后置关联失败仍保留，修复/重启验证未完成前不推进完整验收。
+
 ## 2026-11-16：任务摘要保留本地验证与真实任务验收进行中
 
 SA-M2-06；Owner Codex/Astra High。用户决定无期限服务器保留摘要且保留Slack原文。
@@ -150,6 +167,8 @@ SA-M2-06；Owner Codex/Astra High。用户决定无期限服务器保留摘要�
 ACP产出代码独立13项测试通过，但两次terminal_outcome=blocked且有人工作业纠正，
 不能把native succeeded或accepted算完整自主开发成功。配置启用与定向沙箱修复待明确批准。
 
+
+发布跟进：#97最终七项CI通过，19:50:59 UTC部署9ed4cb2，四服务健康，69个私有/隔离静态文件内容与权限不变。rein-acp仍关闭；真实摘要验收未开始，未将发布视作产品完成。
 
 ## Task stop/change and recovery controls — November 16, 2026
 

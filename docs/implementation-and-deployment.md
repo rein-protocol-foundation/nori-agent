@@ -1,5 +1,18 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-17: formal task release and autonomous coding acceptance
+
+SA-M1/SA-M2/SA-M2-06; owner Codex. PR #98 candidate a56081a passed all seven CI checks
+(1486 plugin tests passed, four existing skips), merged as 2aed6422 and deployed healthy.
+rein-acp now loads from the standard source path. Shared Gateway topology and both agents'
+authority remain intact; all baseline history rows for five agents and 82 private files were preserved.
+Nori implemented --min-count through one new ACP run with failing tests first, implementation,
+parent review and 23 passing tests independently repeated by maintenance. Native settlement,
+complete review, indefinite summary readback, cross-owner denial and absent-artifact handling passed.
+The old ACP run still lacks durable settlement; no full-PRD completion claim is made.
+[Evidence, failed calls and restart record](task-lifecycle-closeout-2026-11-17.md).
+
+
 ## Development-channel Cron repair — November 17, 2026
 
 SA-OPS-01 / #66 follow-up; owner Codex. **LIVE ACCEPTANCE PASSED; SCHEMA DEFAULT REGRESSION CORRECTED.**
@@ -160,6 +173,14 @@ Merge/rollout evidence is tracked in [PR #100](https://github.com/rein-protocol-
 The next scheduled bilingual run remains future evidence. [Runbook and evidence](ai-news.md). No unrelated milestone advanced.
 
 
+## Scoped live acceptance closeout — November 16, 2026
+
+Owner Codex / Astra High. Release d90578704cfe uses api.runtimeSource for stable summary worker identity and exact terminal native references for late reconciliation. 75 focused tests and native config/runtime loading pass. Only Slack restarted (PID533146); Discord/Router/Web PIDs unchanged. Real Slack reads confirm indefinite summaries, deletion tombstone persistence and a new single-run ACP verification with native_wait/complete surviving restart. The original pre-fix ACP flow still lacks settled evidence; no completion was fabricated. PR #98 remains open to avoid an unauthorized full-service restart. [Full evidence and limitations](task-lifecycle-activation-2026-11-16.md).
+
+## Approved activation and scoped sandbox repair — November 16, 2026
+
+Owner Codex / Astra High. Explicit approval now covers the private test channel task tools, continuation/context, thread replies and Slack-only restart, plus exact bubblewrap 0.9.0-1ubuntu0.3 and Ubuntu bwrap AppArmor profile. Native config validation passed; full configuration backed up. Only Slack PID changed. One package installed, zero upgrades/removals; global restrictions remain enabled. Actual ACP binary probe passes workspace write/outside write denial/host-loopback denial. Real Slack summary read/change/stop/copy deletion and scope denial observed; Nori stdin delivery independently passes18tests. Late terminal Task-to-Flow projection refusal remains a recorded blocker under repair; restart retention is pending. [Exact evidence and limitations](task-lifecycle-activation-2026-11-16.md).
+
 ## Indefinite summary copies and live task acceptance — November 16, 2026
 
 Owner Codex, runtime-verified Astra High; implementation verified Sol High. Owner selected
@@ -178,6 +199,8 @@ A narrowly scoped distro bubblewrap/AppArmor repair is prepared but awaits expli
 PR #97 review at f6dd3df has no findings; no feature activation or shared release yet. [Live record](task-lifecycle-live-2026-11-16.md),
 [summary contract/rollback](task-summary-retention.md). No product milestone advanced.
 
+
+Release follow-up: #97 final head passed all seven CI checks and merged as 9ed4cb2; updater completed at 19:50:59 UTC. Four services are healthy; all 69 protected static files retain identical content, mode and ownership. The Discord private plugin/launcher and root-owned public seed are preserved. Live native DB read was refused as locked, so no independent row-level history claim is made. rein-acp remains disabled; configuration and sandbox approvals are still pending. Rollback and limits are in the live record. No product completion advanced.
 
 ## Task stop/change, recovery and budget handoff — November 16, 2026
 

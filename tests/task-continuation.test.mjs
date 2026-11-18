@@ -582,7 +582,7 @@ async function actualSummaryStore(t) {
   // dependency-free worktree; no native internal database APIs are imported.
   const sdk = process.env.REIN_TEST_SQLITE_SDK ?? new URL('../vendor/openclaw/dist/plugin-sdk/sqlite-runtime.js', import.meta.url).href;
   const { openSqliteWorkerStore } = await import(sdk);
-  const store = createRetainedSummaries({ stateDir, openSqliteWorkerStore });
+  const store = createRetainedSummaries({ stateDir, openSqliteWorkerStore, backendModuleUrl: new URL('../plugins/rein-acp/retained-summaries-backend.mjs', import.meta.url) });
   t.after(async () => { await store.close(); await rm(stateDir, { recursive: true, force: true }); });
   return store;
 }
@@ -700,4 +700,188 @@ test('current authorized human can recall the same owner/audience summary after 
   assert.equal(summary.source.sessionId, src.sessionId); assert.equal(summary.ownerKey, src.sessionKey);
   assert.equal((await f.call({ action: 'list_summaries', limit: 1 })).summaries.length, 1);
   assert.equal((await f.call({ action: 'delete_summary', flow: finished.flowId })).retainedCopy, 'deleted');
+});
+
+
+test('terminal run before first reconciliation keeps exact references without creating an active projection', async () => {
+  for (const runtime of ['subagent', 'acp']) {
+    const f = fixture(); let links = 0;
+    const binding = f.tasks.async.managedFlows.bindSession();
+    binding.runTask = async () => { links++; return { created: false, reason: 'Task backing ownership could not be verified.' }; };
+    await f.restart();
+    const begun = await f.call({ action: 'begin', goal: 'Synthetic fast task', criteria: 'Actual completed evidence', runtime });
+    const prepared = await f.call({ action: 'delegate', flow: begun.flowId, instruction: 'Complete the synthetic task' });
+    const spawn = await f.spawn(prepared, { runtime });
+    const task = { id: 'native-fast-task', ownerKey: src.sessionKey, scope: 'session', runtime, runId: 'fast-run',
+      childSessionKey: `agent:main:${runtime}:fast`, status: 'succeeded', endedAt: 100, terminalSummary: 'Synthetic completed result' };
+    f.native.set(task.id, task);
+    f.dependencies.subagent.waitForRun = async () => ({ runId: task.runId, status: 'ok', endedAt: 100 });
+    // Keep the actual admission receipt; the first native observation is terminal.
+    await f.runtime.afterToolCall({ ...spawn.event, result: { details: { status: 'accepted', runId: task.runId,
+      childSessionKey: task.childSessionKey } } }, spawn.ctx);
+    const observed = await f.call({ action: 'status', flow: begun.flowId });
+    assert.equal(links, 0); assert.equal(observed.phase, 'review');
+    assert.equal(observed.attempts[0].taskId, task.id);
+    assert.equal(observed.attempts[0].linkage, 'terminal_reference_only');
+    assert.notEqual(observed.attempts[0].linked, true);
+    assert.equal(observed.attempts[0].settlement.source, 'native_wait');
+    await f.restart();
+    const reviewed = await f.call({ action: 'review', flow: begun.flowId, scopeRevision: 1,
+      outcome: 'complete', evidence: 'Synthetic result verified', effects: 'none', progress: true });
+    assert.equal(reviewed.phase, 'complete'); assert.equal(reviewed.report.runId, task.runId);
+    assert.equal(links, 0); assert.equal(f.native.size, 1);
+  }
+});
+
+test('terminal reference-only path rejects foreign owner/scope/run/child/runtime and unavailable ACP settlement', async () => {
+  for (const delta of [{ ownerKey: 'foreign-owner' }, { scope: 'agent' }, { runId: 'foreign-run' },
+    { childSessionKey: 'foreign-child' }, { runtime: 'acp' }]) {
+    const f = fixture(); await f.restart(); const prepared = await f.prepare();
+    // Persist the genuine captured receipt, then let the native scoped resolver
+    // return a conflicting record during status (it cannot authorize a link).
+    await f.accept(prepared, { status: 'running' });
+    const task = f.native.get('native-task'); Object.assign(task, { status: 'succeeded', endedAt: 100 }, delta);
+    const flow = f.flows.get(prepared.flowId); delete flow.stateJson.attempts[0].linked;
+    const observed = await f.call({ action: 'status', flow: prepared.flowId });
+    assert.equal(observed.phase, 'outcome_unknown');
+    assert.notEqual(observed.attempts[0].linkage, 'terminal_reference_only');
+    await assert.rejects(f.call({ action: 'review', flow: prepared.flowId, scopeRevision: 1,
+      outcome: 'complete', evidence: 'Untrusted projection', effects: 'none' }), /current_scope_review_required/);
+  }
+  for (const wait of [{ status: 'timeout' }, { runId: 'foreign-run', status: 'ok', endedAt: 100 },
+    { runId: 'native-run', status: 'ok', endedAt: 100, livenessState: 'working' }]) {
+    const f = fixture(); await f.restart();
+    const begun = await f.call({ action: 'begin', goal: 'ACP task', criteria: 'Settled native result', runtime: 'acp' });
+    const prepared = await f.call({ action: 'delegate', flow: begun.flowId, instruction: 'Synthetic coding task' });
+    const spawn = await f.spawn(prepared, { runtime: 'acp' });
+    f.native.set('native-task', { id: 'native-task', ownerKey: src.sessionKey, scope: 'session', runtime: 'acp',
+      runId: 'native-run', childSessionKey: 'agent:main:acp:fast', status: 'succeeded', endedAt: 100 });
+    f.dependencies.subagent.waitForRun = async () => wait;
+    await f.runtime.afterToolCall({ ...spawn.event, result: { details: { status: 'accepted', runId: 'native-run',
+      childSessionKey: 'agent:main:acp:fast' } } }, spawn.ctx);
+    await f.restart();
+    await assert.rejects(f.call({ action: 'review', flow: begun.flowId, scopeRevision: 1,
+      outcome: 'complete', evidence: 'ACP task says succeeded but wait is unavailable or contradictory', effects: 'none' }), /run_not_settled/);
+    assert.equal(f.flows.get(begun.flowId).stateJson.attempts[0].settlement, undefined);
+  }
+});
+
+test('active backing link refusal remains an error and is never converted to terminal reference-only success', async () => {
+  const f = fixture(); await f.restart(); const prepared = await f.prepare();
+  f.tasks.async.managedFlows.bindSession().runTask = async () => ({ created: false, reason: 'Task backing ownership could not be verified.' });
+  await assert.rejects(f.accept(prepared, { status: 'running' }), /rein_continuation_link_Task backing ownership could not be verified/);
+  const saved = f.flows.get(prepared.flowId).stateJson.attempts[0];
+  assert.notEqual(saved.linked, true); assert.equal(saved.linkage, undefined);
+});
+
+
+const missingBackingNotice = 'Accepted run has no current owner-bound native task backing; no retry.';
+async function missingBackingFixture(runtime = 'subagent') {
+  const f = fixture(); await f.restart();
+  const begun = await f.call({ action: 'begin', goal: 'Synthetic recovered task', criteria: 'Verified result', runtime });
+  const prepared = await f.call({ action: 'delegate', flow: begun.flowId, instruction: 'Perform bounded synthetic work' });
+  const spawn = await f.spawn(prepared, { runtime });
+  await f.runtime.afterToolCall({ ...spawn.event, result: { details: { status: 'accepted', runId: 'recovered-run',
+    childSessionKey: `agent:main:${runtime}:recovered` } } }, spawn.ctx);
+  assert.equal(f.flows.get(begun.flowId).stateJson.notice, missingBackingNotice);
+  const task = { id: 'recovered-task', ownerKey: src.sessionKey, scope: 'session', runtime, runId: 'recovered-run',
+    childSessionKey: `agent:main:${runtime}:recovered`, status: 'succeeded', endedAt: 100,
+    terminalSummary: 'Synthetic verified result' };
+  return { f, begun, task };
+}
+
+test('exact recovered backing supersedes only its missing-backing notice and completion preserves the recovery receipt', async () => {
+  for (const runtime of ['subagent', 'acp']) {
+    const { f, begun, task } = await missingBackingFixture(runtime);
+    f.native.set(task.id, task); await f.restart();
+    const status = await f.call({ action: 'status', flow: begun.flowId });
+    assert.equal(status.phase, 'review'); assert.equal(status.notice, undefined);
+    assert.equal(status.attempts[0].backingRecovery.notice, missingBackingNotice);
+    assert.equal(status.attempts[0].backingRecovery.taskId, task.id);
+    assert.equal(status.attempts[0].backingRecovery.runId, task.runId);
+    assert.equal(status.attempts[0].backingRecovery.childSessionKey, task.childSessionKey);
+    assert.equal(status.attempts[0].backingRecovery.runtime, runtime);
+    const complete = await f.call({ action: 'review', flow: begun.flowId, scopeRevision: 1,
+      outcome: 'complete', evidence: 'Recovered actual task result checked', effects: 'none', progress: true });
+    assert.equal(complete.phase, 'complete'); assert.equal(complete.notice, undefined);
+    assert.deepEqual(complete.attempts[0].backingRecovery, status.attempts[0].backingRecovery);
+  }
+});
+
+test('legacy terminal complete view labels the superseded notice historical without mutating saved state', async () => {
+  const f = fixture(); await f.restart(); const prepared = await f.prepare();
+  await f.accept(prepared, { status: 'succeeded' });
+  await f.call({ action: 'review', flow: prepared.flowId, scopeRevision: 1, outcome: 'complete',
+    evidence: 'Synthetic native result verified', effects: 'none', progress: true });
+  const saved = f.flows.get(prepared.flowId); saved.stateJson.notice = missingBackingNotice;
+  const before = structuredClone(saved);
+  // Native backing may have expired; the view describes persisted review evidence,
+  // never a new current-backing observation or an inferred execution result.
+  f.native.clear(); await f.restart();
+  const prompt = f.runtime.beforePromptBuild({}, f.context);
+  assert.match(prompt.prependContext, /historicalNotice/);
+  const status = await f.call({ action: 'status', flow: saved.flowId });
+  assert.equal(status.notice, undefined); assert.equal(status.phase, 'complete');
+  assert.equal(status.historicalNotice.text, missingBackingNotice);
+  assert.equal(status.historicalNotice.status, 'superseded_by_settled_complete_review');
+  assert.deepEqual(f.flows.get(saved.flowId), before);
+  const listed = await f.call({ action: 'status' });
+  assert.equal(listed.flows[0].historicalNotice.text, missingBackingNotice);
+  assert.deepEqual(f.flows.get(saved.flowId), before);
+});
+
+test('foreign backing and insufficient ACP settlement never authorize a completion or a historical complete notice', async () => {
+  for (const delta of [{ ownerKey: 'foreign' }, { scope: 'agent' }, { runId: 'foreign' },
+    { childSessionKey: 'foreign' }, { runtime: 'acp' }]) {
+    const { f, begun, task } = await missingBackingFixture();
+    f.native.set(task.id, { ...task, ...delta });
+    const status = await f.call({ action: 'status', flow: begun.flowId });
+    assert.equal(status.notice, missingBackingNotice); assert.equal(status.phase, 'outcome_unknown');
+    assert.equal(status.attempts[0].backingRecovery, undefined);
+  }
+  const { f, begun, task } = await missingBackingFixture('acp');
+  f.native.set(task.id, task); f.dependencies.subagent.waitForRun = async () => ({ status: 'timeout' });
+  const status = await f.call({ action: 'status', flow: begun.flowId });
+  assert.equal(status.phase, 'review'); assert.equal(status.attempts[0].settlement, undefined);
+  assert.equal(status.historicalNotice, undefined);
+  await assert.rejects(f.call({ action: 'review', flow: begun.flowId, scopeRevision: 1,
+    outcome: 'complete', evidence: 'ACP projection alone is insufficient', effects: 'none' }), /run_not_settled/);
+});
+
+test('legacy terminal warning is preserved when current-scope settled completion proof is absent or contradictory', async () => {
+  for (const variation of ['no-settlement', 'foreign-report-run', 'old-scope', 'unreviewed', 'unknown-effects', 'missing-criteria', 'not-succeeded']) {
+    const f = fixture(); await f.restart(); const prepared = await f.prepare();
+    await f.accept(prepared, { status: 'succeeded' });
+    await f.call({ action: 'review', flow: prepared.flowId, scopeRevision: 1, outcome: 'complete',
+      evidence: 'Synthetic verified result', effects: 'none' });
+    const state = f.flows.get(prepared.flowId).stateJson, attempt = state.attempts[0];
+    state.notice = missingBackingNotice;
+    if (variation === 'no-settlement') delete attempt.settlement;
+    if (variation === 'foreign-report-run') state.report.runId = 'foreign-run';
+    if (variation === 'old-scope') state.scopeRevision++;
+    if (variation === 'unreviewed') attempt.reviewed = false;
+    if (variation === 'unknown-effects') state.report.effects = 'unknown';
+    if (variation === 'missing-criteria') state.report.gaps = 'Actual unresolved gap';
+    if (variation === 'not-succeeded') attempt.nativeStatus = 'cancelled';
+    const status = await f.call({ action: 'status', flow: prepared.flowId });
+    assert.equal(status.notice, missingBackingNotice, variation); assert.equal(status.historicalNotice, undefined, variation);
+  }
+});
+
+test('recovered backing cannot clear unrelated uncertainty or override expiry and cancellation evidence', async () => {
+  for (const notice of ['Native launch returned no validated accepted receipt; effects are uncertain. No automatic retry.',
+    'Native cancellation failed; execution may still be active.', 'deadline']) {
+    const { f, begun, task } = await missingBackingFixture();
+    f.flows.get(begun.flowId).stateJson.notice = notice; f.native.set(task.id, task);
+    const status = await f.call({ action: 'status', flow: begun.flowId });
+    assert.equal(status.notice, notice); assert.equal(status.attempts[0].backingRecovery, undefined);
+  }
+  const { f, begun, task } = await missingBackingFixture();
+  f.native.set(task.id, task); f.dependencies.clock = () => 4_000_000; await f.restart();
+  const stopped = await f.call({ action: 'status', flow: begun.flowId });
+  assert.equal(stopped.phase, 'stopped'); assert.equal(stopped.stopRequested.reason, 'deadline');
+  assert.equal(stopped.attempts[0].cancellation.status, 'not_needed');
+  assert.equal(stopped.notice, stopped.attempts[0].cancellation.reason);
+  assert.equal(stopped.historicalNotice, undefined);
+  assert.equal(stopped.attempts[0].backingRecovery.notice, missingBackingNotice);
 });

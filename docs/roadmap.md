@@ -1,5 +1,14 @@
 # Nori-Agent implementation roadmap
 
+## 2026-11-17：正式任务发布与自主开发闭环
+
+SA-M1/SA-M2/SA-M2-06；Owner Codex。PR #98最终候选a56081a七项CI通过（插件1486通过/4既有跳过），
+合并2aed6422并健康部署。rein-acp已从私有副本切回正式源码路径，共享Gateway与双Agent权限保持；
+5个Agent原历史行、82个私有文件保留。Nori新单次ACP完成--min-count开发，先失败、实现、父助手审阅，
+父助手和维护侧各23测试通过；native_wait/complete、无期限摘要真实回读、跨owner拒绝与缺失产物边界通过。
+旧ACP缺失结算的历史问题仍保留，不宣称完整PRD验收；[完整证据、调用失败及重启记录](task-lifecycle-closeout-2026-11-17.md)。
+
+
 ## Development-channel Cron repair — November 17, 2026
 
 SA-OPS-01 / #66 follow-up; owner Codex. **LIVE ACCEPTANCE PASSED; SCHEMA DEFAULT REGRESSION CORRECTED.**
@@ -139,6 +148,14 @@ Merge/rollout evidence is tracked in [PR #100](https://github.com/rein-protocol-
 The next scheduled bilingual run remains future evidence. [Runbook and evidence](ai-news.md). No unrelated milestone advanced.
 
 
+## 2026-11-16：真实任务与无期限摘要验收收尾
+
+SA-M1/SA-M2/SA-M2-06；Owner Codex。限定频道配置及bubblewrap定向修复已生效，仅重启Slack。Nori自行完成stdin开发，18测试通过；新独立ACP复验单次执行、native_wait、complete及摘要跨重启回读均通过。KEEP/CHANGE无期限保留、STOP删除防复活、同人跨owner拒绝实际通过。终态关联与capture后端身份修复见PR #98，75定向通过；正式main未合并，运行版本d90578704cfe。旧ACP缺失结算、真实撤权/迟到竞争等缺口保留，不标记整个里程碑完成。 [完整证据与限制](task-lifecycle-activation-2026-11-16.md)。
+
+## 获批启用与真实任务验收 — 2026-11-16
+
+SA-M1/SA-M2/SA-M2-06；Owner Codex。已按明确授权启用私有测试频道任务与无期限摘要配置，仅重启Slack；定向bubblewrap修复的写入/网络隔离探针通过。真实摘要写入/用户回读、运行改向、停止/副本删除、跨原生owner拒绝已观察；原文与原生记录保留。Nori经ACP完成stdin功能并独立18测试通过，但发现终态后置Flow关联拒绝，修复及重启保留验收仍进行中，不宣称全部完成。[证据](task-lifecycle-activation-2026-11-16.md)。
+
 ## 任务摘要无期限保留与真实任务验收 — 2026-11-16
 
 用户选择服务器摘要无期限保留、默认不删除，Slack原文保留。可选摘要薄适配已实现并本地验证；
@@ -150,6 +167,8 @@ The next scheduled bilingual run remains future evidence. [Runbook and evidence]
 详见[摘要契约](task-summary-retention.md)与[真实验收记录](task-lifecycle-live-2026-11-16.md)。
 负责人Codex；下一步完成实际入口验证。
 
+
+发布跟进：#97已合并并健康部署9ed4cb2，七项CI通过；69个静态保留文件校验一致。功能开关仍关闭，配置批准与真实摘要/自主开发验收仍待完成。
 
 ## Task stop/change and recovery follow-up — November 16, 2026
 

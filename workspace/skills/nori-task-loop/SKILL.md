@@ -52,6 +52,10 @@ native owner/audience and existing native child sessions. This skill is not reta
    reset. A stopped terminal flow does not restart. Cancellation is not rollback: disclose performed
    and uncertain actions, native cancellation failure and unconfirmed settlement.
 
+`rein_continuation_unavailable` means the requested record is unavailable in the current native
+owner/audience; absence and denied access are deliberately not distinguished. Report that scoped
+result without inferring another audience’s private records or declaring the entire tool unavailable.
+
 A combined reply may include several flows in the **same native owner/audience**, even when
 captured original threads differ. Name every flow and its current scope, outcome, evidence and
 remaining gaps. Never combine across accounts, channels, native sessions or private audiences.
