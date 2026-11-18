@@ -56,6 +56,7 @@ test('only effective public-to-trusted policies fail; allowed internal cooperati
   for(const host of [
     {...base,bindings:[{agentId:'main',match:{channel:'discord'}}]},
     {...base,tools:{agentToAgent:{enabled:true,allow:['*']}}},
+    {...base,tools:{}}, // Native omission enables every agent pair; do not assume disabled.
     {...base,agents:{...base.agents,defaults:{subagents:{allowAgents:['main']}}}},
     {...base,agents:{...base.agents,entries:{...base.agents.entries,public:{subagents:{allowAgents:['*']}}}}},
   ]) assert.throws(()=>assertTrustedSlackBoundaries([channel],host),/rein_router_/);

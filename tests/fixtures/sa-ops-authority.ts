@@ -1,10 +1,30 @@
 // Test-only native projections: execution is native; creation is restricted to trusted ingress.
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { applyJsonSchemaDefaults } from '../../vendor/openclaw/src/shared/json-schema-defaults.js';
 import { buildEmbeddedAgentHookContext } from '../../vendor/openclaw/src/agents/embedded-agent-runner/run/agent-hook-context.js';
 import { buildAgentHookContext } from '../../vendor/openclaw/src/agents/harness/hook-context.js';
 import { createRouter } from '../../plugins/rein-router/runtime.mjs';
 import routerPlugin from '../../plugins/rein-router/index.js';
 import { createCronIngress } from '../../plugins/rein-router/cron-ingress.mjs';
+import { validateRouterConfig } from '../../plugins/rein-router/policy.mjs';
+// Exercise the actual native manifest-default pass, before Rein's validator sees
+// the object. A default on the referenced development list must not manufacture
+// an explicit empty trusted list and silently revoke omitted-list inheritance.
+const manifest = JSON.parse(readFileSync(new URL('../../plugins/rein-router/openclaw.plugin.json', import.meta.url), 'utf8'));
+const development = { agentId: 'developer', accountId: 'default', workspaceId: 'TFIXTURE1', channelId: 'CFIXTURE1', botTokenEnvVar: 'SLACK_BOT_TOKEN' };
+for (const [name, raw, expected] of [
+  ['omitted inherits', { developmentChannels: [development] }, [development]],
+  ['explicit empty revokes', { developmentChannels: [development], trustedSlackChannels: [] }, []],
+  ['explicit list retained', { trustedSlackChannels: [development] }, [development]],
+  ['both omitted deny', {}, []],
+] as const) {
+  const input = JSON.parse(JSON.stringify(raw));
+  const loaded = applyJsonSchemaDefaults(manifest.configSchema, input);
+  if (!Object.hasOwn(raw, 'trustedSlackChannels')) assert.equal(Object.hasOwn(loaded, 'trustedSlackChannels'), false, name);
+  assert.deepEqual(validateRouterConfig(loaded).trustedSlackChannels, expected, name);
+  console.log(`PASS: native manifest defaults: ${name}`);
+}
 const channel={agentId:'main',accountId:'default',workspaceId:'TFIXTURE1',channelId:'CFIXTURE1'};
 const base={runId:'synthetic',agentId:'main',sessionId:'session',sessionKey:'agent:main:cron:fixture',workspaceDir:'/synthetic',trigger:'cron'};
 const model={modelProviderId:'rein-magpie',modelId:'standard'};

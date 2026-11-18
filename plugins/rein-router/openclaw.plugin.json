@@ -307,7 +307,6 @@
       "developmentChannels": {
         "type": "array",
         "maxItems": 16,
-        "default": [],
         "items": {
           "type": "object",
           "additionalProperties": false,
