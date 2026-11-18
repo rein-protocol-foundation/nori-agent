@@ -26,6 +26,13 @@ manifest correction now has native default-loader and scheduler regression cover
 78 focused Node passes and scaffold checks. No product milestone advancement.
 [Evidence, failed attempts, actual receipts and rollback](slack-development-cron-live-2026-11-16.md).
 
+Final release: PR #107 passed all seven checks and deployed `d5cb3d3a` at 00:22:05 UTC
+on November 18 (November 17 PST). The same job ran automatically again at 00:25:15 UTC
+and delivered 1517 to the original thread. A native update/get output-schema warning for
+`state.scheduleErrorCount` remains a separate upstream limitation; persisted update and
+both scheduled executions/deliveries were independently verified. See the linked evidence.
+
+
 ## 2026-11-17 — Shared Gateway migration completed
 
 SA-M0 / #57; owner Codex; **LIVE ACCEPTANCE PASSED**. PR #103 passed all seven CI checks and
