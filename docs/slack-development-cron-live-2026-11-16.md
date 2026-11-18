@@ -159,3 +159,35 @@ supports compatibility; acceptance D above supplies the separate real-user/live 
 and delivery evidence. A local shell initially used unsupported Node 21 and one invocation
 used an incorrect script filename; neither is counted as a passing check. Both corrected
 invocations used the pinned Node 24.16.0 and passed.
+
+## Final source deployment and post-restart acceptance
+
+[PR #107](https://github.com/rein-protocol-foundation/nori-agent/pull/107) merged as
+`d5cb3d3a72e1f2495fe81e7242ef8ef35e2daaf5`. All seven checks passed on final head
+`26b669a18decdbbea21ea9113a38150feb379194` in
+[CI run 44205363040](https://github.com/rein-protocol-foundation/nori-agent/actions/runs/44205363040).
+The earlier head had also passed, but a concurrent documentation release required a
+four-file evidence merge and fresh required checks; both sets of records were preserved.
+The updater reported `updated` at **2026-11-18 00:22:05 UTC** (November 17 PST).
+Live HEAD matched; both shared-Gateway agent readiness probes returned 200.
+
+In the same actual Slack thread, the user account requested a native update of the existing
+acceptance job to 00:25:15 UTC. No replacement task or manual run was requested. The second
+clock-triggered run started at **00:25:15.016 UTC** and finished at **00:25:24.941 UTC**;
+receipt `03937b18-a639-4c9c-8fba-5f0c7bbd5f8f` is `ok`, with no manual request-run ID.
+The native job state and Slack thread readback both confirm delivery. Actual `exec` output
+returned `1517` at 00:25:20 UTC as `nori-dev` in a different session-isolated SSH workspace.
+The one-off again disabled itself and remains available as audit evidence. Both automatic
+runs succeeded, and the original 13 task definitions and development sandbox settings
+remain unchanged. Temporary diagnostics were removed from active configuration/runtime.
+
+**Additional known limitation, not repaired by this minimal patch:** native `automations`
+`update` and subsequent `get` returned an output-schema validation error for the persisted
+`state.scheduleErrorCount` field after the update had already succeeded. The native error
+explicitly warned that side effects might have occurred; the agent did not retry the write
+or create a replacement. Native `status`/`list` and independent read-only storage inspection
+confirmed the intended schedule, and the second automatic execution/delivery succeeded.
+This is a pinned upstream output-schema mismatch; vendor code was not modified. Do not
+claim clean update/get responses or treat the warning as evidence that no update happened.
+The requested creation → scheduled sandbox execution → original-thread delivery acceptance
+is passed; the additional update/get response-shape issue remains a separate follow-up.
