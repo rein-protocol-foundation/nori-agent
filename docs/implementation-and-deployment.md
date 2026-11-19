@@ -1,5 +1,16 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-19 — Firecrawl enabled for OCI web search
+
+Codex switched the shared Gateway default from `parallel-free` to `firecrawl`. The
+plugin reads its key through an OpenClaw file SecretRef in the preserved private runtime.
+The main agent's `web_search` returned two results for an IETF query and identified
+Firecrawl as the provider. Community listed Firecrawl as available, configured and
+selected. Both agents passed authenticated Gateway health checks. The standalone
+Community tool probe was blocked by its active-request policy and triggered the first
+rollback. Verification used the shared Gateway without sending a Discord message.
+During restart, the Gateway logged an interrupted cron run associated with Slack.
+
 ## 2026-11-18 — Discord daily archive deployed
 
 COMMUNITY-ONBOARDING-01; owner Codex. PR #117 passed CI and deployed `faaa9d0` at
