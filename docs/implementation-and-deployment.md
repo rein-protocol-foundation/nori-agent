@@ -1,5 +1,20 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-18 — Discord daily archive deployed
+
+COMMUNITY-ONBOARDING-01; owner Codex. PR #117 passed CI and deployed `faaa9d0` at
+2026-11-19 07:19 UTC. Configuration activation used the updater lock, retained private
+rollback snapshots, preserved existing DM/identity/search/skills/router/sandbox settings
+and all 14 prior Cron definitions. Gateway health and the actual new plugin load passed.
+Initial historical collection recorded one contribution and sent nothing. The new daily
+UTC16 job is enabled in **archive-only mode**: Nori lacks Send Messages in welcome and
+Manage Roles/Channels. The user has been asked to grant only that channel permission.
+No privilege grant, test-channel message, or production reminder was sent.
+Next: verify permission, enable the existing job's delivery branches, and observe actual
+daily/Sunday receipts and human recognition. A local follow-up fixes opt-out/resume
+controls being mistaken for completed introductions; 37 focused tests pass.
+[Evidence and rollback](daily-discord-onboarding.md).
+
 ## 2026-11-18 — Daily Discord onboarding prepared
 
 COMMUNITY-ONBOARDING-01; owner Codex with a runtime-verified Sol High worker for the

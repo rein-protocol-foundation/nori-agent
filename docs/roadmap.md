@@ -1,5 +1,17 @@
 # Nori-Agent implementation roadmap
 
+## 2026-11-18 — Discord daily archive active; public reminders blocked
+
+COMMUNITY-ONBOARDING-01; owner Codex. PR #117 deployed as `faaa9d0`. The daily native
+08:00 fixed-PST task is enabled in **archive-only mode** because Nori cannot send in
+`#welcome` and cannot change channel permissions. Source/reader and daily/Sunday
+notification logic are deployed; no public welcome/reminder acceptance is claimed.
+Historical collection, private state, native plugin loading and Gateway health passed;
+14 prior task definitions and existing Community access configuration were retained.
+Next: administrator allows Nori Send Messages in welcome, verify it, then remove the
+collector-only flag from the existing job and observe scheduled public delivery.
+[Activation evidence and limitations](daily-discord-onboarding.md).
+
 ## 2026-11-18 — Daily Discord onboarding
 
 COMMUNITY-ONBOARDING-01; owner Codex; **local verified, activation pending**.

@@ -162,7 +162,7 @@ export async function runDiscordOnboarding(rawConfig, {
     const contributions = messages.filter(message => humanMessage(message, config.introductionsChannelId));
     // Content-restricted or sticker-only posts still prove participation. Keep only a marker,
     // rather than treating empty content as an introduction or repeatedly reminding its author.
-    const participants = messages.filter(message => humanMessage(message, config.introductionsChannelId, false));
+    const participants = messages.filter(message => humanMessage(message, config.introductionsChannelId, false) && reminderPreference(message) === null);
     for (const message of participants) assertDiscordId(message.author.id);
     const preferences = new Map(hasTable('reminder_preferences') ? db.prepare('SELECT * FROM reminder_preferences WHERE guild_id=?')
       .all(config.guildId).map(row => [row.user_id, row]) : []);
@@ -199,10 +199,14 @@ export async function runDiscordOnboarding(rawConfig, {
     if (collectOnly) return { joined: joined.length, welcomed: 0, dailyWelcomed: 0, weeklyReminded: 0,
       archived: contributions.length, dryRun, collectOnly: true };
     const everIntroduced = new Set(participants.map(message => message.author.id));
-    if (db) for (const row of db.prepare('SELECT DISTINCT user_id FROM contributions WHERE guild_id=? AND channel_id=?')
-      .all(config.guildId, config.introductionsChannelId)) everIntroduced.add(row.user_id);
-    if (hasTable('introduction_participants')) for (const row of db.prepare('SELECT user_id FROM introduction_participants WHERE guild_id=? AND channel_id=?')
-      .all(config.guildId, config.introductionsChannelId)) everIntroduced.add(row.user_id);
+    if (db) for (const row of db.prepare('SELECT user_id,content FROM contributions WHERE guild_id=? AND channel_id=?')
+      .all(config.guildId, config.introductionsChannelId)) {
+      if (row.content == null || reminderPreference({ content: row.content }) === null) everIntroduced.add(row.user_id);
+    }
+    if (hasTable('introduction_participants')) for (const row of db.prepare('SELECT p.user_id,c.content FROM introduction_participants p LEFT JOIN contributions c ON c.guild_id=p.guild_id AND c.message_id=p.message_id WHERE p.guild_id=? AND p.channel_id=?')
+      .all(config.guildId, config.introductionsChannelId)) {
+      if (row.content == null || reminderPreference({ content: row.content }) === null) everIntroduced.add(row.user_id);
+    }
     const reconciledUsers = new Set();
     const wasWelcomed = id => reconciledUsers.has(id) || Boolean(db?.prepare('SELECT 1 FROM welcomes WHERE guild_id=? AND user_id=?').get(config.guildId, id));
     const notifiedThisRun = new Set(), recentNotifications = new Set();

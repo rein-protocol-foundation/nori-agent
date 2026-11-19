@@ -406,3 +406,18 @@ test('empty human posts exclude weekly reminders via durable participation marke
   const db = new DatabaseSync(f.config.statePath, { readOnly: true });
   assert.equal(db.prepare('SELECT COUNT(*) AS count FROM introduction_participants').get().count, 1); db.close();
 });
+
+
+test('intro-channel opt-out and resume are preference controls, including legacy participation markers', async t => {
+  const old = message('400', SUNDAY - DAY, { content: 'no reminders' });
+  const f = fixture(t, { members: [human('400', SUNDAY - 30 * DAY)], messages: [old] });
+  f.setNow(SUNDAY + 60_000);
+  assert.equal((await f.run({ at: SUNDAY })).weeklyReminded, 0);
+  const db = openOnboardingStore(f.config.statePath);
+  db.prepare('INSERT OR REPLACE INTO introduction_participants VALUES (?,?,?,?)').run(GUILD, CHANNEL, '400', old.id);
+  db.close();
+  f.messages.push(message('400', SUNDAY + 6 * DAY, { content: 'resume reminders' }));
+  f.setNow(SUNDAY + 7 * DAY + 60_000);
+  assert.equal((await f.run({ at: SUNDAY + 7 * DAY })).weeklyReminded, 1);
+  assert.deepEqual(f.posts[0].allowed_mentions.users, ['400']);
+});
