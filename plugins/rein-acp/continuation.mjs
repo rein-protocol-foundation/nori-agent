@@ -1,8 +1,10 @@
 import { createHash } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
 import { terminalSummary } from './retained-summaries.mjs';
 import { developmentChannelFor } from '../rein-router/slack-development.mjs';
 
 const CONTROLLER = 'rein/task-continuation';
+const observerConflict = Symbol('continuationObserverConflict');
 const terminalRun = status => ['succeeded', 'failed', 'cancelled', 'timed_out', 'lost'].includes(status);
 const terminalFlow = flow => ['succeeded', 'failed', 'cancelled', 'lost'].includes(flow.status) || flow.endedAt != null;
 const string = (value, max = 8000) => typeof value === 'string' && value.trim().length > 0 && value.length <= max;
@@ -64,7 +66,7 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
       return { ...flow, summaryRetention: { status: 'failed', reason: 'Summary retention was not confirmed; retry authorized status while native state remains.' } };
     }
   };
-  const persist = async (flow, state, mode = 'setWaiting') => {
+  const persist = async (flow, state, mode = 'setWaiting', observedTask) => {
     if (['finish', 'fail'].includes(mode) && (!state.report || state.report.outcome === 'continue')) {
       // A previous attempt's known effects must not certify an unreviewed successor.
       const review = state.report?.runId && state.report.runId === last(state)?.runId &&
@@ -75,7 +77,12 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
     }
     const changed = await flowsFor(flow.ownerKey)[mode]({ flowId: flow.flowId, expectedRevision: flow.revision,
       stateJson: state, ...(mode === 'setWaiting' ? { waitJson: { reason: state.phase }, currentStep: state.phase } : {}) });
-    if (!changed.applied) throw Error(`rein_continuation_${changed.code}`);
+    if (!changed.applied) {
+      const error = Error(`rein_continuation_${changed.code}`);
+      if (changed.code === 'revision_conflict' && observedTask?.runtime === 'acp' && terminalRun(observedTask.status))
+        Object.defineProperty(error, observerConflict, { value: { flow: structuredClone(flow), task: structuredClone(observedTask) } });
+      throw error;
+    }
     return retainTerminal(changed.flow);
   };
   const ownList = async owner => (await flowsFor(owner).list()).filter(flow => owned(flow, owner));
@@ -239,6 +246,45 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
     }
     return flow;
   };
+  const withObserverRetry = async (ctx, invocation, args, execute) => {
+    const request = structuredClone(args);
+    try { return await execute(); }
+    catch (error) {
+      const collision = error?.[observerConflict];
+      if (!collision || !['status', 'review'].includes(request.action) ||
+          request.flow !== collision.flow.flowId || !isDeepStrictEqual(args, request)) throw error;
+      const assert = async flow => {
+        const turn = await current(ctx, invocation);
+        await sourceCurrent(flow, ctx, { source: turn.human ? turn.source : undefined });
+        ctx.assertInvocationCurrent();
+      };
+      await assert(collision.flow);
+      const latest = await flowsFor(ctx.sessionKey).get(request.flow);
+      if (!owned(latest, ctx.sessionKey) || latest.revision !== collision.flow.revision + 1) throw error;
+      await assert(latest);
+      const before = structuredClone(collision.flow), after = structuredClone(latest);
+      const previousAttempt = last(before.stateJson), attempt = last(after.stateJson), receipt = attempt?.settlement;
+      if (!previousAttempt || previousAttempt.settlement != null || !receipt || receipt.source !== 'native_acp_lifecycle' ||
+          receipt.runId !== previousAttempt.runId || receipt.taskId !== collision.task.id ||
+          receipt.childSessionKey !== previousAttempt.childSessionKey || receipt.nativeStatus !== collision.task.status ||
+          receipt.key !== settlementKey(collision.task) || !Number.isFinite(receipt.endedAt) ||
+          !['end', 'error'].includes(receipt.phase) ||
+          receipt.outcome !== (collision.task.terminalOutcome === 'blocked' ? 'blocked' : collision.task.status)) throw error;
+      // Native receipt persistence updates only revision/time and this one field.
+      // Any scope, intent, report, bound, owner or other attempt change refuses retry.
+      if (Object.hasOwn(previousAttempt, 'settlement')) attempt.settlement = previousAttempt.settlement;
+      else delete attempt.settlement;
+      for (const record of [before, after]) { delete record.revision; delete record.updatedAt; }
+      if (!isDeepStrictEqual(before, after)) throw error;
+      const task = await nativeTask(latest);
+      if (!isDeepStrictEqual(task, collision.task)) throw error;
+      await assert(latest);
+      if (!isDeepStrictEqual(args, request)) throw error;
+      // Intentionally outside another catch: one complete, reauthorized execution
+      // is allowed. A second conflict propagates; no stored state or action is replayed.
+      return execute();
+    }
+  };
   const requestCancellation = async (flow, task, attempt, cfg) => {
     try {
       const receipt = await tasks.runs.bindSession({ sessionKey: flow.ownerKey, agentId: config.channel.agentId }).cancel({ taskId: task.id, cfg });
@@ -376,8 +422,8 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
         state.goal = state.pendingChange.goal; state.criteria = state.pendingChange.criteria; state.pendingChange = null; state.stopRequested = null;
       }
     } else if (boundReason(state) && !attempt) state.phase = 'limited';
-    if (state.phase === 'stopped' || state.phase === 'limited' || wasTerminal) return persist(flow, state, 'fail');
-    return digest(state) === digest(flow.stateJson) ? flow : persist(flow, state);
+    if (state.phase === 'stopped' || state.phase === 'limited' || wasTerminal) return persist(flow, state, 'fail', task);
+    return digest(state) === digest(flow.stateJson) ? flow : persist(flow, state, 'setWaiting', task);
   }
   const view = flow => {
     const state = { ...flow.stateJson }, attempt = last(state), report = state.report;
@@ -570,6 +616,7 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
         async execute(toolCallId, args) {
           const invocation = invocations.get(toolCallId); invocations.delete(toolCallId);
           if (!invocation) throw Error('rein_continuation_current_invocation_required');
+          return withObserverRetry(ctx, invocation, args, async () => {
           const turn = await current(ctx, invocation), binding = flowsFor(ctx.sessionKey);
           const assert = async flow => { await current(ctx, invocation); if (flow) await sourceCurrent(flow, ctx, { source: turn.human ? turn.source : undefined }); ctx.assertInvocationCurrent(); };
           const terminalOutput = async pending => { const result = await pending; await assert(result); return output(view(result)); };
@@ -690,15 +737,16 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
           state.report = attempt.review;
           attempt.reviewed = true;
           if (args.outcome === 'complete' && task.status === 'succeeded' && task.terminalOutcome !== 'blocked' && args.effects !== 'unknown' && !args.gaps?.trim()) {
-            state.phase = 'complete'; return terminalOutput(persist(flow, state, 'finish'));
+            state.phase = 'complete'; return terminalOutput(persist(flow, state, 'finish', task));
           }
           if (args.outcome === 'continue' && string(args.gaps) && args.effects !== 'unknown' && !boundReason(state)) {
-            state.phase = 'ready'; flow = await persist(flow, state); await assert(flow);
+            state.phase = 'ready'; flow = await persist(flow, state, 'setWaiting', task); await assert(flow);
             return output({ ...view(flow), next: 'delegate one supplement for the recorded gaps; preserve budgets and current scope' });
           }
           state.phase = args.effects === 'unknown' ? 'outcome_unknown' : 'limited';
           state.notice = boundReason(state) ?? 'Review did not establish completion or safe bounded continuation.';
-          return terminalOutput(persist(flow, state, 'fail'));
+          return terminalOutput(persist(flow, state, 'fail', task));
+          });
         },
       };
     } },

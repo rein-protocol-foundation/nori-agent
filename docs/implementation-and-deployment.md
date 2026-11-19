@@ -1,14 +1,55 @@
 # Nori-Agent development, verification and deployment record
 
-## 2026-11-18: proactive ACP settlement capture (acceptance in progress)
+## 2026-11-18 — Discord daily archive deployed
 
-SA-M1/SA-M2; owner Codex. The old controller saved transient wait evidence only when a parent
-called status/review. The fix consumes public ACP executionSettled lifecycle events, validates
-owner/run/child/terminal fingerprints and saves a minimal receipt without semantic review or
-automatic completion. A real local Gateway probe fails before and passes after the change.
-Focused regression, CI and live Slack restart-before-review acceptance are in progress. Historical
-missing proof cannot be reconstructed; crash-atomic guarantees still require an upstream durable
-receipt. [Root cause, boundaries and evidence](acp-settlement-recovery-2026-11-18.md).
+COMMUNITY-ONBOARDING-01; owner Codex. PR #117 passed CI and deployed `faaa9d0` at
+2026-11-19 07:19 UTC. Configuration activation used the updater lock, retained private
+rollback snapshots, preserved existing DM/identity/search/skills/router/sandbox settings
+and all 14 prior Cron definitions. Gateway health and the actual new plugin load passed.
+Initial historical collection recorded one contribution and sent nothing. The new daily
+UTC16 job is enabled in **archive-only mode**: Nori lacks Send Messages in welcome and
+Manage Roles/Channels. The user has been asked to grant only that channel permission.
+No privilege grant, test-channel message, or production reminder was sent.
+Next: verify permission, enable the existing job's delivery branches, and observe actual
+daily/Sunday receipts and human recognition. A local follow-up fixes opt-out/resume
+controls being mistaken for completed introductions; 37 focused tests pass.
+[Evidence and rollback](daily-discord-onboarding.md).
+
+## 2026-11-18 — Daily Discord onboarding prepared
+
+COMMUNITY-ONBOARDING-01; owner Codex with a runtime-verified Sol High worker for the
+collector/store. **Local verified, live activation pending.** Added deterministic
+UTC16 native-job runner, durable original-message archive, recovery/receipt handling,
+optional current-member recall tool and pure additive configuration builders. Preserved
+all pre-existing changes and vendor source. 25 new focused checks, 34 compatibility
+checks, scaffold and native plugin loading passed. Full suite and live sends/archival/
+scheduled-run/recognition acceptance were not run. No configuration or schedule changed
+on production. Pending: user channel choice, deployment coordination and native operator
+activation, then real acceptance. Verified backend identity binding remains separate;
+cross-platform profile joining is future work. [Details](daily-discord-onboarding.md).
+
+
+## 2026-11-18 — Discord member onboarding access
+
+SA-M0 / #57; owner Codex; **requested restoration passed real acceptance**. PR #113 deployed
+`cbb76c9`; #115 clarified pending email status and deployed `0e7a0f2`. Open DMs, current-member
+self-check, email binding, resource queries, public web search/fetch and shared job-matching skill
+were exercised in real Discord. The test account was unlinked, rebound through its actual received
+email, and verified against the original member. Final restart preserved all compared histories and
+main/Slack settings; real Slack task/summary reads passed. Event search was empty and detail tested
+not_found, so positive event-detail acceptance remains unproven. No vendor changes or broader
+roadmap completion claimed. [Evidence, boundaries and recovery](discord-onboarding-access-2026-11-18.md).
+
+## 2026-11-18: ACP settlement capture (first live acceptance passed)
+
+SA-M1/SA-M2; owner Codex. PR #111 passed seven CI checks (1496 plugin passes, four existing skips)
+and deployed b944c4c. One actual ACP run persisted native_acp_lifecycle evidence before parent
+review. The receipt survived the 05:38 UTC shared Gateway restart; the parent independently
+passed 23 tests and reviewed complete. Maintenance repeated 23 passes in the existing sandbox.
+The server summary is retained with expiresAt null; original histories and 45 private files remain.
+A bounded one-recomputation follow-up for parent/observer CAS races is awaiting release verification.
+Historical proof remains unavailable and crash atomicity requires an upstream durable receipt;
+this does not complete the full PRD. [Evidence and limits](acp-settlement-recovery-2026-11-18.md).
 
 
 ## 2026-11-17: formal task release and autonomous coding acceptance

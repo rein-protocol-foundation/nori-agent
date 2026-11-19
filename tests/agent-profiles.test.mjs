@@ -31,19 +31,21 @@ const context = (agentId = 'nori-community', messageChannel = 'discord', overrid
   requesterSenderId: 'FIXTURE_USER', sessionId: 'fixture-session',
   assertInvocationCurrent() {}, ...overrides });
 
-test('one registration owner exposes only Community identity/catalog tools to Discord', async () => {
+test('one registration owner exposes only Community identity, self-status and catalog tools to Discord', async () => {
   const loaded = register();
   assert.equal(loaded.registrations.length, 1);
   const community = loaded.create(context());
   assert.deepEqual(community.map(tool => tool.name).sort(), [
     'rein_event_get', 'rein_events_search', 'rein_identity_bind_complete', 'rein_identity_bind_start',
-    'rein_identity_bind_status', 'rein_resource_get', 'rein_resources_search', 'rein_status',
+    'rein_identity_bind_status', 'rein_member_status', 'rein_resource_get', 'rein_resources_search', 'rein_status',
   ]);
   const internal = loaded.create(context('main', 'slack'));
   assert.ok(internal.some(tool => tool.name === 'rein_poll_vote'));
   const status = await community.find(tool => tool.name === 'rein_status').execute('fixture-call', {});
   assert.equal(status.details.foundationDbWriteToolsEnabled, false);
   assert.equal(status.details.implemented.includes('rein_poll_vote'), false);
+  assert.equal(status.details.implemented.includes('rein_member_status'), true);
+  assert.equal(status.details.memberStatusToolEnabled, true);
   assert.equal(loaded.hooks.filter(([name]) => name === 'reply_payload_sending').length, 3);
 });
 
@@ -142,9 +144,90 @@ test('Community query-only profile needs neither governance channels nor a signi
   const tools = loaded.create(context());
   assert.ok(tools.some(tool => tool.name === 'rein_resources_search'));
   assert.ok(tools.some(tool => tool.name === 'rein_identity_bind_start'));
+  assert.ok(tools.some(tool => tool.name === 'rein_member_status'));
   assert.ok(!tools.some(tool => /proposal|poll|funds/.test(tool.name)));
   const status = await tools.find(tool => tool.name === 'rein_status').execute('fixture', {});
   assert.equal(status.details.foundationDbWriteToolsEnabled, false);
   p.main.foundationDb.proposalChannelIds = [];
   assert.throws(() => register(p), /proposalChannelIds/);
+});
+
+test('Community self-status retains the Community caller and cannot expose governance or private profile fields', async () => {
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url, init) => {
+    const headers = new Headers(init.headers);
+    calls.push({ path: new URL(url).pathname, caller: headers.get('X-Rein-Caller-Id'),
+      authorization: headers.get('Authorization'), body: JSON.parse(init.body) });
+    const body = String(url).endsWith('/api/ingress/relay')
+      ? { assertion: 'fixture-self-proof', expires_at: new Date(Date.now() + 60000).toISOString() }
+      : { ok: true, status: 'resolved', contact_id: 'private-fixture-contact', is_director: true,
+        is_active_contributor: false, profile: { name: 'Fixture Name', email: 'private@example.invalid', joinedAt: null } };
+    return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  };
+  try {
+    const p = profiles();
+    p['nori-community'].foundationDb.proposalChannelIds = [];
+    p['nori-community'].foundationDb.boardChannelIds = [];
+    delete p['nori-community'].foundationDb.proposalConfirmationKeyEnvVar;
+    const tools = register(p).create(context());
+    const result = await tools.find(tool => tool.name === 'rein_member_status').execute('fixture-self-call', {});
+    assert.equal(result.details.linked, true);
+    assert.equal(result.details.isDirector, true);
+    assert.doesNotMatch(JSON.stringify(result), /email|contact|private@|fixture-self-proof/);
+    assert.deepEqual(calls.map(call => call.path), ['/api/ingress/relay', '/api/identity/resolve']);
+    assert.ok(calls.every(call => call.caller === 'fixture-community' && call.authorization === 'Bearer fixture-community-key'));
+    assert.equal(calls[0].body.platform_user_id, 'FIXTURE_USER');
+    assert.deepEqual(calls[1].body, { proof: { kind: 'assertion', assertion: 'fixture-self-proof' } });
+    for (const name of ['rein_funds', 'rein_poll_candidates', 'rein_vote_type_resolve',
+      'rein_poll_vote', 'rein_governance_proposal_submit', 'rein_proposal_collect', 'rein_revision_apply']) {
+      assert.equal(tools.some(tool => tool.name === name), false, name);
+    }
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test('Community profile DM mapping supports identity, binding and catalog through the existing relay contract', async () => {
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  const senderId = '111111111111111111';
+  const nativeChannelId = '222222222222222222';
+  globalThis.fetch = async (url, init) => {
+    const path = new URL(url).pathname;
+    const input = JSON.parse(init.body);
+    calls.push({ path, input, caller: new Headers(init.headers).get('X-Rein-Caller-Id') });
+    const body = path === '/api/ingress/relay'
+      ? { assertion: 'fixture-dm-proof', expires_at: new Date(Date.now() + 60000).toISOString() }
+      : path === '/api/identity/resolve' ? { ok: true, status: 'identity_not_linked' }
+      : path === '/api/identity/link/start'
+        ? { ok: true, status: 'started', session_id: 'fixture-bind-session', verification_url: 'https://foundation.invalid/verify', expires_at: null }
+        : { ok: true, operation: 'community_resources_search', result: { ok: true, status: 'empty',
+          source: 'foundation_catalog', environment: 'dev', retrievedAt: new Date().toISOString(),
+          items: [], hasMore: false, nextOffset: null } };
+    return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  };
+  try {
+    const p = profiles();
+    const db = p['nori-community'].foundationDb;
+    db.proposalChannelIds = []; db.boardChannelIds = [];
+    db.workspaces[0].directMessages = true;
+    const loaded = register(p);
+    const dm = context('nori-community', 'discord', { requesterSenderId: senderId, nativeChannelId,
+      sessionKey: `agent:nori-community:discord:default:direct:${senderId}` });
+    const tools = loaded.create(dm);
+    for (const name of ['rein_member_status', 'rein_identity_bind_start', 'rein_resources_search']) {
+      const result = await tools.find(tool => tool.name === name).execute(`fixture-${name}`, {});
+      assert.equal(result.details.ok, true, JSON.stringify(result.details));
+    }
+    const relays = calls.filter(call => call.path === '/api/ingress/relay');
+    assert.equal(relays.length, 3);
+    assert.ok(relays.every(call => call.input.workspace_id === 'FIXTURE_WORKSPACE' &&
+      call.input.channel_id === nativeChannelId && call.input.platform_user_id === senderId));
+    assert.ok(calls.every(call => call.caller === 'fixture-community'));
+    assert.ok(!tools.some(tool => /funds|poll|proposal|revision/.test(tool.name)));
+    calls.length = 0;
+    const publicTools = loaded.create({ ...dm, sessionKey: 'agent:nori-community:discord:channel:222222222222222222' });
+    await assert.rejects(publicTools.find(tool => tool.name === 'rein_identity_bind_start').execute('fixture-public', {}),
+      error => error.code === 'workspace_scope_unresolved');
+    assert.equal(calls.length, 0);
+  } finally { globalThis.fetch = originalFetch; }
 });

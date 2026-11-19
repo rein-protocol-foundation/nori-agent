@@ -147,6 +147,40 @@ test('binding status reports an unregistered verified address with the administr
   assert.ok(!JSON.stringify(details).includes('contact_id'));
 });
 
+test('awaiting_email means verification is incomplete, with no claim about email delivery or registration', async () => {
+  const stub = runtimeStub([{ ok: true, httpStatus: 200,
+    body: { ok: true, state: 'awaiting_email', linked: false, expires_at: '2026-09-30T17:15:00Z' } }]);
+  const status = registrationWith(stub, { ok: true, proof: proof() })
+    .create({}).find(tool => tool.name === 'rein_identity_bind_status');
+  const details = readDetails(await status.execute('fixture-status', { sessionId: 'original-session' }));
+  assert.equal(details.ok, true);
+  assert.equal(details.status, 'awaiting_email');
+  assert.equal(details.linked, false);
+  assert.equal(details.registrationRequired, false);
+  assert.equal(details.nextStep, 'complete_existing_session_with_emailed_code');
+  assert.match(details.message, /verification is not yet complete/);
+  assert.match(details.message, /does not reveal whether an email was requested, sent or delivered, or whether the email is registered/);
+  assert.match(details.message, /code from the original binding email with rein_identity_bind_complete/);
+  assert.match(details.message, /Do not re-enter the email or start a new session/);
+  assert.match(status.description, /awaiting_email means email verification is not yet complete/);
+  assert.match(status.description, /Only registration_required establishes that administrator registration is needed/);
+  assert.equal(details.recorded, false);
+  assert.deepEqual(stub.calls.map(call => [call.path, call.sessionId]), [['status', 'original-session']]);
+});
+
+test('other binding states do not inherit the awaiting-email next step', async () => {
+  for (const state of ['email_verified', 'completed', 'cancelled']) {
+    const stub = runtimeStub([{ ok: true, httpStatus: 200, body: { ok: true, state, linked: state === 'completed' } }]);
+    const status = registrationWith(stub, { ok: true, proof: proof() })
+      .create({}).find(tool => tool.name === 'rein_identity_bind_status');
+    const details = readDetails(await status.execute('fixture-status', { sessionId: 'original-session' }));
+    assert.equal(details.status, state);
+    assert.equal(details.linked, state === 'completed');
+    assert.equal(details.nextStep, null);
+    assert.equal(details.message, null);
+  }
+});
+
 test('binding status refuses bad session ids and malformed backend states', async () => {
   const invalidStub = runtimeStub([{ ok: true, httpStatus: 200, body: {} }]);
   const invalid = registrationWith(invalidStub, { ok: true, proof: proof() })

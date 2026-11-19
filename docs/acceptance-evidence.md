@@ -1,12 +1,52 @@
 # Acceptance evidence
 
-## 2026-11-18：ACP 结算证据主动保存修复（验收中）
+## 2026-11-18 — Discord onboarding production archive
 
-SA-M1/SA-M2；Owner Codex。旧实现依赖父助手后续status/review保存进程内等待结果，
-可能在父回合失败或重启前漏存。现接入公共runtime.events的ACP executionSettled事件，
-核验原生owner/run/child/终态后保存最小结算凭据，不自动review或宣布完成。
-原生Gateway先失败/修复后通过探针已复现；定向回归、CI及真实Slack重启前未review验收进行中。
-旧run无可信记录不能追补，强杀前未持久化的原子窗口仍需上游durable receipt；
+COMMUNITY-ONBOARDING-01; owner Codex. PR #117 passed all seven checks: full suite
+1,558 tests, 1,554 passed, four existing conditional skips, zero failures; native addon
+enable/disable loading passed. Deployed `faaa9d0` with clean updater transaction.
+Under the update lock, preserved configuration/task snapshots, applied only the additive
+reader settings, and restarted the shared Gateway. Health and actual plugin inspection
+passed. Initial collection archived one original contribution with zero sends.
+The saved native job is enabled at UTC16 with zero staggering, but is explicitly
+**archive-only** pending Nori's welcome-channel Send Messages permission. All 14
+previous task definitions remain. Real public reminders and human recall remain pending.
+A subsequent regression excludes opt-out/resume control text from introduction-completion
+classification, including legacy markers; local focused checks are 37/37.
+[Details and recovery](daily-discord-onboarding.md).
+
+## 2026-11-18 — Daily Discord onboarding
+
+COMMUNITY-ONBOARDING-01; owner Codex. **LOCAL VERIFIED; NOT ACTIVATED.** Fixed PST
+08:00 collection/welcome, original introduction evidence, and current-sender guild
+recall are implemented as an optional addon. 25 focused synthetic tests, 34 existing
+identity/routing/withdrawal tests, scaffold, and actual native plugin loading passed.
+Read-only production member-list access succeeded. Channel choice, deployed source,
+native job creation, scheduled delivery and real-member recall remain pending;
+automatic cross-platform canonical identity retrieval is not implemented.
+[Evidence and activation checklist](daily-discord-onboarding.md). No product milestone
+or live acceptance is claimed; no messages were sent.
+
+
+## 2026-11-18 — Discord member onboarding access
+
+SA-M0 / #57; owner Codex; **requested restoration passed real acceptance**. PR #113 deployed
+`cbb76c9`; #115 clarified pending email status and deployed `0e7a0f2`. Open DMs, current-member
+self-check, email binding, resource queries, public web search/fetch and shared job-matching skill
+were exercised in real Discord. The test account was unlinked, rebound through its actual received
+email, and verified against the original member. Final restart preserved all compared histories and
+main/Slack settings; real Slack task/summary reads passed. Event search was empty and detail tested
+not_found, so positive event-detail acceptance remains unproven. No vendor changes or broader
+roadmap completion claimed. [Evidence, boundaries and recovery](discord-onboarding-access-2026-11-18.md).
+
+## 2026-11-18：ACP 结算证据修复（首轮真实验收通过）
+
+SA-M1/SA-M2；Owner Codex。PR #111 七项 CI 通过（1496 插件测试通过、4 既有跳过），
+已部署 b944c4c。真实 ACP 仅执行一次，父助手尚未 review 时 native_acp_lifecycle 凭据已落盘；
+05:38 UTC 重启共享 Gateway 后凭据保留，父助手独立 23 测试通过并完成 review complete。
+维护侧沙箱内另行 23 测试通过；摘要实际持久化且 expiresAt=null；原历史与45个私有文件保留。
+另补父 status/review 与凭据保存并发时的限定一次重算，发布验收待完成。
+旧 run 无可信记录不能追补，强杀前未持久化的原子窗口仍需上游 durable receipt；不宣称完整 PRD 完成。
 [根因、边界及验收证据](acp-settlement-recovery-2026-11-18.md)。
 
 
