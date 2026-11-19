@@ -1,5 +1,16 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-18: proactive ACP settlement capture (acceptance in progress)
+
+SA-M1/SA-M2; owner Codex. The old controller saved transient wait evidence only when a parent
+called status/review. The fix consumes public ACP executionSettled lifecycle events, validates
+owner/run/child/terminal fingerprints and saves a minimal receipt without semantic review or
+automatic completion. A real local Gateway probe fails before and passes after the change.
+Focused regression, CI and live Slack restart-before-review acceptance are in progress. Historical
+missing proof cannot be reconstructed; crash-atomic guarantees still require an upstream durable
+receipt. [Root cause, boundaries and evidence](acp-settlement-recovery-2026-11-18.md).
+
+
 ## 2026-11-17: formal task release and autonomous coding acceptance
 
 SA-M1/SA-M2/SA-M2-06; owner Codex. PR #98 candidate a56081a passed all seven CI checks

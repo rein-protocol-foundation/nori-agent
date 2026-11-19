@@ -1,5 +1,15 @@
 # Nori-Agent implementation roadmap
 
+## 2026-11-18：ACP 结算证据主动保存修复（验收中）
+
+SA-M1/SA-M2；Owner Codex。旧实现依赖父助手后续status/review保存进程内等待结果，
+可能在父回合失败或重启前漏存。现接入公共runtime.events的ACP executionSettled事件，
+核验原生owner/run/child/终态后保存最小结算凭据，不自动review或宣布完成。
+原生Gateway先失败/修复后通过探针已复现；定向回归、CI及真实Slack重启前未review验收进行中。
+旧run无可信记录不能追补，强杀前未持久化的原子窗口仍需上游durable receipt；
+[根因、边界及验收证据](acp-settlement-recovery-2026-11-18.md)。
+
+
 ## 2026-11-17：正式任务发布与自主开发闭环
 
 SA-M1/SA-M2/SA-M2-06；Owner Codex。PR #98最终候选a56081a七项CI通过（插件1486通过/4既有跳过），

@@ -23,3 +23,7 @@ secrets/
 coverage/
 
 .toolchain/
+
+# Native private dream journal and generated Python bytecode.
+workspace/DREAMS.md
+__pycache__/

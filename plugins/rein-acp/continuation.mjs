@@ -31,7 +31,7 @@ const publishedTerminalReceipt = (task, run) => {
 };
 
 /** Thin native Flow controller. No timers, execution engine, transcript store or delivery ledger. */
-export function createTaskContinuation({ config, tasks, subagent, system, session, authorize, isNativeChild, confirmedReplacement = () => undefined, clock = Date.now, logger, retainedSummaries }) {
+export function createTaskContinuation({ config, tasks, subagent, system, session, authorize, isNativeChild, confirmedReplacement = () => undefined, clock = Date.now, logger, retainedSummaries, events }) {
   const turns = new Map(), invocations = new Map(), admissions = new Map();
   const selected = ctx => ctx.agentId === config.channel.agentId && !isNativeChild(ctx);
   const flowsFor = sessionKey => tasks.async.managedFlows.bindSession({ sessionKey });
@@ -82,12 +82,162 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
   const boundReason = state => clock() >= state.deadlineAt ? 'deadline' : state.attempts.length >= state.maxAttempts ? 'attempt_limit' :
     state.noProgress >= state.maxNoProgress ? 'no_progress_limit' : undefined;
   const taskText = (flow, instruction) => `Native flow ${flow.flowId}; scope revision ${flow.stateJson.scopeRevision}; attempt ${flow.stateJson.attempts.length + 1}.\nGoal: ${flow.stateJson.goal}\nCompletion criteria: ${flow.stateJson.criteria}\nBounded assignment: ${instruction}\nReturn evidence, missing criteria, and performed or uncertain external actions to the native parent. No outreach, permission expansion, merge or deployment is authorized by this assignment.`;
-  const nativeTask = async flow => {
-    const attempt = last(flow.stateJson);
+  const nativeTask = async (flow, attempt = last(flow.stateJson)) => {
     if (!attempt?.runId) return undefined;
     const task = await runsFor(flow.ownerKey).resolve(attempt.runId);
     return task?.ownerKey === flow.ownerKey && task.scope === 'session' && task.runId === attempt.runId &&
       task.childSessionKey === attempt.childSessionKey && task.runtime === flow.stateJson.runtime ? task : undefined;
+  };
+  // Only minimal settled lifecycle facts are buffered. No event text/replies or
+  // transcript content enter this cache. Receipt persistence can lag execution.
+  const lifecycleLimit = 256;
+  const eventScopes = process[Symbol.for('rein.acp.continuation.lifecycleScopes')] ??= new Map();
+  const eventScope = digest([config.channel.agentId, config.channel.accountId, config.channel.channelId.toLowerCase()]);
+  const previousCapture = events?.onAgentEvent ? eventScopes.get(eventScope) : undefined;
+  const lifecycleEvents = previousCapture?.cache ?? new Map(), lifecyclePending = previousCapture?.pending ?? new Map();
+  let eventSlot, unsubscribe, eventRetired = false, eventClosed = false;
+  const lifecycleFact = event => {
+    const data = event?.data;
+    if (event?.stream !== 'lifecycle' || !['end', 'error'].includes(data?.phase) ||
+        data.executionSettled !== true || !Number.isFinite(data.endedAt) || data.endedAt < 0 || !string(event.runId, 512)) return;
+    for (const identity of [event, data]) {
+      if (identity.agentId !== undefined && identity.agentId !== config.harnessAgentId) return;
+      for (const key of ['sessionKey', 'childSessionKey'])
+        if (identity[key] !== undefined && (typeof identity[key] !== 'string' ||
+            !identity[key].startsWith(`agent:${config.harnessAgentId}:acp:`))) return;
+    }
+    if (data.yielded === true || data.pendingError ||
+        (data.livenessState != null && !['finished', 'blocked'].includes(data.livenessState)) ||
+        (data.stopReason != null && !['stop', 'timeout', 'end_turn'].includes(data.stopReason)) ||
+        (data.phase === 'error' && ['completed', 'succeeded'].includes(data.status)) ||
+        (data.aborted === true && ['completed', 'succeeded'].includes(data.status)) ||
+        (data.phase === 'end' && data.livenessState === 'blocked')) return;
+    let outcome;
+    if (data.status === 'timed_out' || data.stopReason === 'timeout') outcome = 'timed_out';
+    else if (data.status === 'cancelled' || data.aborted === true) outcome = 'cancelled';
+    else if (data.phase === 'error') outcome = data.livenessState === 'blocked' ? 'blocked' : 'failed';
+    else if ((data.status == null || ['completed', 'succeeded'].includes(data.status)) &&
+        (data.livenessState == null || data.livenessState === 'finished') && data.error == null) outcome = 'succeeded';
+    if (!outcome || (data.status != null && !['completed', 'succeeded', 'cancelled', 'timed_out', 'failed'].includes(data.status)) ||
+        (data.status === 'failed' && outcome !== 'failed')) return;
+    const identities = [];
+    for (const source of [event, data]) {
+      const identity = {};
+      for (const key of ['runId', 'sessionKey', 'sessionId', 'agentId', 'childSessionKey', 'taskId', 'ownerKey']) {
+        if (source[key] !== undefined) {
+          if (!string(source[key], 1024)) return;
+          identity[key] = source[key];
+        }
+      }
+      identities.push(identity);
+    }
+    return { runId: event.runId, phase: data.phase, endedAt: data.endedAt, outcome, identities };
+  };
+  const eventMatches = (fact, task, attempt) => {
+    if (task?.runtime !== 'acp' || !terminalRun(task.status) || !Number.isFinite(task.endedAt) ||
+        (attempt.taskId && attempt.taskId !== task.id) ||
+        (Number.isFinite(task.startedAt) && fact.endedAt < task.startedAt)) return false;
+    if (fact.outcome === 'blocked' ? !(task.status === 'succeeded' && task.terminalOutcome === 'blocked') :
+        fact.outcome !== task.status || (fact.outcome === 'succeeded' && task.terminalOutcome === 'blocked')) return false;
+    const childAgent = task.agentId ?? /^agent:([^:]+):/.exec(task.childSessionKey)?.[1];
+    for (const identity of fact.identities) {
+      if ((identity.runId !== undefined && identity.runId !== task.runId) ||
+          (identity.sessionKey !== undefined && identity.sessionKey !== task.childSessionKey) ||
+          (identity.childSessionKey !== undefined && identity.childSessionKey !== task.childSessionKey) ||
+          (identity.agentId !== undefined && identity.agentId !== childAgent) ||
+          (identity.taskId !== undefined && identity.taskId !== task.id) ||
+          (identity.ownerKey !== undefined && identity.ownerKey !== task.ownerKey)) return false;
+      if (identity.sessionId !== undefined) {
+        if (!childAgent || session.listSessionEntries({ agentId: childAgent, readOnly: true })
+          .find(row => row.sessionKey === task.childSessionKey)?.entry.sessionId !== identity.sessionId) return false;
+      }
+    }
+    return true;
+  };
+  const saveLifecycleFact = async (owner, flowId, fact) => {
+    const binding = flowsFor(owner);
+    for (let retry = 0; retry < 3; retry++) {
+      const flow = await binding.get(flowId);
+      if (!owned(flow, owner) || flow.stateJson.runtime !== 'acp') return false;
+      const attempt = flow.stateJson.attempts.find(item => item.runId === fact.runId);
+      if (!attempt?.childSessionKey) return false;
+      await sourceCurrent(flow, { sessionKey: owner });
+      const task = await nativeTask(flow, attempt);
+      if (!eventMatches(fact, task, attempt)) return false;
+      const key = settlementKey(task);
+      if (attempt.settlement?.key === key) return true;
+      const mode = flow.status === 'waiting' ? 'setWaiting' : flow.status === 'succeeded' ? 'finish' : flow.status === 'failed' ? 'fail' : undefined;
+      if (!mode) return false; // Do not change a native status lacking a same-status public mutation.
+      await sourceCurrent(flow, { sessionKey: owner });
+      const confirmed = await nativeTask(flow, attempt);
+      if (!eventMatches(fact, confirmed, attempt) || settlementKey(confirmed) !== key ||
+          inventory().find(row => row.sessionKey === owner)?.entry.sessionId !== flow.stateJson.source.sessionId) return false;
+      const state = structuredClone(flow.stateJson);
+      state.attempts.find(item => item.runId === fact.runId).settlement = { key, source: 'native_acp_lifecycle',
+        runId: task.runId, taskId: task.id, childSessionKey: task.childSessionKey, nativeStatus: task.status,
+        phase: fact.phase, outcome: fact.outcome, endedAt: fact.endedAt, at: clock() };
+      const changed = await binding[mode]({ flowId, expectedRevision: flow.revision, stateJson: state,
+        ...(mode === 'setWaiting' ? { currentStep: flow.currentStep, waitJson: flow.waitJson } : { endedAt: flow.endedAt }) });
+      if (changed.applied) return true;
+      if (changed.code !== 'revision_conflict') throw Error('rein_continuation_acp_settlement_persistence_failed');
+    }
+    throw Error('rein_continuation_acp_settlement_revision_conflict');
+  };
+  const captureLifecycleFact = async fact => {
+    let saved = false;
+    for (const { sessionKey } of inventory()) {
+      if (isNativeChild({ sessionKey })) continue;
+      for (const flow of await ownList(sessionKey)) {
+        if (flow.stateJson.runtime === 'acp' && flow.stateJson.attempts.some(item => item.runId === fact.runId))
+          saved = await saveLifecycleFact(sessionKey, flow.flowId, fact) || saved;
+      }
+    }
+    if (saved && lifecycleEvents.get(fact.runId) === fact) lifecycleEvents.delete(fact.runId);
+  };
+  const queueLifecycleFact = fact => {
+    if (lifecyclePending.has(fact.runId)) return lifecyclePending.get(fact.runId);
+    if (lifecyclePending.size >= lifecycleLimit) {
+      logger?.warn?.('Continuation ACP lifecycle proof queue full; no settlement was persisted.'); return;
+    }
+    const pending = Promise.resolve().then(() => captureLifecycleFact(fact)).catch(() => {
+      logger?.warn?.('Continuation ACP lifecycle proof not persisted; authoritative settlement remains required.');
+    }).finally(() => { if (lifecyclePending.get(fact.runId) === pending) lifecyclePending.delete(fact.runId); });
+    lifecyclePending.set(fact.runId, pending);
+    return pending;
+  };
+  const drainLifecycle = async () => { await Promise.all([...lifecyclePending.values()]); };
+  const stopEventCapture = () => { eventClosed = true; unsubscribe?.(); unsubscribe = undefined; };
+  const startEventCapture = () => {
+    if (!events?.onAgentEvent || unsubscribe || eventRetired) return;
+    eventClosed = false;
+    const previous = eventScopes.get(eventScope);
+    if (previous && previous !== eventSlot) previous.retire();
+    eventSlot = { cache: lifecycleEvents, pending: lifecyclePending,
+      retire() { eventRetired = true; stopEventCapture(); void drainLifecycle(); } };
+    eventScopes.set(eventScope, eventSlot);
+    unsubscribe = events.onAgentEvent(event => {
+      if (eventClosed || eventRetired) return;
+      const fact = lifecycleFact(event);
+      if (!fact) return;
+      if (!lifecycleEvents.has(fact.runId)) {
+        if (lifecycleEvents.size >= lifecycleLimit) lifecycleEvents.delete(lifecycleEvents.keys().next().value);
+        lifecycleEvents.set(fact.runId, fact);
+      }
+      void queueLifecycleFact(lifecycleEvents.get(fact.runId));
+    });
+  };
+  const awaitLifecycle = async flow => {
+    const runId = last(flow.stateJson)?.runId;
+    // A first scan can have begun before acceptance. Once that pending scan
+    // drains, consume its still-buffered fact once against the persisted receipt.
+    for (let pass = 0; pass < 2; pass++) {
+      const pending = lifecyclePending.get(runId) ?? (lifecycleEvents.has(runId) ? queueLifecycleFact(lifecycleEvents.get(runId)) : undefined);
+      if (!pending) break;
+      await pending;
+      const current = await flowsFor(flow.ownerKey).get(flow.flowId);
+      if (owned(current, flow.ownerKey)) flow = current;
+    }
+    return flow;
   };
   const requestCancellation = async (flow, task, attempt, cfg) => {
     try {
@@ -151,6 +301,7 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
     } catch { return false; }
   };
   async function reconcile(flow, cfg) {
+    flow = await awaitLifecycle(flow);
     const wasTerminal = terminalFlow(flow);
     if (wasTerminal && !(flow.stateJson.stopRequested && last(flow.stateJson)?.runId && !terminalRun(last(flow.stateJson)?.nativeStatus))) return retainTerminal(flow);
     const originalState = digest(flow.stateJson);
@@ -241,7 +392,7 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
         (report.gaps == null || report.gaps === '') && ['none', 'confirmed'].includes(report.effects) &&
         attempt.review && digest(attempt.review) === digest(report) && /^[a-f0-9]{64}$/.test(attempt.settlement?.key ?? '') &&
         Number.isFinite(attempt.settlement?.endedAt) &&
-        ['native_wait', 'native_terminal_receipt', 'native_succeeded_record'].includes(attempt.settlement?.source)) {
+        ['native_wait', 'native_terminal_receipt', 'native_succeeded_record', 'native_acp_lifecycle'].includes(attempt.settlement?.source)) {
       state.historicalNotice = { text: state.notice, status: 'superseded_by_settled_complete_review',
         runId: attempt.runId, scopeRevision: state.scopeRevision, settlementSource: attempt.settlement.source,
         currentBackingAvailability: 'not_rechecked' };
@@ -262,6 +413,9 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
     ctx.assertInvocationCurrent?.();
     return turn;
   };
+  // Subscribe during registration too: a fast admitted child may settle before
+  // gateway_start or before its accepted receipt is written back to its Flow.
+  startEventCapture();
   return {
     // M1's unmanaged cancellation reports must not remove the tools needed to
     // review a current managed attempt interrupted by the host. A saved goal is
@@ -549,6 +703,7 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
       };
     } },
     async gatewayStart(_event, ctx) {
+      startEventCapture();
       const checks = new Map();
       await Promise.all(inventory().filter(row => !isNativeChild({ sessionKey: row.sessionKey })).map(async ({ sessionKey, entry }) => {
         const flows = (await ownList(sessionKey)).filter(flow => !terminalFlow(flow) || flow.stateJson.report);
@@ -565,7 +720,14 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
         system.requestHeartbeat({ source: 'background-task', intent: 'immediate', reason: 'rein-continuation-recovery', agentId: config.channel.agentId, sessionKey });
       }));
     },
-    async gatewayStop() { await retainedSummaries?.close(); },
+    async gatewayStop() {
+      stopEventCapture();
+      await drainLifecycle();
+      if (eventScopes.get(eventScope) === eventSlot) {
+        lifecycleEvents.clear(); eventScopes.delete(eventScope);
+      }
+      await retainedSummaries?.close();
+    },
     agentEnd(_event, ctx) {
       turns.delete(ctx.runId);
       for (const [key, value] of invocations) if (value.runId === ctx.runId) invocations.delete(key);
