@@ -42,8 +42,9 @@ Nori 能在日常协作中判断是否值得参与，把长期工作关联到 Li
 
 **接入状态（2026-11-19）：** `NORI_LINEAR_TOKEN` 已配置在 OCI 的私有运行环境，并从 OCI 使用保存的密钥
 完成 Linear API 认证，确认可读取 Rein Protocol Foundation（REI）团队。这项检查覆盖认证和团队读取。
-负责人已配置 GitHub 与 Slack 集成。REI 与目标仓库的 Issues 双向配对、工单写入后两端读回，以及 Nori
-任务追踪流程加载凭证，仍需在联调中验证。
+Linear 设置页确认 GitHub 组织已连接，`GitHub issue sync` 下尚无仓库配对。负责人已配置 Slack 集成。
+先确定获准同步的 REI 与 GitHub 仓库配对并启用双向模式，再验证工单写入后两端读回，以及 Nori
+任务追踪流程能加载凭证。
 
 ### 2.2 Rein Router 内的主动参与判断
 
