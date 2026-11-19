@@ -49,6 +49,8 @@ export class BackendRuntimeError extends Error {
 
 export interface CreateBackendRuntimeOptions {
   communityOnly?: boolean;
+  /** Profile selected by registration, never by tool arguments. */
+  communityProfile?: { agentId: string; accountId: string };
   config?: unknown;
   env?: Record<string, string | undefined>;
   transport?: BackendTransport;
@@ -78,6 +80,7 @@ export function resolveBackendRuntimeConfig(options?: CreateBackendRuntimeOption
   return parseBackendConfig({
     config: options?.config,
     allowEmptyGovernanceChannels: options?.communityOnly === true,
+    allowDirectMessages: options?.communityOnly === true,
     ...(options?.env ? { env: options.env } : {}),
     error: codedConfigError(CONFIG_INVALID_CODE),
     envError: codedConfigError(ENV_VALUE_MISSING_CODE),
@@ -133,6 +136,8 @@ export function createBackendRuntime(options?: CreateBackendRuntimeOptions): Bac
 
   const transport = options?.transport ?? createConfiguredTransport(resolved);
   const now = options?.now ?? Date.now;
+  const directMessageScope = options?.communityOnly === true && options.communityProfile
+    ? Object.freeze({ ...options.communityProfile }) : undefined;
   const proofByContext = new WeakMap<object, BackendProof>();
   const inFlightContexts = new WeakSet<object>();
 
@@ -158,8 +163,9 @@ export function createBackendRuntime(options?: CreateBackendRuntimeOptions): Bac
     const trusted = readTrustedContext(ctx);
     // One deployment may serve several enrolled platforms at once. The acting platform is the
     // trusted message channel, admitted only when it resolves to exactly one configured workspace;
-    // the legacy `resolved.platform` default narrows nothing.
-    const identity = resolveTrustedWorkspace(resolved, ctx);
+    // the legacy `resolved.platform` default narrows nothing. Community-only profiles can opt their
+    // own sender-scoped Discord DMs into one workspace; no model argument participates in mapping.
+    const identity = resolveTrustedWorkspace(resolved, ctx, directMessageScope);
     if (!identity) {
       throw new BackendRuntimeError(
         'workspace_scope_unresolved',

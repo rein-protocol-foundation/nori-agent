@@ -1,5 +1,17 @@
 # Acceptance evidence
 
+## 2026-11-18 — Discord member onboarding access
+
+SA-M0 / #57; owner Codex; implementation and live acceptance in progress. Add a Community-only
+current-sender member-status tool without private email/contact IDs or governance registration.
+An optional pure configuration update opens native Discord DMs, enables public web search/fetch,
+and discovers reusable workspace skills through the shared skill directory. Existing sandbox,
+private-memory boundaries, model admission/quotas and internal agent configuration remain intact.
+The keyless native Parallel search provider passed an isolated host probe; Community catalog and
+job-matching skills were previously absent from its discovered skills. Focused local tests passed
+107/107 and scaffold checks passed. Actual unlinked/email/relinked and Discord tool acceptance is
+still pending; no onboarding completion is claimed by this entry. No vendor edits.
+
 ## 2026-11-18：ACP 结算证据修复（首轮真实验收通过）
 
 SA-M1/SA-M2；Owner Codex。PR #111 七项 CI 通过（1496 插件测试通过、4 既有跳过），

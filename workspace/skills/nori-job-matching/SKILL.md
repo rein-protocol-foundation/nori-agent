@@ -5,8 +5,8 @@ description: Search current public job opportunities, starting with 80,000 Hours
 
 # Match people with current job opportunities
 
-Use this skill in Nori's ordinary workspace. It is not installed in the isolated Discord/Slack
-workspaces and does not require the Rein channel or isolation plugins.
+Use this channel-independent skill through Nori's shared skill library, including Community.
+It requires only the public web tools described below; loading it grants no additional permissions.
 
 Help the user choose plausible roles and a useful next step. Use their priorities, not the
 job board's ranking as a substitute for fit. Respond in the user's language, preserving exact
