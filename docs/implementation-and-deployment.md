@@ -1500,3 +1500,9 @@ Owner: Codex. Seven documentation files isolated from unrelated uncommitted runt
 Reconciled owner-accepted Community runtime scope and November 15 scoped continuation acceptance.
 Scaffold, document links and whitespace checks pass; runtime tests not applicable to this docs-only change.
 Next: authorized PR, CI/review and merge; no deployment or business-tool expansion.
+
+## 2026-11-18 — SA-OBS-02 receipt schedule recovery
+
+Owner: Codex. Applied the operator-requested 07:30 America/Los_Angeles schedule to the existing daily receipt job using native authenticated RPC. Read-back confirmed exact schedule, enabled state and November 19 15:30 UTC next run. Preserved command, timeout, delivery settings and prior send records; saved private schedule rollback. Local collector retry patch discards partial pagination and retries once after 1 second; 18/18 targeted tests and scaffold passed. Runtime retry patch is not deployed; normal merged-PR rollout remains required. Next: deploy the optional robustness patch through that flow and verify the next clock-triggered delivery. No gateway restart or additional Slack send.
+
+Live integrated preview also passed with the current production renderer: source export, usage refresh and PNG generation for November 17 completed without sending. Output was isolated under the private schedule-fix-preview directory; original artifacts and delivery state were preserved. This verifies generation outside the contention window, not the undeployed retry or next scheduled delivery.
