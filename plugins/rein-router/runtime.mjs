@@ -85,7 +85,8 @@ export function assertRuntimeConfig(config, host) {
         throw new Error('rein_router_runtime_invalid: direct messages require sender-scoped native bindings without session aliases');
     }
   }
-  for (const entry of config.developmentChannels) {
+  const sandboxChannels = config.scheduleInPublicChannels ? [...config.developmentChannels, ...config.trustedSlackChannels] : config.developmentChannels;
+  for (const entry of sandboxChannels) {
     const agent = host.agents?.entries?.[entry.agentId] ?? host.agents?.list?.find(agent => agent.id === entry.agentId);
     if (!agent || agent.sandbox?.mode !== 'all' || !['ssh', 'docker', 'podman', 'openshell'].includes(agent.sandbox.backend) ||
         agent.tools?.elevated?.enabled !== false)

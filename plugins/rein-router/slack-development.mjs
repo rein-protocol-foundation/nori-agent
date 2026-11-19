@@ -16,7 +16,15 @@ export function developmentChannelFor(config, ctx) {
     entry.channelId === channelId && entry.agentId === ctx.agentId) ?? null;
 }
 
-export function createSlackDevelopmentAuthorizer({ config, env = process.env, fetchImpl = globalThis.fetch }) {
+export function createSlackDevelopmentAuthorizer(options) {
+  return membershipAuthorizer(options, false);
+}
+
+export function createSlackScheduleAuthorizer(options) {
+  return membershipAuthorizer(options, options.config.scheduleInPublicChannels === true);
+}
+
+function membershipAuthorizer({ config, env = process.env, fetchImpl = globalThis.fetch }, allowPublic) {
   return async ctx => {
     const selected = developmentChannelFor(config, ctx);
     if (!selected) return false;
@@ -45,7 +53,7 @@ export function createSlackDevelopmentAuthorizer({ config, env = process.env, fe
       if (auth.team_id !== selected.workspaceId || !nativeId(auth.user_id) || !auth.bot_id) return false;
       const { channel } = await api('conversations.info', { channel: selected.channelId });
       if (!channel || channel.id !== selected.channelId || channel.context_team_id !== selected.workspaceId ||
-          channel.is_private !== true || channel.is_member !== true || channel.is_archived !== false ||
+          (channel.is_private !== true && !(allowPublic && channel.is_private === false && channel.is_channel === true)) || channel.is_member !== true || channel.is_archived !== false ||
           channel.is_im !== false || channel.is_mpim !== false || channel.is_shared === true ||
           channel.is_ext_shared === true || channel.is_org_shared === true || channel.is_pending_ext_shared === true) return false;
       let cursor = '', member = false;

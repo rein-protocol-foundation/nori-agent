@@ -7,7 +7,7 @@ import { bindManagedService, managedServiceScope, managedServiceRegistry } from 
 import { createProfileAdminAuthorizer, FOUNDATION_ADMIN_TIMEOUT_MS } from './foundation-admin.ts';
 import { createCronIngress, assertTrustedSlackBoundaries } from './cron-ingress.mjs';
 import { loadCronStore, resolveCronStorePath } from 'openclaw/plugin-sdk/cron-store-runtime';
-import { createSlackDevelopmentAuthorizer, DEVELOPMENT_AUTH_TIMEOUT_MS } from './slack-development.mjs';
+import { createSlackDevelopmentAuthorizer, createSlackScheduleAuthorizer, DEVELOPMENT_AUTH_TIMEOUT_MS } from './slack-development.mjs';
 
 export default definePluginEntry({
   id: 'rein-router', name: 'Nori-Agent Subscription Router',
@@ -26,7 +26,7 @@ export default definePluginEntry({
       operationsConfig: operations?.enabled === true ? operations.config : undefined,
     });
     const authorizeDevelopment = createSlackDevelopmentAuthorizer({ config });
-    const authorizeCreator = createSlackDevelopmentAuthorizer({ config: { developmentChannels: config.trustedSlackChannels } });
+    const authorizeCreator = createSlackScheduleAuthorizer({ config: { developmentChannels: config.trustedSlackChannels, scheduleInPublicChannels: config.scheduleInPublicChannels } });
     if (config.enabled) { assertRuntimeConfig(config, api.config); assertTrustedSlackBoundaries(config.trustedSlackChannels, api.config); }
     const usage = config.enabled && Object.values(config.scopedPolicies ?? {}).some(policy => policy.usageLimits)
       ? createUsageLedger({ stateDir: api.runtime.state.resolveStateDir() }) : undefined;
