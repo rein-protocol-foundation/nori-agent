@@ -103,10 +103,10 @@ function humanMessage(message, channelId, requireContent = true) {
 }
 function welcomeContent(users, config) {
   const destination = config.welcomeChannelId === config.introductionsChannelId ? 'here' : `in <#${config.introductionsChannelId}>`;
-  return `Welcome to Rein, ${users.map(id => `<@${id}>`).join(' ')}! 👋\n\nWhen you're ready, say hi ${destination}. What brought you here? One line is plenty.`;
+  return `Welcome to Rein, ${users.map(id => `<@${id}>`).join(' ')}! 👋\n\nWhen you're ready, introduce yourself ${destination}. Tell us what you'd like us to call you and a little about yourself, like what you're working on or hoping to learn.`;
 }
 function reminderContent(users, config) {
-  return `Hey ${users.map(id => `<@${id}>`).join(' ')}! If you'd like to meet a few folks, say hi in <#${config.introductionsChannelId}> and share one thing you're curious about.\n\nPost \`no reminders\` there to skip future intro reminders.`;
+  return `Hey ${users.map(id => `<@${id}>`).join(' ')}! We'd love to get to know you. When you're ready, post a short intro in <#${config.introductionsChannelId}> with what you'd like us to call you and something you'd enjoy chatting about.\n\nPost \`no reminders\` there to skip future intro reminders.`;
 }
 function reminderPreference(message) {
   const text = (message.content ?? '').normalize('NFKC').trim().replace(/[’‘]/g, "'");

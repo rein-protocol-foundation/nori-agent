@@ -64,7 +64,7 @@ test('08:00 fixed PST stays UTC16 in winter and summer with exact rolling bounda
   const result = await f.run();
   assert.deepEqual(result, { joined: 2, welcomed: 2, dailyWelcomed: 2, weeklyReminded: 0, archived: 0, dryRun: false });
   assert.deepEqual(f.posts[0].allowed_mentions, { users: ['401', '402'], parse: [], replied_user: false });
-  assert.match(f.posts[0].content, /say hi here\./);
+  assert.match(f.posts[0].content, /introduce yourself here\./);
 });
 
 test('paginates over 1000 members and 100 messages; archives original human evidence across pages', async t => {
@@ -212,7 +212,7 @@ test('separate welcome channel is validated, receives sends and pending reconcil
     messages: [message('500', START + 100)] });
   await assert.rejects(f.run(), /uncertain/);
   assert.equal(f.posts.length, 1);
-  assert.equal(f.posts[0].content, "Welcome to Rein, <@400>! 👋\n\nWhen you're ready, say hi in <#200>. What brought you here? One line is plenty.");
+  assert.equal(f.posts[0].content, "Welcome to Rein, <@400>! 👋\n\nWhen you're ready, introduce yourself in <#200>. Tell us what you'd like us to call you and a little about yourself, like what you're working on or hoping to learn.");
   assert.equal((await f.run()).welcomed, 1);
   assert.equal(f.posts.length, 1);
   assert.ok(f.calls.some(call => call.path === '/channels/201/messages' && call.method === 'POST'));
@@ -285,7 +285,7 @@ test('weekly reminders run only on Sunday UTC16; daily and weekly branches never
   const result = await f.run({ at: SUNDAY });
   assert.equal(result.dailyWelcomed, 1); assert.equal(result.weeklyReminded, 1);
   assert.deepEqual(f.posts.map(post => post.allowed_mentions.users), [['401'], ['400']]);
-  assert.equal(f.posts[1].content, "Hey <@400>! If you'd like to meet a few folks, say hi in <#200> and share one thing you're curious about.\n\nPost `no reminders` there to skip future intro reminders.");
+  assert.equal(f.posts[1].content, "Hey <@400>! We'd love to get to know you. When you're ready, post a short intro in <#200> with what you'd like us to call you and something you'd enjoy chatting about.\n\nPost `no reminders` there to skip future intro reminders.");
   assert.equal(new Set(f.posts.flatMap(post => post.allowed_mentions.users)).size, 2);
   assert.equal((await f.run({ at: SUNDAY })).weeklyReminded, 1);
   assert.equal(f.posts.length, 2);

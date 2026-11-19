@@ -2,8 +2,8 @@
 
 ## 2026-11-19 — Discord welcome and reminder copy
 
-COMMUNITY-ONBOARDING-01; owner Codex. The daily invitation and Sunday reminder use a
-short conversation starter. Local verification passed. Production rollout is pending.
+COMMUNITY-ONBOARDING-01; owner Codex. The daily invitation and Sunday reminder ask
+members to write a short self-introduction. Local verification passed. Production rollout is pending.
 [Verification](acceptance-evidence.md#2026-11-19--discord-welcome-and-reminder-copy).
 
 ## 2026-11-18 — Discord daily archive active; public reminders blocked
