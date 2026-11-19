@@ -49,3 +49,5 @@ which the child did not expose and produced no execution evidence. The corrected
 loaded both production plugins and used the child's advertised exec tool.
 The administrator selected main for all formal-channel threads, including the old
 acceptance thread. No historical owner or conversation binding is migrated.
+
+The production timer ran at its revised time, 11:16:57 UTC on November 19, 2026. Its native receipt recorded success and delivery, and the Slack thread received nori-dev, its SSH workspace path and 4187. The first creation selected the sandbox agent as the native job owner. The follow-up normalizes only the configured executor on its eligible channel to the real thread owner. The first coding attempt used the ordinary development worker, and a later ACP attempt stopped before launch. Updated tool feedback identifies the requested harness and a short, scoped reference resolves to the stored assignment at native admission. Both still require live Codex acceptance.

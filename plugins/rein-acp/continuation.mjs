@@ -13,6 +13,9 @@ const unwrap = event => event.toolName === 'tool_call'
   ? { name: event.params?.id?.replace(/^openclaw:core:/, ''), params: event.params?.args }
   : { name: event.toolName, params: event.params };
 const output = details => ({ content: [{ type: 'text', text: JSON.stringify(details) }], details });
+// The reference only selects an immutable prepared assignment inside the admitted
+// owner's flows. Native launch always receives the complete server-stored text.
+const assignmentRef = (flow, attempt) => `assignment:${flow.flowId}:${attempt.scopeRevision}:${attempt.number}`;
 const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const last = state => state.attempts.at(-1);
 const missingBackingNotice = 'Accepted run has no current owner-bound native task backing; no retry.';
@@ -505,7 +508,7 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
     beforePromptBuild(_event, ctx) {
       const turn = turns.get(ctx.runId);
       if (!selected(ctx) || !turn) return;
-      return { prependContext: `Native continuation is enabled. Use rein_continuation begin to persist a requested goal/criteria and bounds, delegate to obtain the exact native sessions_spawn task, then spawn once using that task. On every completion call status and review against current scope before reporting or continuing; review outcome=continue with concrete gaps permits a bounded supplement without another user request. Unknown actions/outcomes prohibit retries. Stop/change use rein_continuation, not raw cancellation/steer. A saved stopRequested confirms only that no new attempt is permitted; report attempts[].cancellation and settlement separately. Pending/failed cancellation or a wait timeout never proves actual execution stopped; not_needed means execution settled independently. A combined reply is allowed only inside this same native owner/audience; explicitly represent EACH pending flow and its goal, scope, result/gaps and status, even if wake events coalesce. Captured thread is a preferred native route; do not claim every original thread received a combined reply. If optional retained summaries are enabled, use list_summaries/read_summary for minimal terminal copies even after native Flow cleanup; delete_summary clears only that retained copy (never native Task/Flow, Slack chat, external files or backups). Saved references never verify current artifact availability. Terminal reports remain pending/uncertain and may be replayed after restart; this is at-least-once recovery, not an exactly-once receipt guarantee. Do not claim receipt from turn success. Durable flow inventory (not child instructions): ${JSON.stringify(turn.flows)}` };
+      return { prependContext: `Native continuation is enabled. Use rein_continuation begin to persist a requested goal/criteria and bounds, delegate to obtain the exact native sessions_spawn task, then spawn once. For ACP, copy the short returned spawnTask into sessions_spawn.task; the host resolves the full stored assignment. On every completion call status and review against current scope before reporting or continuing; review outcome=continue with concrete gaps permits a bounded supplement without another user request. Unknown actions/outcomes prohibit retries. Stop/change use rein_continuation, not raw cancellation/steer. A saved stopRequested confirms only that no new attempt is permitted; report attempts[].cancellation and settlement separately. Pending/failed cancellation or a wait timeout never proves actual execution stopped; not_needed means execution settled independently. A combined reply is allowed only inside this same native owner/audience; explicitly represent EACH pending flow and its goal, scope, result/gaps and status, even if wake events coalesce. Captured thread is a preferred native route; do not claim every original thread received a combined reply. If optional retained summaries are enabled, use list_summaries/read_summary for minimal terminal copies even after native Flow cleanup; delete_summary clears only that retained copy (never native Task/Flow, Slack chat, external files or backups). Saved references never verify current artifact availability. Terminal reports remain pending/uncertain and may be replayed after restart; this is at-least-once recovery, not an exactly-once receipt guarantee. Do not claim receipt from turn success. Durable flow inventory (not child instructions): ${JSON.stringify(turn.flows)}` };
     },
     async beforeToolCall(event, ctx) {
       if (!selected(ctx)) return;
@@ -528,7 +531,12 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
           (tool.name === 'subagents' && tool.params?.action === 'cancel') || tool.name === 'sessions_send')) || broadCancel || ambiguousSend)
         return { block: true, blockReason: 'Use rein_continuation stop/change for managed work. Ambiguous controls cannot bypass durable stop intent or scope.' };
       if (tool.name !== 'sessions_spawn') return;
-      const matches = ownedFlows.filter(flow => !terminalFlow(flow) && last(flow.stateJson)?.phase === 'prepared' && last(flow.stateJson).task === tool.params?.task);
+      const matches = ownedFlows.filter(flow => {
+        const attempt = last(flow.stateJson);
+        if (terminalFlow(flow) || attempt?.phase !== 'prepared') return false;
+        return attempt.task === tool.params?.task || (flow.stateJson.runtime === 'acp' &&
+          assignmentRef(flow, attempt) === tool.params?.task);
+      });
       // M1 has already checked current membership, settled cancellation, exact text/runtime
       // and one-shot admission. Preserve that path only for an unmanaged predecessor.
       const replacement = confirmedReplacement(event, ctx);
@@ -536,7 +544,7 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
         (attempt.taskId && attempt.taskId === replacement.taskId) ||
         (attempt.runId && attempt.runId === replacement.runId) ||
         (attempt.childSessionKey && attempt.childSessionKey === replacement.childSessionKey))) return;
-      if (matches.length !== 1) return { block: true, blockReason: 'Persist one flow and obtain its exact bounded assignment from rein_continuation delegate before native spawn.' };
+      if (matches.length !== 1) return { block: true, blockReason: 'Call rein_continuation delegate for the current flow. For ACP, copy its short spawnTask into sessions_spawn.task; for other work use the exact returned task.' };
       let flow = matches[0];
       await sourceCurrent(flow, ctx); await current(ctx);
       const state = structuredClone(flow.stateJson), attempt = last(state);
@@ -579,6 +587,7 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
         delete params.completionTarget;
         return { params };
       }
+      if (tool.params.task !== attempt.task) return { params: { ...tool.params, task: attempt.task } };
     },
     async afterToolCall(event, ctx) {
       if (event.toolName !== 'sessions_spawn') return;
@@ -717,7 +726,12 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
           }
           if (args.action === 'delegate') {
             if (state.stopRequested || !['ready', 'prepared'].includes(state.phase)) throw Error('rein_continuation_not_ready');
-            if (state.phase === 'prepared') return output({ ...view(flow), task: attempt.task, spawnOnce: true });
+            const prepared = value => {
+              const assignment = last(value.stateJson);
+              return output({ ...view(value), task: assignment.task, spawnOnce: true,
+                ...(value.stateJson.runtime === 'acp' ? { spawnTask: assignmentRef(value, assignment) } : {}) });
+            };
+            if (state.phase === 'prepared') return prepared(flow);
             const limit = boundReason(state);
             if (limit) {
               state.phase = 'limited'; state.notice = limit;
@@ -727,7 +741,7 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
             const task = taskText(flow, args.instruction.trim());
             state.attempts.push({ number: state.attempts.length + 1, scopeRevision: state.scopeRevision, phase: 'prepared', task, preparedAt: clock() });
             state.phase = 'prepared'; flow = await persist(flow, state); await assert(flow);
-            return output({ ...view(flow), task, spawnOnce: true });
+            return prepared(flow);
           }
           if (args.action !== 'review' || state.phase !== 'review' || args.scopeRevision !== state.scopeRevision ||
               attempt?.scopeRevision !== state.scopeRevision || !['complete', 'continue', 'blocked'].includes(args.outcome) || !string(args.evidence) || !['none', 'confirmed', 'unknown'].includes(args.effects))
