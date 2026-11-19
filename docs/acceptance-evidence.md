@@ -1,5 +1,12 @@
 # Acceptance evidence
 
+## 2026-11-19 — Discord welcome and reminder copy
+
+COMMUNITY-ONBOARDING-01; owner Codex. All 37 focused tests passed on Node 24.16.0.
+Simulated Discord sends verified the daily invitation in separate and shared channels,
+the Sunday invitation, and the opt-out wording. Eligibility, mention limits, cooldown,
+and restart reconciliation passed their existing checks. Live verification is pending deployment.
+
 ## 2026-11-18 — Discord onboarding production archive
 
 COMMUNITY-ONBOARDING-01; owner Codex. PR #117 passed all seven checks: full suite
