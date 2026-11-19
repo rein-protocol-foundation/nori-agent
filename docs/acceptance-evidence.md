@@ -2,6 +2,10 @@
 
 ## 2026-11-19 — Super Agent v2
 
+Tempest returned only `github-reopen` for retest and accepted the observed result in chat. After GitHub #123 reopened, Linear REI-17 retained Backlog and the adapter reported synchronized. The adapter wrote only to GitHub. The first-round passes for `linear-close` and `github-recovery` were carried forward without rerunning either check. The private OCI readback records the retest. This closes the three issue-sync checks; the formal reviewer receipt and overall v2 acceptance remain open.
+
+Tempest 在聊天中只退回 `github-reopen`，并已确认复验通过。GitHub #123 重开后，Linear REI-17 保留 Backlog，适配器判定已同步，只向 GitHub 写入。`linear-close` 和 `github-recovery` 沿用首轮通过结果，两项均未重跑。复验回读已保存在 OCI 私有目录。三个工单同步检查均已通过；正式审阅回执及 v2 整体验收仍待完成。
+
 SA2, owner Codex. The live provider checks include both directions of issue creation and state propagation, actual Backlog on GitHub reopen, and read-only recovery after deliberately losing a successful PATCH response. The private OCI report distinguishes passed from awaiting review. Slack real events and hosted shadow inference are recorded separately from isolated native dispatch and human decisions. [Independent 16-scenario verification matrix](super-agent-v2-verification.md).
 
 ## 2026-11-18 — Discord onboarding production archive
