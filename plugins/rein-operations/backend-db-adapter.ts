@@ -184,6 +184,39 @@ const identityStatus = (value: unknown): SlackMemberStatus =>
 const boundedProfileText = (value: unknown, max: number): string | null =>
   typeof value === 'string' && value.trim() && value.length <= max && !/[\u0000-\u001f\u007f]/.test(value) ? value.trim() : null;
 
+/** Normalize the identity endpoint once for both internal and Community self-checks. */
+export function readBackendMemberResolution(input: BackendResponse): SlackMemberResolution {
+  const response = unwrapIdentity(input);
+  if (!response.ok) {
+    return {
+      status: 'unavailable',
+      reason: response.reason,
+      contactId: null,
+      matchedBy: null,
+      isActiveContributor: false,
+      isDirector: false,
+      httpStatus: response.httpStatus,
+    };
+  }
+  const body = response.body as Record<string, unknown>;
+  const status = identityStatus(body.status);
+  const resolved = status === 'resolved';
+  return {
+    status,
+    reason: status,
+    contactId: resolved && typeof body.contact_id === 'string' ? body.contact_id : null,
+    matchedBy: resolved ? 'platform_link' : null,
+    profile: resolved && isPlainObject(body.profile) ? {
+      name: boundedProfileText(body.profile.name, 200),
+      email: boundedProfileText(body.profile.email, 320),
+      joinedAt: boundedProfileText(body.profile.joinedAt, 40),
+    } : null,
+    isActiveContributor: resolved && body.is_active_contributor === true,
+    isDirector: resolved && body.is_director === true,
+    httpStatus: response.httpStatus,
+  };
+}
+
 export function createBackendReader(options: BackendReaderOptions): FoundationDbReader {
   const { transport, getProof, ...identity } = options;
   if (!identity.platform || !identity.workspaceId || !identity.nativeChannelId) {
@@ -199,7 +232,7 @@ export function createBackendReader(options: BackendReaderOptions): FoundationDb
   const resolve = async (): Promise<BackendResponse | AdapterFailure> => {
     const proof = getProof();
     if (!proof?.ok) return proofFailure(proof?.reason);
-    return unwrapIdentity(await transport.resolveIdentity(proof.proof));
+    return transport.resolveIdentity(proof.proof);
   };
 
   const resolveSlackMember = async (platformUserId: string): Promise<SlackMemberResolution> => {
@@ -215,35 +248,7 @@ export function createBackendReader(options: BackendReaderOptions): FoundationDb
         httpStatus: null,
       };
     }
-    const response = await resolve();
-    if (!response.ok) {
-      return {
-        status: 'unavailable',
-        reason: response.reason,
-        contactId: null,
-        matchedBy: null,
-        isActiveContributor: false,
-        isDirector: false,
-        httpStatus: response.httpStatus,
-      };
-    }
-    const body = response.body as Record<string, unknown>;
-    const status = identityStatus(body.status);
-    const resolved = status === 'resolved';
-    return {
-      status,
-      reason: status,
-      contactId: resolved && typeof body.contact_id === 'string' ? body.contact_id : null,
-      matchedBy: resolved ? 'platform_link' : null,
-      profile: resolved && isPlainObject(body.profile) ? {
-        name: boundedProfileText(body.profile.name, 200),
-        email: boundedProfileText(body.profile.email, 320),
-        joinedAt: boundedProfileText(body.profile.joinedAt, 40),
-      } : null,
-      isActiveContributor: resolved && body.is_active_contributor === true,
-      isDirector: resolved && body.is_director === true,
-      httpStatus: response.httpStatus,
-    };
+    return readBackendMemberResolution(await resolve());
   };
 
   const readAvailableFunds = async (currency: string): Promise<AvailableFunds> => {

@@ -17,6 +17,7 @@ import { POLL_REPLY_GUARD_TOOL_NAMES, createPollReplyGuard } from "./poll-reply-
 import { VOTE_REPLY_GUARD_TOOL_NAMES, createVoteReplyGuard } from "./vote-reply-guard.ts";
 import { createBackendRuntime } from "./backend-runtime.ts";
 import { IDENTITY_BIND_TOOL_NAMES, createIdentityToolsRegistration } from "./identity-tools.ts";
+import { MEMBER_STATUS_TOOL_NAMES, createMemberStatusToolRegistration } from "./member-status-tools.ts";
 import { COMMUNITY_TOOL_NAMES, createCommunityToolsRegistration } from "./community-tools.ts";
 
 // This first tool proves the external-plugin boundary without enabling business actions.
@@ -35,13 +36,14 @@ function registerOperations(api: OpenClawPluginApi, { communityOnly = false } = 
       const runtime = createBackendRuntime({ config: api.pluginConfig?.foundationDb, communityOnly: true });
       if (!runtime) throw new Error('community backend runtime is unavailable');
       api.registerTool(createCommunityToolsRegistration({ runtime }), { names: [...COMMUNITY_TOOL_NAMES] });
+      api.registerTool(createMemberStatusToolRegistration({ runtime }), { names: [...MEMBER_STATUS_TOOL_NAMES] });
       api.registerTool(runtime.wrapRegistration(createIdentityToolsRegistration({ runtime, proofProvider: runtime.proofProvider })),
         { names: [...IDENTITY_BIND_TOOL_NAMES] });
       api.registerTool({ name: 'rein_status', description: 'Report Community capabilities without querying organization records.',
         parameters: Type.Object({}, { additionalProperties: false }),
         async execute() {
-          const details = { stage: 'development', implemented: ['rein_status', ...IDENTITY_BIND_TOOL_NAMES, ...COMMUNITY_TOOL_NAMES],
-            identityBindToolsEnabled: true, communityQueryToolsEnabled: true,
+          const details = { stage: 'development', implemented: ['rein_status', ...MEMBER_STATUS_TOOL_NAMES, ...IDENTITY_BIND_TOOL_NAMES, ...COMMUNITY_TOOL_NAMES],
+            identityBindToolsEnabled: true, memberStatusToolEnabled: true, communityQueryToolsEnabled: true,
             foundationDbReadToolsEnabled: false, foundationDbWriteToolsEnabled: false,
             foundationDbCollectToolsEnabled: false, foundationDbFeedbackToolsEnabled: false, automationEnabled: false };
           return { content: [{ type: 'text' as const, text: JSON.stringify(details) }], details };

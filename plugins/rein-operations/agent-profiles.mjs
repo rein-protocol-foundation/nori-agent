@@ -1,5 +1,5 @@
 // M0: one registration owner, separate backend closures selected only by host context.
-const COMMUNITY_TOOLS = new Set(['rein_status', 'rein_identity_bind_start',
+const COMMUNITY_TOOLS = new Set(['rein_status', 'rein_member_status', 'rein_identity_bind_start',
   'rein_identity_bind_status', 'rein_identity_bind_complete', 'rein_resources_search',
   'rein_resource_get', 'rein_events_search', 'rein_event_get']);
 const record = value => value && typeof value === 'object' && !Array.isArray(value);
@@ -72,7 +72,7 @@ export function registerAgentProfiles(api, registerLegacy) {
               throw new Error('foundation_agent_scope_changed');
             if (tool.name === 'rein_status' && profile.capabilities === 'community') {
               const details = { stage: 'development', implemented: [...COMMUNITY_TOOLS],
-                identityBindToolsEnabled: true, communityQueryToolsEnabled: true,
+                identityBindToolsEnabled: true, memberStatusToolEnabled: true, communityQueryToolsEnabled: true,
                 foundationDbReadToolsEnabled: false, foundationDbWriteToolsEnabled: false,
                 foundationDbCollectToolsEnabled: false, foundationDbFeedbackToolsEnabled: false,
                 automationEnabled: false };
