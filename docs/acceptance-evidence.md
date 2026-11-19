@@ -2,15 +2,14 @@
 
 ## 2026-11-18 — Discord member onboarding access
 
-SA-M0 / #57; owner Codex; implementation and live acceptance in progress. Add a Community-only
-current-sender member-status tool without private email/contact IDs or governance registration.
-An optional pure configuration update opens native Discord DMs, enables public web search/fetch,
-and discovers reusable workspace skills through the shared skill directory. Existing sandbox,
-private-memory boundaries, model admission/quotas and internal agent configuration remain intact.
-The keyless native Parallel search provider passed an isolated host probe; Community catalog and
-job-matching skills were previously absent from its discovered skills. Focused local tests passed
-107/107 and scaffold checks passed. Actual unlinked/email/relinked and Discord tool acceptance is
-still pending; no onboarding completion is claimed by this entry. No vendor edits.
+SA-M0 / #57; owner Codex; **requested restoration passed real acceptance**. PR #113 deployed
+`cbb76c9`; #115 clarified pending email status and deployed `0e7a0f2`. Open DMs, current-member
+self-check, email binding, resource queries, public web search/fetch and shared job-matching skill
+were exercised in real Discord. The test account was unlinked, rebound through its actual received
+email, and verified against the original member. Final restart preserved all compared histories and
+main/Slack settings; real Slack task/summary reads passed. Event search was empty and detail tested
+not_found, so positive event-detail acceptance remains unproven. No vendor changes or broader
+roadmap completion claimed. [Evidence, boundaries and recovery](discord-onboarding-access-2026-11-18.md).
 
 ## 2026-11-18：ACP 结算证据修复（首轮真实验收通过）
 
