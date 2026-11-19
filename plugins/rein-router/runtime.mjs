@@ -85,12 +85,22 @@ export function assertRuntimeConfig(config, host) {
         throw new Error('rein_router_runtime_invalid: direct messages require sender-scoped native bindings without session aliases');
     }
   }
-  const sandboxChannels = config.scheduleInPublicChannels ? [...config.developmentChannels, ...config.trustedSlackChannels] : config.developmentChannels;
+  const sandboxChannels = config.scheduleInPublicChannels ? [...config.developmentChannels, ...config.trustedSlackChannels.filter(entry => entry.channelId !== '*')] : config.developmentChannels;
   for (const entry of sandboxChannels) {
     const agent = host.agents?.entries?.[entry.agentId] ?? host.agents?.list?.find(agent => agent.id === entry.agentId);
     if (!agent || agent.sandbox?.mode !== 'all' || !['ssh', 'docker', 'podman', 'openshell'].includes(agent.sandbox.backend) ||
         agent.tools?.elevated?.enabled !== false)
       throw new Error('rein_router_runtime_invalid: development agent requires sandbox and elevated disabled');
+  }
+  for (const scope of config.trustedSlackChannels.filter(entry => entry.channelId === '*')) {
+    const parent = host.agents?.entries?.[scope.agentId] ?? host.agents?.list?.find(agent => agent.id === scope.agentId);
+    for (const channel of config.developmentChannels.filter(entry => entry.accountId === scope.accountId &&
+        entry.workspaceId === scope.workspaceId && entry.agentId !== scope.agentId)) {
+      const worker = host.agents?.entries?.[channel.agentId] ?? host.agents?.list?.find(agent => agent.id === channel.agentId);
+      if (!parent?.subagents?.allowAgents?.includes(channel.agentId) || worker?.tools?.exec?.host !== 'sandbox' ||
+          worker?.sandbox?.scope !== 'session' || host.cron?.triggers?.enabled === false)
+        throw new Error('rein_router_runtime_invalid: scheduled development requires native delegated session sandbox execution');
+    }
   }
 }
 

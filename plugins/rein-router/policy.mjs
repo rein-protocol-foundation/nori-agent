@@ -172,14 +172,15 @@ export function validateRouterConfig(raw = {}) {
       channelId: text(entry.channelId, `${field}.channelId`, 32),
       agentId: text(entry.agentId, `${field}.agentId`, 128),
       botTokenEnvVar: text(entry.botTokenEnvVar ?? 'SLACK_BOT_TOKEN', `${field}.botTokenEnvVar`, 128) };
-    if (!/^T[A-Z0-9]{5,31}$/.test(result.workspaceId) || !/^[CG][A-Z0-9]{5,31}$/.test(result.channelId) ||
+    const workspaceSchedule = allowMain && raw.scheduleInPublicChannels === true && result.channelId === '*';
+    if (!/^T[A-Z0-9]{5,31}$/.test(result.workspaceId) || (!workspaceSchedule && !/^[CG][A-Z0-9]{5,31}$/.test(result.channelId)) ||
         !/^[a-z][a-z0-9_-]*$/.test(result.agentId) || (!allowMain && result.agentId === 'main') ||
         !isGatewayCredentialEnvironmentName(result.botTokenEnvVar)) invalid(field);
     return result;
   });
   const developmentChannels = parseSlackChannels(raw.developmentChannels, false);
   const trustedSlackChannels = raw.trustedSlackChannels === undefined ? developmentChannels : parseSlackChannels(raw.trustedSlackChannels, true);
-  if (new Set(trustedSlackChannels.map(entry => `${entry.accountId}/${entry.channelId}`)).size !== trustedSlackChannels.length)
+  if (new Set(trustedSlackChannels.map(entry => entry.channelId === '*' ? `${entry.accountId}/*/${entry.agentId}` : `${entry.accountId}/${entry.channelId}`)).size !== trustedSlackChannels.length)
     invalid('trustedSlackChannels');
   if (new Set(developmentChannels.map(entry => `${entry.accountId}/${entry.channelId}`)).size !== developmentChannels.length)
     invalid('developmentChannels');

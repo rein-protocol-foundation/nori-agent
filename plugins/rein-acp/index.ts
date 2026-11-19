@@ -1,6 +1,9 @@
 import { writeFileWithinRoot } from 'openclaw/plugin-sdk/file-access-runtime';
 import { openSqliteWorkerStore } from 'openclaw/plugin-sdk/sqlite-runtime';
 import { createRetainedSummaries, retainedSummaryBackendUrlForRuntime } from './retained-summaries.mjs';
+import { createCronIngress } from '../rein-router/cron-ingress.mjs';
+import { scheduledSpawnAllowed } from '../rein-router/scheduled-development.mjs';
+import { loadCronStore, resolveCronStorePath } from 'openclaw/plugin-sdk/cron-store-runtime';
 import { definePluginEntry } from 'openclaw/plugin-sdk/plugin-entry';
 import { isSubagentSessionKey, isAcpSessionKey } from 'openclaw/plugin-sdk/routing';
 import { createSlackDevelopmentAuthorizer, DEVELOPMENT_AUTH_TIMEOUT_MS } from '../rein-router/slack-development.mjs';
@@ -18,7 +21,21 @@ export default definePluginEntry({
     if (api.pluginConfig?.taskLoop === true) {
       assertTaskLoopRuntimeConfig(config, api.config);
       let continuation;
+      const routerEntry = api.config.plugins?.entries?.['rein-router'];
+      const scheduler = routerEntry?.enabled && routerEntry.config?.enabled && routerEntry.config.scheduleInPublicChannels === true
+        ? routerEntry.config : undefined;
+      const devChannels = (scheduler?.developmentChannels ?? []).filter(entry =>
+        config.additionalChannelIds?.includes(entry.channelId) && entry.accountId === config.channel.accountId &&
+        entry.workspaceId === config.channel.workspaceId && entry.agentId === 'nori-development');
+      const scopes = (scheduler?.trustedSlackChannels ?? []).filter(entry => entry.channelId === '*' &&
+        entry.agentId === config.channel.agentId && entry.workspaceId === config.channel.workspaceId && entry.accountId === config.channel.accountId);
+      const readJobs = async () => (await loadCronStore(resolveCronStorePath(api.config.cron?.store))).jobs;
+      const scheduling = devChannels.length && scopes.length ? createCronIngress({ channels: scopes,
+        developmentChannels: devChannels, requireWorkspaceSource: true, authorize, readJobs }) : undefined;
       const runtime = createTaskLoop({ config, authorize, tasks: api.runtime.tasks, subagent: api.runtime.subagent,
+        scheduling, schedulingChannels: devChannels.map(entry => entry.channelId),
+        allowScheduledSpawn: scheduling && ((ctx, args) => scheduledSpawnAllowed(ctx, args, devChannels,
+          async id => (await readJobs()).find(job => job.id === id))),
         isCurrentContinuation: (task, ctx) => continuation?.isCurrentAttempt(task, ctx) ?? false,
         isNativeChild: ctx => isSubagentSessionKey(ctx.sessionKey) || isAcpSessionKey(ctx.sessionKey) });
       const retainedSummaries = config.continuation?.retainedSummaries?.enabled === true

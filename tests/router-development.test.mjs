@@ -99,3 +99,26 @@ test('public channel schedule membership is opt-in and separate from development
   publicChannel.is_ext_shared = true;
   assert.equal(await createSlackScheduleAuthorizer(options)(context), false);
 });
+
+test('workspace scheduling resolves the observed channel and rechecks Slack membership for it', async () => {
+  const other = 'COTHER001';
+  const source = { ...context, chatId: other };
+  const wildcard = { ...entry, channelId: '*' };
+  const options = { config: { developmentChannels: [wildcard], scheduleInPublicChannels: true },
+    env: { SLACK_TEST_TOKEN: 'xoxb-fixture-token' }, fetchImpl: async (url, request) => {
+      const method = url.split('/').at(-1);
+      if (method === 'auth.test') return Response.json({ ok: true, team_id: entry.workspaceId, user_id: 'UBOT0001', bot_id: 'BBOT0001' });
+      assert.equal(request.body.get('channel'), other);
+      if (method === 'conversations.info') return Response.json({ ok: true, channel: { ...goodChannel, id: other } });
+      assert.equal(method, 'conversations.members');
+      return Response.json({ ok: true, members: [source.senderId] });
+    } };
+  assert.equal(await createSlackScheduleAuthorizer(options)(source), true);
+  assert.equal(await createSlackDevelopmentAuthorizer(options)(source), false);
+  for (const delta of [{ agentId: 'other' }, { accountId: 'other' }, { chatId: 'DFIXTURE1' }])
+    assert.equal(await createSlackScheduleAuthorizer(options)({ ...source, ...delta }), false);
+  assert.throws(() => validateRouterConfig({ ...config, trustedSlackChannels: [wildcard] }));
+  const enabled = { ...config, scheduleInPublicChannels: true, trustedSlackChannels: [wildcard] };
+  assert.doesNotThrow(() => validateRouterConfig(enabled));
+  assert.throws(() => validateRouterConfig({ ...enabled, developmentChannels: [wildcard] }));
+});
