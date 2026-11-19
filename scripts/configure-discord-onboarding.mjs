@@ -33,3 +33,46 @@ export function dailyOnboardingJob({ nodePath, scriptPath, configPath, envFile }
     sessionTarget: 'isolated', wakeMode: 'now', delivery: { mode: 'none' },
     payload: { kind: 'command', argv: [nodePath, `--env-file=${envFile}`, scriptPath, '--config', configPath], timeoutSeconds: 600 } };
 }
+
+// Reuse already-enrolled backend principals; this never adds an ingress workspace or a role.
+export function configureLinkedMemberProfiles(current, { agentIds }) {
+  const next = structuredClone(current);
+  const entry = next.plugins?.entries?.['rein-member-introductions'];
+  if (entry?.enabled !== true || entry.config?.enabled !== true) throw new Error('Existing introduction archive required');
+  const cfg = validateIntroductionConfig({ ...entry.config, linkedProfiles: agentIds });
+  const operations = next.plugins.entries['rein-operations'];
+  if (operations?.enabled !== true) throw new Error('Existing backend profiles required');
+  const add = values => [...new Set([...values, 'rein_my_introduction'])];
+  for (const agentId of cfg.linkedProfiles) {
+    const profile = operations.config?.agentProfiles?.[agentId];
+    const agent = next.agents?.entries?.[agentId];
+    if (!agent || !profile || !['slack', 'discord'].includes(profile.platform) || !profile.accountId || profile.foundationDb?.enabled !== true)
+      throw new Error('Existing enrolled agent required');
+    if (!next.bindings?.some(b => b.agentId === agentId && b.match?.channel === profile.platform &&
+        (b.match.accountId === undefined || b.match.accountId === profile.accountId))) throw new Error('Existing channel binding required');
+    agent.tools ??= {};
+    if (Array.isArray(agent.tools.allow)) agent.tools.allow = add(agent.tools.allow);
+    else agent.tools.alsoAllow = add(agent.tools.alsoAllow ?? []);
+    if (Array.isArray(agent.tools.sandbox?.tools?.alsoAllow)) agent.tools.sandbox.tools.alsoAllow = add(agent.tools.sandbox.tools.alsoAllow);
+    const channel = next.channels?.[profile.platform];
+    if (!channel || channel.enabled !== true) throw new Error('Enabled channel required');
+    const enrollments = profile.foundationDb.workspaces;
+    if (!Array.isArray(enrollments) || enrollments.some(w => w.platform !== profile.platform)) throw new Error('Profile platform mismatch');
+    // Native per-channel policies can further restrict tools. Extend only enrolled rooms.
+    const accounts = [channel, channel.accounts?.[profile.accountId]].filter(Boolean);
+    for (const account of accounts) {
+      if (Array.isArray(account.tools?.allow)) account.tools.allow = add(account.tools.allow);
+      for (const w of enrollments) {
+        if (profile.platform === 'discord') {
+          const guild = account.guilds?.[w.workspaceId];
+          if (Array.isArray(guild?.tools?.allow)) guild.tools.allow = add(guild.tools.allow);
+          for (const id of w.nativeChannelIds ?? []) if (Array.isArray(guild?.channels?.[id]?.tools?.allow)) guild.channels[id].tools.allow = add(guild.channels[id].tools.allow);
+        } else {
+          for (const id of w.nativeChannelIds ?? []) if (Array.isArray(account.channels?.[id]?.tools?.allow)) account.channels[id].tools.allow = add(account.channels[id].tools.allow);
+        }
+      }
+    }
+  }
+  entry.config = cfg;
+  return next;
+}

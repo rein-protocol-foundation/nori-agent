@@ -568,3 +568,8 @@ Source-sync journal preserves recovery and build-cache continuity. Configuration
 work only; no product milestone advancement. [Runbook](auto-update-zh.md#纯文档自动拉取).
 
 SA-OBS-02 / #68 recovery (2026-11-18, Codex): existing receipt schedule changed via native RPC to exact 07:30 America/Los_Angeles; next run November 19 07:30 PST. Schedule read-back passed. One-retry pagination patch is local, 18/18 targeted tests and scaffold passed; deployment and first new scheduled delivery pending. No product milestone advanced. See [receipt recovery](daily-agent-receipt.md#schedule-recovery--november-18-2026).
+
+
+## COMMUNITY-PROFILE-LINK — 2026-11-19
+
+Status: implemented, verification/rollout in progress. Owner: Codex. Link current Discord/Slack sender via the existing verified backend contact to public introductions. No private-history merge or role expansion. Next: native loader, companion API deployment, activation/readback; two-human live acceptance remains pending.

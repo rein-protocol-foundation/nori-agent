@@ -211,3 +211,10 @@ Its persisted receipt is `ok` / `succeeded`, command exit 0, 1.208 seconds,
 archive without duplicating collection. The temporary job self-deletes after success;
 its private receipt remains under `runtime/discord-onboarding`. This proves the actual
 clock-triggered collector path, not public reminder delivery or model recall.
+
+
+## Linked profiles follow-up — 2026-11-19
+
+The optional [linked member profile](linked-member-profiles.md) extension connects current verified Discord/Slack accounts to public introductions. The earlier no-cross-platform boundary describes the original rollout; linked mode requires the companion backend endpoint and explicit existing-profile configuration.
+
+#welcome Send Messages was granted to Nori alone on 2026-11-19. Native job `4d796af7-dbaf-4773-8ab7-3a601baf9812` was switched from archive-only to welcome-and-weekly mode and read back with fixed UTC 16:00 scheduling. This is configuration/permission evidence, not an actual reminder-delivery receipt.
