@@ -4,6 +4,8 @@
 
 Tempest returned only `github-reopen` for retest and accepted the observed result in chat. After GitHub #123 reopened, Linear REI-17 retained Backlog and the adapter reported synchronized. The adapter wrote only to GitHub. The first-round passes for `linear-close` and `github-recovery` were carried forward without rerunning either check. The private OCI readback records the retest. This closes the three issue-sync checks; the formal reviewer receipt and overall v2 acceptance remain open.
 
+Merged current main through #129. The integrated regression completed with 1,640 passes, four opt-in skips and zero failures. The OCI gateway completed two owner-verified native runs for the same real issue pair, #124 / REI-18. The dedicated Socket Mode app joined the private test room and the candidate gateway connected. [Implementation PR](https://github.com/rein-protocol-foundation/nori-agent/pull/130).
+
 SA2, owner Codex. Developed on an isolated branch and integrated upstream scheduler PR #121. Added task tracking and private run/report linkage, independent offline acceptance, scoped Slack participation and replay. Real Linear/GitHub verification exposed an incorrect detailed expectation on reopen. The corrected coarse projection passed. OCI produced private reports with separate OS principals for execution and review. The authorized Slack desktop account was a current Director without website administrator authority. New routing was measured in isolation. Production deployment and the positive administrator path remain open. [Checks, observations, rollback and pending work](super-agent-v2-verification.md).
 
 ## 2026-11-19 — Firecrawl enabled for OCI web search

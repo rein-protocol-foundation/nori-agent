@@ -4,6 +4,8 @@
 
 Tempest 在聊天中只退回 `github-reopen`，并已确认复验通过。GitHub #123 重开后，Linear REI-17 保留 Backlog，适配器判定已同步，只向 GitHub 写入。`linear-close` 和 `github-recovery` 沿用首轮通过结果，两项均未重跑。复验回读已保存在 OCI 私有目录。三个工单同步检查均已通过；正式审阅回执及 v2 整体验收仍待完成。
 
+已整合主线至 #129。全量回归 1,640 项通过、4 项按条件跳过、0 项失败。OCI 原生网关在两个独立会话完成了 #124／REI-18 的两次运行，已核验各自归属。独立 Socket Mode 应用已加入私有测试频道，候选网关已连接。[实现 PR](https://github.com/rein-protocol-foundation/nori-agent/pull/130)。
+
 SA2，负责人 Codex，验收人 Tempest。隔离分支已整合主线调度 PR #121。实现任务追踪与实际运行、报告的关联，独立离线验收，以及 Slack 按范围参与和策略回放。真实联调发现 GitHub 重开后 Linear 转为 Backlog，修复状态投影后复测通过。OCI 已用独立执行账号生成私有报告并交付 SSH 验收账号。Slack 桌面账号的后端身份为 Director，网站管理员标志为 false。新参与策略已用真实消息在隔离环境验证。待完成管理员正例及上线范围核定。[16 项证据、回退和缺口](super-agent-v2-verification.md)。
 
 ## 2026-11-19 — OCI 联网搜索切换至 Firecrawl
