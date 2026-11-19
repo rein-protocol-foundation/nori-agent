@@ -11,6 +11,13 @@ Community tool probe was blocked by its active-request policy and triggered the 
 rollback. Verification used the shared Gateway without sending a Discord message.
 During restart, the Gateway logged an interrupted cron run associated with Slack.
 
+## 2026-11-19 — Discord welcome and reminder copy
+
+COMMUNITY-ONBOARDING-01; owner Codex. Local copy update verified by 37 focused tests.
+The daily invitation asks what brought the member to Rein. The Sunday invitation
+asks what they are curious about and explains how to skip future reminders.
+Production rollout is pending. After release, review the next eligible scheduled message.
+
 ## 2026-11-18 — Discord daily archive deployed
 
 COMMUNITY-ONBOARDING-01; owner Codex. PR #117 passed CI and deployed `faaa9d0` at

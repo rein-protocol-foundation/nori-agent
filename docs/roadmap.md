@@ -1,5 +1,11 @@
 # Nori-Agent implementation roadmap
 
+## 2026-11-19 — Discord welcome and reminder copy
+
+COMMUNITY-ONBOARDING-01; owner Codex. The daily invitation and Sunday reminder use a
+short conversation starter. Local verification passed. Production rollout is pending.
+[Verification](acceptance-evidence.md#2026-11-19--discord-welcome-and-reminder-copy).
+
 ## 2026-11-18 — Discord daily archive active; public reminders blocked
 
 COMMUNITY-ONBOARDING-01; owner Codex. PR #117 deployed as `faaa9d0`. The daily native
