@@ -2,6 +2,10 @@
 
 ## 2026-11-19 — Super Agent v2
 
+A Slack CLI test sender initially received a generic error for `/status`. With its identity explicitly scoped to the test room and native commands, Slack returned the native status table. The sender selected `bailian-token-plan/auto` for that thread, verified the model with a second status read, and restored the default. The temporary grants were removed. A passive app-attributed message produced zero classifier calls and no candidate reply. The OCI executor retained the initial error and successful follow-up in separate private reports for Tempest.
+
+Slack CLI 测试账号最初调用 `/status` 收到通用错误。将该账号明确列入测试频道及原生命令授权后，Slack 返回会话状态表。测试账号把该线程的模型切换到 `bailian-token-plan/auto`，再次查询状态确认生效，随后恢复默认模型并撤销临时授权。另一次带应用标记的普通发言未调用分类器，线程无候选机器人回复。OCI 分别保留了初次错误和后续通过的私有报告，供 Tempest 审阅。
+
 The independent test gateway delivered an unmentioned help reply and a useful out-of-duty clarification. It silenced chatter. An admitted worker emitted NO_REPLY after enabling native optional silence for Slack groups. The default had emitted a visible error. Native threaded send/edit, scoped Linear delegation on #131 and delayed revocation were verified. The staging Foundation administrator flag was true for the verified sender and false in production. The #124 public summary was found in Linear after Markdown normalization.
 
 独立测试网关已在线程投递免 @ 求助回复及职责外澄清，对闲聊保持静默。原生默认设置下，执行模型选择静默时出现可见错误；仅在测试网关允许 Slack 群聊静默后，已放行的真实模型返回 NO_REPLY，线程无回复。已验证原生线程发送和编辑、#131 的 Linear 限定委托和执行中撤权。已核验发信人在隔离 Foundation 后端的管理员标志为真，生产回读为假。规范化 Markdown 后确认 #124 公开摘要已同步至 Linear。
