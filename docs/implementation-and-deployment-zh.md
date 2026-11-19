@@ -1,5 +1,14 @@
 # Nori-Agent 开发、验证与部署记录
 
+## 2026-11-19 — OCI 联网搜索切换至 Firecrawl
+
+Codex 将共享 Gateway 的默认搜索服务从 `parallel-free` 切换为 `firecrawl`。插件通过
+OpenClaw 文件型 SecretRef 读取密钥，私有运行目录在更新时保留。主助手调用
+`web_search` 查询 IETF 文档，返回两条结果，provider 为 Firecrawl。Community 显示
+Firecrawl 可用、已配置且已选中。两位助手的 Gateway 认证健康检查均通过。
+首次单独调用 Community 工具时，活跃请求策略拒绝了探测，触发回滚。最终通过共享
+Gateway 验证，未发送 Discord 消息。重启期间日志记录到一个关联 Slack 的定时任务中断。
+
 ## 2026-11-18 — Discord 每日归档已部署
 
 COMMUNITY-ONBOARDING-01；负责人 Codex。PR #117 全部 CI 通过，`faaa9d0` 于
