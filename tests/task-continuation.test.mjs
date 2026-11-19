@@ -1059,3 +1059,121 @@ test('ACP lifecycle rejects a terminal task fingerprint changed by the second pu
   assert.equal(reads, 2);
   assert.equal(probe.f.flows.get(probe.begun.flowId).stateJson.attempts[0].settlement, undefined);
 });
+
+
+async function parentObserverRace(t, action = 'status', afterProof) {
+  const probe = await acpEventFixture(t); probe.settle();
+  if (action === 'review') {
+    await probe.f.call({ action: 'status', flow: probe.begun.flowId });
+    let waits = 0;
+    probe.f.dependencies.subagent.waitForRun = async () => ++waits === 1 ? { status: 'timeout' }
+      : { runId: probe.task.runId, status: 'ok', endedAt: 100 };
+  }
+  const binding = probe.f.tasks.async.managedFlows.bindSession(), runs = probe.f.tasks.async.runs.bindSession();
+  const originalResolve = runs.resolve;
+  let releaseProof, injected = false, reads = 0;
+  const proofWritten = new Promise(resolve => { releaseProof = resolve; }), attempts = [];
+  for (const method of ['setWaiting', 'finish']) {
+    const original = binding[method];
+    binding[method] = async args => {
+      const result = await original(args), proof = args.stateJson.attempts[0].settlement?.source;
+      attempts.push({ method, applied: result.applied, expectedRevision: args.expectedRevision, proof });
+      if (result.applied && proof === 'native_acp_lifecycle') releaseProof();
+      return result;
+    };
+  }
+  runs.resolve = async token => {
+    const task = await originalResolve(token);
+    if (token === probe.task.runId && !injected && ++reads === (action === 'review' ? 2 : 1)) {
+      injected = true; probe.emit(); await proofWritten; await afterProof?.(probe);
+    }
+    return task;
+  };
+  const args = action === 'review' ? { action, flow: probe.begun.flowId, scopeRevision: 1,
+    outcome: 'complete', evidence: 'Current-scope synthetic coding result verified', effects: 'none' }
+    : { action, flow: probe.begun.flowId };
+  return { probe, binding, attempts, args };
+}
+
+test('explicit status and review transparently retry one receipt-only observer CAS race', async t => {
+  for (const action of ['status', 'review']) {
+    const { probe, args, attempts } = await parentObserverRace(t, action);
+    const result = await probe.f.call(args);
+    assert.equal(result.phase, action === 'status' ? 'review' : 'complete');
+    assert.equal(result.attempts[0].settlement.source, 'native_acp_lifecycle');
+    assert.equal(attempts.filter(attempt => !attempt.applied).length, 1);
+    assert.equal(probe.f.flows.get(probe.begun.flowId).stateJson.scopeRevision, 1);
+    assert.equal(probe.f.cancellations(), 0);
+  }
+});
+
+test('observer conflict retry rejects concurrent scope, stop, bounds, report and owner changes', async t => {
+  for (const variation of ['scope', 'stop', 'bounds', 'report', 'owner']) {
+    const { probe, args, attempts } = await parentObserverRace(t, 'status', async probe => {
+      const binding = probe.f.tasks.async.managedFlows.bindSession(), flow = probe.f.flows.get(probe.begun.flowId);
+      const state = structuredClone(flow.stateJson);
+      if (variation === 'scope') { state.scopeRevision++; state.pendingChange = { goal: 'New scope', criteria: 'New criteria' }; }
+      if (variation === 'stop') state.stopRequested = { at: 1000, reason: 'stop' };
+      if (variation === 'bounds') state.deadlineAt++;
+      if (variation === 'report') state.report = { outcome: 'blocked', gaps: 'Concurrent handoff' };
+      await binding.setWaiting({ flowId: flow.flowId, expectedRevision: flow.revision, stateJson: state });
+      if (variation === 'owner') flow.ownerKey = 'foreign-owner';
+    });
+    await assert.rejects(probe.f.call(args), /rein_continuation_revision_conflict/, variation);
+    assert.equal(attempts.filter(attempt => !attempt.applied).length, 1, variation);
+    const state = probe.f.flows.get(probe.begun.flowId).stateJson;
+    if (variation === 'scope') assert.equal(state.scopeRevision, 2);
+    if (variation === 'stop') assert.equal(state.stopRequested.reason, 'stop');
+    assert.notEqual(state.phase, 'complete');
+  }
+});
+
+test('observer conflict retry rechecks authority, source session, unchanged arguments and exact native fingerprint', async t => {
+  for (const variation of ['authority', 'source-session', 'native-fingerprint', 'arguments']) {
+    let request;
+    const { probe, args } = await parentObserverRace(t, 'status', async probe => {
+      if (variation === 'authority') probe.f.setMember(false);
+      if (variation === 'source-session') {
+        const original = probe.f.dependencies.session.listSessionEntries;
+        probe.f.dependencies.session.listSessionEntries = options => options.agentId === 'codex' ? original(options)
+          : [{ sessionKey: src.sessionKey, entry: { sessionId: 'reset-uuid' } }];
+      }
+      if (variation === 'native-fingerprint') probe.task.terminalSummary = 'Changed after the parent observation';
+      if (variation === 'arguments') request.flow = 'another-flow';
+    });
+    request = args;
+    await assert.rejects(probe.f.call(args), /revision_conflict|authority_unavailable|session_changed/, variation);
+    assert.equal(probe.f.flows.get(probe.begun.flowId).status, 'waiting');
+  }
+});
+
+test('observer conflict is not retried for all-flow status, stop, change or delegate', async t => {
+  for (const action of ['all-status', 'stop', 'change', 'delegate']) {
+    const { probe, args, attempts } = await parentObserverRace(t, action === 'all-status' ? 'status' : action);
+    if (action === 'all-status') delete args.flow;
+    if (action === 'change') { args.goal = 'New goal'; args.criteria = 'New criteria'; }
+    if (action === 'delegate') args.instruction = 'Must not be replayed';
+    await assert.rejects(probe.f.call(args), /rein_continuation_revision_conflict/, action);
+    assert.equal(attempts.filter(attempt => !attempt.applied).length, 1, action);
+    const state = probe.f.flows.get(probe.begun.flowId).stateJson;
+    assert.equal(state.stopRequested, null); assert.equal(state.scopeRevision, 1); assert.equal(state.report, null);
+  }
+});
+
+test('receipt-only observer conflict permits at most one automatic recomputation', async t => {
+  const { probe, args, attempts, binding } = await parentObserverRace(t);
+  const original = binding.setWaiting; let secondConflict = false;
+  binding.setWaiting = async request => {
+    if (!secondConflict && request.stateJson.phase === 'review' &&
+        request.stateJson.attempts[0].settlement?.source === 'native_acp_lifecycle') {
+      secondConflict = true;
+      const current = probe.f.flows.get(probe.begun.flowId);
+      await original({ flowId: current.flowId, expectedRevision: current.revision, stateJson: structuredClone(current.stateJson) });
+    }
+    return original(request);
+  };
+  await assert.rejects(probe.f.call(args), /rein_continuation_revision_conflict/);
+  assert.equal(secondConflict, true);
+  assert.equal(attempts.filter(attempt => !attempt.applied).length, 2);
+  assert.equal(probe.f.flows.get(probe.begun.flowId).status, 'waiting');
+});

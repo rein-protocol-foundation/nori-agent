@@ -12,15 +12,16 @@ job-matching skills were previously absent from its discovered skills. Focused l
 107/107 and scaffold checks passed. Actual unlinked/email/relinked and Discord tool acceptance is
 still pending; no onboarding completion is claimed by this entry. No vendor edits.
 
-## 2026-11-18: proactive ACP settlement capture (acceptance in progress)
+## 2026-11-18: ACP settlement capture (first live acceptance passed)
 
-SA-M1/SA-M2; owner Codex. The old controller saved transient wait evidence only when a parent
-called status/review. The fix consumes public ACP executionSettled lifecycle events, validates
-owner/run/child/terminal fingerprints and saves a minimal receipt without semantic review or
-automatic completion. A real local Gateway probe fails before and passes after the change.
-Focused regression, CI and live Slack restart-before-review acceptance are in progress. Historical
-missing proof cannot be reconstructed; crash-atomic guarantees still require an upstream durable
-receipt. [Root cause, boundaries and evidence](acp-settlement-recovery-2026-11-18.md).
+SA-M1/SA-M2; owner Codex. PR #111 passed seven CI checks (1496 plugin passes, four existing skips)
+and deployed b944c4c. One actual ACP run persisted native_acp_lifecycle evidence before parent
+review. The receipt survived the 05:38 UTC shared Gateway restart; the parent independently
+passed 23 tests and reviewed complete. Maintenance repeated 23 passes in the existing sandbox.
+The server summary is retained with expiresAt null; original histories and 45 private files remain.
+A bounded one-recomputation follow-up for parent/observer CAS races is awaiting release verification.
+Historical proof remains unavailable and crash atomicity requires an upstream durable receipt;
+this does not complete the full PRD. [Evidence and limits](acp-settlement-recovery-2026-11-18.md).
 
 
 ## 2026-11-17: formal task release and autonomous coding acceptance
