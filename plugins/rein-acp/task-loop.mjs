@@ -104,7 +104,7 @@ export function createTaskLoop({ config, authorize, tasks, subagent, isNativeChi
         if (tool.name === 'sessions_spawn' && !acp) {
           if ((tool.params?.runtime ?? 'subagent') !== 'subagent' || tool.params?.agentId !== 'nori-development')
             return deny('Development execution requires the nori-development sandbox.');
-        } else if (!['sessions_spawn', 'rein_continuation', 'rein_task', 'tool_describe'].includes(tool.name)) {
+        } else if (!['sessions_spawn', 'rein_continuation', 'rein_task', 'rein_route_status', 'tool_describe'].includes(tool.name)) {
           return deny('Use write_development_file for project files and delegate execution to the development sandbox or an approved ACP harness.');
         }
       }
