@@ -49,7 +49,7 @@ export function configureLinkedMemberProfiles(current, { agentIds }) {
     if (!agent || !profile || !['slack', 'discord'].includes(profile.platform) || !profile.accountId || profile.foundationDb?.enabled !== true)
       throw new Error('Existing enrolled agent required');
     if (!next.bindings?.some(b => b.agentId === agentId && b.match?.channel === profile.platform &&
-        (b.match.accountId === undefined || b.match.accountId === profile.accountId))) throw new Error('Existing channel binding required');
+        (b.match.accountId === undefined || b.match.accountId === '*' || b.match.accountId === profile.accountId))) throw new Error('Existing channel binding required');
     agent.tools ??= {};
     if (Array.isArray(agent.tools.allow)) agent.tools.allow = add(agent.tools.allow);
     else agent.tools.alsoAllow = add(agent.tools.alsoAllow ?? []);

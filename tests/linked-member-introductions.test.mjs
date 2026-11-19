@@ -132,7 +132,7 @@ test('linked-profile rollout is additive and repeatable and preserves private me
   const sourceConfig = { ...config, agentId: 'community', accountId: 'default' };
   const previous = { agents: { entries: { main: { tools: { alsoAllow: ['other'] }, memorySearch: { sources: ['sessions'] } },
     community: { tools: { allow: ['read'], sandbox: { tools: { alsoAllow: ['read'] } } }, sandbox: { mode: 'all' } } } },
-    bindings: [{ agentId: 'main', match: { channel: 'slack' } }, { agentId: 'community', match: { channel: 'discord', accountId: 'default' } }],
+    bindings: [{ agentId: 'main', match: { channel: 'slack', accountId: '*' } }, { agentId: 'community', match: { channel: 'discord', accountId: 'default' } }],
     channels: { slack: { enabled:true, channels:{CSELF:{tools:{allow:['existing']}},COTHER:{tools:{allow:['private']}}} },
       discord: {enabled:true,guilds:{[guild]:{tools:{allow:['read']}}}} },
     plugins: { entries: { 'rein-member-introductions': { enabled:true, config:sourceConfig }, 'rein-operations': {enabled:true,config:{agentProfiles:{
