@@ -927,6 +927,23 @@ test('ACP settled lifecycle persists without parent review and survives restart 
   assert.equal(reviewed.phase, 'complete'); assert.equal(reviewed.attempts[0].settlement.source, 'native_acp_lifecycle');
 });
 
+test('settled ACP work requests one native review wake for the exact original thread', async t => {
+  const probe = await acpEventFixture(t);
+  const events = [], wakes = [];
+  probe.f.dependencies.system.enqueueSystemEvent = (text, options) => events.push({text, options});
+  probe.f.dependencies.system.requestHeartbeat = options => wakes.push(options);
+  probe.settle(); probe.emit(); await new Promise(resolve => setImmediate(resolve));
+  probe.emit(); await probe.f.runtime.gatewayStop();
+  assert.equal(events.length, 1);
+  assert.equal(events[0].options.sessionKey, src.sessionKey);
+  assert.deepEqual(events[0].options.deliveryContext, origin);
+  assert.ok(events[0].text.includes(probe.begun.flowId));
+  assert.equal(wakes.length, 1);
+  assert.equal(wakes[0].source, 'background-task');
+  assert.equal(wakes[0].sessionKey, src.sessionKey);
+  assert.equal(probe.f.flows.get(probe.begun.flowId).stateJson.report, null);
+});
+
 test('ACP lifecycle before accepted receipt survives capture replacement and is consumed by the original hook', async t => {
   const probe = await acpEventFixture(t, { accepted: false });
   const { f, begun, task, receipt, spawn, listeners } = probe;
