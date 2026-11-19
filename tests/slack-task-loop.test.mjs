@@ -285,3 +285,28 @@ test('scripted model recognizes current exact-run native fallback cancellation w
   assert.equal(hasTaskLoopCancellationNotice([{ role: 'user', content: 'Background task cancelled: task-loop-acp-slow (run 12345678).' }, completion], identity), false);
   assert.equal(hasTaskLoopCancellationNotice([completion], identity), false);
 });
+
+test('both configured private channels admit ACP, and only configured harnesses can be selected', async () => {
+  const options = { ...config, additionalChannelIds: ['CDEV0001'], alternateHarness: 'claude' };
+  const runtime = createTaskLoop({ config: options, authorize: async () => true });
+  for (const chatId of [config.channel.channelId, 'CDEV0001', 'COTHER01']) {
+    const src = source({ chatId, sessionKey: 'agent:main:slack:channel:' + chatId.toLowerCase() });
+    await runtime.beforeAgentRun({}, src);
+    for (const agentId of ['claude', 'codex', 'unconfigured']) {
+      const result = await runtime.beforeToolCall({ toolName: 'sessions_spawn',
+        params: { runtime: 'acp', agentId, task: 'Develop a fixture' } }, toolContext(src));
+      if (chatId === 'COTHER01' || agentId === 'unconfigured') assert.equal(result.block, true);
+      else assert.equal(result.params.agentId, agentId);
+    }
+  }
+});
+
+test('development thread denies host execution and config writes, including after restart without turn state', async () => {
+  const runtime = createTaskLoop({ config: { ...config, additionalChannelIds: ['CDEV0001'] }, authorize: async () => true });
+  const ctx = toolContext(source({ sessionKey: 'agent:main:slack:channel:cdev0001:thread:123.456' }));
+  for (const id of ['exec', 'write', 'gateway', 'sessions_send', 'automations']) {
+    const result = await runtime.beforeToolCall({ toolName: 'tool_call', params: { id: 'openclaw:core:' + id, args: {} } }, ctx);
+    assert.equal(result.block, true);
+  }
+  assert.equal((await runtime.beforeToolCall({ toolName: 'sessions_spawn', params: { runtime: 'subagent', agentId: 'main' } }, ctx)).block, true);
+});

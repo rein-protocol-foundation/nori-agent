@@ -1,9 +1,10 @@
+import { writeFileWithinRoot } from 'openclaw/plugin-sdk/file-access-runtime';
 import { openSqliteWorkerStore } from 'openclaw/plugin-sdk/sqlite-runtime';
 import { createRetainedSummaries, retainedSummaryBackendUrlForRuntime } from './retained-summaries.mjs';
 import { definePluginEntry } from 'openclaw/plugin-sdk/plugin-entry';
 import { isSubagentSessionKey, isAcpSessionKey } from 'openclaw/plugin-sdk/routing';
 import { createSlackDevelopmentAuthorizer, DEVELOPMENT_AUTH_TIMEOUT_MS } from '../rein-router/slack-development.mjs';
-import { validateAcpConfig, assertAcpRuntimeConfig, createDirectorAcp } from './runtime.mjs';
+import { taskChannels, validateAcpConfig, assertAcpRuntimeConfig, createDirectorAcp } from './runtime.mjs';
 import { createTaskLoop, assertTaskLoopRuntimeConfig } from './task-loop.mjs';
 import { createTaskContinuation } from './continuation.mjs';
 
@@ -13,7 +14,7 @@ export default definePluginEntry({
   register(api) {
     const config = validateAcpConfig(api.pluginConfig);
     if (!config.enabled) return;
-    const authorize = createSlackDevelopmentAuthorizer({ config: { developmentChannels: [config.channel] } });
+    const authorize = createSlackDevelopmentAuthorizer({ config: { developmentChannels: taskChannels(config) } });
     if (api.pluginConfig?.taskLoop === true) {
       assertTaskLoopRuntimeConfig(config, api.config);
       let continuation;
@@ -25,7 +26,7 @@ export default definePluginEntry({
           backendModuleUrl: retainedSummaryBackendUrlForRuntime(api.runtimeSource) }) : undefined;
       continuation = config.continuation ? createTaskContinuation({ config: { ...config, hostConfig: api.config }, authorize,
         tasks: api.runtime.tasks, subagent: api.runtime.subagent, system: api.runtime.system, session: api.runtime.agent.session,
-        events: api.runtime.events,
+        events: api.runtime.events, writeFileWithinRoot,
         isNativeChild: ctx => isSubagentSessionKey(ctx.sessionKey) || isAcpSessionKey(ctx.sessionKey),
         confirmedReplacement: runtime.confirmedReplacement, logger: api.logger, retainedSummaries }) : undefined;
       api.registerTool(runtime.toolFactory, { names: ['rein_task'], optional: true });
