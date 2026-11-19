@@ -1,5 +1,20 @@
 # Acceptance evidence
 
+## 2026-11-18 — Discord onboarding production archive
+
+COMMUNITY-ONBOARDING-01; owner Codex. PR #117 passed all seven checks: full suite
+1,558 tests, 1,554 passed, four existing conditional skips, zero failures; native addon
+enable/disable loading passed. Deployed `faaa9d0` with clean updater transaction.
+Under the update lock, preserved configuration/task snapshots, applied only the additive
+reader settings, and restarted the shared Gateway. Health and actual plugin inspection
+passed. Initial collection archived one original contribution with zero sends.
+The saved native job is enabled at UTC16 with zero staggering, but is explicitly
+**archive-only** pending Nori's welcome-channel Send Messages permission. All 14
+previous task definitions remain. Real public reminders and human recall remain pending.
+A subsequent regression excludes opt-out/resume control text from introduction-completion
+classification, including legacy markers; local focused checks are 37/37.
+[Details and recovery](daily-discord-onboarding.md).
+
 ## 2026-11-18 — Daily Discord onboarding
 
 COMMUNITY-ONBOARDING-01; owner Codex. **LOCAL VERIFIED; NOT ACTIVATED.** Fixed PST

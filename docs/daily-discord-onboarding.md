@@ -164,3 +164,50 @@ Local daily/weekly/reader tests: 36/36 passed. The collector/store syntax checks
 and scoped whitespace checks passed. Earlier 34 identity/routing compatibility checks
 also passed. Native plugin loading passed with the pinned runtime; the release adds
 enable/disable loading to the standard CI verifier. The final CI/deployment/job receipts are recorded separately after execution.
+
+## Production activation — 2026-11-18 PST
+
+PR #117 passed all seven required CI checks and deployed merge `faaa9d0` at
+2026-11-19 07:19 UTC. CI's full Node suite had 1,558 tests: 1,554 passed, four
+existing conditional skips and zero failures. Actual native addon enable/disable
+registration, Discord/Slack compatibility and routing checks passed.
+
+After the updater released its lock and queue, the activation took that lock and
+saved private configuration and all native job definitions under the profile's
+operator-backups directory (`discord-onboarding-20261119T072219Z`). It validated an
+additive candidate and preserved bindings, DM policy, member tools, shared skills,
+web provider, main/Slack agents, scoped routing and sandbox settings. Initial
+`--collect-only` completed historical collection with one archived contribution,
+zero welcomes and zero weekly reminders. The shared Gateway restarted and returned
+healthy; actual plugin inspection reported imported/loaded with zero errors.
+
+The native `discord-daily-onboarding` task is enabled at `0 16 * * *`, `UTC`,
+`staggerMs=0`, with completion delivery disabled. Its next scheduled run is
+2026-11-19 08:00 fixed PST. **Its command currently includes `--collect-only`.**
+Readback confirmed all 14 existing tasks and their definitions were preserved.
+Private mode/job/next-run receipts are in `runtime/discord-onboarding/activation.json`.
+The collector config and database are also inside that preserved, ignored runtime
+directory; no member records or raw config were committed.
+
+Public reminders remain blocked because Nori lacks Send Messages in welcome and
+cannot edit permissions. An administrator must allow only Nori Send Messages there.
+After verifying the actual effective permission, edit this existing native job's argv
+to remove `--collect-only`, update its display name/description to active welcomes,
+and read back its unchanged exact schedule. Do not create a second reminder job.
+Until then, the job continues collecting without sending or generating repeated
+permission failures. No daily/Sunday public delivery or human recall is claimed.
+
+A final review caught opt-out/resume messages being treated as prior introductions
+when posted in the introduction channel. The follow-up ignores those exact controls
+for completion classification, including old participation markers, while preserving
+the original records and preference state. Its focused regression brings local
+checks to 37/37. The initial release source guard also needed the actual deployed
+merge SHA because production is shallow; the first check failed before mutation.
+
+A temporary native one-shot collection job was scheduled for 2026-11-19
+07:27:22.599 UTC and actually started at 07:27:22.613 UTC, without `cron run`.
+Its persisted receipt is `ok` / `succeeded`, command exit 0, 1.208 seconds,
+`deliveryStatus=not-requested`, and zero daily/weekly sends. It reused the existing
+archive without duplicating collection. The temporary job self-deletes after success;
+its private receipt remains under `runtime/discord-onboarding`. This proves the actual
+clock-triggered collector path, not public reminder delivery or model recall.
