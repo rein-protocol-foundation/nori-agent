@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { closeSync, lstatSync, mkdirSync, openSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import { validateParticipationPolicy } from './slack-participation.mjs';
+import { PARTICIPATION_RUBRIC_VERSION, validateParticipationPolicy } from './slack-participation.mjs';
 
 const fail = () => { throw new Error('router_participation_evidence_unavailable'); };
 const allowedReasons = ['participate', 'passive', 'message-bounds', 'decision-unavailable',
@@ -13,7 +13,7 @@ export const isSlackMessageId = value => typeof value === 'string' && /^\d{1,20}
 export const isSlackReviewerId = value => typeof value === 'string' && /^[UW][A-Z0-9]{5,31}$/.test(value);
 export const participationScopeKey = scope => JSON.stringify(validateParticipationPolicy({ channels: [scope] }).channels[0]);
 export const participationPolicyDigest = policy => createHash('sha256')
-  .update(JSON.stringify(validateParticipationPolicy(policy))).digest('hex');
+  .update(JSON.stringify([PARTICIPATION_RUBRIC_VERSION, validateParticipationPolicy(policy)])).digest('hex');
 
 function requirePrivate(path, directory = false) {
   const info = lstatSync(path);
@@ -57,7 +57,7 @@ export function openParticipationEvidence({ stateDir, readOnly = false } = {}) {
           delivery !== (observation.route ? 'unobserved' : 'gate-silence')) fail();
       // A matching event after a restart cannot replace the original recorded decision.
       const record = {
-        id: randomUUID(), observedAt: at, messageId, senderId, version: normalized.version,
+        id: randomUUID(), observedAt: at, messageId, senderId, version: normalized.version, rubricVersion: PARTICIPATION_RUBRIC_VERSION,
         trigger: 'passive', duty: observation.duty, helpfulness: observation.helpfulness,
         route: observation.route, reason: observation.reason, failure: observation.failure,
         classifierCalls: observation.classifierCalls, elapsedMs: observation.elapsedMs,

@@ -49,7 +49,7 @@ function validateReviews(review, policy, decisions, verifiedAuthorFeedback) {
   typedObject(review, ['schemaVersion', 'scope', 'policyDigest', 'candidateVersion', 'reviews']);
   if (review.schemaVersion !== 1 || review.policyDigest !== participationPolicyDigest(policy) ||
       !isId(review.candidateVersion) || review.candidateVersion === policy.version ||
-      !Array.isArray(review.reviews) || !review.reviews.length || review.reviews.length > 1000) fail();
+      !Array.isArray(review.reviews) || !review.reviews.length || review.reviews.length > (verifiedAuthorFeedback ? 10000 : 1000)) fail();
   const byId = new Map(decisions.map(item => [item.id, item]));
   const reviewed = new Set(), sources = new Set();
   return review.reviews.map(item => {
@@ -188,12 +188,16 @@ async function captureFromSlack(opts, policy, { environment, fetchImpl }) {
   const stateDir = opts['--state-dir'];
   const evidence = openParticipationEvidence({ stateDir, readOnly: true });
   try {
-    const store = openParticipationReviewStore({ stateDir });
-    try {
-      const receipt = await ingestParticipationFeedback({ policy, config, request, evidence, store, fetchImpl,
-        token: environment.REIN_PARTICIPATION_FEEDBACK_SLACK_TOKEN });
-      writePrivateJson(opts['--output'], receipt);
-    } finally { store.close(); }
+    const persistence = {
+      recordFeedback(activePolicy, receipt) {
+        const store = openParticipationReviewStore({ stateDir });
+        try { return store.recordFeedback(activePolicy, receipt); }
+        finally { store.close(); }
+      },
+    };
+    const receipt = await ingestParticipationFeedback({ policy, config, request, evidence, store: persistence,
+      fetchImpl, token: environment.REIN_PARTICIPATION_FEEDBACK_SLACK_TOKEN });
+    writePrivateJson(opts['--output'], receipt);
   } finally { evidence.close(); }
 }
 

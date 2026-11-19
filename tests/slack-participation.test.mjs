@@ -164,7 +164,7 @@ test('cancellation/disposal prevent late positive results and bound observation 
   assert.equal(bounded.observations().length, 128);
   assert.ok(!JSON.stringify(observed).includes('UALICE01'));
   assert.ok(!JSON.stringify(observed).includes(context().CommandBody));
-  assert.deepEqual(Object.keys(observed[0]).sort(), ['classifierCalls', 'duty', 'elapsedMs', 'failure', 'helpfulness', 'reason', 'route', 'rule', 'trigger', 'version']);
+  assert.deepEqual(Object.keys(observed[0]).sort(), ['classifierCalls', 'duty', 'elapsedMs', 'failure', 'helpfulness', 'reason', 'route', 'rubricVersion', 'rule', 'trigger', 'version']);
 });
 
 test('policy validation is bounded and rejects unknown scope or authority fields', () => {

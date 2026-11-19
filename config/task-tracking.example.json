@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "nativeSync": true,
+  "stateDir": "/home/ubuntu/rein-agent/runtime/task-tracking",
+  "actor": { "mode": "nori", "requester": "example-operator", "representedPrincipal": "Nori",
+    "resourceOwner": "example-organization", "outputAudience": "example-reviewers", "costAttribution": "unknown" },
+  "github": { "repository": "example/nori-agent", "actorId": "123456", "tokenEnv": "NORI_GITHUB_TOKEN" },
+  "linear": {
+    "teamId": "00000000-0000-4000-8000-000000000001",
+    "actorId": "00000000-0000-4000-8000-000000000002",
+    "tokenEnv": "NORI_LINEAR_TOKEN", "auth": "api-key"
+  },
+  "statuses": {
+    "todo": { "linearStateId": "00000000-0000-4000-8000-000000000003", "githubState": "open" },
+    "in_progress": { "linearStateId": "00000000-0000-4000-8000-000000000004", "githubState": "open" },
+    "awaiting_acceptance": { "linearStateId": "00000000-0000-4000-8000-000000000005", "githubState": "open" },
+    "done": { "linearStateId": "00000000-0000-4000-8000-000000000006", "githubState": "closed", "githubReason": "completed" },
+    "cancelled": { "linearStateId": "00000000-0000-4000-8000-000000000007", "githubState": "closed", "githubReason": "not_planned" }
+  },
+  "tasks": [{ "id": "example-task", "githubIssue": 1, "linearIssue": "00000000-0000-4000-8000-000000000008", "audienceApproved": true }],
+  "timeoutMs": 10000,
+  "pollAttempts": 3,
+  "pollIntervalMs": 1000
+}

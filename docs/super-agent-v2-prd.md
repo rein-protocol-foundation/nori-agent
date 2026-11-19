@@ -1,7 +1,7 @@
 # Super Agent v2 PRD
 
 版本：0.2（2026-11-19，America/Los_Angeles）。范围决定：项目负责人。设计与实现：Codex。
-状态：**首批原型已在本地验证。独立的 Nori 验收能力、完整 v2、部署和真实产品验收仍待完成。**
+状态：**独立验收工具已在 OCI 生成私有报告，工单双向状态同步和部分 Slack 场景已实测。16 项场景的逐项结果见[验收矩阵](super-agent-v2-verification.md)。候选网关投递及真人退回、复验仍待完成。**
 
 本文件是独立的 v2 PRD，不修改现有 Super Agent PRD 的范围、里程碑、完成定义或历史验收。
 既有任务执行、续接、原生渠道、记忆和身份边界作为复用基础；v2 的证据与完成状态单独登记。
@@ -40,11 +40,8 @@ Nori 能在日常协作中判断是否值得参与，把长期工作关联到 Li
 [GitHub Issues Sync](https://linear.app/docs/github)、[Linear GraphQL](https://linear.app/developers/graphql)、
 [GitHub Issue API](https://docs.github.com/en/rest/issues/issues#update-an-issue)。
 
-**接入状态（2026-11-19）：** `NORI_LINEAR_TOKEN` 已配置在 OCI 的私有运行环境，并从 OCI 使用保存的密钥
-完成 Linear API 认证，确认可读取 Rein Protocol Foundation（REI）团队。这项检查覆盖认证和团队读取。
-Linear 设置页确认 GitHub 组织已连接，`GitHub issue sync` 下尚无仓库配对。负责人已配置 Slack 集成。
-先确定获准同步的 REI 与 GitHub 仓库配对并启用双向模式，再验证工单写入后两端读回，以及 Nori
-任务追踪流程能加载凭证。
+**接入状态（2026-11-19）：** 负责人已确认 REI 与公开仓库 `rein-protocol-foundation/nori-agent` 的双向配对和 12 个历史导入工单（8 开、4 关）。本次使用两组新建的非敏感测试工单核对创建、状态传播和写后失联恢复。OCI 可使用私有 `NORI_LINEAR_TOKEN` 读取 REI。GitHub 暂用负责人指定的用户账号，真实工单号和双向读回见[独立验证记录](super-agent-v2-verification.md)。
+
 
 ### 2.2 Rein Router 内的主动参与判断
 
@@ -158,5 +155,4 @@ Nori 独立验收的使用说明和验证证据随实现提交。
 5. 每项分别登记本地实现、合成测试、原生集成、部署和产品验收；v2 未完成项不影响 v1 的历史结论。
 
 合并、生产变更和真实外发遵循实际授权范围。
-待确认：工单双向配对与 GitHub 写入权限、受托测试账号和验收人、Slack 目标绑定的静默兼容性。
-独立验收和任务追踪的真实 OCI 验收待实现部署后执行。
+当前缺口包含真实验收人意见、Foundation 管理员正例、线上绑定接管前的静默兼容性和完整 v2 实测。进度以[独立验收矩阵](super-agent-v2-verification.md)为准。

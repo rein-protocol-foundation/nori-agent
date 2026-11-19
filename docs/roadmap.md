@@ -1,5 +1,9 @@
 # Nori-Agent implementation roadmap
 
+## 2026-11-19 — Independent Super Agent v2
+
+SA2; implementation owner Codex; reviewer Tempest. Real two-way Issue Sync and recovery on two new synthetic pairs passed. The OCI private report links to its real issue pair and awaits review. New Slack participation was measured on real test messages in isolation. The genuine desktop sender resolves as a Director with the website administrator flag false. Keep the positive administrator case, production activation and human acceptance open. [All 16 scenarios and next checks](super-agent-v2-verification.md).
+
 ## 2026-11-18 — Discord daily archive active; public reminders blocked
 
 COMMUNITY-ONBOARDING-01; owner Codex. PR #117 deployed as `faaa9d0`. The daily native

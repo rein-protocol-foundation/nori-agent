@@ -194,7 +194,7 @@ export function createConsoleSync({ root, native, gatewayBaseUrl = 'http://127.0
         throw new Error('router_jev_key_invalid');
       const host = parseHost(await readPrivate(root, configPath, '{}', { publicFile: true }));
       const authority = host.plugins?.entries?.['rein-router']?.config ?? {};
-      const hasHostPolicy = ['trustedSlackChannels','nativeAgentRoutes','participation'].some(field => Object.hasOwn(authority, field));
+      const hasHostPolicy = ['trustedSlackChannels','scheduleInPublicChannels','nativeAgentRoutes','participation'].some(field => Object.hasOwn(authority, field));
       const previousState = state;
       state = next;
       let intentPersisted = false;

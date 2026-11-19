@@ -1,5 +1,9 @@
 # Acceptance evidence
 
+## 2026-11-19 — Super Agent v2
+
+SA2, owner Codex. The live provider checks include both directions of issue creation and state propagation, actual Backlog on GitHub reopen, and read-only recovery after deliberately losing a successful PATCH response. The private OCI report distinguishes passed from awaiting review. Slack real events and hosted shadow inference are recorded separately from isolated native dispatch and human decisions. [Independent 16-scenario verification matrix](super-agent-v2-verification.md).
+
 ## 2026-11-18 — Discord onboarding production archive
 
 COMMUNITY-ONBOARDING-01; owner Codex. PR #117 passed all seven checks: full suite

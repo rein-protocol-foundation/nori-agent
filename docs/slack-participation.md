@@ -119,13 +119,83 @@ error without increasing either error count, and any newly wrong holdout case bl
 reports projected worker admissions, observed wrong answers and actual recorded classifier attempts.
 Replay calls no providers. Candidate answer quality and billed cost require independent evaluation.
 
-The review workflow stages proposals for one configured scope at a time because the threshold applies
-to every scope in a policy. `stage` writes an exclusive private record with the active policy
-fingerprint, candidate and rollback configuration. The operator checks that the current policy still
-matches that fingerprint before any separately authorized application. Rollback restores the recorded
-prior policy if the current policy matches the candidate fingerprint. This script writes no host configuration. Real
-Slack feedback ingestion, live candidate quality evaluation and production promotion remain separate
-acceptance work.
+The manual `stage` command preserves a comparison and rollback proposal. Use the verified Slack
+workflow below to stage a candidate for the isolated policy store.
+
+## Verified Slack feedback ingestion
+
+The `ingest` command reads one explicit feedback message in the original Slack thread. Use the
+configured account and Agent tuple from the decision inspection. Give the process an approved Slack
+reader credential only for this invocation through `REIN_PARTICIPATION_FEEDBACK_SLACK_TOKEN`. For
+public and private channel threads, use an authorized user token whose scopes can read channel info,
+membership, thread replies, and the actor’s Slack identity. Slack may restrict thread reads for bot
+tokens. The command uses the fixed Slack Web API origin and the read-only methods `auth.test`,
+`conversations.info`, `conversations.replies`, `users.info`, and `conversations.members`.
+
+Create an owner-only config file with the independently verified reader and Nori bot IDs and one
+explicitly opted-in tuple. Example with synthetic IDs:
+
+```json
+{
+  "schemaVersion": 1,
+  "enabled": true,
+  "scope": { "accountId": "default", "workspaceId": "TFIXTURE1", "channelId": "CFIXTURE1", "agentId": "main" },
+  "readerUserId": "UREADER1",
+  "noriBotUserId": "UNORIBOT",
+  "noriBotId": "BNORIBOT"
+}
+```
+
+The original author posts one plain-text reply in the thread using
+`nori-feedback <label> <source-message-ts>`. Supported labels are `false-wake`, `missed-wake`,
+`wrong-answer`, `correct-wake`, and `correct-silence`. For `wrong-answer`, append the exact Nori
+reply timestamp after the source timestamp. That label requires a reply to the source thread root,
+authored by the configured Nori bot. Slack verifies the reply reference; actual worker model and
+candidate answer quality remain unobserved through this path.
+
+Create a separate owner-only request with `schemaVersion: 1`, the inspection’s `decisionId`,
+`threadId` (root Slack timestamp), `feedbackMessageId` (feedback reply timestamp), and `split`
+(`calibration` or `holdout`). Choose the split before evaluating a candidate.
+
+```sh
+node scripts/slack-participation-review.mjs ingest --state-dir /private/runtime/openclaw --policy-file /private/runtime/policy.json --feedback-config /private/runtime/slack-reader.json --feedback-request /private/runtime/feedback-request.json --output /private/runtime/feedback-receipt.json
+```
+
+The importer matches the workspace and reader identity, channel ID, source and feedback message
+timestamps, thread and original author. It verifies an active human Slack user, plus current
+membership for the author, reader, and Nori bot. It declines edited or app-attributed feedback,
+external shared channels, ambiguous or incomplete API reads, and mismatched labels. A repeated
+verified receipt is idempotent. Conflicting labels or split changes for an existing decision require
+operator review. The owner-only `rein-router-participation/review.sqlite` records typed facts and
+references. It stores no text, tokens, actor profiles, or raw API responses.
+
+## Compare, apply and roll back in the isolated policy store
+
+Initialize the isolated store from the exact active one-scope participation policy. It keeps its
+active policy and transition journal in the private companion SQLite file. Use separate runtime
+state directories for distinct policy scopes. The existing gateway continues to read its native
+configuration.
+
+```sh
+node scripts/slack-participation-review.mjs init-policy --state-dir /private/runtime/openclaw --policy-file /private/runtime/policy.json --output /private/runtime/policy-init.json
+node scripts/slack-participation-review.mjs compare-captured --state-dir /private/runtime/openclaw --policy-file /private/runtime/policy.json --candidate-version review-2026-11-19 --output /private/runtime/comparison.json
+node scripts/slack-participation-review.mjs stage-policy --state-dir /private/runtime/openclaw --candidate-version review-2026-11-19 --output /private/runtime/staged.json
+node scripts/slack-participation-review.mjs apply-policy --state-dir /private/runtime/openclaw --stage-id <stage-id> --output /private/runtime/applied.json
+node scripts/slack-participation-review.mjs rollback-policy --state-dir /private/runtime/openclaw --stage-id <stage-id> --output /private/runtime/rolled-back.json
+node scripts/slack-participation-review.mjs status-policy --state-dir /private/runtime/openclaw --output /private/runtime/policy-status.json
+```
+
+`compare-captured` reads trusted receipts and generates a candidate and held-out comparison without
+network or model calls. An authorized scheduler can run this command with a fresh candidate version
+and private output path for each run. `stage-policy` persists eligible output with a stage ID,
+baseline generation, exact feedback digest, candidate, and rollback policy. `apply-policy` atomically
+checks the staged generation, policy fingerprint, and evidence snapshot. A competing apply or new
+feedback makes a previous stage stale. `rollback-policy` checks that the selected stage is still
+active and atomically restores its earlier policy. Use `status-policy` to recover the authoritative
+policy and transition history after an interrupted command or output failure.
+
+Real Slack feedback capture, scheduled operation, and promotion to a live gateway still require
+their own acceptance evidence and existing operator authorization.
 
 ## Shadow evaluation of a verified test message
 

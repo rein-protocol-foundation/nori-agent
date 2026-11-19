@@ -1,5 +1,5 @@
 /** Optional policy. Native reply_dispatch is not an always-run admission hook. */
-export const PARTICIPATION_RUBRIC_VERSION = 'slack-participation-v1';
+export const PARTICIPATION_RUBRIC_VERSION = 'slack-participation-v2';
 const object = value => value && typeof value === 'object' && !Array.isArray(value) &&
   [Object.prototype, null].includes(Object.getPrototypeOf(value));
 const text = (value, max) => typeof value === 'string' && value.trim() === value && value.length > 0 &&
@@ -71,7 +71,7 @@ export function createSlackParticipation({ policy: raw, decisions, allowPaidJev 
   const pending = new Set();
   let active = true;
   const record = (action, reason, extra = {}, publish = true) => {
-    const observation = Object.freeze({ version: policy.version, rule: 'passive-channel', trigger: 'passive',
+    const observation = Object.freeze({ version: policy.version, rubricVersion: PARTICIPATION_RUBRIC_VERSION, rule: 'passive-channel', trigger: 'passive',
       classifierCalls: 0, elapsedMs: 0,
       duty: 'not-evaluated', helpfulness: 'not-evaluated', route: action === 'native' ? 'existing-router' : null,
       reason, failure: null, ...extra });
@@ -160,7 +160,7 @@ export function createSlackParticipation({ policy: raw, decisions, allowPaidJev 
               criteria: { true: 'A response now adds concrete useful information or help without interrupting.',
                 false: 'A response adds little value, interrupts, repeats others or needs unavailable context.' } },
           },
-        }, { agentId: scope.agentId, purpose: 'rein-router.participation', rubricVersion: policy.version,
+        }, { agentId: scope.agentId, purpose: 'rein-router.participation', rubricVersion: PARTICIPATION_RUBRIC_VERSION,
           timeoutMs: policy.timeoutMs, signal: controller.signal })).catch(() => ({ status: 'error' }));
       inFlight.add(request);
       // A timed-out call may still be consuming provider resources. Release only when it settles.

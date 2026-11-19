@@ -1,5 +1,9 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-19 — Super Agent v2 integration and partial product verification
+
+SA2, owner Codex. Developed on an isolated branch and integrated upstream scheduler PR #121. Added task tracking and private run/report linkage, independent offline acceptance, scoped Slack participation and replay. Real Linear/GitHub verification exposed an incorrect detailed expectation on reopen. The corrected coarse projection passed. OCI produced private reports with separate OS principals for execution and review. The authorized Slack desktop account was a current Director without website administrator authority. New routing was measured in isolation. Production deployment, human return/retest and the positive administrator path remain open. [Checks, observations, rollback and pending work](super-agent-v2-verification.md).
+
 ## 2026-11-18 — Discord daily archive deployed
 
 COMMUNITY-ONBOARDING-01; owner Codex. PR #117 passed CI and deployed `faaa9d0` at

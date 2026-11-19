@@ -111,6 +111,7 @@ npm run toolchain:pnpm -- run router:ui
 | 想了解什么 | 从这里开始 |
 | --- | --- |
 | 产品范围与需求 | [产品需求文档](docs/PRD-agent-community-operations-zh.md) |
+| Super Agent v2 | [需求](docs/super-agent-v2-prd.md) · [逐项验收记录](docs/super-agent-v2-verification.md) · [私有验收报告](docs/nori-acceptance.md) |
 | 安装与配置 | [安装指南](docs/setup-zh.md) · [模型路由](docs/model-router-quickstart-zh.md) |
 | 管理入口 | [Dashboard 与多实例配置](docs/dashboard-zh.md) |
 | Director ACP 编程 | [Slack 委派、子任务状态和结果回报](docs/director-acp.md) |

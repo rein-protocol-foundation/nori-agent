@@ -1,5 +1,9 @@
 # Nori-Agent 开发、验证与部署记录
 
+## 2026-11-19 — Super Agent v2 开发与部分真实验收
+
+SA2，负责人 Codex，验收人 Tempest。隔离分支已整合主线调度 PR #121。实现任务追踪与实际运行、报告的关联，独立离线验收，以及 Slack 按范围参与和策略回放。真实联调发现 GitHub 重开后 Linear 转为 Backlog，修复状态投影后复测通过。OCI 已用独立执行账号生成私有报告并交付 SSH 验收账号。Slack 桌面账号的后端身份为 Director，网站管理员标志为 false。新参与策略已用真实消息在隔离环境验证。待完成真人退回与复验、管理员正例及上线范围核定。[16 项证据、回退和缺口](super-agent-v2-verification.md)。
+
 ## 2026-11-18 — Discord 每日归档已部署
 
 COMMUNITY-ONBOARDING-01；负责人 Codex。PR #117 全部 CI 通过，`faaa9d0` 于
