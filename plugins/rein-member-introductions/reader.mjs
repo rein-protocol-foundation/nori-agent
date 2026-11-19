@@ -6,6 +6,10 @@ export function validateIntroductionConfig(value = {}) {
   if (value.enabled !== true) return { enabled: false };
   if (!id(value.guildId) || !id(value.introductionsChannelId) || !isAbsolute(value.statePath ?? '') ||
       !/^[a-z0-9][a-z0-9_-]*$/.test(value.agentId ?? '') || !value.accountId) throw new Error('Invalid member introduction configuration');
+  if (value.linkedProfiles !== undefined && (!Array.isArray(value.linkedProfiles) || !value.linkedProfiles.length ||
+      value.linkedProfiles.length > 16 || new Set(value.linkedProfiles).size !== value.linkedProfiles.length ||
+      !value.linkedProfiles.includes(value.agentId) || value.linkedProfiles.some(v => typeof v !== 'string' || !/^[a-z][a-z0-9_-]{0,63}$/.test(v))))
+    throw new Error('Invalid linked member profile configuration');
   return { ...value };
 }
 
