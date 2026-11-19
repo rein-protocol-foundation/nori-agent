@@ -244,7 +244,7 @@ export function createIdentityToolsRegistration(options: IdentityToolsOptions): 
     const status = {
       name: 'rein_identity_bind_status',
       description:
-        'Check the authoritative backend state of a binding session previously started for the current chat account. Use this after the person requests an emailed binding code, or when completion fails and registration may be required. The session id is the only argument; the backend binds it to the current platform account and never returns an email address.',
+        'Check the authoritative backend state of a binding session previously started for the current chat account. awaiting_email means email verification is not yet complete; it does not reveal whether an email was requested, sent or delivered, or whether the email is registered. For awaiting_email, guide the person to use the code from the original binding email with rein_identity_bind_complete; do not ask them to re-enter the email or start a new session based on this state. Only registration_required establishes that administrator registration is needed. The session id is the only argument; the backend binds it to the current platform account and never returns an email address.',
       parameters: Type.Object(
         {
           sessionId: Type.String({
@@ -294,15 +294,19 @@ export function createIdentityToolsRegistration(options: IdentityToolsOptions): 
           });
         }
         const registrationRequired = current.state === 'registration_required';
+        const awaitingEmail = current.state === 'awaiting_email';
         return closed({
           ok: true,
           status: current.state,
           linked: current.linked,
           expiresAt: current.expiresAt,
           registrationRequired,
-          nextStep: registrationRequired ? 'contact_administrator_to_register' : null,
+          nextStep: registrationRequired ? 'contact_administrator_to_register'
+            : awaitingEmail ? 'complete_existing_session_with_emailed_code' : null,
           message: registrationRequired
             ? 'This verified email is not registered with the Rein community. Contact an administrator to register before linking this chat account.'
+            : awaitingEmail
+              ? 'Email verification is not yet complete for this binding session. This status does not reveal whether an email was requested, sent or delivered, or whether the email is registered. Use the code from the original binding email with rein_identity_bind_complete for this chat account. Do not re-enter the email or start a new session based on this status.'
             : null,
           recorded: false,
           authorizesSpending: false,
