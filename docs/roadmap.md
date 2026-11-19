@@ -576,3 +576,5 @@ SA-OPS-01 / SA-M1. Codex verified same-owner adjustments and scheduled SSH sandb
 ## COMMUNITY-PROFILE-LINK — 2026-11-19
 
 Status: implemented, verification/rollout in progress. Owner: Codex. Link current Discord/Slack sender via the existing verified backend contact to public introductions. No private-history merge or role expansion. Next: native loader, companion API deployment, activation/readback; two-human live acceptance remains pending.
+
+SA-OPS-01 / SA-M1 · Codex verified one production Slack thread creating and adjusting the same timer. Native automatic sandbox execution and original-thread delivery passed. Formal Codex acceptance remains open pending the assignment-reference rollout.

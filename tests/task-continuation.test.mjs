@@ -1193,3 +1193,19 @@ test('development file writes require an authorized development source and match
   await assert.rejects(f.call(request), /development_channel_required/);
   assert.equal(writes.length, 1);
 });
+
+test('short ACP assignment reference expands only at canonical launch for its prepared scope and attempt', async () => {
+  const f = fixture(); await f.restart();
+  const flow = await f.call({ action: 'begin', runtime: 'acp', goal: 'Build fixture', criteria: 'Run four tests' });
+  const assignment = await f.call({ action: 'delegate', flow: flow.flowId, instruction: 'Implement and test' });
+  assert.equal((await f.call({ action: 'delegate', flow: flow.flowId })).spawnTask, assignment.spawnTask);
+  const params = { runtime: 'acp', task: assignment.spawnTask, agentId: 'codex' };
+  const wrapper = { toolName: 'tool_call', params: { id: 'openclaw:core:sessions_spawn', args: params } };
+  assert.equal(await f.runtime.beforeToolCall(wrapper, f.context), undefined);
+  for (const task of [assignment.spawnTask + ':stale', assignment.spawnTask + ' extra']) {
+    assert.equal((await f.spawn(assignment, { ...params, task })).gate.block, true);
+  }
+  assert.equal((await f.spawn(assignment, { ...params, runtime: 'subagent' })).gate.block, true);
+  assert.deepEqual((await f.spawn(assignment, params)).gate.params, { ...params, task: assignment.task });
+  assert.equal((await f.spawn(assignment, params)).gate.block, true);
+});
