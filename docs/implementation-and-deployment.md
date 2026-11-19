@@ -1,5 +1,19 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-18 — Daily Discord onboarding prepared
+
+COMMUNITY-ONBOARDING-01; owner Codex with a runtime-verified Sol High worker for the
+collector/store. **Local verified, live activation pending.** Added deterministic
+UTC16 native-job runner, durable original-message archive, recovery/receipt handling,
+optional current-member recall tool and pure additive configuration builders. Preserved
+all pre-existing changes and vendor source. 25 new focused checks, 34 compatibility
+checks, scaffold and native plugin loading passed. Full suite and live sends/archival/
+scheduled-run/recognition acceptance were not run. No configuration or schedule changed
+on production. Pending: user channel choice, deployment coordination and native operator
+activation, then real acceptance. Verified backend identity binding remains separate;
+cross-platform profile joining is future work. [Details](daily-discord-onboarding.md).
+
+
 ## 2026-11-18 — Discord member onboarding access
 
 SA-M0 / #57; owner Codex; **requested restoration passed real acceptance**. PR #113 deployed
