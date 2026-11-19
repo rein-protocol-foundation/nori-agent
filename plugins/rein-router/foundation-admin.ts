@@ -17,7 +17,7 @@ export function createFoundationAdminAuthorizer({ config, env = process.env, tra
   let resolved: ReturnType<typeof parseBackendConfig>;
   let backend: BackendTransport;
   try {
-    resolved = parseBackendConfig({ config, env, allowEmptyGovernanceChannels: communityOnly, error: () => { throw new Error('router_identity_config_invalid'); } });
+    resolved = parseBackendConfig({ config, env, allowEmptyGovernanceChannels: communityOnly, allowDirectMessages: communityOnly, error: () => { throw new Error('router_identity_config_invalid'); } });
     if (!resolved) return async () => false;
     backend = transport ?? createBackendTransport({ baseUrl: resolved.baseUrl, callerId: resolved.callerId,
       credential: resolved.credential, timeoutMs: 3000 });

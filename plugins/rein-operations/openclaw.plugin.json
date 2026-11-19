@@ -104,6 +104,10 @@
                   },
                   "minItems": 1,
                   "description": "Native channel IDs approved in this workspace. Matched exactly against the host-supplied native channel ID."
+                },
+                "directMessages": {
+                  "type": "boolean",
+                  "description": "Opt in to mapping trusted Discord direct sessions for this Community profile to this one workspace. Requires a sender-scoped per-account session and registered profile identity. Does not establish guild or organization membership. Internal profiles cannot enable this flag."
                 }
               },
               "required": [
@@ -227,6 +231,10 @@
                         },
                         "minItems": 1,
                         "description": "Native channel IDs approved in this workspace. Matched exactly against the host-supplied native channel ID."
+                      },
+                      "directMessages": {
+                        "type": "boolean",
+                        "description": "Opt in to mapping trusted Discord direct sessions for this Community profile to this one workspace. Requires a sender-scoped per-account session and registered profile identity. Does not establish guild or organization membership. Internal profiles cannot enable this flag."
                       }
                     },
                     "required": [

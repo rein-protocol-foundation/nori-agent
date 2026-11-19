@@ -7,7 +7,8 @@
 //
 // The acting platform is never a constant. It is the trusted `ctx.messageChannel`, admitted only
 // when it matches exactly one configured workspace whose platform equals that channel and whose
-// channel list contains the trusted native channel ID.
+// channel list contains the trusted native channel ID. A Community registration may additionally
+// map its own sender-scoped Discord direct sessions through one explicit workspace opt-in.
 
 import { createBackendTransport, type BackendTransport } from './backend-transport.ts';
 import {
@@ -54,6 +55,8 @@ export interface BackendWorkspace {
   nativeChannelIds: readonly string[];
   proposalChannelIds: readonly string[];
   boardChannelIds: readonly string[];
+  /** Explicit Community-only mapping; never evidence of guild membership. */
+  directMessages?: boolean;
 }
 
 export interface ResolvedBackendConfig {
@@ -81,6 +84,7 @@ export interface ParseBackendConfigOptions {
   requireConfirmationKey?: boolean;
   /** Only capability-restricted Community registrations may omit governance channels. */
   allowEmptyGovernanceChannels?: boolean;
+  allowDirectMessages?: boolean;
   confirmationSigningKey?: string;
   error: BackendConfigErrorFactory;
   /**
@@ -130,12 +134,14 @@ const readChannelIdList = (factory: BackendConfigErrorFactory, field: string, va
 const readWorkspaces = (
   factory: BackendConfigErrorFactory,
   block: Record<string, unknown>,
+  allowDirectMessages: boolean,
 ): BackendWorkspace[] => {
   const workspaces = block.workspaces;
   if (!Array.isArray(workspaces) || workspaces.length === 0) {
     factory('foundationDb.workspaces must list at least one approved workspace');
   }
   const seen = new Set<string>();
+  let directMessageMappings = 0;
   return (workspaces as unknown[]).map(entry => {
     if (!isPlainObject(entry)) factory('foundationDb.workspaces entries must be objects');
     const platform = trimmed((entry as Record<string, unknown>).platform);
@@ -149,12 +155,19 @@ const readWorkspaces = (
     const key = `${platform}\u0000${workspaceId}`;
     if (seen.has(key)) factory('foundationDb.workspaces must not repeat one platform and workspaceId');
     seen.add(key);
+    if (entry.directMessages !== undefined && typeof entry.directMessages !== 'boolean') {
+      factory('workspaces[].directMessages must be a boolean');
+    }
+    if (entry.directMessages === true && (!allowDirectMessages || platform !== 'discord' || ++directMessageMappings > 1)) {
+      factory('directMessages requires exactly one Discord workspace in a Community-only profile');
+    }
     return {
       platform,
       workspaceId,
       nativeChannelIds: readChannelIdList(factory, 'workspaces[].nativeChannelIds', (entry as Record<string, unknown>).nativeChannelIds),
       proposalChannelIds: [],
       boardChannelIds: [],
+      ...(entry.directMessages === undefined ? {} : { directMessages: entry.directMessages as boolean }),
     };
   });
 };
@@ -177,7 +190,7 @@ export function parseBackendConfig(options: ParseBackendConfigOptions): Resolved
     }
   }
 
-  const workspaces = readWorkspaces(factory, config);
+  const workspaces = readWorkspaces(factory, config, options.allowDirectMessages === true);
   // `platform` is a legacy single-platform default. The approved workspaces decide which platforms
   // are admitted, so an absent value is valid; a present one must still name a real platform and
   // must be one the workspace list actually enrolls.
@@ -252,11 +265,13 @@ export function parseBackendConfig(options: ParseBackendConfigOptions): Resolved
  * Pick the one workspace a trusted tool context belongs to. The platform is the host's own
  * `messageChannel`, and the channel must be inside that workspace's approved list; a call that
  * matches no workspace, a platform the operator did not configure, or a channel from another
- * workspace is refused before any backend call.
+ * workspace is refused before any backend call. Only a Community runtime supplies the optional
+ * registration-bound direct-message scope; a DM mapping is not evidence of guild membership.
  */
 export function resolveTrustedWorkspace(
   config: ResolvedBackendConfig,
   ctx: unknown,
+  directMessageScope?: { agentId: string; accountId: string },
 ): ResolvedBackendIdentity | null {
   if (!isPlainObject(ctx)) return null;
   const platform = trimmed(ctx.messageChannel);
@@ -266,8 +281,19 @@ export function resolveTrustedWorkspace(
   const matches = config.workspaces.filter(
     workspace => workspace.platform === platform && workspace.nativeChannelIds.includes(nativeChannelId),
   );
-  if (matches.length !== 1) return null;
-  return { platform, workspaceId: matches[0].workspaceId, nativeChannelId };
+  if (matches.length === 1) return { platform, workspaceId: matches[0].workspaceId, nativeChannelId };
+  if (matches.length > 1 || platform !== 'discord' || !directMessageScope) return null;
+  const senderId = trimmed(ctx.requesterSenderId);
+  // The host owns these fields. A session name alone cannot select another profile, account,
+  // sender, or a public channel; every tuple must match this Community registration exactly.
+  if (!/^[a-z][a-z0-9_-]{0,63}$/.test(directMessageScope.agentId) ||
+      !/^[a-zA-Z0-9_-]{1,128}$/.test(directMessageScope.accountId) ||
+      ctx.agentId !== directMessageScope.agentId || ctx.agentAccountId !== directMessageScope.accountId ||
+      !/^\d{17,20}$/.test(senderId) || !/^\d{17,20}$/.test(nativeChannelId) ||
+      ctx.sessionKey !== `agent:${directMessageScope.agentId}:discord:${directMessageScope.accountId}:direct:${senderId}`) return null;
+  const directMatches = config.workspaces.filter(workspace => workspace.platform === 'discord' && workspace.directMessages === true);
+  if (directMatches.length !== 1) return null;
+  return { platform, workspaceId: directMatches[0].workspaceId, nativeChannelId };
 }
 
 export function createConfiguredTransport(config: ResolvedBackendConfig): BackendTransport {

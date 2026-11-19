@@ -185,3 +185,49 @@ test('Community self-status retains the Community caller and cannot expose gover
     }
   } finally { globalThis.fetch = originalFetch; }
 });
+
+test('Community profile DM mapping supports identity, binding and catalog through the existing relay contract', async () => {
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  const senderId = '111111111111111111';
+  const nativeChannelId = '222222222222222222';
+  globalThis.fetch = async (url, init) => {
+    const path = new URL(url).pathname;
+    const input = JSON.parse(init.body);
+    calls.push({ path, input, caller: new Headers(init.headers).get('X-Rein-Caller-Id') });
+    const body = path === '/api/ingress/relay'
+      ? { assertion: 'fixture-dm-proof', expires_at: new Date(Date.now() + 60000).toISOString() }
+      : path === '/api/identity/resolve' ? { ok: true, status: 'identity_not_linked' }
+      : path === '/api/identity/link/start'
+        ? { ok: true, status: 'started', session_id: 'fixture-bind-session', verification_url: 'https://foundation.invalid/verify', expires_at: null }
+        : { ok: true, operation: 'community_resources_search', result: { ok: true, status: 'empty',
+          source: 'foundation_catalog', environment: 'dev', retrievedAt: new Date().toISOString(),
+          items: [], hasMore: false, nextOffset: null } };
+    return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  };
+  try {
+    const p = profiles();
+    const db = p['nori-community'].foundationDb;
+    db.proposalChannelIds = []; db.boardChannelIds = [];
+    db.workspaces[0].directMessages = true;
+    const loaded = register(p);
+    const dm = context('nori-community', 'discord', { requesterSenderId: senderId, nativeChannelId,
+      sessionKey: `agent:nori-community:discord:default:direct:${senderId}` });
+    const tools = loaded.create(dm);
+    for (const name of ['rein_member_status', 'rein_identity_bind_start', 'rein_resources_search']) {
+      const result = await tools.find(tool => tool.name === name).execute(`fixture-${name}`, {});
+      assert.equal(result.details.ok, true, JSON.stringify(result.details));
+    }
+    const relays = calls.filter(call => call.path === '/api/ingress/relay');
+    assert.equal(relays.length, 3);
+    assert.ok(relays.every(call => call.input.workspace_id === 'FIXTURE_WORKSPACE' &&
+      call.input.channel_id === nativeChannelId && call.input.platform_user_id === senderId));
+    assert.ok(calls.every(call => call.caller === 'fixture-community'));
+    assert.ok(!tools.some(tool => /funds|poll|proposal|revision/.test(tool.name)));
+    calls.length = 0;
+    const publicTools = loaded.create({ ...dm, sessionKey: 'agent:nori-community:discord:channel:222222222222222222' });
+    await assert.rejects(publicTools.find(tool => tool.name === 'rein_identity_bind_start').execute('fixture-public', {}),
+      error => error.code === 'workspace_scope_unresolved');
+    assert.equal(calls.length, 0);
+  } finally { globalThis.fetch = originalFetch; }
+});

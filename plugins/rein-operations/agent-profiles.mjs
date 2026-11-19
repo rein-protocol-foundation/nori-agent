@@ -53,7 +53,8 @@ export function registerAgentProfiles(api, registerLegacy) {
         const admitted = names.filter(name => profile.capabilities === 'internal' || COMMUNITY_TOOLS.has(name));
         if (admitted.length) profile.registrations.push({ registration, names: admitted });
       },
-    }, { communityOnly: profile.capabilities === 'community' });
+    }, { communityOnly: profile.capabilities === 'community',
+      communityProfile: { agentId: profile.agentId, accountId: profile.accountId } });
   }
   const names = [...new Set(profiles.flatMap(profile => profile.registrations.flatMap(item => item.names)))];
   api.registerTool({ contextVersion: 2, create(ctx) {

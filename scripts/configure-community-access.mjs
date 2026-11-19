@@ -18,6 +18,12 @@ export function configureCommunityAccess(input, { sharedSkillsDir } = {}) {
   if (!isAbsolute(sharedSkillsDir ?? '')) throw new Error('community_access_shared_skills_directory_required');
   const discord = cfg.channels?.discord;
   if (discord?.enabled !== true) throw new Error('community_access_discord_required');
+  const profile = cfg.plugins?.entries?.['rein-operations']?.config?.agentProfiles?.['nori-community'];
+  const workspaces = profile?.foundationDb?.workspaces?.filter(w => w.platform === 'discord');
+  if (profile?.capabilities !== 'community' || profile.platform !== 'discord' || workspaces?.length !== 1) {
+    throw new Error('community_access_unique_dm_workspace_required');
+  }
+  workspaces[0].directMessages = true;
   discord.dmPolicy = 'open';
   discord.allowFrom = ['*'];
   const add = values => [...new Set([...values, ...COMMUNITY_SERVICE_TOOLS])];

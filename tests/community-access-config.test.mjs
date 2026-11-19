@@ -7,13 +7,14 @@ const fixture = () => ({ agents: { entries: {
     tools: { allow: ['message'], message: { crossContext: { allowAcrossProviders: false } } } },
 } }, channels: { slack: { enabled: true }, discord: { enabled: true, dmPolicy: 'allowlist', allowFrom: ['123'],
   guilds: { guild: { tools: { allow: ['message'] }, channels: { channel: { tools: { allow: ['message'] } } } } } },
-}, plugins: { allow: ['discord'], entries: { 'rein-router': { config: { scopedPolicies: { guard: 'preserved' } } } } },
+}, plugins: { allow: ['discord'], entries: { 'rein-operations': { config: { agentProfiles: { 'nori-community': { capabilities: 'community', platform: 'discord', foundationDb: { workspaces: [{platform:'discord',workspaceId:'guild',nativeChannelIds:['room']}] } } } } }, 'rein-router': { config: { scopedPolicies: { guard: 'preserved' } } } } },
 skills: { load: { extraDirs: ['/existing'] } } });
 test('open DM and public service tools preserve internal capabilities and data boundaries', () => {
  const input=fixture(), before=structuredClone(input), out=configureCommunityAccess(input,{sharedSkillsDir:'/public/skills'});
  assert.deepEqual(input,before); assert.deepEqual(out.agents.entries.main,before.agents.entries.main);
  assert.deepEqual(out.channels.slack,before.channels.slack);
  assert.deepEqual(out.plugins.entries['rein-router'],before.plugins.entries['rein-router']);
+ assert.equal(out.plugins.entries['rein-operations'].config.agentProfiles['nori-community'].foundationDb.workspaces[0].directMessages,true);
  assert.equal(out.channels.discord.dmPolicy,'open'); assert.deepEqual(out.channels.discord.allowFrom,['*']);
  const a=out.agents.entries['nori-community']; assert.deepEqual(a.sandbox,before.agents.entries['nori-community'].sandbox);
  assert.equal(a.tools.message.crossContext.allowAcrossProviders,false);
@@ -32,4 +33,9 @@ test('configured search provider is retained; missing isolation fails closed',()
  input.agents.entries['nori-community'].sandbox.workspaceAccess='rw';
  assert.throws(()=>configureCommunityAccess(input,{sharedSkillsDir:'/public/skills'}),/isolated_agent_required/);
  assert.throws(()=>configureCommunityAccess(fixture(),{sharedSkillsDir:'relative'}),/directory_required/);
+});
+
+test('DM enrollment refuses ambiguous organization workspaces',()=>{
+ const input=fixture(); const ws=input.plugins.entries['rein-operations'].config.agentProfiles['nori-community'].foundationDb.workspaces;ws.push({...ws[0],workspaceId:'other'});
+ assert.throws(()=>configureCommunityAccess(input,{sharedSkillsDir:'/public/skills'}),/unique_dm_workspace_required/);
 });

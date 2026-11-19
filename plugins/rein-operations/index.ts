@@ -31,9 +31,11 @@ export default definePluginEntry({
   },
 });
 
-function registerOperations(api: OpenClawPluginApi, { communityOnly = false } = {}) {
+function registerOperations(api: OpenClawPluginApi, { communityOnly = false, communityProfile }: {
+  communityOnly?: boolean; communityProfile?: { agentId: string; accountId: string };
+} = {}) {
     if (communityOnly) {
-      const runtime = createBackendRuntime({ config: api.pluginConfig?.foundationDb, communityOnly: true });
+      const runtime = createBackendRuntime({ config: api.pluginConfig?.foundationDb, communityOnly: true, communityProfile });
       if (!runtime) throw new Error('community backend runtime is unavailable');
       api.registerTool(createCommunityToolsRegistration({ runtime }), { names: [...COMMUNITY_TOOL_NAMES] });
       api.registerTool(createMemberStatusToolRegistration({ runtime }), { names: [...MEMBER_STATUS_TOOL_NAMES] });

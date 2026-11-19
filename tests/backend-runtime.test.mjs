@@ -58,11 +58,12 @@ const relayOk = (assertion = 'opaque-assertion-value') => ({
   body: { assertion, expires_at: '2026-09-30T17:05:00Z' },
 });
 
-function runtimeWith(responses, { configOverrides = {}, envOverrides = {}, now } = {}) {
+function runtimeWith(responses, { configOverrides = {}, envOverrides = {}, now, communityOnly, communityProfile } = {}) {
   const { fetchImpl, calls } = recordingFetch(responses);
   const runtime = createBackendRuntime({
     config: config(configOverrides),
     env: env(envOverrides),
+    communityOnly, communityProfile,
     transport: createBackendTransport({
       baseUrl: BASE,
       callerId: 'rein-agent',
@@ -103,6 +104,76 @@ const echoRegistration = (captured) => ({
       },
     ];
   },
+});
+
+const dmSender = '111111111111111111';
+const dmChannel = '222222222222222222';
+const dmWorkspace = { platform: 'discord', workspaceId: '333333333333333333',
+  nativeChannelIds: ['444444444444444444'], directMessages: true };
+const dmOptions = (overrides = {}) => ({ communityOnly: true,
+  communityProfile: { agentId: 'nori-community', accountId: 'default' },
+  configOverrides: { platform: 'discord', proposalChannelIds: [], boardChannelIds: [], workspaces: [dmWorkspace] },
+  ...overrides });
+const dmContext = (overrides = {}) => trustedContext({ agentId: 'nori-community', agentAccountId: 'default',
+  messageChannel: 'discord', nativeChannelId: dmChannel, requesterSenderId: dmSender,
+  sessionKey: `agent:nori-community:discord:default:direct:${dmSender}`, ...overrides }).ctx;
+
+test('Community explicitly maps every trusted sender-scoped Discord DM to its one enrolled workspace', async () => {
+  const { runtime, calls } = runtimeWith([relayOk()], dmOptions());
+  for (const [senderId, channelId] of [[dmSender, dmChannel], ['555555555555555555', '666666666666666666']]) {
+    const ctx = dmContext({ requesterSenderId: senderId, nativeChannelId: channelId,
+      sessionKey: `agent:nori-community:discord:default:direct:${senderId}` });
+    const tool = runtime.wrapRegistration(echoRegistration([])).create(ctx)[0];
+    await tool.execute(`dm-${senderId}`, {});
+    const tuple = JSON.parse(calls.at(-1).init.body);
+    assert.equal(tuple.workspace_id, dmWorkspace.workspaceId);
+    assert.equal(tuple.channel_id, channelId);
+    assert.equal(tuple.platform_user_id, senderId);
+    assert.equal(tuple.conversation_type, undefined);
+  }
+});
+
+test('Community DM mapping refuses forged sessions, profiles, accounts, senders and public channels', async () => {
+  for (const override of [{ sessionKey: 'agent:nori-community:discord:default:channel:222222222222222222' },
+    { sessionKey: `agent:main:discord:default:direct:${dmSender}` },
+    { sessionKey: `agent:nori-community:discord:other:direct:${dmSender}` },
+    { sessionKey: 'agent:nori-community:discord:default:direct:555555555555555555' },
+    { agentAccountId: 'other' }, { agentId: 'main' }, { requesterSenderId: 'not-a-discord-id' },
+    { nativeChannelId: 'not-a-discord-id' }, { messageChannel: 'slack' }, { sessionKey: undefined }]) {
+    const { runtime, calls } = runtimeWith([relayOk()], dmOptions());
+    const tool = runtime.wrapRegistration(echoRegistration([])).create(dmContext(override))[0];
+    await assert.rejects(tool.execute('fixture', {}), error => error.code === 'workspace_scope_unresolved');
+    assert.equal(calls.length, 0);
+  }
+});
+
+test('Community DM mapping requires explicit single-workspace opt-in and a registered profile', async () => {
+  for (const options of [dmOptions({ communityProfile: undefined }),
+    dmOptions({ configOverrides: { platform: 'discord', proposalChannelIds: [], boardChannelIds: [],
+      workspaces: [{ ...dmWorkspace, directMessages: false }] } })]) {
+    const { runtime, calls } = runtimeWith([relayOk()], options);
+    const tool = runtime.wrapRegistration(echoRegistration([])).create(dmContext())[0];
+    await assert.rejects(tool.execute('fixture', {}), error => error.code === 'workspace_scope_unresolved');
+    assert.equal(calls.length, 0);
+  }
+  for (const workspaces of [[dmWorkspace, { ...dmWorkspace, workspaceId: '777777777777777777' }],
+    [{ ...dmWorkspace, platform: 'slack' }], [{ ...dmWorkspace, directMessages: 'true' }]]) {
+    assert.throws(() => runtimeWith([relayOk()], dmOptions({ configOverrides: {
+      platform: workspaces[0].platform, proposalChannelIds: [], boardChannelIds: [], workspaces,
+    } })), /directMessages/);
+  }
+});
+
+test('internal runtime cannot opt into DM mapping or use a Community profile as fallback', async () => {
+  assert.throws(() => runtimeWith([relayOk()], { communityProfile: dmOptions().communityProfile,
+    configOverrides: { platform: 'discord', workspaces: [dmWorkspace],
+      proposalChannelIds: dmWorkspace.nativeChannelIds, boardChannelIds: dmWorkspace.nativeChannelIds } }), /directMessages/);
+  const { runtime, calls } = runtimeWith([relayOk()], { communityProfile: dmOptions().communityProfile,
+    configOverrides: { platform: 'discord', workspaces: [{ ...dmWorkspace, directMessages: false }],
+      proposalChannelIds: dmWorkspace.nativeChannelIds, boardChannelIds: dmWorkspace.nativeChannelIds } });
+  const tool = runtime.wrapRegistration(echoRegistration([])).create(dmContext())[0];
+  await assert.rejects(tool.execute('fixture', {}), error => error.code === 'workspace_scope_unresolved');
+  assert.equal(calls.length, 0);
 });
 
 test('the runtime is null while foundationDb is absent or disabled', () => {
