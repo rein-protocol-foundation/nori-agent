@@ -23,6 +23,26 @@ test('two current Slack users in one session get distinct host-authored audit; m
     assert.ok(!rewritten.params.job.description.includes('UFORGED1'));
   }
 });
+test('naming the configured sandbox schedules under the main thread owner', async () => {
+  const worker = { ...channel, agentId: 'nori-development' };
+  const gate = createCronIngress({ channels: [{ ...channel, channelId: '*' }], developmentChannels: [worker],
+    authorize: async () => true, readJobs: async () => [] });
+  const ctx = { ...source, sessionKey: source.sessionKey + ':thread:1234.001' };
+  gate.observe({}, ctx);
+  const event = add('sandbox timing');
+  event.params.job.agentId = worker.agentId;
+  const result = await gate.beforeToolCall(event, tool(ctx));
+  assert.equal(result.params.job.agentId, 'main');
+  assert.equal(result.params.job.payload.kind, 'script');
+  assert.match(result.params.job.payload.script, /"agentId":"nori-development"/);
+  assert.equal(result.params.job.delivery.threadId, '1234.001');
+  event.params.job.agentId = 'unconfigured-agent';
+  assert.equal((await gate.beforeToolCall(event, tool(ctx))).block, true);
+  const other = { ...ctx, chatId: 'COTHER0001', sessionKey: 'agent:main:slack:channel:cother0001:thread:1234.002' };
+  gate.observe({}, other);
+  event.params.job.agentId = worker.agentId;
+  assert.equal((await gate.beforeToolCall(event, tool(other))).block, true);
+});
 test('current native description preserves original creator on update; missing records fail closed', async () => {
   const gate = createCronIngress({ channels: [channel], authorize: async () => true,
     readJobs: async () => [{ id: 'job', owner: {agentId:source.agentId,accountId:source.accountId,sessionKey:source.sessionKey}, description: '[Nori creation v1 user=UALICE01]\nOriginal' }] });

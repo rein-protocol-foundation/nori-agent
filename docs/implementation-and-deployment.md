@@ -4,6 +4,17 @@
 
 SA2, owner Codex. Developed on an isolated branch and integrated upstream scheduler PR #121. Added task tracking and private run/report linkage, independent offline acceptance, scoped Slack participation and replay. Real Linear/GitHub verification exposed an incorrect detailed expectation on reopen. The corrected coarse projection passed. OCI produced private reports with separate OS principals for execution and review. The authorized Slack desktop account was a current Director without website administrator authority. New routing was measured in isolation. Production deployment, human return/retest and the positive administrator path remain open. [Checks, observations, rollback and pending work](super-agent-v2-verification.md).
 
+## 2026-11-19 — Firecrawl enabled for OCI web search
+
+Codex switched the shared Gateway default from `parallel-free` to `firecrawl`. The
+plugin reads its key through an OpenClaw file SecretRef in the preserved private runtime.
+The main agent's `web_search` returned two results for an IETF query and identified
+Firecrawl as the provider. Community listed Firecrawl as available, configured and
+selected. Both agents passed authenticated Gateway health checks. The standalone
+Community tool probe was blocked by its active-request policy and triggered the first
+rollback. Verification used the shared Gateway without sending a Discord message.
+During restart, the Gateway logged an interrupted cron run associated with Slack.
+
 ## 2026-11-18 — Discord daily archive deployed
 
 COMMUNITY-ONBOARDING-01; owner Codex. PR #117 passed CI and deployed `faaa9d0` at
@@ -1570,3 +1581,7 @@ SA-OPS-01 / SA-M1. Codex tested native scheduled collection on OCI with a synthe
 ## 2026-11-19 — COMMUNITY-PROFILE-LINK
 
 Owner: Codex. Implemented optional existing-profile association for Discord/Slack public introductions and companion self-only backend API. Synthetic checks passing; native linked-profile registration passed; full optional enable/disable checks and production activation pending. Original checkout changes preserved in a separate worktree. A first loader attempt failed for missing worktree dependencies; local dependencies were reused without editing vendor source. Next: complete loader/CI, deploy backend before Nori, activate under updater lock and verify retained cron/archive/config. Real two-human acceptance remains pending.
+
+Codex activated the administrator-reviewed main routing and scheduling configuration on OCI. Both Gateway health checks passed. Sixteen original job definitions, 46 private files and the baseline history checks passed. Production natural-language timer creation, same-ID adjustment, automatic SSH sandbox execution and thread delivery succeeded. The initial named-harness attempts exposed a runtime-selection error and brittle model transcription of the assignment. The follow-up covers both and passed 104 focused checks. Codex execution and retained-summary readback await production confirmation.
+
+2026-11-19 · Codex deployed PRs #121, #125 and #126 to OCI. The formal-channel timer, two Codex flows and same-thread summary lookup were verified. The final revision closed the CLI task autonomously after a bounded supplement. The dedicated Claude account still needs an organization login. [Release and acceptance](slack-scheduler-compatibility.md#production-acceptance-on-november-19-2026).

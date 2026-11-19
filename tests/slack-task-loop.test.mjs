@@ -292,6 +292,12 @@ test('both configured private channels admit ACP, and only configured harnesses 
   for (const chatId of [config.channel.channelId, 'CDEV0001', 'COTHER01']) {
     const src = source({ chatId, sessionKey: 'agent:main:slack:channel:' + chatId.toLowerCase() });
     await runtime.beforeAgentRun({}, src);
+    if (chatId === 'CDEV0001') {
+      const missingRuntime = await runtime.beforeToolCall({ toolName: 'sessions_spawn',
+        params: { agentId: 'codex', task: 'Develop a fixture' } }, toolContext(src));
+      assert.equal(missingRuntime.block, true);
+      assert.match(missingRuntime.blockReason, /explicit runtime="acp"/);
+    }
     for (const agentId of ['claude', 'codex', 'unconfigured']) {
       const result = await runtime.beforeToolCall({ toolName: 'sessions_spawn',
         params: { runtime: 'acp', agentId, task: 'Develop a fixture' } }, toolContext(src));

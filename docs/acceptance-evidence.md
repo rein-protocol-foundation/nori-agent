@@ -551,3 +551,7 @@ Owner: Codex; 2026-11-19. Targeted synthetic identity/recall and backend-proof r
 Final focused linked-reader checks: 14 passed. Whole Nori suite: 1,572 tests, 1,567 passed, 4 existing skips, 1 worktree-only missing markdown dependency failure. After supplying the existing dependency tree, the failed native migration test and linked-reader regression set passed (15/15); no vendor source changed.
 
 Native OpenClaw loader completed successfully for linked Discord/Slack registration and legacy optional enable/disable configuration.
+
+SA-OPS-01 / SA-M1 · Production Slack, November 19 UTC. One timer moved from 11:20:31 to 11:16:57 under the same native ID. It fired automatically as nori-dev, returned 4187 for 53 × 79 and received an original-thread delivery receipt. The first coding attempt ran on the development subagent. A separate ACP attempt stopped before launch while the model was copying the prepared task. Neither qualifies as a Codex run. The correction accepts a short, owner-scoped assignment reference and dispatches its complete stored text.
+
+SA-OPS-01 / SA-M1 · 2026-11-19, Codex. Formal-channel live acceptance passed for native timer ownership, sandbox execution and original-thread delivery. Two real Codex development flows produced independently verified artifacts. The final revision closed a two-attempt flow without human intervention. [Production evidence](slack-scheduler-compatibility.md#production-acceptance-on-november-19-2026).

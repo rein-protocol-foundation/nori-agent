@@ -95,6 +95,9 @@ export function createCronIngress({ channels, authorize, readJobs, developmentCh
       if (record(job.data)) job = job.data;
       else if (record(job.job)) job = job.job;
       if (Object.keys(job).some(key => !fields.has(key))) return { block: true, blockReason: 'Use canonical automation job fields.' };
+      // Slack users can name the channel's configured executor. The native job
+      // remains owned by the requesting thread, including on compact-tool replay.
+      if (worker && job.agentId === worker) job = { ...job, agentId: source.agentId };
       if (job.agentId && job.agentId !== source.agentId) return deny();
       if (scoped) {
         try { job = scheduleInThread({ job, source, action, current, worker }); }
