@@ -885,3 +885,177 @@ test('recovered backing cannot clear unrelated uncertainty or override expiry an
   assert.equal(stopped.historicalNotice, undefined);
   assert.equal(stopped.attempts[0].backingRecovery.notice, missingBackingNotice);
 });
+
+
+async function acpEventFixture(t, { accepted = true } = {}) {
+  const f = fixture(), listeners = new Set();
+  f.dependencies.events = { onAgentEvent(listener) { listeners.add(listener); return () => listeners.delete(listener); } };
+  f.dependencies.system = { enqueueSystemEvent() {}, requestHeartbeat() {} };
+  f.dependencies.subagent.waitForRun = async () => ({ status: 'timeout' });
+  f.dependencies.session.listSessionEntries = ({ agentId }) => agentId === 'codex'
+    ? [{ sessionKey: 'agent:codex:acp:event-child', entry: { sessionId: 'event-child-uuid' } }]
+    : [{ sessionKey: src.sessionKey, entry: { sessionId: src.sessionId } }];
+  await f.restart();
+  const begun = await f.call({ action: 'begin', goal: 'ACP lifecycle evidence', criteria: 'Verified settled coding result', runtime: 'acp' });
+  const prepared = await f.call({ action: 'delegate', flow: begun.flowId, instruction: 'Perform synthetic bounded coding work' });
+  const spawn = await f.spawn(prepared, { runtime: 'acp' });
+  const task = { id: 'event-task', runId: 'event-run', ownerKey: src.sessionKey, scope: 'session', runtime: 'acp',
+    agentId: 'codex', childSessionKey: 'agent:codex:acp:event-child', status: 'running', startedAt: 10 };
+  f.native.set(task.id, task);
+  const receipt = { ...spawn.event, result: { details: { status: 'accepted', runId: task.runId, childSessionKey: task.childSessionKey } } };
+  if (accepted) await f.runtime.afterToolCall(receipt, spawn.ctx);
+  const event = { runId: task.runId, stream: 'lifecycle', sessionKey: task.childSessionKey, sessionId: 'event-child-uuid',
+    agentId: 'codex', data: { phase: 'end', executionSettled: true, endedAt: 100 } };
+  t.after(async () => { await f.runtime.gatewayStop(); });
+  return { f, begun, task, receipt, spawn, event, listeners,
+    emit(value = event) { for (const listener of [...listeners]) listener(value); },
+    settle(status = 'succeeded') { Object.assign(task, { status, endedAt: 100 }); },
+  };
+}
+
+test('ACP settled lifecycle persists without parent review and survives restart with native wait unavailable', async t => {
+  const { f, begun, task, emit, settle } = await acpEventFixture(t);
+  settle(); emit(); await f.runtime.gatewayStop();
+  const saved = f.flows.get(begun.flowId).stateJson;
+  assert.equal(saved.phase, 'running'); assert.equal(saved.report, null);
+  assert.equal(saved.attempts[0].settlement.source, 'native_acp_lifecycle');
+  assert.equal(saved.attempts[0].settlement.taskId, task.id);
+  assert.equal(saved.attempts[0].settlement.nativeStatus, 'succeeded');
+  await f.restart();
+  const reviewed = await f.call({ action: 'review', flow: begun.flowId, scopeRevision: 1,
+    outcome: 'complete', evidence: 'Synthetic current-scope result verified after restart', effects: 'none' });
+  assert.equal(reviewed.phase, 'complete'); assert.equal(reviewed.attempts[0].settlement.source, 'native_acp_lifecycle');
+});
+
+test('ACP lifecycle before accepted receipt survives capture replacement and is consumed by the original hook', async t => {
+  const probe = await acpEventFixture(t, { accepted: false });
+  const { f, begun, task, receipt, spawn, listeners } = probe;
+  probe.settle(); probe.emit();
+  // Let the first scan observe the still-launching attempt with no accepted run.
+  await new Promise(resolve => setImmediate(resolve));
+  const replacement = createTaskContinuation(f.dependencies);
+  t.after(() => replacement.gatewayStop());
+  assert.equal(listeners.size, 1);
+  await replacement.beforeAgentRun({}, f.context);
+  await f.runtime.afterToolCall(receipt, spawn.ctx);
+  assert.equal(f.flows.get(begun.flowId).stateJson.attempts[0].settlement.source, 'native_acp_lifecycle');
+  assert.equal(f.flows.get(begun.flowId).stateJson.attempts[0].settlement.runId, task.runId);
+  await f.runtime.gatewayStop(); assert.equal(listeners.size, 1);
+});
+
+test('ACP early lifecycle pending scan is rechecked after acceptance rather than lost', async t => {
+  const probe = await acpEventFixture(t, { accepted: false });
+  probe.settle(); probe.emit();
+  // Deliberately do not drain the scan before receipt persistence.
+  await probe.f.runtime.afterToolCall(probe.receipt, probe.spawn.ctx);
+  assert.equal(probe.f.flows.get(probe.begun.flowId).stateJson.attempts[0].settlement.source, 'native_acp_lifecycle');
+});
+
+test('ACP event rejects untrusted routing, active tasks and contradictory or unsettled lifecycle facts', async t => {
+  const variants = [
+    { stream: 'assistant' }, { runId: 'foreign-run' }, { sessionKey: 'agent:codex:acp:foreign' },
+    { agentId: 'foreign-agent' }, { sessionId: 'foreign-session' },
+    { data: { executionSettled: false } }, { data: { executionSettled: undefined } },
+    { data: { phase: 'start' } }, { data: { endedAt: NaN } }, { data: { phase: 'error' } },
+    { data: { phase: 'error', status: 'completed' } }, { data: { livenessState: 'working' } },
+    { data: { stopReason: 'toolUse' } }, { data: { yielded: true } }, { data: { pendingError: true } },
+    { data: { childSessionKey: 'agent:codex:acp:foreign' } }, { data: { taskId: 'foreign-task' } },
+    { data: { ownerKey: 'foreign-owner' } },
+  ];
+  for (const delta of variants) {
+    const probe = await acpEventFixture(t); probe.settle();
+    const event = { ...probe.event, ...delta, data: { ...probe.event.data, ...delta.data } };
+    probe.emit(event); await probe.f.runtime.gatewayStop();
+    assert.equal(probe.f.flows.get(probe.begun.flowId).stateJson.attempts[0].settlement, undefined, JSON.stringify(delta));
+  }
+  for (const variation of ['revoked-member', 'reset-parent-session']) {
+    const probe = await acpEventFixture(t); probe.settle();
+    if (variation === 'revoked-member') probe.f.setMember(false);
+    else {
+      const inventory = probe.f.dependencies.session.listSessionEntries;
+      probe.f.dependencies.session.listSessionEntries = options => options.agentId === 'codex' ? inventory(options)
+        : [{ sessionKey: src.sessionKey, entry: { sessionId: 'reset-parent-uuid' } }];
+    }
+    probe.emit(); await probe.f.runtime.gatewayStop();
+    assert.equal(probe.f.flows.get(probe.begun.flowId).stateJson.attempts[0].settlement, undefined, variation);
+  }
+  for (const delta of [{ status: 'running', endedAt: undefined }, { ownerKey: 'foreign-owner' }, { scope: 'agent' },
+    { runtime: 'subagent' }, { runId: 'foreign-run' }, { childSessionKey: 'agent:codex:acp:foreign' },
+    { endedAt: undefined }, { id: 'foreign-task' }]) {
+    const probe = await acpEventFixture(t); probe.settle(); Object.assign(probe.task, delta);
+    probe.emit(); await probe.f.runtime.gatewayStop();
+    assert.equal(probe.f.flows.get(probe.begun.flowId).stateJson.attempts[0].settlement, undefined, JSON.stringify(delta));
+  }
+});
+
+test('ACP failed, cancelled, timed-out and blocked lifecycle proof cannot complete a goal', async t => {
+  for (const [status, data, terminalOutcome] of [
+    ['failed', { phase: 'error' }], ['cancelled', { phase: 'end', status: 'cancelled', aborted: true, stopReason: 'stop' }],
+    ['timed_out', { phase: 'error', status: 'timed_out', aborted: true, stopReason: 'timeout' }],
+    ['succeeded', { phase: 'error', livenessState: 'blocked' }, 'blocked'],
+  ]) {
+    const probe = await acpEventFixture(t); probe.settle(status);
+    if (terminalOutcome) probe.task.terminalOutcome = terminalOutcome;
+    probe.emit({ ...probe.event, data: { ...probe.event.data, ...data } }); await probe.f.runtime.gatewayStop();
+    assert.equal(probe.f.flows.get(probe.begun.flowId).stateJson.attempts[0].settlement.source, 'native_acp_lifecycle');
+    await probe.f.restart();
+    await assert.rejects(probe.f.call({ action: 'review', flow: probe.begun.flowId, scopeRevision: 1,
+      outcome: 'complete', evidence: 'A terminal lifecycle is not success', effects: 'none' }), /complete_native_outcome_invalid/);
+  }
+});
+
+test('ACP lifecycle CAS retries preserve concurrent stop/change and never review or reset bounds', async t => {
+  const probe = await acpEventFixture(t), binding = probe.f.tasks.async.managedFlows.bindSession();
+  const original = binding.setWaiting; let raced = false;
+  const initial = structuredClone(probe.f.flows.get(probe.begun.flowId).stateJson);
+  binding.setWaiting = async args => {
+    if (args.stateJson.attempts[0].settlement?.source === 'native_acp_lifecycle' && !raced) {
+      raced = true; const current = probe.f.flows.get(probe.begun.flowId); current.revision++;
+      current.stateJson.scopeRevision++;
+      current.stateJson.pendingChange = { goal: 'New goal', criteria: 'New criteria' };
+      current.stateJson.stopRequested = { at: 900, reason: 'change' }; current.stateJson.phase = 'cancellation_pending';
+      return { applied: false, code: 'revision_conflict' };
+    }
+    return original(args);
+  };
+  probe.settle(); probe.emit(); await probe.f.runtime.gatewayStop();
+  const saved = probe.f.flows.get(probe.begun.flowId).stateJson;
+  assert.equal(raced, true); assert.equal(saved.scopeRevision, 2); assert.equal(saved.phase, 'cancellation_pending');
+  assert.deepEqual(saved.pendingChange, { goal: 'New goal', criteria: 'New criteria' });
+  assert.equal(saved.stopRequested.reason, 'change'); assert.equal(saved.report, null);
+  assert.equal(saved.deadlineAt, initial.deadlineAt); assert.equal(saved.maxAttempts, initial.maxAttempts);
+  assert.equal(saved.attempts[0].scopeRevision, 1); assert.equal(saved.attempts[0].settlement.source, 'native_acp_lifecycle');
+});
+
+test('ACP lifecycle duplicates share one pending write; shutdown unsubscribes then drains and start is idempotent', async t => {
+  const probe = await acpEventFixture(t), binding = probe.f.tasks.async.managedFlows.bindSession();
+  const original = binding.setWaiting; let release, enter, writes = 0;
+  const entered = new Promise(resolve => { enter = resolve; }), gate = new Promise(resolve => { release = resolve; });
+  binding.setWaiting = async args => {
+    if (args.stateJson.attempts[0].settlement?.source === 'native_acp_lifecycle') { writes++; enter(); await gate; }
+    return original(args);
+  };
+  probe.settle(); for (let index = 0; index < 20; index++) probe.emit();
+  await entered;
+  let stopped = false; const stopping = probe.f.runtime.gatewayStop().then(() => { stopped = true; });
+  assert.equal(probe.listeners.size, 0); await Promise.resolve(); assert.equal(stopped, false);
+  release(); await stopping;
+  assert.equal(writes, 1); assert.equal(probe.f.flows.get(probe.begun.flowId).stateJson.attempts[0].settlement.source, 'native_acp_lifecycle');
+  await probe.f.runtime.gatewayStart({}, {}); await probe.f.runtime.gatewayStart({}, {});
+  assert.equal(probe.listeners.size, 1);
+  probe.emit(); await probe.f.runtime.gatewayStop(); assert.equal(writes, 1);
+});
+
+
+test('ACP lifecycle rejects a terminal task fingerprint changed by the second public scoped resolve', async t => {
+  const probe = await acpEventFixture(t), runs = probe.f.tasks.async.runs.bindSession();
+  const original = runs.resolve; let reads = 0;
+  runs.resolve = async token => {
+    const task = await original(token);
+    if (token === probe.task.runId && ++reads === 2) return { ...task, endedAt: task.endedAt + 1 };
+    return task;
+  };
+  probe.settle(); probe.emit(); await probe.f.runtime.gatewayStop();
+  assert.equal(reads, 2);
+  assert.equal(probe.f.flows.get(probe.begun.flowId).stateJson.attempts[0].settlement, undefined);
+});

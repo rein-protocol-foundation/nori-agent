@@ -25,6 +25,7 @@ export default definePluginEntry({
           backendModuleUrl: retainedSummaryBackendUrlForRuntime(api.runtimeSource) }) : undefined;
       continuation = config.continuation ? createTaskContinuation({ config: { ...config, hostConfig: api.config }, authorize,
         tasks: api.runtime.tasks, subagent: api.runtime.subagent, system: api.runtime.system, session: api.runtime.agent.session,
+        events: api.runtime.events,
         isNativeChild: ctx => isSubagentSessionKey(ctx.sessionKey) || isAcpSessionKey(ctx.sessionKey),
         confirmedReplacement: runtime.confirmedReplacement, logger: api.logger, retainedSummaries }) : undefined;
       api.registerTool(runtime.toolFactory, { names: ['rein_task'], optional: true });
