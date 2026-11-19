@@ -7,7 +7,7 @@ import { bindManagedService, managedServiceScope, managedServiceRegistry } from 
 import { createProfileAdminAuthorizer, FOUNDATION_ADMIN_TIMEOUT_MS } from './foundation-admin.ts';
 import { createCronIngress, assertTrustedSlackBoundaries } from './cron-ingress.mjs';
 import { loadCronStore, resolveCronStorePath } from 'openclaw/plugin-sdk/cron-store-runtime';
-import { createSlackDevelopmentAuthorizer, DEVELOPMENT_AUTH_TIMEOUT_MS } from './slack-development.mjs';
+import { createSlackDevelopmentAuthorizer, createSlackScheduleAuthorizer, DEVELOPMENT_AUTH_TIMEOUT_MS } from './slack-development.mjs';
 
 export default definePluginEntry({
   id: 'rein-router', name: 'Nori-Agent Subscription Router',
@@ -26,7 +26,7 @@ export default definePluginEntry({
       operationsConfig: operations?.enabled === true ? operations.config : undefined,
     });
     const authorizeDevelopment = createSlackDevelopmentAuthorizer({ config });
-    const authorizeCreator = createSlackDevelopmentAuthorizer({ config: { developmentChannels: config.trustedSlackChannels } });
+    const authorizeCreator = createSlackScheduleAuthorizer({ config: { developmentChannels: config.trustedSlackChannels, scheduleInPublicChannels: config.scheduleInPublicChannels } });
     if (config.enabled) { assertRuntimeConfig(config, api.config); assertTrustedSlackBoundaries(config.trustedSlackChannels, api.config); }
     const usage = config.enabled && Object.values(config.scopedPolicies ?? {}).some(policy => policy.usageLimits)
       ? createUsageLedger({ stateDir: api.runtime.state.resolveStateDir() }) : undefined;
@@ -48,11 +48,24 @@ export default definePluginEntry({
       wrapSimpleCompletionStreamFn: ctx => router.wrapStreamFn({ ...ctx, simpleCompletion: true }) });
     api.on('before_model_resolve', router.beforeModelResolve,
       { priority: 100, timeoutMs: router.config.decision.timeoutMs + FOUNDATION_ADMIN_TIMEOUT_MS + DEVELOPMENT_AUTH_TIMEOUT_MS + (config.gateway.managed?.mode === 'console' ? 2000 : 1000) });
-    const cronIngress = createCronIngress({ channels: config.trustedSlackChannels, authorize: authorizeCreator,
+    const cronIngress = createCronIngress({ channels: config.trustedSlackChannels, developmentChannels: config.developmentChannels, authorize: authorizeCreator,
+      hasExistingNativeControls: source => Object.hasOwn(api.config.channels?.slack?.channels ?? {}, source.chatId),
       readJobs: async source => (await loadCronStore(resolveCronStorePath(api.config.cron?.store))).jobs.filter(job =>
         job.owner?.agentId === source.agentId && job.owner?.accountId === source.accountId &&
         job.owner?.sessionKey === source.sessionKey) });
-    api.on('before_agent_run', cronIngress.observe, { priority: 110 });
+    // An explicit channel keeps its existing native admission. For a new channel
+    // selected by the Slack wildcard, verify workspace membership before inference.
+    api.on('before_agent_run', async (event, ctx) => {
+      const channelId = ctx.channelContext?.chat?.id ?? ctx.chatId;
+      const slack = api.config.channels?.slack;
+      if (ctx.channel === 'slack' && ctx.trigger === 'user' && /^[CG][A-Z0-9]+$/.test(channelId) &&
+          slack?.channels?.['*'] && !Object.hasOwn(slack.channels, channelId) &&
+          config.trustedSlackChannels.some(entry => entry.channelId === '*' && entry.accountId === ctx.accountId)) {
+        if (!await authorizeCreator(ctx)) return { outcome: 'block', reason: 'rein_scheduler_membership_required',
+          message: 'Nori could not verify current membership in this Slack workspace channel.' };
+      }
+      return cronIngress.observe(event, ctx);
+    }, { priority: 110, timeoutMs: DEVELOPMENT_AUTH_TIMEOUT_MS + 1000 });
     api.on('agent_end', cronIngress.end);
     api.on('before_tool_call', cronIngress.beforeToolCall, { priority: 110, timeoutMs: DEVELOPMENT_AUTH_TIMEOUT_MS + 1000 });
     api.on('before_agent_run', router.beforeAgentRun, { priority: 100 });

@@ -1,3 +1,4 @@
+import { taskChannels } from './runtime.mjs';
 import { createHash } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { terminalSummary } from './retained-summaries.mjs';
@@ -33,15 +34,15 @@ const publishedTerminalReceipt = (task, run) => {
 };
 
 /** Thin native Flow controller. No timers, execution engine, transcript store or delivery ledger. */
-export function createTaskContinuation({ config, tasks, subagent, system, session, authorize, isNativeChild, confirmedReplacement = () => undefined, clock = Date.now, logger, retainedSummaries, events }) {
+export function createTaskContinuation({ config, tasks, subagent, system, session, authorize, isNativeChild, confirmedReplacement = () => undefined, clock = Date.now, logger, retainedSummaries, events, writeFileWithinRoot }) {
   const turns = new Map(), invocations = new Map(), admissions = new Map();
   const selected = ctx => ctx.agentId === config.channel.agentId && !isNativeChild(ctx);
   const flowsFor = sessionKey => tasks.async.managedFlows.bindSession({ sessionKey });
   const runsFor = sessionKey => tasks.async.runs.bindSession({ sessionKey, agentId: config.channel.agentId });
-  const originAllowed = origin => origin?.channel === 'slack' && origin.accountId === config.channel.accountId &&
-    origin.to?.toLowerCase() === `channel:${config.channel.channelId}`.toLowerCase();
+  const originAllowed = (origin, chatId) => origin?.channel === 'slack' && origin.accountId === config.channel.accountId &&
+    taskChannels(config).some(channel => channel.channelId === chatId && origin.to?.toLowerCase() === `channel:${chatId}`.toLowerCase());
   const owned = (flow, owner) => flow?.syncMode === 'managed' && flow.controllerId === CONTROLLER && flow.ownerKey === owner &&
-    flow.stateJson?.version === 1 && originAllowed(flow.requesterOrigin) && flow.stateJson.source?.sessionKey === owner;
+    flow.stateJson?.version === 1 && originAllowed(flow.requesterOrigin, flow.stateJson.source?.chatId) && flow.stateJson.source?.sessionKey === owner;
   const inventory = () => session.listSessionEntries({ agentId: config.channel.agentId, readOnly: true });
   const sourceCurrent = async (flow, ctx, options = {}) => {
     if (!owned(flow, ctx.sessionKey)) throw Error('rein_continuation_unavailable');
@@ -103,15 +104,16 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
   const previousCapture = events?.onAgentEvent ? eventScopes.get(eventScope) : undefined;
   const lifecycleEvents = previousCapture?.cache ?? new Map(), lifecyclePending = previousCapture?.pending ?? new Map();
   let eventSlot, unsubscribe, eventRetired = false, eventClosed = false;
+  const harnesses = [config.harnessAgentId, config.alternateHarness].filter(Boolean);
   const lifecycleFact = event => {
     const data = event?.data;
     if (event?.stream !== 'lifecycle' || !['end', 'error'].includes(data?.phase) ||
         data.executionSettled !== true || !Number.isFinite(data.endedAt) || data.endedAt < 0 || !string(event.runId, 512)) return;
     for (const identity of [event, data]) {
-      if (identity.agentId !== undefined && identity.agentId !== config.harnessAgentId) return;
+      if (identity.agentId !== undefined && !harnesses.includes(identity.agentId)) return;
       for (const key of ['sessionKey', 'childSessionKey'])
         if (identity[key] !== undefined && (typeof identity[key] !== 'string' ||
-            !identity[key].startsWith(`agent:${config.harnessAgentId}:acp:`))) return;
+            !harnesses.some(id => identity[key].startsWith(`agent:${id}:acp:`)))) return;
     }
     if (data.yielded === true || data.pendingError ||
         (data.livenessState != null && !['finished', 'blocked'].includes(data.livenessState)) ||
@@ -480,7 +482,7 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
     },
     async beforeAgentRun(_event, ctx) {
       if (!selected(ctx) || !ctx.runId || !ctx.sessionKey) return;
-      const human = !!developmentChannelFor({ developmentChannels: [config.channel] }, ctx);
+      const human = !!developmentChannelFor({ developmentChannels: taskChannels(config) }, ctx);
       const native = (ctx.inputProvenance?.kind === 'internal_system' && ctx.inputProvenance.sourceTool === 'background-task') ||
         (ctx.inputProvenance?.kind === 'inter_session' && ['subagent_announce', 'subagent_settle'].includes(ctx.inputProvenance.sourceTool));
       if (!human && !native) return;
@@ -605,7 +607,8 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
       return { name: 'rein_continuation', label: 'Native task continuation',
         description: 'Persist bounded goals in native managed Flows; inspect, delegate, review, stop or revise work within the current authorized owner/audience. Optional minimal retained terminal summaries; native execution remains authoritative.',
         parameters: { type: 'object', additionalProperties: false, required: ['action'], properties: {
-          action: { type: 'string', enum: ['begin', 'status', 'delegate', 'review', 'stop', 'change', 'list_summaries', 'read_summary', 'delete_summary'] },
+          action: { type: 'string', enum: ['begin', 'status', 'delegate', 'review', 'stop', 'change', 'list_summaries', 'read_summary', 'delete_summary', ...(config.additionalChannelIds?.length ? ['write_development_file'] : [])] },
+          relativePath: { type: 'string', maxLength: 256 }, content: { type: 'string', maxLength: 65536 },
           flow: { type: 'string', maxLength: 512 }, goal: { type: 'string', maxLength: 8000 }, criteria: { type: 'string', maxLength: 8000 },
           runtime: { type: 'string', enum: ['subagent', 'acp'] }, instruction: { type: 'string', maxLength: 8000 },
           outcome: { type: 'string', enum: ['complete', 'continue', 'blocked'] }, evidence: { type: 'string', maxLength: 8000 },
@@ -620,6 +623,18 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
           const turn = await current(ctx, invocation), binding = flowsFor(ctx.sessionKey);
           const assert = async flow => { await current(ctx, invocation); if (flow) await sourceCurrent(flow, ctx, { source: turn.human ? turn.source : undefined }); ctx.assertInvocationCurrent(); };
           const terminalOutput = async pending => { const result = await pending; await assert(result); return output(view(result)); };
+          if (args.action === 'write_development_file') {
+            if (!turn.human || !config.additionalChannelIds?.includes(turn.source.chatId) ||
+                !originAllowed(ctx.deliveryContext, turn.source.chatId)) throw Error('rein_development_channel_required');
+            if (typeof args.relativePath !== 'string' || args.relativePath.length > 256 ||
+                !args.relativePath.split('/').every(part => /^[A-Za-z0-9_-][A-Za-z0-9_.-]{0,95}$/.test(part)) ||
+                typeof args.content !== 'string' || Buffer.byteLength(args.content) > 65536)
+              throw Error('rein_development_file_invalid');
+            const relativePath = `development/${digest(ctx.sessionKey)}/${args.relativePath}`;
+            await assert();
+            await writeFileWithinRoot({ rootDir: config.cwd, relativePath, data: args.content, mkdir: true });
+            return output({ relativePath, bytesWritten: Buffer.byteLength(args.content) });
+          }
           if (['list_summaries', 'read_summary', 'delete_summary'].includes(args.action)) {
             if (!retainedSummaries) throw Error('rein_summary_retention_disabled');
             if (args.action === 'delete_summary' && !turn.human) throw Error('rein_continuation_human_control_required');
@@ -634,8 +649,8 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
               // executable Flows retain sourceCurrent's strict original UUID fence.
               if (summary && (summary.ownerKey !== ctx.sessionKey || summary.source?.sessionKey !== ctx.sessionKey ||
                   summary.source.agentId !== config.channel.agentId || summary.source.accountId !== config.channel.accountId ||
-                  summary.source.channel !== 'slack' || summary.source.chatId?.toLowerCase() !== config.channel.channelId.toLowerCase() ||
-                  !originAllowed(summary.origin))) throw Error('rein_continuation_unavailable');
+                  summary.source.channel !== 'slack' || summary.source.chatId !== source.chatId ||
+                  !originAllowed(summary.origin, source.chatId))) throw Error('rein_continuation_unavailable');
               ctx.assertInvocationCurrent();
             };
             // Only current humans can query retained copies. Native background work
@@ -661,7 +676,7 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
           }
           if (args.action === 'begin') {
             if (!turn.human || !string(args.goal) || !string(args.criteria) || !['subagent', 'acp'].includes(args.runtime)) throw Error('rein_continuation_goal_criteria_runtime_required');
-            if (!originAllowed(ctx.deliveryContext) || !turn.source.sessionId) throw Error('rein_continuation_native_origin_required');
+            if (!originAllowed(ctx.deliveryContext, turn.source.chatId) || !turn.source.sessionId) throw Error('rein_continuation_native_origin_required');
             const active = (await ownList(ctx.sessionKey)).filter(flow => !terminalFlow(flow));
             if (active.length >= config.continuation.maxActiveFlows) throw Error('rein_continuation_capacity');
             await assert();

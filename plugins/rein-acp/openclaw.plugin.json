@@ -26,6 +26,8 @@
           }
         }
       },
+      "alternateHarness": { "type": "string", "enum": ["claude"] },
+      "additionalChannelIds": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9]{5,31}$" } },
       "channel": {
         "type": "object", "additionalProperties": false,
         "required": ["accountId", "workspaceId", "channelId", "agentId", "botTokenEnvVar"],

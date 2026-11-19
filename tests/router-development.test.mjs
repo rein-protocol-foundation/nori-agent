@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSlackDevelopmentAuthorizer, developmentChannelFor } from '../plugins/rein-router/slack-development.mjs';
+import { createSlackDevelopmentAuthorizer, createSlackScheduleAuthorizer, developmentChannelFor } from '../plugins/rein-router/slack-development.mjs';
 import { createRouter, assertRuntimeConfig } from '../plugins/rein-router/runtime.mjs';
 import { buildOpenClawFragment, validateRouterConfig } from '../plugins/rein-router/policy.mjs';
 const entry = { accountId:'default',workspaceId:'TFIXTURE1',channelId:'CFIXTURE1',agentId:'nori-development',botTokenEnvVar:'SLACK_TEST_TOKEN' };
@@ -81,4 +81,44 @@ test('development agents require explicit isolation with elevated execution disa
   const c=validateRouterConfig(config),host=buildOpenClawFragment(c, new URL("../plugins/rein-router", import.meta.url).pathname);assert.throws(()=>assertRuntimeConfig(c,host),/development agent/);
   host.agents.list=[{id:entry.agentId,sandbox:{mode:'all',backend:'ssh'},tools:{elevated:{enabled:false}}}];assert.doesNotThrow(()=>assertRuntimeConfig(c,host));
   host.agents.list[0].tools.elevated.enabled=true;assert.throws(()=>assertRuntimeConfig(c,host),/development agent/);
+});
+
+
+test('public channel schedule membership is opt-in and separate from development authority', async () => {
+  const publicChannel = { ...goodChannel, is_private: false, is_channel: true };
+  const payloads = { 'auth.test': { team_id: entry.workspaceId, user_id: 'UBOT0001', bot_id: 'BBOT0001' },
+    'conversations.info': { channel: publicChannel }, 'conversations.members': { members: [context.senderId] } };
+  const options = { config: { ...config, scheduleInPublicChannels: true }, env: { SLACK_TEST_TOKEN: 'xoxb-fixture-token' },
+    fetchImpl: async url => Response.json({ ok: true, ...payloads[url.split('/').at(-1)] }) };
+  assert.equal(await createSlackScheduleAuthorizer(options)(context), true);
+  assert.equal(await createSlackDevelopmentAuthorizer(options)(context), false);
+  assert.equal(await createSlackScheduleAuthorizer({ ...options, config })(context), false);
+  payloads['conversations.members'].members = [];
+  assert.equal(await createSlackScheduleAuthorizer(options)(context), false);
+  payloads['conversations.members'].members = [context.senderId];
+  publicChannel.is_ext_shared = true;
+  assert.equal(await createSlackScheduleAuthorizer(options)(context), false);
+});
+
+test('workspace scheduling resolves the observed channel and rechecks Slack membership for it', async () => {
+  const other = 'COTHER001';
+  const source = { ...context, chatId: other };
+  const wildcard = { ...entry, channelId: '*' };
+  const options = { config: { developmentChannels: [wildcard], scheduleInPublicChannels: true },
+    env: { SLACK_TEST_TOKEN: 'xoxb-fixture-token' }, fetchImpl: async (url, request) => {
+      const method = url.split('/').at(-1);
+      if (method === 'auth.test') return Response.json({ ok: true, team_id: entry.workspaceId, user_id: 'UBOT0001', bot_id: 'BBOT0001' });
+      assert.equal(request.body.get('channel'), other);
+      if (method === 'conversations.info') return Response.json({ ok: true, channel: { ...goodChannel, id: other } });
+      assert.equal(method, 'conversations.members');
+      return Response.json({ ok: true, members: [source.senderId] });
+    } };
+  assert.equal(await createSlackScheduleAuthorizer(options)(source), true);
+  assert.equal(await createSlackDevelopmentAuthorizer(options)(source), false);
+  for (const delta of [{ agentId: 'other' }, { accountId: 'other' }, { chatId: 'DFIXTURE1' }])
+    assert.equal(await createSlackScheduleAuthorizer(options)({ ...source, ...delta }), false);
+  assert.throws(() => validateRouterConfig({ ...config, trustedSlackChannels: [wildcard] }));
+  const enabled = { ...config, scheduleInPublicChannels: true, trustedSlackChannels: [wildcard] };
+  assert.doesNotThrow(() => validateRouterConfig(enabled));
+  assert.throws(() => validateRouterConfig({ ...enabled, developmentChannels: [wildcard] }));
 });

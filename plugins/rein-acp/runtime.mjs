@@ -9,6 +9,10 @@ const deny = blockReason => ({ block: true, blockReason });
 const reason = 'ACP requires current membership in the configured trusted private Slack channel.';
 const human = ctx => ctx.trigger === 'user' && (!ctx.inputProvenance || ctx.inputProvenance.kind === 'external_user');
 
+export function taskChannels(config) {
+  return [config.channel, ...(config.additionalChannelIds ?? []).map(channelId => ({ ...config.channel, channelId }))];
+}
+
 export function validateAcpConfig(raw = {}) {
   if (raw.enabled !== true) return { enabled: false };
   const channel = raw.channel;
@@ -17,6 +21,14 @@ export function validateAcpConfig(raw = {}) {
       !/^[A-Z][A-Z0-9_]*$/.test(channel.botTokenEnvVar) || !/^[a-z0-9][a-z0-9_-]*$/.test(channel.agentId) ||
       !/^[a-z0-9][a-z0-9_-]*$/.test(raw.harnessAgentId ?? '') || channel.agentId === raw.harnessAgentId ||
       typeof raw.cwd !== 'string' || !isAbsolute(raw.cwd)) throw new Error('rein_acp_config_invalid');
+  const additionalChannelIds = raw.additionalChannelIds ?? [];
+  if (!Array.isArray(additionalChannelIds) || additionalChannelIds.some(id => typeof id !== 'string' || !/^[A-Z][A-Z0-9]{5,31}$/.test(id)) ||
+      new Set([channel.channelId, ...additionalChannelIds]).size !== additionalChannelIds.length + 1 ||
+      (additionalChannelIds.length && raw.taskLoop !== true)) throw Error('rein_acp_channels_invalid');
+  const alternateHarness = raw.alternateHarness;
+  if (alternateHarness !== undefined && (raw.taskLoop !== true || alternateHarness !== 'claude' ||
+      alternateHarness === channel.agentId || alternateHarness === raw.harnessAgentId))
+    throw Error('rein_acp_harness_invalid');
   let continuation;
   if (raw.continuation?.enabled === true) {
     if (raw.taskLoop !== true) throw Error('rein_continuation_requires_task_loop');
@@ -28,7 +40,7 @@ export function validateAcpConfig(raw = {}) {
     for (const [key, max] of Object.entries({ maxAttempts: 12, maxNoProgress: 12, maxRuntimeMs: 86_400_000, maxActiveFlows: 64 }))
       if (!Number.isSafeInteger(continuation[key]) || continuation[key] < 1 || continuation[key] > max) throw Error('rein_continuation_bounds_invalid');
   }
-  return { enabled: true, channel: { ...channel }, harnessAgentId: raw.harnessAgentId, cwd: raw.cwd, ...(continuation ? { continuation } : {}) };
+  return { enabled: true, channel: { ...channel }, additionalChannelIds: [...additionalChannelIds], alternateHarness, harnessAgentId: raw.harnessAgentId, cwd: raw.cwd, ...(continuation ? { continuation } : {}) };
 }
 
 /** An explicit controller avoids relaxing the sandbox on the existing development agent. */

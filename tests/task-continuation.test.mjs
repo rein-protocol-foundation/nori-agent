@@ -1177,3 +1177,19 @@ test('receipt-only observer conflict permits at most one automatic recomputation
   assert.equal(attempts.filter(attempt => !attempt.applied).length, 2);
   assert.equal(probe.f.flows.get(probe.begun.flowId).status, 'waiting');
 });
+
+test('development file writes require an authorized development source and matching delivery audience', async () => {
+  const f = fixture(), writes = [];
+  f.dependencies.config = { ...config, channel: { ...config.channel, channelId: 'CTEST001' }, additionalChannelIds: [src.chatId] };
+  f.dependencies.writeFileWithinRoot = async args => { writes.push(args); };
+  await f.restart();
+  const request = { action: 'write_development_file', relativePath: 'src/test.py', content: 'pass\n' };
+  for (const relativePath of ['../runtime/openclaw.json', '/etc/file', '.git/config', 'src/../../escape'])
+    await assert.rejects(f.call({ ...request, relativePath }), /development_file_invalid/);
+  const result = await f.call(request);
+  assert.match(result.relativePath, /^development\/[a-f0-9]{64}\/src\/test\.py$/);
+  assert.equal(writes[0].rootDir, config.cwd);
+  f.context.deliveryContext = { ...origin, to: 'channel:CTEST001' };
+  await assert.rejects(f.call(request), /development_channel_required/);
+  assert.equal(writes.length, 1);
+});

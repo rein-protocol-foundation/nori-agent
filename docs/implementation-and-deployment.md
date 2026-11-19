@@ -1559,6 +1559,9 @@ Owner: Codex. Applied the operator-requested 07:30 America/Los_Angeles schedule 
 
 Live integrated preview also passed with the current production renderer: source export, usage refresh and PNG generation for November 17 completed without sending. Output was isolated under the private schedule-fix-preview directory; original artifacts and delivery state were preserved. This verifies generation outside the contention window, not the undeployed retry or next scheduled delivery.
 
+## November 19, 2026 · Scheduled development compatibility
+
+SA-OPS-01 / SA-M1. Codex tested native scheduled collection on OCI with a synthetic Slack transport. Production settings and legacy thread routing require the separately reviewed cutover. [Verification](slack-scheduler-compatibility.md).
 
 ## 2026-11-19 — COMMUNITY-PROFILE-LINK
 

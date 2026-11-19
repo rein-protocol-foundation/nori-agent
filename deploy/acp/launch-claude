@@ -1,0 +1,17 @@
+#!/bin/sh
+# Invoked as the unprivileged ACP account. Keep the same absolute workspace
+# path because ACP supplies it again when opening the coding session.
+set -eu
+base=/var/lib/nori-acp-pilot
+workspace="$base/workspace"
+set -- --unshare-user --unshare-pid --unshare-ipc --unshare-uts --die-with-parent --new-session \
+  --ro-bind /usr /usr --symlink usr/lib /lib --symlink usr/lib64 /lib64 --symlink usr/bin /bin \
+  --proc /proc --dev /dev --tmpfs /tmp --dir /etc --ro-bind /etc/ssl /etc/ssl \
+  --ro-bind /etc/resolv.conf /etc/resolv.conf --ro-bind /etc/hosts /etc/hosts \
+  --ro-bind "$base/.local/claude-tools" /opt/claude --tmpfs /home --dir /home/claude/.claude \
+  --bind "$workspace" "$workspace" --chdir "$workspace" --clearenv \
+  --setenv HOME /home/claude --setenv LANG C.UTF-8 --setenv PATH /opt/claude/node_modules/.bin:/usr/bin:/bin
+if [ -f "$base/.claude/.credentials.json" ]; then
+  set -- "$@" --ro-bind "$base/.claude/.credentials.json" /home/claude/.claude/.credentials.json
+fi
+exec /usr/bin/bwrap "$@" -- /opt/claude/node_modules/.bin/claude-agent-acp

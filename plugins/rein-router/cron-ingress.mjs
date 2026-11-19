@@ -1,7 +1,8 @@
 // Creation-time policy only. Native OpenClaw owns job execution, grants and self-cleanup.
 import { createAgentToAgentPolicy } from 'openclaw/plugin-sdk/session-visibility';
 import { resolveAgentRoute, normalizeAgentId, parseAgentSessionKey, parseThreadSessionSuffix } from 'openclaw/plugin-sdk/routing';
-import { developmentChannelFor } from './slack-development.mjs';
+import { ownerThread, scheduleInThread } from './scheduled-development.mjs';
+import { scheduleChannelFor } from './slack-development.mjs';
 
 const PREFIX = '[Nori creation v1 ';
 const deny = () => ({ block: true, blockReason: 'Automation creation or expansion requires a current member of a configured trusted Slack channel on its approved Nori agent.' });
@@ -31,12 +32,12 @@ const sameRun = (source, ctx) => source && source.agentId === ctx.agentId && sou
   source.accountId === ctx.requester?.accountId && ctx.requester?.channel === 'slack' &&
   sameConversation(source, ctx.channelId);
 
-export function createCronIngress({ channels, authorize, readJobs, clock = Date.now, deadlineMs = 8500 }) {
+export function createCronIngress({ channels, authorize, readJobs, developmentChannels = [], requireWorkspaceSource = false, hasExistingNativeControls = () => false, clock = Date.now, deadlineMs = 8500 }) {
   const sources = new Map();
   return {
     observe(_event, ctx) {
       sources.delete(ctx.runId);
-      if (!developmentChannelFor({ developmentChannels: channels }, ctx)) return;
+      if (!scheduleChannelFor(channels, ctx)) return;
       for (const [id, value] of sources) if (clock() - value.at > 3_600_000) sources.delete(id);
       if (sources.size >= 4096) return; // Refuse new creation, never block native execution.
       sources.set(ctx.runId, { ...ctx, at: clock(), chatId: ctx.channelContext?.chat?.id ?? ctx.chatId });
@@ -63,31 +64,55 @@ export function createCronIngress({ channels, authorize, readJobs, clock = Date.
       const params = wrapped ? event.params?.args : event.params;
       if (!record(params)) return deny();
       const action = typeof params.action === 'string' ? params.action.trim() : params.action;
-      // Native read/control scope and self-removal remain native. An exact disable is restrictive.
-      if (!['add', 'update'].includes(action)) return;
-      if (action === 'update' && record(params.job) && Object.keys(params.job).length === 1 && params.job.enabled === false) return;
       const source = sources.get(ctx.runId);
+      const selected = source && scheduleChannelFor(channels, source);
+      if (requireWorkspaceSource && !selected?.workspaceSchedule) return deny();
+      const worker = selected?.workspaceSchedule && developmentChannels.find(entry => entry.channelId === source.chatId &&
+        entry.accountId === source.accountId && entry.workspaceId === selected.workspaceId && entry.agentId !== source.agentId)?.agentId;
+      const scoped = selected?.workspaceSchedule === true;
+      const nativeControls = !requireWorkspaceSource && !worker && source && hasExistingNativeControls(source);
+      if ((!scoped || nativeControls) && !['add', 'update'].includes(action)) return;
+      if (!scoped && action === 'update' && record(params.job) && Object.keys(params.job).length === 1 && params.job.enabled === false) return;
       if (!sameRun(source, ctx) || ctx.abortSignal?.aborted || !await authorize(source) || ctx.abortSignal?.aborted) return deny();
+      let current;
+      if (scoped) {
+        if (!ownerThread(source)) return deny();
+        // Native owner accounts may otherwise see Gateway-wide jobs. Enforce the
+        // thread at this newly admitted surface, including reads and controls.
+        if (!['add','update','get','runs','remove','run'].includes(action))
+          return { block: true, blockReason: 'Use the job ID from this thread to inspect or adjust its automation.' };
+        if (Object.keys(params).some(key => !['action','job','jobId','id','runMode'].includes(key)))
+          return { block: true, blockReason: 'Use canonical nested job parameters without Gateway overrides.' };
+        if (action !== 'add') {
+          current = (await readJobs(source)).find(item => item.id === (params.jobId ?? params.id) &&
+            item.owner?.sessionKey === source.sessionKey && item.owner.agentId === source.agentId && item.owner.accountId === source.accountId);
+          if (!current) return deny();
+        }
+        if (!['add','update'].includes(action)) return;
+      }
       let job = record(params.job) ? params.job : Object.fromEntries(Object.entries(params).filter(([key]) => fields.has(key)));
       // Match the documented native wrapper shapes; reject ambiguous key repair at this boundary.
       if (record(job.data)) job = job.data;
       else if (record(job.job)) job = job.job;
       if (Object.keys(job).some(key => !fields.has(key))) return { block: true, blockReason: 'Use canonical automation job fields.' };
       if (job.agentId && job.agentId !== source.agentId) return deny();
+      if (scoped) {
+        try { job = scheduleInThread({ job, source, action, current, worker }); }
+        catch (error) { return { block: true, blockReason: error.message }; }
+      }
       let description;
       if (action === 'add') {
-        const selected = developmentChannelFor({ developmentChannels: channels }, source);
         const stamp = `${PREFIX}workspace=${selected.workspaceId} account=${source.accountId} channel=${source.chatId} user=${source.senderId}]`;
         description = [stamp, cleanDescription(job.description)].filter(Boolean).join('\n');
       } else if (Object.hasOwn(job, 'description')) {
         // Public SDK storage read is for audit merging only; the native tool still performs the write
         // under its caller scope/revision guard. No plugin operator RPC or sidecar authority is used.
-        const jobs = await readJobs(source);
-        const current = jobs.find(value => value.id === (params.jobId ?? params.id) &&
+        const jobs = current ? [current] : await readJobs(source);
+        const previous = jobs.find(value => value.id === (params.jobId ?? params.id) &&
           value.owner?.agentId === source.agentId && value.owner?.accountId === source.accountId &&
           value.owner?.sessionKey === source.sessionKey);
-        if (!current) return { block: true, blockReason: 'Cannot verify creation audit for this automation. Manage it without changing description, or use the native administrator Dashboard.' };
-        description = [existingStamp(current), cleanDescription(job.description)].filter(Boolean).join('\n');
+        if (!previous) return { block: true, blockReason: 'Cannot verify creation audit for this automation. Manage it without changing description, or use the native administrator Dashboard.' };
+        description = [existingStamp(previous), cleanDescription(job.description)].filter(Boolean).join('\n');
       }
       const nextJob = { ...job, ...(description === undefined ? {} : { description }) };
       const next = { ...params, action, job: nextJob };

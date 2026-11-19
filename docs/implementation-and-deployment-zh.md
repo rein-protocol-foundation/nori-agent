@@ -1056,6 +1056,9 @@ Scaffold、文档链接与空白检查通过；纯文档改动不运行 runtime 
 
 线上完整预览通过：当前生产渲染器完成 11 月 17 日的来源导出、用量刷新与 PNG 生成，未发送消息。产物放在私有 schedule-fix-preview 目录，保留原产物与发送状态。该证据只证明避开竞争窗口时生成成功，不代表尚未部署的重试代码或下次定时投递已验收。
 
+## 2026-11-19 开发频道定时任务兼容
+
+SA-OPS-01 / SA-M1。Codex 在 OCI 独立 Gateway 用模拟 Slack 创建和调整同一个任务，定时触发真实 SSH 沙箱，计算 113 + 271 得 384 并返回模拟原线程。管理员选择让旧验收线程也由 main 回复。正式发布和真实 Slack 验收待执行。 [Verification](slack-scheduler-compatibility.md).
 
 ## 2026-11-19 — COMMUNITY-PROFILE-LINK
 

@@ -1,3 +1,4 @@
+import { taskChannels } from './runtime.mjs';
 import { developmentChannelFor, DEVELOPMENT_AUTH_TIMEOUT_MS } from '../rein-router/slack-development.mjs';
 
 const TASK_TOOLS = new Set(['sessions_spawn', 'subagents', 'sessions_send', 'sessions_history', 'sessions_list', 'sessions_search', 'session_status', 'sessions', 'rein_task']);
@@ -13,6 +14,17 @@ const result = details => {
 };
 const text = (value, max) => typeof value === 'string' && value.trim() && value.length <= max;
 
+// Check both the host session key and admitted source. Completion/heartbeat turns
+// can have no user requester but must keep the originating channel's restrictions.
+function developmentSession(config, ctx, turn) {
+  const key = ctx.sessionKey?.toLowerCase();
+  return config.additionalChannelIds?.some(id => {
+    const channelKey = `agent:${config.channel.agentId}:slack:channel:${id.toLowerCase()}`;
+    return key === channelKey || key?.startsWith(channelKey + ':') ||
+      turn?.source?.chatId === id || ctx.channelContext?.chat?.id === id;
+  });
+}
+
 /** Validate only the native prerequisites; retain existing tool policies and channel bindings. */
 export function assertTaskLoopRuntimeConfig(config, host) {
   const entry = host.plugins?.entries?.['rein-acp'];
@@ -21,12 +33,12 @@ export function assertTaskLoopRuntimeConfig(config, host) {
     throw Error('rein_task_runtime_invalid: grant conversation/prompt hooks and configure native sessions visibility=tree');
   if (!agent || (agent.sandbox?.mode ?? host.agents?.defaults?.sandbox?.mode) !== 'off' ||
       host.acp?.enabled !== true || host.acp.dispatch?.enabled === false || !text(host.acp.backend, 128) ||
-      !host.acp.allowedAgents?.includes(config.harnessAgentId))
+      ![config.harnessAgentId, config.alternateHarness].filter(Boolean).every(id => host.acp.allowedAgents?.includes(id)))
     throw Error('rein_task_runtime_invalid: configured parent requires native host ACP, an explicit backend and the allowed fixed harness');
 }
 
 /** Native records remain authoritative. This module retains only current tool-invocation custody. */
-export function createTaskLoop({ config, authorize, tasks, subagent, isNativeChild = () => false, isCurrentContinuation = async () => false, clock = Date.now, timeoutMs = DEVELOPMENT_AUTH_TIMEOUT_MS }) {
+export function createTaskLoop({ config, authorize, tasks, subagent, scheduling, schedulingChannels = [], allowScheduledSpawn, isNativeChild = () => false, isCurrentContinuation = async () => false, clock = Date.now, timeoutMs = DEVELOPMENT_AUTH_TIMEOUT_MS }) {
   const turns = new Map(), calls = new Map(), reports = new Map();
   const selected = ctx => ctx.agentId === config.channel.agentId;
   const membership = async source => {
@@ -63,11 +75,12 @@ export function createTaskLoop({ config, authorize, tasks, subagent, isNativeChi
       if (!human(ctx)) return;
       // Other conversations keep their native capabilities and admission policies.
       if (ctx.channel !== 'slack' || ctx.accountId !== config.channel.accountId ||
-          (ctx.channelContext?.chat?.id ?? ctx.chatId) !== config.channel.channelId) {
+          !taskChannels(config).some(channel => channel.channelId === (ctx.channelContext?.chat?.id ?? ctx.chatId))) {
         turns.set(ctx.runId, { kind: 'outside', source: { ...ctx }, at: clock() }); return;
       }
-      if (!developmentChannelFor({ developmentChannels: [config.channel] }, ctx) || !await membership(ctx))
+      if (!developmentChannelFor({ developmentChannels: taskChannels(config) }, ctx) || !await membership(ctx))
         return { outcome: 'block', reason: 'rein_task_membership_required', message: 'Current trusted private-channel membership could not be verified.' };
+      if (schedulingChannels.includes(ctx.channelContext?.chat?.id ?? ctx.chatId)) scheduling?.observe(_event, ctx);
       turns.set(ctx.runId, { kind: 'interactive', source: { ...ctx }, at: clock() });
     },
     async beforePromptBuild(_event, ctx) {
@@ -82,15 +95,29 @@ export function createTaskLoop({ config, authorize, tasks, subagent, isNativeChi
       }
       const old = reports.get(ctx.runId);
       if (old) return { toolsAllow: [], prependContext: `CANCELLED / OLD-SCOPE REPORT for native task ${old.id}, run ${old.runId}. This incoming result cannot satisfy a revised goal. Report available partial results and performed or uncertain external actions from the native evidence and incoming result, clearly labeled cancelled/old scope. Cancellation is not rollback; absence of evidence is uncertainty. Send this report through the existing captured original destination. Do not launch, resume, retry or change work. Native progress: ${JSON.stringify(old.progressSummary ?? null)}; terminal summary: ${JSON.stringify(old.terminalSummary ?? null)}; diagnostic: ${JSON.stringify(old.error ?? null)}.` };
-      return { prependContext: `${config.continuation ? 'Native continuation is enabled: use rein_continuation durable goals, review, stop/change and bounded supplements. Combined same-owner/audience replies may represent multiple flows; original thread delivery is not a per-flow guarantee. Legacy rein_task replacement instructions below apply to unmanaged tasks only. ' : ''}For background work follow the nori-task-loop skill. Research uses native sessions_spawn runtime="subagent", mode="run", cleanup="keep", with completionTarget omitted: retain default external original-thread delivery through parent review. ACP uses fixed agentId=${JSON.stringify(config.harnessAgentId)}, cwd=${JSON.stringify(config.cwd)}, mode="run", thread=false, streamTo="parent"; cwd is not an OS security boundary. Native tasks belong to the originating session/audience, not an individual speaker in a shared private channel. Resolve actual runId via rein_task status for canonical task ID. If native acceptance precedes task-record visibility, report the actual accepted run/session and unavailable canonical record; resolve on the next authorized status request or completion, never respawn or invent an ID. Use rein_task stop/change for confirmed cancellation plus replacement; pending/failed cancellation forbids replacement. Report results against current criteria in the original authorized thread. Cancelled/old-scope outcomes must disclose available partial evidence and performed/uncertain actions, never complete the revised goal. Never describe synthetic or missing evidence as verified.` };
+      return { prependContext: `${developmentSession(config, ctx) ? 'Answer ordinary questions directly in this Slack thread. For a timed development task use native automations add with an isolated agentTurn message. Keep its job ID and adjust that same job with update in this thread. Use rein_continuation write_development_file for project files. Delegate execution and independent verification to runtime=subagent agentId=nori-development in its sandbox. For a requested runtime config change show the exact proposed diff for separate administrator confirmation. ' : ''}${config.continuation ? 'Native continuation is enabled: use rein_continuation durable goals, review, stop/change and bounded supplements. Combined same-owner/audience replies may represent multiple flows; original thread delivery is not a per-flow guarantee. Legacy rein_task replacement instructions below apply to unmanaged tasks only. ' : ''}For background work follow the nori-task-loop skill. Research uses native sessions_spawn runtime="subagent", mode="run", cleanup="keep", with completionTarget omitted: retain default external original-thread delivery through parent review. Requests to use Codex or Claude Code for development mean native ACP delegation. ${config.alternateHarness ? 'For Claude Code use agentId=claude.' : 'Claude Code is unavailable here; report this if requested.'} For Codex use agentId=${JSON.stringify(config.harnessAgentId)}, cwd=${JSON.stringify(config.cwd)}, mode="run", thread=false, streamTo="parent"; cwd is not an OS security boundary. Native tasks belong to the originating session/audience, not an individual speaker in a shared private channel. Resolve actual runId via rein_task status for canonical task ID. If native acceptance precedes task-record visibility, report the actual accepted run/session and unavailable canonical record; resolve on the next authorized status request or completion, never respawn or invent an ID. Use rein_task stop/change for confirmed cancellation plus replacement; pending/failed cancellation forbids replacement. Report results against current criteria in the original authorized thread. Cancelled/old-scope outcomes must disclose available partial evidence and performed/uncertain actions, never complete the revised goal. Never describe synthetic or missing evidence as verified.` };
     },
     async beforeToolCall(event, ctx) {
       const tool = unwrap(event), turn = turns.get(ctx.runId);
       const acp = tool.name === 'sessions_spawn' && tool.params?.runtime === 'acp';
       const deny = blockReason => ({ block: true, blockReason });
+      if (selected(ctx) && developmentSession(config, ctx, turn)) {
+        if (scheduling && ['automations','cron'].includes(tool.name) && turn?.kind === 'interactive' &&
+            schedulingChannels.includes(turn.source.channelContext?.chat?.id ?? turn.source.chatId) && validTurn(turn, ctx)) {
+          return await scheduling.beforeToolCall(event, ctx);
+        }
+        if (tool.name === 'sessions_spawn' && !acp) {
+          if ((tool.params?.runtime ?? 'subagent') !== 'subagent' || tool.params?.agentId !== 'nori-development')
+            return deny('Development execution requires the nori-development sandbox.');
+        } else if (!['sessions_spawn', 'rein_continuation', 'rein_task', 'rein_route_status', 'tool_describe'].includes(tool.name)) {
+          return deny('Use write_development_file for project files and delegate execution to the development sandbox or an approved ACP harness.');
+        }
+      }
       if (!selected(ctx)) return acp ? deny('ACP task-loop launches require the configured parent.') : undefined;
       if (reports.has(ctx.runId)) return deny('Cancelled/old-scope completion is report-only; preserve evidence without starting work.');
       if (!TASK_TOOLS.has(tool.name)) return;
+      if (!turn && tool.name === 'sessions_spawn' && !acp && allowScheduledSpawn &&
+          await allowScheduledSpawn(ctx, tool.params)) return;
       if (!turn || clock() - turn.at >= 3_600_000) return deny('Task/session control requires a current host-admitted context.');
       if (turn.kind !== 'interactive') {
         if (tool.name === 'rein_task' || (acp && turn.kind !== 'native')) return deny('Task control requires a current trusted Slack request.');
@@ -102,10 +129,10 @@ export function createTaskLoop({ config, authorize, tasks, subagent, isNativeChi
       if (acp) {
         const p = tool.params;
         if (Object.keys(p).some(key => !ACP_PARAMS.has(key)) || !text(p.task, 32000) ||
-            (p.agentId !== undefined && p.agentId !== config.harnessAgentId) || (p.cwd !== undefined && p.cwd !== config.cwd) ||
+            (p.agentId !== undefined && p.agentId !== config.harnessAgentId && p.agentId !== config.alternateHarness) || (p.cwd !== undefined && p.cwd !== config.cwd) ||
             (p.mode !== undefined && p.mode !== 'run') || (p.thread !== undefined && p.thread !== false) ||
             (p.streamTo !== undefined && p.streamTo !== 'parent')) return deny('Use the configured one-shot ACP harness/cwd and parent progress; overrides are not permitted.');
-        params = { ...p, agentId: config.harnessAgentId, cwd: config.cwd, mode: 'run', thread: false, streamTo: 'parent' };
+        params = { ...p, agentId: p.agentId ?? config.harnessAgentId, cwd: config.cwd, mode: 'run', thread: false, streamTo: 'parent' };
       }
       if (tool.name === 'sessions_spawn' && turn.change) {
         if (!turn.change.replacementTask || turn.change.spawned || tool.params?.task !== turn.change.replacementTask)
@@ -190,6 +217,7 @@ export function createTaskLoop({ config, authorize, tasks, subagent, isNativeChi
       };
     } },
     agentEnd(_event, ctx) {
+      scheduling?.end(_event, ctx);
       turns.delete(ctx.runId);
       reports.delete(ctx.runId);
       for (const [id, call] of calls) if (call.ctx.runId === ctx.runId) calls.delete(id);

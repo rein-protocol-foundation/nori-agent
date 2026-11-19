@@ -536,6 +536,9 @@ Owner: Codex. Native authenticated schedule update/read-back confirms the existi
 
 Live integrated preview also passed with the current production renderer: source export, usage refresh and PNG generation for November 17 completed without sending. Output was isolated under the private schedule-fix-preview directory; original artifacts and delivery state were preserved. This verifies generation outside the contention window, not the undeployed retry or next scheduled delivery.
 
+## November 19, 2026 · Sandbox schedule ownership
+
+SA-OPS-01 / SA-M1. Codex exercised create and update under the same native job ID. The automatic run executed 113 + 271 as nori-dev and delivered 384 to the simulated original thread. Live Slack and formal-channel Codex acceptance are pending. [Verification](slack-scheduler-compatibility.md).
 
 ## COMMUNITY-PROFILE-LINK — linked member recognition
 
