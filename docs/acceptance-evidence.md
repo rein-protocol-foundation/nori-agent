@@ -535,3 +535,12 @@ and production merged-docs acceptance pending; no AC01–AC20 advancement.
 Owner: Codex. Native authenticated schedule update/read-back confirms the existing enabled job now uses `30 7 * * *`, `America/Los_Angeles`, zero stagger, next run 2026-11-19 15:30 UTC. Command and delivery records preserved; private rollback saved. Local retry patch passed 18/18 targeted Node tests (including Python sender regression) and scaffold. Retry deployment and first scheduled delivery remain pending; this is not full SA-OBS-02 acceptance. See [runbook](daily-agent-receipt.md#schedule-recovery--november-18-2026).
 
 Live integrated preview also passed with the current production renderer: source export, usage refresh and PNG generation for November 17 completed without sending. Output was isolated under the private schedule-fix-preview directory; original artifacts and delivery state were preserved. This verifies generation outside the contention window, not the undeployed retry or next scheduled delivery.
+
+
+## COMMUNITY-PROFILE-LINK — linked member recognition
+
+Owner: Codex; 2026-11-19. Targeted synthetic identity/recall and backend-proof regression checks passed (46 before final configuration checks). Native linked-profile registration passed; rollout is pending. Cases include actor spoofing, unlink/rebind, cross-platform source ownership, removed/private/deleted sources and private-field redaction. No live human messages were sent. See [feature boundary](linked-member-profiles.md).
+
+Final focused linked-reader checks: 14 passed. Whole Nori suite: 1,572 tests, 1,567 passed, 4 existing skips, 1 worktree-only missing markdown dependency failure. After supplying the existing dependency tree, the failed native migration test and linked-reader regression set passed (15/15); no vendor source changed.
+
+Native OpenClaw loader completed successfully for linked Discord/Slack registration and legacy optional enable/disable configuration.

@@ -127,12 +127,15 @@ try {
     backendApiBaseUrlEnvVar: BACKEND_URL_ENV, agentCallerIdEnvVar: `${CALLER_ENV}_${suffix}`,
     agentCredentialEnvVar: `${CREDENTIAL_ENV}_${suffix}`, proposalConfirmationKeyEnvVar: GOVERNANCE_CONFIRM_ENV });
   const configPath = join(scopedTemp, 'openclaw.json');
-  writeFileSync(configPath, JSON.stringify({ plugins: { allow: ['rein-operations'],
-    load: { paths: [resolve(root, 'plugins/rein-operations')] }, entries: {
+  writeFileSync(configPath, JSON.stringify({ plugins: { allow: ['rein-operations', 'rein-member-introductions'],
+    load: { paths: [resolve(root, 'plugins/rein-operations'), resolve(root, 'plugins/rein-member-introductions')] }, entries: {
       'rein-operations': { enabled: true, config: { agentProfiles: {
         main: { platform: 'slack', accountId: 'default', capabilities: 'internal', foundationDb: foundation('slack', 'MAIN') },
         'nori-community': { platform: 'discord', accountId: 'default', capabilities: 'community', foundationDb: foundation('discord', 'COMMUNITY') },
       } } },
+      'rein-member-introductions': { enabled: true, config: { enabled: true, agentId: 'nori-community', accountId: 'default',
+        guildId: '100000000000000001', introductionsChannelId: '100000000000000002',
+        statePath: join(scopedTemp, 'private', 'members.sqlite'), linkedProfiles: ['main', 'nori-community'] } },
     } } }, null, 2));
   const scoped = inspectPlugin({ ...environment(), OPENCLAW_STATE_DIR: scopedTemp,
     OPENCLAW_CONFIG_PATH: configPath, [BACKEND_URL_ENV]: 'https://backend.rein.example',
@@ -147,6 +150,17 @@ try {
   assert.equal(scoped.report.diagnostics.filter(item => item.level === 'error').length, 0);
   assert.ok(!scoped.stdout.includes(CREDENTIAL));
   assert.ok(!scoped.stdout.includes(GOVERNANCE_CONFIRM_KEY));
+  const linked = inspectPlugin({ ...environment(), OPENCLAW_STATE_DIR: scopedTemp,
+    OPENCLAW_CONFIG_PATH: configPath, [BACKEND_URL_ENV]: 'https://backend.rein.example',
+    [`${CALLER_ENV}_MAIN`]: 'fixture-internal', [`${CALLER_ENV}_COMMUNITY`]: 'fixture-community',
+    [`${CREDENTIAL_ENV}_MAIN`]: `${CREDENTIAL}-main`, [`${CREDENTIAL_ENV}_COMMUNITY`]: `${CREDENTIAL}-community`,
+    [GOVERNANCE_CONFIRM_ENV]: GOVERNANCE_CONFIRM_KEY }, 'rein-member-introductions');
+  assert.equal(linked.report.plugin.imported, true);
+  assert.notEqual(linked.report.plugin.status, 'error', linked.report.plugin.error);
+  assert.deepEqual(linked.report.tools.flatMap(tool => tool.names), ['rein_my_introduction']);
+  assert.equal(linked.report.diagnostics.filter(item => item.level === 'error').length, 0);
+  assert.ok(!linked.stdout.includes(CREDENTIAL));
+  console.log('Verified native linked introduction registration using separate Discord and Slack backend profiles.');
   console.log('Verified real OpenClaw loader: scoped backend profiles register once without credentials in output.');
 } finally { rmSync(scopedTemp, { recursive: true, force: true }); }
 

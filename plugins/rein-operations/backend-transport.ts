@@ -41,6 +41,7 @@ export interface BackendTransport {
   readonly baseUrl: string;
   operations(operation: string, input: unknown, proof: BackendProof): Promise<BackendResponse>;
   resolveIdentity(proof: BackendProof): Promise<BackendResponse>;
+  resolveLinkedAccounts(proof: BackendProof): Promise<BackendResponse>;
   relayIngress(tuple: BackendIngressTuple): Promise<BackendResponse>;
   linkStart(proof: BackendProof): Promise<BackendResponse>;
   linkStatus(sessionId: string, proof: BackendProof): Promise<BackendResponse>;
@@ -169,6 +170,11 @@ export function createBackendTransport(config: BackendTransportConfig): BackendT
     return post('/api/identity/resolve', { proof });
   };
 
+  const resolveLinkedAccounts = async (proof: BackendProof): Promise<BackendResponse> => {
+    if (!isBackendProof(proof)) return { ok: false, reason: 'invalid_request', httpStatus: null };
+    return post('/api/identity/linked-accounts', { proof });
+  };
+
   const relayIngress = async (tuple: BackendIngressTuple): Promise<BackendResponse> => {
     if (!isPlainObject(tuple)) return { ok: false, reason: 'invalid_request', httpStatus: null };
     const required = ['platform', 'workspace_id', 'platform_user_id', 'channel_id', 'event_id'] as const;
@@ -203,5 +209,5 @@ export function createBackendTransport(config: BackendTransportConfig): BackendT
     return post('/api/identity/link/complete', { binding_code: code, proof });
   };
 
-  return Object.freeze({ baseUrl, operations, resolveIdentity, relayIngress, linkStart, linkStatus, linkComplete });
+  return Object.freeze({ baseUrl, operations, resolveIdentity, resolveLinkedAccounts, relayIngress, linkStart, linkStatus, linkComplete });
 }
