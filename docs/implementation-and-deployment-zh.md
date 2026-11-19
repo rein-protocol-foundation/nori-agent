@@ -2,6 +2,8 @@
 
 ## 2026-11-19 — Super Agent v2 开发与部分真实验收
 
+独立测试网关已在线程投递免 @ 求助回复及职责外澄清，对闲聊保持静默。原生默认设置下，执行模型选择静默时出现可见错误；仅在测试网关允许 Slack 群聊静默后，已放行的真实模型返回 NO_REPLY，线程无回复。已验证原生线程发送和编辑、#131 的 Linear 限定委托和执行中撤权。已核验发信人在隔离 Foundation 后端的管理员标志为真，生产回读为假。规范化 Markdown 后确认 #124 公开摘要已同步至 Linear。
+
 Tempest 在聊天中只退回 `github-reopen`，并已确认复验通过。GitHub #123 重开后，Linear REI-17 保留 Backlog，适配器判定已同步，只向 GitHub 写入。`linear-close` 和 `github-recovery` 沿用首轮通过结果，两项均未重跑。复验回读已保存在 OCI 私有目录。三个工单同步检查均已通过；正式审阅回执及 v2 整体验收仍待完成。
 
 已整合主线至 #129。全量回归 1,640 项通过、4 项按条件跳过、0 项失败。OCI 原生网关在两个独立会话完成了 #124／REI-18 的两次运行，已核验各自归属。独立 Socket Mode 应用已加入私有测试频道，候选网关已连接。[实现 PR](https://github.com/rein-protocol-foundation/nori-agent/pull/130)。

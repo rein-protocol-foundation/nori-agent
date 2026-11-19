@@ -2,6 +2,10 @@
 
 ## 2026-11-19 — Super Agent v2
 
+The independent test gateway delivered an unmentioned help reply and a useful out-of-duty clarification. It silenced chatter. An admitted worker emitted NO_REPLY after enabling native optional silence for Slack groups. The default had emitted a visible error. Native threaded send/edit, scoped Linear delegation on #131 and delayed revocation were verified. The staging Foundation administrator flag was true for the verified sender and false in production. The #124 public summary was found in Linear after Markdown normalization.
+
+独立测试网关已在线程投递免 @ 求助回复及职责外澄清，对闲聊保持静默。原生默认设置下，执行模型选择静默时出现可见错误；仅在测试网关允许 Slack 群聊静默后，已放行的真实模型返回 NO_REPLY，线程无回复。已验证原生线程发送和编辑、#131 的 Linear 限定委托和执行中撤权。已核验发信人在隔离 Foundation 后端的管理员标志为真，生产回读为假。规范化 Markdown 后确认 #124 公开摘要已同步至 Linear。
+
 Tempest returned only `github-reopen` for retest and accepted the observed result in chat. After GitHub #123 reopened, Linear REI-17 retained Backlog and the adapter reported synchronized. The adapter wrote only to GitHub. The first-round passes for `linear-close` and `github-recovery` were carried forward without rerunning either check. The private OCI readback records the retest. This closes the three issue-sync checks; the formal reviewer receipt and overall v2 acceptance remain open.
 
 Tempest 在聊天中只退回 `github-reopen`，并已确认复验通过。GitHub #123 重开后，Linear REI-17 保留 Backlog，适配器判定已同步，只向 GitHub 写入。`linear-close` 和 `github-recovery` 沿用首轮通过结果，两项均未重跑。复验回读已保存在 OCI 私有目录。三个工单同步检查均已通过；正式审阅回执及 v2 整体验收仍待完成。

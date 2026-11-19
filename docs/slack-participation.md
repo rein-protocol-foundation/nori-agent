@@ -197,6 +197,10 @@ policy and transition history after an interrupted command or output failure.
 Real Slack feedback capture, scheduled operation, and promotion to a live gateway still require
 their own acceptance evidence and existing operator authorization.
 
+## Silence after worker admission
+
+The native group silent-reply default can require a visible answer. A live Slack test admitted the request and then produced an empty-response error when the worker tried to stay silent. On the dedicated test gateway, setting `surfaces.slack.silentReply.group` to `allow` permitted a real worker to finish with `NO_REPLY` and no visible Slack message. This setting covers Slack groups on that gateway. Check its scope before enabling it on a shared gateway. Pre-worker participation silence uses the dispatch hook independently.
+
 ## Shadow evaluation of a verified test message
 
 An authorized operator can assemble a private, owner-only input JSON from the Slack Web API with the

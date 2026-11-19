@@ -2,6 +2,8 @@
 
 ## 2026-11-19 — Super Agent v2 integration and partial product verification
 
+The independent test gateway delivered an unmentioned help reply and a useful out-of-duty clarification. It silenced chatter. An admitted worker emitted NO_REPLY after enabling native optional silence for Slack groups. The default had emitted a visible error. Native threaded send/edit, scoped Linear delegation on #131 and delayed revocation were verified. The staging Foundation administrator flag was true for the verified sender and false in production. The #124 public summary was found in Linear after Markdown normalization.
+
 Tempest returned only `github-reopen` for retest and accepted the observed result in chat. After GitHub #123 reopened, Linear REI-17 retained Backlog and the adapter reported synchronized. The adapter wrote only to GitHub. The first-round passes for `linear-close` and `github-recovery` were carried forward without rerunning either check. The private OCI readback records the retest. This closes the three issue-sync checks; the formal reviewer receipt and overall v2 acceptance remain open.
 
 Merged current main through #129. The integrated regression completed with 1,640 passes, four opt-in skips and zero failures. The OCI gateway completed two owner-verified native runs for the same real issue pair, #124 / REI-18. The dedicated Socket Mode app joined the private test room and the candidate gateway connected. [Implementation PR](https://github.com/rein-protocol-foundation/nori-agent/pull/130).
