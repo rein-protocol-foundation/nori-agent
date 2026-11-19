@@ -101,12 +101,12 @@ function humanMessage(message, channelId, requireContent = true) {
   return message.channel_id === channelId && message.author && !message.author.bot && !message.webhook_id && [0, 19].includes(message.type) &&
     (!requireContent || (typeof message.content === 'string' && message.content.trim().length > 0) || (Array.isArray(message.attachments) && message.attachments.length > 0));
 }
-function welcomeContent(users, joined, config) {
+function welcomeContent(users, config) {
   const destination = config.welcomeChannelId === config.introductionsChannelId ? 'here' : `in <#${config.introductionsChannelId}>`;
-  return `Welcome ${users.map(id => `<@${id}>`).join(' ')}! We're glad you're here. ${joined} new human ${joined === 1 ? 'member joined' : 'members joined'} in the past 24 hours.\n\nIf you'd like, introduce yourself ${destination}: “Hi, I'm …; I'm interested in …; I'd like to learn or contribute …” Sharing is optional—feel free to look around first.`;
+  return `Welcome to Rein, ${users.map(id => `<@${id}>`).join(' ')}! 👋\n\nWhen you're ready, introduce yourself ${destination}. Tell us what you'd like us to call you and a little about yourself, like what you're working on or hoping to learn.`;
 }
 function reminderContent(users, config) {
-  return `Hi ${users.map(id => `<@${id}>`).join(' ')}! If you'd like, share a short introduction in <#${config.introductionsChannelId}>: your interests or something you'd like to learn or contribute. It's optional. Post “no reminders” in <#${config.introductionsChannelId}> to opt out, or “resume reminders” to resume.`;
+  return `Hey ${users.map(id => `<@${id}>`).join(' ')}! We'd love to get to know you. When you're ready, post a short intro in <#${config.introductionsChannelId}> with what you'd like us to call you and something you'd enjoy chatting about.\n\nPost \`no reminders\` there to skip future intro reminders.`;
 }
 function reminderPreference(message) {
   const text = (message.content ?? '').normalize('NFKC').trim().replace(/[’‘]/g, "'");
@@ -260,7 +260,7 @@ export async function runDiscordOnboarding(rawConfig, {
             (kind !== 'weekly' || (current.joined_at && timestamp(current.joined_at) <= window.cutoff - WEEK))) present.push(member.user.id);
       }
       for (let offset = 0; offset < present.length; offset += 20) {
-        const users = present.slice(offset, offset + 20), content = kind === 'daily' ? welcomeContent(users, joined.length, config) : reminderContent(users, config);
+        const users = present.slice(offset, offset + 20), content = kind === 'daily' ? welcomeContent(users, config) : reminderContent(users, config);
         if (content.length >= 2000) throw new Error('Welcome exceeds Discord content limit');
         if (kind === 'daily') welcomed += users.length; else weeklyReminded += users.length;
         for (const id of users) notifiedThisRun.add(id);

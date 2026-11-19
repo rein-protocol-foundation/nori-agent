@@ -8,6 +8,13 @@ Tempest 在聊天中只退回 `github-reopen`，并已确认复验通过。GitHu
 
 SA2, owner Codex. The live provider checks include both directions of issue creation and state propagation, actual Backlog on GitHub reopen, and read-only recovery after deliberately losing a successful PATCH response. The private OCI report distinguishes passed from awaiting review. Slack real events and hosted shadow inference are recorded separately from isolated native dispatch and human decisions. [Independent 16-scenario verification matrix](super-agent-v2-verification.md).
 
+## 2026-11-19 — Discord welcome and reminder copy
+
+COMMUNITY-ONBOARDING-01; owner Codex. All 37 focused tests passed on Node 24.16.0.
+Simulated Discord sends verified the daily invitation in separate and shared channels,
+the Sunday invitation, and the opt-out wording. Eligibility, mention limits, cooldown,
+and restart reconciliation passed their existing checks. Live verification is pending deployment.
+
 ## 2026-11-18 — Discord onboarding production archive
 
 COMMUNITY-ONBOARDING-01; owner Codex. PR #117 passed all seven checks: full suite
