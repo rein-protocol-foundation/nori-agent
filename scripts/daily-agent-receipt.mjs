@@ -4,6 +4,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { setTimeout as delay } from 'node:timers/promises';
 import { collectNoriUsageSources } from './nori-usage-sources.mjs';
 import { receiptIcon, providerIconName, modelIconName } from './daily-agent-receipt-icons.mjs';
 
@@ -153,8 +154,24 @@ async function readPage(response, maxBytes) {
   } finally { await reader.cancel().catch(() => {}); }
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { throw new Error('Magpie usage API returned malformed JSON'); }
 }
+class UsagePaginationChangedError extends Error {}
+
+/** Retry one unstable collection from offset zero; never mix attempts or retry delivery. */
+export async function collectMagpieUsage({ retryDelayMs = 1000, ...options } = {}) {
+  if (!Number.isSafeInteger(retryDelayMs) || retryDelayMs < 0 || retryDelayMs > 30_000) throw new Error('Invalid retryDelayMs');
+  // Pin the reporting day across the retry, including a midnight boundary.
+  const fixedOptions = { ...options, now: options.now ?? new Date() };
+  try {
+    return await collectMagpieUsageAttempt(fixedOptions);
+  } catch (error) {
+    if (!(error instanceof UsagePaginationChangedError)) throw error;
+    await delay(retryDelayMs);
+    return collectMagpieUsageAttempt(fixedOptions);
+  }
+}
+
 /** Fetch complete bounded pagination; fail rather than produce a truncated report. */
-export async function collectMagpieUsage({ date, timeZone = DEFAULT_TIMEZONE, now, magpieUrl = 'http://127.0.0.1:3425',
+async function collectMagpieUsageAttempt({ date, timeZone = DEFAULT_TIMEZONE, now, magpieUrl = 'http://127.0.0.1:3425',
   fetchImpl = globalThis.fetch, sourcesConfig, pageSize = 500, maxPages = 100, maxRows = 50_000, timeoutMs = 15_000, maxPageBytes = 8_000_000 } = {}) {
   for (const [k, v] of Object.entries({ pageSize, maxPages, maxRows, timeoutMs, maxPageBytes })) if (!Number.isSafeInteger(v) || v <= 0) throw new Error(`Invalid ${k}`);
   const bounds = calendarDayBounds({ date, timeZone, now }), origin = loopbackUrl(magpieUrl);
@@ -173,7 +190,7 @@ export async function collectMagpieUsage({ date, timeZone = DEFAULT_TIMEZONE, no
     }
     if (!page || !Array.isArray(page.rows) || !Number.isSafeInteger(page.total) || page.total < 0 ||
         page.offset !== rows.length || page.rows.length > pageSize) throw new Error('Malformed Magpie pagination');
-    if (total !== undefined && page.total !== total) throw new Error('Magpie usage changed during pagination; retry collection');
+    if (total !== undefined && page.total !== total) throw new UsagePaginationChangedError('Magpie usage changed during pagination; retry collection');
     total = page.total;
     if (total > maxRows || rows.length + page.rows.length > total) throw new Error('Magpie usage exceeds row bound or total');
     // Detect repeated pages using ephemeral identities; never export these fields.

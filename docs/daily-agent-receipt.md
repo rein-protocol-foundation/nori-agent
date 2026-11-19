@@ -107,7 +107,7 @@ sources remains pending; manual preview is not scheduled-delivery acceptance.
 
 ## Existing gateway-only behavior and scope
 
-At **09:00 America/Los_Angeles**, a native OpenClaw command automation renders
+At **07:30 America/Los_Angeles**, a native OpenClaw command automation renders
 the **previous local calendar day** and sends its PNG to **#nori-alerts**
 (`C0CG9BQQ4Q0`) using Nori's existing Slack account. The schedule and the data
 window both use the IANA timezone, including 23/25-hour DST days. No model call
@@ -228,7 +228,7 @@ Example native CLI arguments on OCI (the host's normal authenticated CLI context
   --declaration-key nori-daily-agent-receipt-v1 \
   --name nori-daily-agent-receipt --agent main --session isolated \
   --description 'SA-OBS-02: previous LA calendar-day Magpie receipt to #nori-alerts' \
-  --cron '0 9 * * *' --tz America/Los_Angeles --exact \
+  --cron '30 7 * * *' --tz America/Los_Angeles --exact \
   --command-argv '["python3","/home/ubuntu/rein-agent/scripts/send-daily-agent-receipt.py","--config","/home/ubuntu/rein-agent/runtime/daily-agent-receipt/config.json","--send"]' \
   --command-cwd /home/ubuntu/rein-agent \
   --timeout-seconds 420 --no-output-timeout-seconds 420 --output-max-bytes 4096 \
@@ -366,3 +366,25 @@ The footer faithfully reports the flag; it does not assert that a model has no
 published API rate. Unknown mappings/data must not become fabricated zero prices.
 Catalog mappings and verified rate overrides belong in private Magpie configuration,
 never renderer code. No broader SA-OBS-02 milestone is completed by this follow-up.
+
+## Schedule recovery — November 18, 2026
+
+SA-OBS-02 / #68; owner: Codex. Status: **SCHEDULE APPLIED; RETRY PATCH LOCAL**.
+The operator selected 07:30 America/Los_Angeles instead of 09:00 to avoid the
+09:00 news automation. Native authenticated `cron.update` changed the existing
+job's schedule only to `30 7 * * *`, with zero stagger. Native read-back confirmed
+it remains enabled, with the same command, 420-second timeout and delivery policy;
+next execution is November 19 at 07:30 PST (15:30 UTC). The prior job definition
+was saved privately for rollback. Existing send records were preserved. Historical
+error status remains until another execution; changing a schedule is not a successful run.
+
+The local collector patch additionally retries a changed pagination total once
+from offset zero after one second, with a fixed reporting date and fresh rows,
+identities and response IDs. Persistent instability still fails without artifacts;
+authentication, malformed-data and delivery errors are not retried. This patch is
+**not deployed**: runtime code follows the merged-PR deployment path above.
+Targeted Node tests: 18/18, including the Python delivery regression wrapper.
+Scaffold passed. No new Slack message was sent. The next clock-triggered delivery
+remains pending; neither this recovery nor the local patch completes SA-OBS-02.
+
+Live integrated preview also passed with the current production renderer: source export, usage refresh and PNG generation for November 17 completed without sending. Output was isolated under the private schedule-fix-preview directory; original artifacts and delivery state were preserved. This verifies generation outside the contention window, not the undeployed retry or next scheduled delivery.

@@ -479,3 +479,9 @@ revision distinction, retries, duplicate/empty queue, interruptions before/after
 concurrent edits, accumulated runtime changes and later code deployment. Existing updater,
 webhook, storage and rollback regression tests remain required. Live controller installation
 and production merged-docs acceptance pending; no AC01–AC20 advancement.
+
+## SA-OBS-02 / #68 — receipt schedule recovery (2026-11-18)
+
+Owner: Codex. Native authenticated schedule update/read-back confirms the existing enabled job now uses `30 7 * * *`, `America/Los_Angeles`, zero stagger, next run 2026-11-19 15:30 UTC. Command and delivery records preserved; private rollback saved. Local retry patch passed 18/18 targeted Node tests (including Python sender regression) and scaffold. Retry deployment and first scheduled delivery remain pending; this is not full SA-OBS-02 acceptance. See [runbook](daily-agent-receipt.md#schedule-recovery--november-18-2026).
+
+Live integrated preview also passed with the current production renderer: source export, usage refresh and PNG generation for November 17 completed without sending. Output was isolated under the private schedule-fix-preview directory; original artifacts and delivery state were preserved. This verifies generation outside the contention window, not the undeployed retry or next scheduled delivery.

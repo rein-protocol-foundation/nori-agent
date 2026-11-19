@@ -177,7 +177,9 @@ test('collector fails closed on API failure, malformed data, truncation, growing
   ];
   for (const [fetchImpl, expected] of cases) await assert.rejects(collectMagpieUsage({ date: bounds.date, fetchImpl }), expected);
   let n = 0;
-  await assert.rejects(collectMagpieUsage({ date: bounds.date, pageSize: 1, fetchImpl: async () => ++n === 1 ? response([row()], 2) : response([row()], 3, 1) }), /changed during pagination/);
+  await assert.rejects(collectMagpieUsage({ date: bounds.date, pageSize: 1, retryDelayMs: 0,
+    fetchImpl: async url => response([row()], ++n % 2 ? 2 : 3, Number(url.searchParams.get('offset'))) }), /changed during pagination/);
+  assert.equal(n, 4, 'persistent instability stops after two complete attempts');
   let duplicatePage = 0;
   await assert.rejects(collectMagpieUsage({ date: bounds.date, pageSize: 1, fetchImpl: async () => response([row({ rid: 'same-attempt' })], 2, duplicatePage++) }), /duplicate attempts/);
   await assert.rejects(collectMagpieUsage({ date: bounds.date, pageSize: 1, maxPages: 1, fetchImpl: async () => response([row()], 2) }), /page bound/);
@@ -187,6 +189,37 @@ test('collector fails closed on API failure, malformed data, truncation, growing
   for (const magpieUrl of ['https://127.0.0.1:3425', 'http://example.com', 'http://user:secret@localhost', 'http://localhost/x']) {
     await assert.rejects(collectMagpieUsage({ date: bounds.date, magpieUrl }), /loopback/);
   }
+});
+
+test('collector discards unstable pages and identities before one fresh collection', async () => {
+  for (const changedTotal of [1, 3]) {
+    const offsets = [];
+    const summary = await collectMagpieUsage({ date: bounds.date, pageSize: 1, retryDelayMs: 0,
+      fetchImpl: async url => {
+        const offset = Number(url.searchParams.get('offset')); offsets.push(offset);
+        if (offsets.length === 1) return response([row({ rid: 'first', in: 999 })], 2, 0);
+        if (offsets.length === 2) return response([row()], changedTotal, 1);
+        return response([row({ rid: offset === 0 ? 'first' : 'second', in: 1 })], 2, offset);
+      } });
+    assert.deepEqual(offsets, [0, 1, 0, 1]);
+    assert.equal(summary.totals.requests, 2);
+    assert.equal(summary.totals.inputTokens, 2, 'discarded first attempt must not contaminate totals');
+  }
+});
+
+test('collector does not retry non-transient failures or write artifacts on exhausted retry', async t => {
+  let calls = 0;
+  await assert.rejects(collectMagpieUsage({ retryDelayMs: 0, fetchImpl: async () => {
+    calls++; return new Response('private', { status: 401 });
+  } }), /HTTP 401/);
+  assert.equal(calls, 1);
+  const directory = await mkdtemp(join(tmpdir(), 'nori-retry-failure-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const outputDir = join(directory, 'artifacts'); calls = 0;
+  await assert.rejects(writeDailyReceipt({ date: bounds.date, outputDir, pageSize: 1, retryDelayMs: 0,
+    fetchImpl: async url => response([row()], ++calls % 2 ? 2 : 3, Number(url.searchParams.get('offset'))) }), /changed during pagination/);
+  assert.equal(calls, 4);
+  await assert.rejects(readFile(join(outputDir, `nori-usage-${bounds.date}.json`)), { code: 'ENOENT' });
 });
 
 test('actual PNG renderer and artifact writer produce valid deterministic private outputs', async t => {
