@@ -1562,3 +1562,7 @@ Live integrated preview also passed with the current production renderer: source
 ## November 19, 2026 · Scheduled development compatibility
 
 SA-OPS-01 / SA-M1. Codex tested native scheduled collection on OCI with a synthetic Slack transport. Production settings and legacy thread routing require the separately reviewed cutover. [Verification](slack-scheduler-compatibility.md).
+
+## 2026-11-19 — COMMUNITY-PROFILE-LINK
+
+Owner: Codex. Implemented optional existing-profile association for Discord/Slack public introductions and companion self-only backend API. Synthetic checks passing; native linked-profile registration passed; full optional enable/disable checks and production activation pending. Original checkout changes preserved in a separate worktree. A first loader attempt failed for missing worktree dependencies; local dependencies were reused without editing vendor source. Next: complete loader/CI, deploy backend before Nori, activate under updater lock and verify retained cron/archive/config. Real two-human acceptance remains pending.

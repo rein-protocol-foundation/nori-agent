@@ -148,3 +148,18 @@ product milestone advanced.
 References: [Google authorization](https://developers.google.com/webmaster-tools/v1/how-tos/authorizing),
 [Search Analytics](https://developers.google.com/webmaster-tools/v1/searchanalytics/query),
 [Bing API access](https://learn.microsoft.com/en-us/bingwebmaster/getting-access).
+
+### Midnight Slack report
+
+The separate operator-installed job `nori-seo-slack-daily` refreshes both sources and announces the aggregate report in Rein Slack's #ops-daily at 00:00 fixed PST (08:00 UTC). The scheduler stores a copy of the Python source as command input. Changing the repository file alone does not update that copy. The authorized operator can recreate the job from the OCI checkout using the same declaration key:
+
+```sh
+.toolchain/node_modules/node/bin/node runtime/oci-deploy/slack.mjs cron add \
+  --name nori-seo-slack-daily --display-name 'Rein SEO 日报' \
+  --declaration-key rein-seo-slack-midnight-pst-v1 --agent main --session isolated \
+  --cron '0 0 * * *' --tz Etc/GMT+8 --exact \
+  --command-argv '["/usr/bin/python3","-"]' --command-cwd /home/ubuntu/rein-agent \
+  --command-input "$(cat scripts/slack-seo-daily.py)" \
+  --timeout-seconds 780 --no-output-timeout-seconds 735 --output-max-bytes 4000 \
+  --announce --channel slack --to channel:C0C85FBGTF0
+```

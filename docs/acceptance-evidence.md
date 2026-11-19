@@ -539,3 +539,11 @@ Live integrated preview also passed with the current production renderer: source
 ## November 19, 2026 · Sandbox schedule ownership
 
 SA-OPS-01 / SA-M1. Codex exercised create and update under the same native job ID. The automatic run executed 113 + 271 as nori-dev and delivered 384 to the simulated original thread. Live Slack and formal-channel Codex acceptance are pending. [Verification](slack-scheduler-compatibility.md).
+
+## COMMUNITY-PROFILE-LINK — linked member recognition
+
+Owner: Codex; 2026-11-19. Targeted synthetic identity/recall and backend-proof regression checks passed (46 before final configuration checks). Native linked-profile registration passed; rollout is pending. Cases include actor spoofing, unlink/rebind, cross-platform source ownership, removed/private/deleted sources and private-field redaction. No live human messages were sent. See [feature boundary](linked-member-profiles.md).
+
+Final focused linked-reader checks: 14 passed. Whole Nori suite: 1,572 tests, 1,567 passed, 4 existing skips, 1 worktree-only missing markdown dependency failure. After supplying the existing dependency tree, the failed native migration test and linked-reader regression set passed (15/15); no vendor source changed.
+
+Native OpenClaw loader completed successfully for linked Discord/Slack registration and legacy optional enable/disable configuration.

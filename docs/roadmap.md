@@ -572,3 +572,7 @@ SA-OBS-02 / #68 recovery (2026-11-18, Codex): existing receipt schedule changed 
 ## November 19, 2026 · Slack scheduling and development
 
 SA-OPS-01 / SA-M1. Codex verified same-owner adjustments and scheduled SSH sandbox execution on an isolated Gateway. Formal Slack acceptance and release are pending. [Verification](slack-scheduler-compatibility.md).
+
+## COMMUNITY-PROFILE-LINK — 2026-11-19
+
+Status: implemented, verification/rollout in progress. Owner: Codex. Link current Discord/Slack sender via the existing verified backend contact to public introductions. No private-history merge or role expansion. Next: native loader, companion API deployment, activation/readback; two-human live acceptance remains pending.
