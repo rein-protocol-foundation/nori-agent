@@ -6,8 +6,8 @@ import { join, resolve } from 'node:path';
 import { environment, root, upstream, requireSource } from './runtime-env.mjs';
 requireSource();
 
-function inspectPlugin(env) {
-  const result = spawnSync('pnpm', ['--silent', 'openclaw', 'plugins', 'inspect', 'rein-operations', '--runtime', '--json'], {
+function inspectPlugin(env, pluginId = 'rein-operations') {
+  const result = spawnSync('pnpm', ['--silent', 'openclaw', 'plugins', 'inspect', pluginId, '--runtime', '--json'], {
     cwd: upstream, env, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024,
   });
   if (result.stderr) process.stderr.write(result.stderr);
@@ -149,3 +149,24 @@ try {
   assert.ok(!scoped.stdout.includes(GOVERNANCE_CONFIRM_KEY));
   console.log('Verified real OpenClaw loader: scoped backend profiles register once without credentials in output.');
 } finally { rmSync(scopedTemp, { recursive: true, force: true }); }
+
+// Optional introduction recall registers through the pinned public plugin loader.
+const introductionTemp = mkdtempSync(join(tmpdir(), 'rein-member-introductions-loader-'));
+try {
+  for (const enabled of [false, true]) {
+    const configPath = join(introductionTemp, `config-${enabled}.json`);
+    writeFileSync(configPath, JSON.stringify({ plugins: { allow: ['rein-member-introductions'],
+      load: { paths: [resolve(root, 'plugins/rein-member-introductions')] }, entries: {
+        'rein-member-introductions': { enabled: true, config: { enabled, agentId: 'nori-community',
+          accountId: 'default', guildId: '100000000000000001', introductionsChannelId: '100000000000000002',
+          statePath: join(introductionTemp, 'private', 'members.sqlite') } },
+      } } }));
+    const { report } = inspectPlugin({ ...environment(), OPENCLAW_CONFIG_PATH: configPath,
+      OPENCLAW_STATE_DIR: introductionTemp }, 'rein-member-introductions');
+    assert.equal(report.plugin.imported, true);
+    assert.notEqual(report.plugin.status, 'error', report.plugin.error);
+    assert.deepEqual(report.tools.flatMap(tool => tool.names), enabled ? ['rein_my_introduction'] : []);
+    assert.equal(report.diagnostics.filter(item => item.level === 'error').length, 0);
+  }
+  console.log('Verified native member-introduction plugin enable/disable and optional registration.');
+} finally { rmSync(introductionTemp, { recursive: true, force: true }); }

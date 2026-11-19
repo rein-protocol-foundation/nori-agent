@@ -1,5 +1,17 @@
 # Nori-Agent implementation roadmap
 
+## 2026-11-18 — Daily Discord onboarding
+
+COMMUNITY-ONBOARDING-01; owner Codex; **local verified, activation pending**.
+Daily fixed PST 08:00 welcomes and unmentioned introduction collection now have an
+optional deterministic runner, private durable evidence store and same-guild current
+member recall tool. 25 focused checks, 34 compatibility regressions and native plugin
+loading passed. Next: confirm channel destination, coordinate release/native job
+activation and verify actual scheduled delivery/recall. No product milestone advanced;
+verified canonical cross-platform profile retrieval remains future work.
+[Scope, checks and blockers](daily-discord-onboarding.md).
+
+
 ## 2026-11-18 — Discord member onboarding access
 
 SA-M0 / #57; owner Codex; **requested restoration passed real acceptance**. PR #113 deployed

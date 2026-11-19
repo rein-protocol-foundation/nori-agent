@@ -1,0 +1,21 @@
+{
+  "id": "rein-member-introductions",
+  "name": "Nori member introductions",
+  "description": "Current-member recall of public introductions collected by the daily onboarding job.",
+  "enabledByDefault": false,
+  "activation": { "onStartup": true },
+  "contracts": { "tools": ["rein_my_introduction"] },
+  "configSchema": {
+    "type": "object", "additionalProperties": false,
+    "properties": {
+      "enabled": { "type": "boolean", "default": false },
+      "agentId": { "type": "string", "minLength": 1 },
+      "accountId": { "type": "string", "minLength": 1 },
+      "guildId": { "type": "string", "pattern": "^[1-9][0-9]{16,19}$" },
+      "introductionsChannelId": { "type": "string", "pattern": "^[1-9][0-9]{16,19}$" },
+      "statePath": { "type": "string", "minLength": 1 }
+    },
+    "if": { "properties": { "enabled": { "const": true } }, "required": ["enabled"] },
+    "then": { "required": ["agentId", "accountId", "guildId", "introductionsChannelId", "statePath"] }
+  }
+}

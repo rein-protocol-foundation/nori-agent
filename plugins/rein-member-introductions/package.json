@@ -1,0 +1,5 @@
+{
+  "name": "@rein-protocol/openclaw-rein-member-introductions",
+  "version": "0.1.0", "private": true, "type": "module",
+  "openclaw": { "extensions": ["./index.ts"], "compat": { "pluginApi": ">=2026.9.5", "minGatewayVersion": "2026.9.5" } }
+}

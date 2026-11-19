@@ -1,5 +1,18 @@
 # Acceptance evidence
 
+## 2026-11-18 — Daily Discord onboarding
+
+COMMUNITY-ONBOARDING-01; owner Codex. **LOCAL VERIFIED; NOT ACTIVATED.** Fixed PST
+08:00 collection/welcome, original introduction evidence, and current-sender guild
+recall are implemented as an optional addon. 25 focused synthetic tests, 34 existing
+identity/routing/withdrawal tests, scaffold, and actual native plugin loading passed.
+Read-only production member-list access succeeded. Channel choice, deployed source,
+native job creation, scheduled delivery and real-member recall remain pending;
+automatic cross-platform canonical identity retrieval is not implemented.
+[Evidence and activation checklist](daily-discord-onboarding.md). No product milestone
+or live acceptance is claimed; no messages were sent.
+
+
 ## 2026-11-18 — Discord member onboarding access
 
 SA-M0 / #57; owner Codex; **requested restoration passed real acceptance**. PR #113 deployed
