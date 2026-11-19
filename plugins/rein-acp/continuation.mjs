@@ -166,6 +166,11 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
     }
     return true;
   };
+  const wakeOwner = (sessionKey, origin, contextKey, message) => {
+    system.enqueueSystemEvent(message, { sessionKey, agentId: config.channel.agentId, contextKey, deliveryContext: origin });
+    system.requestHeartbeat({ source: 'background-task', intent: 'immediate', reason: contextKey,
+      agentId: config.channel.agentId, sessionKey });
+  };
   const saveLifecycleFact = async (owner, flowId, fact) => {
     const binding = flowsFor(owner);
     for (let retry = 0; retry < 3; retry++) {
@@ -190,7 +195,16 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
         phase: fact.phase, outcome: fact.outcome, endedAt: fact.endedAt, at: clock() };
       const changed = await binding[mode]({ flowId, expectedRevision: flow.revision, stateJson: state,
         ...(mode === 'setWaiting' ? { currentStep: flow.currentStep, waitJson: flow.waitJson } : { endedAt: flow.endedAt }) });
-      if (changed.applied) return true;
+      if (changed.applied) {
+        // ACP's user-facing announcement can be tool-less. Ask the owning
+        // session to review the saved receipt through its native task wake.
+        if (mode === 'setWaiting' && !state.stopRequested && last(state).runId === fact.runId &&
+            !last(state).review && last(state).scopeRevision === state.scopeRevision) {
+          wakeOwner(owner, flow.requesterOrigin, 'rein-continuation-review',
+            `ACP run ${task.runId} settled for flow ${flowId}. Use rein_continuation status and review the current criteria using the native task result. Report the reviewed outcome to this thread.`);
+        }
+        return true;
+      }
       if (changed.code !== 'revision_conflict') throw Error('rein_continuation_acp_settlement_persistence_failed');
     }
     throw Error('rein_continuation_acp_settlement_revision_conflict');
@@ -792,9 +806,8 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
         ctx.abortSignal?.throwIfAborted();
         // One hint per native owner; durable inventory represents every task even if
         // host events coalesce or the native event queue drops older hints.
-        system.enqueueSystemEvent(`Native continuation reconciliation required for flows ${visible.map(flow => flow.flowId).join(', ')}. Read ALL current owner flows via rein_continuation status before work or reporting.`,
-          { sessionKey, agentId: config.channel.agentId, contextKey: 'rein-continuation-recovery', deliveryContext: visible[0].requesterOrigin });
-        system.requestHeartbeat({ source: 'background-task', intent: 'immediate', reason: 'rein-continuation-recovery', agentId: config.channel.agentId, sessionKey });
+        wakeOwner(sessionKey, visible[0].requesterOrigin, 'rein-continuation-recovery',
+          `Native continuation reconciliation required for flows ${visible.map(flow => flow.flowId).join(', ')}. Read ALL current owner flows via rein_continuation status before work or reporting.`);
       }));
     },
     async gatewayStop() {
