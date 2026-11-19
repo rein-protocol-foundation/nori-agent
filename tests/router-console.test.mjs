@@ -392,7 +392,7 @@ const consolePolicySource = {agentId:'main',accountId:'default',channel:'slack',
 async function setHostAuthority(f, authority) {
   const host=JSON.parse(await readFile(f.hostPath,'utf8'));
   const config=host.plugins.entries['rein-router'].config;
-  delete config.trustedSlackChannels;delete config.nativeAgentRoutes;
+  delete config.trustedSlackChannels;delete config.nativeAgentRoutes;delete config.participation;
   Object.assign(config,authority);await writeFile(f.hostPath,JSON.stringify(host),{mode:0o600});
 }
 async function hostPolicy(f){return JSON.parse(await readFile(f.hostPath,'utf8')).plugins.entries['rein-router'].config;}
@@ -404,7 +404,10 @@ function assertExplicitPolicyWorks(raw){
 }
 test('host automation authority survives actual Console refresh/save/reload/restart without settings duplication',async t=>{
   const f=await fixture(t);await f.sync.save(settings());
-  const authority={trustedSlackChannels:[approvedSlack],nativeAgentRoutes:{main:['general']}};
+  const authority={trustedSlackChannels:[approvedSlack],nativeAgentRoutes:{main:['general']},
+    participation:{enabled:true,version:'host-policy-v1',duties:'Help with deployment reliability.',
+      channels:[{accountId:'default',workspaceId:'TFIXTURE1',channelId:'CFIXTURE1',agentId:'main'}],
+      timeoutMs:3000,minProbability:0.8,maxMessageChars:4000,recordEvidence:true}};
   await setHostAuthority(f,authority);
   await f.sync.refresh();assert.deepEqual((await hostPolicy(f)).nativeAgentRoutes,authority.nativeAgentRoutes);
   assertExplicitPolicyWorks(await hostPolicy(f));
@@ -428,8 +431,10 @@ test('merge discards generated defaults for omitted host authority; implicit gra
   const fragment=compile(undefined,{...settings(),developmentChannels:[development]}).fragment;
   const merged=mergeRouterFragment({},fragment,{pluginPath:'/test',typesafePath:'/typesafe'});
   assert.ok(!Object.hasOwn(merged.plugins.entries['rein-router'].config,'trustedSlackChannels'));
+  assert.ok(!Object.hasOwn(merged.plugins.entries['rein-router'].config,'participation'));
   const f=await fixture(t);await f.sync.save({...settings(),developmentChannels:[development]});
   assert.ok(!Object.hasOwn(await hostPolicy(f),'trustedSlackChannels'));
+  assert.ok(!Object.hasOwn(await hostPolicy(f),'participation'));
   assert.deepEqual(validateRouterConfig(await hostPolicy(f)).trustedSlackChannels,[development]);
   await f.sync.save({...settings(),developmentChannels:[]});await f.sync.refresh();
   await f.sync.close();const restarted=f.restart();await restarted.init();
