@@ -2,6 +2,10 @@
 
 ## 2026-11-19 — Super Agent v2
 
+An OCI replay exercised five recorded Slack inputs and one duplicate concurrently. Four hosted Jev calls succeeded. The candidate suppressed the fifth input at capacity and rejected the duplicate. A 100 ms deadline returned silence after one call. With paid inference disabled, the same help request returned silence with zero calls. These were isolated replays without outbound Slack delivery.
+
+OCI 用五条已记录的真实 Slack 输入和一个重复事件做并发回放。四次托管 Jev 调用成功，第五条触及并发上限，重复事件被抑制。将截止时间设为 100 毫秒后，一次调用超时并返回静默；关闭付费推理后，同一求助输入零调用并返回静默。这组回放在隔离环境执行，未向 Slack 发信。
+
 A Slack CLI test sender initially received a generic error for `/status`. With its identity explicitly scoped to the test room and native commands, Slack returned the native status table. The sender selected `bailian-token-plan/auto` for that thread, verified the model with a second status read, and restored the default. The temporary grants were removed. A passive app-attributed message produced zero classifier calls and no candidate reply. The OCI executor retained the initial error and successful follow-up in separate private reports for Tempest.
 
 Slack CLI 测试账号最初调用 `/status` 收到通用错误。将该账号明确列入测试频道及原生命令授权后，Slack 返回会话状态表。测试账号把该线程的模型切换到 `bailian-token-plan/auto`，再次查询状态确认生效，随后恢复默认模型并撤销临时授权。另一次带应用标记的普通发言未调用分类器，线程无候选机器人回复。OCI 分别保留了初次错误和后续通过的私有报告，供 Tempest 审阅。

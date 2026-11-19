@@ -2,6 +2,8 @@
 
 ## 2026-11-19 — Super Agent v2 integration and partial product verification
 
+An OCI replay exercised five recorded Slack inputs and one duplicate concurrently. Four hosted Jev calls succeeded. The candidate suppressed the fifth input at capacity and rejected the duplicate. A 100 ms deadline returned silence after one call. With paid inference disabled, the same help request returned silence with zero calls. These were isolated replays without outbound Slack delivery.
+
 A Slack CLI test sender initially received a generic error for `/status`. With its identity explicitly scoped to the test room and native commands, Slack returned the native status table. The sender selected `bailian-token-plan/auto` for that thread, verified the model with a second status read, and restored the default. The temporary grants were removed. A passive app-attributed message produced zero classifier calls and no candidate reply. The OCI executor retained the initial error and successful follow-up in separate private reports for Tempest.
 
 The independent test gateway delivered an unmentioned help reply and a useful out-of-duty clarification. It silenced chatter. An admitted worker emitted NO_REPLY after enabling native optional silence for Slack groups. The default had emitted a visible error. Native threaded send/edit, scoped Linear delegation on #131 and delayed revocation were verified. The staging Foundation administrator flag was true for the verified sender and false in production. The #124 public summary was found in Linear after Markdown normalization.
