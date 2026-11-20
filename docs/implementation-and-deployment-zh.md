@@ -1,5 +1,14 @@
 # Nori-Agent 开发、验证与部署记录
 
+## 2026-11-19 — 开发频道 ACP 报告交接
+
+SA-M1 / SA-M2，负责人 Codex。本地已验证。新的开发频道 ACP 任务会为每次尝试指定一个
+UTF-8 复核文件，位于已配置的工作目录。网关账号需要能读取该文件。原线程父会话使用
+Flow ID 和范围版本调用 `rein_continuation read_review_file`，可读取至多 64 KiB 正文并取得
+SHA-256 摘要。历史任务没有分配复核文件。即使 harness 正常退出，原生任务标记交付受阻时也会
+唤醒父会话进行复核。本次仅只读检查线上原 Flow。待发布并在真实 Slack 线程验收。
+[验收记录](acceptance-evidence.md#development-acp-text-review)。
+
 ## 2026-11-19 — OCI 联网搜索切换至 Firecrawl
 
 Codex 将共享 Gateway 的默认搜索服务从 `parallel-free` 切换为 `firecrawl`。插件通过

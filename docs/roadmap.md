@@ -1,5 +1,11 @@
 # Nori-Agent implementation roadmap
 
+## 2026-11-19 — Development ACP text review
+
+SA-M1 / SA-M2, owner Codex. Local verification passed for reading a scoped ACP
+deliverable and waking its reviewer after a blocked result. Release and a fresh
+formal Slack thread test are pending. [Verification record](acceptance-evidence.md#development-acp-text-review).
+
 ## 2026-11-19 — Discord welcome and reminder copy
 
 COMMUNITY-ONBOARDING-01; owner Codex. The daily invitation and Sunday reminder ask

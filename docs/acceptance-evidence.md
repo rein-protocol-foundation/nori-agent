@@ -1,5 +1,21 @@
 # Acceptance evidence
 
+## Development ACP text review
+
+2026-11-19, SA-M1 / SA-M2, owner Codex. Read-only OCI inspection found the
+reported 8,238-byte GTM report with 14 numbered candidates. The gateway service
+user could read it, while the development SSH sandbox user could not. The canonical
+ACP Task had succeeded with a blocked terminal outcome. Its owning Flow recorded
+launch acceptance and still had no settlement or review at inspection time.
+
+The pinned native Gateway probe passed for ordinary completion and for a normal
+harness exit with a blocked deliverable. In the second case the parent read
+the fixture file through the public SDK, recorded a blocked review and ran the
+child exactly once. Transport, model and harness were synthetic. Run
+`node scripts/verify-acp-settlement.mjs` with and without `--blocked-artifact`.
+The 92 controller and compatibility tests passed, including file bounds, links,
+owner-wake access and membership revocation. Live Slack acceptance of the repair is pending.
+
 ## 2026-11-19 — Discord welcome and reminder copy
 
 COMMUNITY-ONBOARDING-01; owner Codex. All 37 focused tests passed on Node 24.16.0.

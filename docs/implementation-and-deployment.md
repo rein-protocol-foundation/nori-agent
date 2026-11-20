@@ -1,5 +1,17 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-19 — Development ACP report handoff
+
+SA-M1 / SA-M2, owner Codex. Locally verified. Each new development ACP assignment
+has one designated UTF-8 review file in the configured harness directory. An
+authorized parent reads up to 64 KiB through `rein_continuation read_review_file`
+using the Flow ID and scope revision. The gateway account must be able to read
+that file. The response identifies the exact bytes with a SHA-256 digest.
+Previously created assignments have no designated file. A native blocked result
+now wakes the parent for review even when the harness exited normally. The
+original incident Flow was inspected read-only. Release and real-thread acceptance
+remain pending. [Verification record](acceptance-evidence.md#development-acp-text-review).
+
 ## 2026-11-19 — Firecrawl enabled for OCI web search
 
 Codex switched the shared Gateway default from `parallel-free` to `firecrawl`. The
