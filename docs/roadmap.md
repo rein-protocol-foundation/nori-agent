@@ -1,5 +1,12 @@
 # Nori-Agent implementation roadmap
 
+## Completed task scope — November 19, 2026
+
+The requested task lifecycle, indefinite server-side summaries with explicit deletion, and autonomous development acceptance are complete within the recorded scope. Owner Codex. Issues #58 and #60 are closed as completed. Production evidence covers same-owner restart recovery, reviewed continuation and bounded supplements, indefinite summary retrieval, deletion tombstones preventing resurrection after restart, and real Codex development with original-thread results and summary readback.
+
+See [lifecycle and deletion acceptance](task-lifecycle-closeout-2026-11-17.md), [restart acceptance](task-continuation-live-2026-11-15.md), and [formal development-channel acceptance](slack-scheduler-compatibility.md#production-acceptance-on-november-19-2026). The earlier dated statuses below describe their original checkpoints. Broader product boundaries remain tracked in #65. Subsequent report-file access and blocked-result review work remains open in #132.
+
+
 ## 2026-11-19 — Independent Super Agent v2
 
 SA2; implementation owner Codex; reviewer Tempest. Real two-way Issue Sync and recovery on two new synthetic pairs passed. The OCI private report links to its real issue pair and awaits review. The dedicated inbound gateway verified unmentioned help, chatter, clarification and admitted-worker silence. The genuine desktop sender resolves as a Director with the website administrator flag false. Tempest accepted the scoped reopen retest. Staging verified the administrator positive. Production activation, independent human feedback and overall acceptance remain open. [All 16 scenarios and next checks](super-agent-v2-verification.md).

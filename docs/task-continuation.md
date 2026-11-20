@@ -1,5 +1,12 @@
 # Native task continuation
 
+## Completed task scope — November 19, 2026
+
+The requested task lifecycle, indefinite server-side summaries with explicit deletion, and autonomous development acceptance are complete within the recorded scope. Owner Codex. Issues #58 and #60 are closed as completed. Production evidence covers same-owner restart recovery, reviewed continuation and bounded supplements, indefinite summary retrieval, deletion tombstones preventing resurrection after restart, and real Codex development with original-thread results and summary readback.
+
+See [lifecycle and deletion acceptance](task-lifecycle-closeout-2026-11-17.md), [restart acceptance](task-continuation-live-2026-11-15.md), and [formal development-channel acceptance](slack-scheduler-compatibility.md#production-acceptance-on-november-19-2026). The earlier dated statuses below describe their original checkpoints. Broader product boundaries remain tracked in #65. Subsequent report-file access and blocked-result review work remains open in #132.
+
+
 Tracking: SA-M2-01–06 / [#58](https://github.com/rein-protocol-foundation/nori-agent/issues/58).
 Updated 2026-11-16, America/Los_Angeles. Owner: Codex (runtime-verified Astra Medium).
 **CORE IMPLEMENTED; SCOPED LIVE RECOVERY ACCEPTED; CONTROL FOLLOW-UP LOCALLY VERIFIED.**
