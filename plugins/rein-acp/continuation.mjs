@@ -93,10 +93,15 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
   const boundReason = state => clock() >= state.deadlineAt ? 'deadline' : state.attempts.length >= state.maxAttempts ? 'attempt_limit' :
     state.noProgress >= state.maxNoProgress ? 'no_progress_limit' : undefined;
   const reviewFileFor = (flow, number) => `acp-review-${digest([flow.ownerKey, flow.flowId, flow.stateJson.scopeRevision, number])}.md`;
-  const taskText = (flow, instruction, reviewFile) => `Native flow ${flow.flowId}; scope revision ${flow.stateJson.scopeRevision}; attempt ${flow.stateJson.attempts.length + 1}.\nGoal: ${flow.stateJson.goal}\nCompletion criteria: ${flow.stateJson.criteria}\nBounded assignment: ${instruction}${reviewFile ? `\nWhen writing a text deliverable is in scope, save its actual UTF-8 contents in ${reviewFile} in the configured working directory so the parent can read it (64 KiB limit). Preserve any explicitly requested original path. Report the file and any gaps in the final reply.` : ''}\nReturn evidence, missing criteria, and performed or uncertain external actions to the native parent. No outreach, permission expansion, merge or deployment is authorized by this assignment.`;
+  const taskText = (flow, instruction, reviewFile) => `Native flow ${flow.flowId}; scope revision ${flow.stateJson.scopeRevision}; attempt ${flow.stateJson.attempts.length + 1}.\nGoal: ${flow.stateJson.goal}\nCompletion criteria: ${flow.stateJson.criteria}\nBounded assignment: ${instruction}${reviewFile ? `\nSave the requested text deliverable or coding verification report in ${reviewFile} in the configured working directory so the parent can read its actual UTF-8 contents (64 KiB limit). For a coding deliverable, write a short verification report there with the project path, commands actually run, test counts, failures and remaining gaps. Preserve any explicitly requested original path. Report the file and any gaps in the final reply.` : ''}\nReturn evidence, missing criteria, and performed or uncertain external actions to the native parent. No outreach, permission expansion, merge or deployment is authorized by this assignment.`;
   const nativeTask = async (flow, attempt = last(flow.stateJson)) => {
     if (!attempt?.runId) return undefined;
-    const task = await runsFor(flow.ownerKey).resolve(attempt.runId);
+    // Linking creates a second native task with the same run and child session.
+    // Run lookup can switch to that projection at settlement. Keep the exact
+    // backing already bound to this attempt, including on recovered flows.
+    const pinnedId = flow.stateJson.runtime === 'acp' ? attempt.taskId : undefined;
+    const task = await runsFor(flow.ownerKey).resolve(pinnedId ?? attempt.runId);
+    if (pinnedId && task?.id !== pinnedId) return undefined;
     return task?.ownerKey === flow.ownerKey && task.scope === 'session' && task.runId === attempt.runId &&
       task.childSessionKey === attempt.childSessionKey && task.runtime === flow.stateJson.runtime ? task : undefined;
   };
@@ -534,7 +539,7 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
       if (!selected(ctx)) return;
       const tool = unwrap(event), turn = turns.get(ctx.runId);
       if (tool.name === 'rein_continuation') {
-        if (!turn || !ctx.toolCallId) return { block: true, blockReason: 'A current authorized continuation turn is required.' };
+        if (!turn || !ctx.toolCallId) return { block: true, blockReason: 'A current authorized continuation turn is required. End this turn and report the unavailable operation. Repeating the call cannot authorize it.' };
         invocations.set(ctx.toolCallId, { runId: ctx.runId });
         return;
       }

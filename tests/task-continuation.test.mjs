@@ -1131,7 +1131,7 @@ test('ACP lifecycle rejects a terminal task fingerprint changed by the second pu
   const original = runs.resolve; let reads = 0;
   runs.resolve = async token => {
     const task = await original(token);
-    if (token === probe.task.runId && ++reads === 2) return { ...task, endedAt: task.endedAt + 1 };
+    if (token === probe.task.id && ++reads === 2) return { ...task, endedAt: task.endedAt + 1 };
     return task;
   };
   probe.settle(); probe.emit(); await probe.f.runtime.gatewayStop();
@@ -1163,7 +1163,7 @@ async function parentObserverRace(t, action = 'status', afterProof) {
   }
   runs.resolve = async token => {
     const task = await originalResolve(token);
-    if (token === probe.task.runId && !injected && ++reads === (action === 'review' ? 2 : 1)) {
+    if (token === probe.task.id && !injected && ++reads === (action === 'review' ? 2 : 1)) {
       injected = true; probe.emit(); await proofWritten; await afterProof?.(probe);
     }
     return task;
@@ -1287,4 +1287,24 @@ test('short ACP assignment reference expands only at canonical launch for its pr
   assert.equal((await f.spawn(assignment, { ...params, runtime: 'subagent' })).gate.block, true);
   assert.deepEqual((await f.spawn(assignment, params)).gate.params, { ...params, task: assignment.task });
   assert.equal((await f.spawn(assignment, params)).gate.block, true);
+});
+
+test('ACP lifecycle saves and wakes when run lookup switches to a linked projection', async t => {
+  const probe = await acpEventFixture(t);
+  const { f, task, begun } = probe;
+  const runs = f.tasks.async.runs.bindSession(), original = runs.resolve;
+  runs.resolve = async token => token === task.runId
+    ? { ...task, id: 'managed-projection' } : original(token);
+  const wakes = [];
+  f.dependencies.system.requestHeartbeat = event => wakes.push(event);
+  probe.settle(); probe.emit();
+  await f.runtime.gatewayStop();
+  const receipt = f.flows.get(begun.flowId).stateJson.attempts[0].settlement;
+  assert.equal(receipt?.taskId, task.id);
+  assert.equal(wakes.length, 1);
+  await f.restart();
+  const result = await f.call({ action: 'review', flow: begun.flowId, scopeRevision: 1,
+    outcome: 'complete', evidence: 'Checked the completed coding assignment', effects: 'confirmed' });
+  assert.equal(result.phase, 'complete');
+  assert.equal(result.attempts[0].taskId, task.id);
 });
