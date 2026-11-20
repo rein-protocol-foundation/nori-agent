@@ -1,5 +1,9 @@
 # Nori-Agent implementation roadmap
 
+## 2026-11-20 UTC — Lark routing
+
+Owner Codex. Connect approved Lark community groups to the existing `nori-community` agent and approved internal groups to `main`. The candidate passed local routing checks. Production routing and same-group delivery require live acceptance. [Current evidence](acceptance-evidence.md#2026-11-20-utc--lark-routing).
+
 ## 2026-11-20 UTC — SA2 Slack participation
 
 Owner Codex. Live readback confirmed a positive decision with five prior messages and a threaded reply on `fcf0b69`. The missing acknowledgement is a separate delivery defect. The receipt repair passed production acceptance on `0bdc8be` with Tempest’s manual confirmation and a matching Slack readback. [Acceptance evidence](acceptance-evidence.md)

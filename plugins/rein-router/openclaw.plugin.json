@@ -179,6 +179,23 @@
                       }
                     }
                   }
+                },
+                "feishu": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "primary": {
+                      "$ref": "#/$defs/routeId"
+                    },
+                    "fallbacks": {
+                      "type": "array",
+                      "maxItems": 16,
+                      "uniqueItems": true,
+                      "items": {
+                        "$ref": "#/$defs/routeId"
+                      }
+                    }
+                  }
                 }
               }
             },
@@ -198,7 +215,8 @@
                   "platform": {
                     "enum": [
                       "slack",
-                      "discord"
+                      "discord",
+                      "feishu"
                     ]
                   },
                   "accountId": {
@@ -244,7 +262,8 @@
                   "platform": {
                     "enum": [
                       "slack",
-                      "discord"
+                      "discord",
+                      "feishu"
                     ]
                   },
                   "accountId": {

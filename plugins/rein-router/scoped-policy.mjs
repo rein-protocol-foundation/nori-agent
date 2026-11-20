@@ -6,6 +6,22 @@ const keys = (value, allowed) => { if (!object(value) || Object.keys(value).some
 const id = value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/.test(value);
 const list = value => Array.isArray(value) && value.length > 0 && value.length <= 64 &&
   value.every(id) && new Set(value).size === value.length;
+const platformsSupported = ['slack', 'discord', 'feishu'];
+export const isLarkChatId = value => typeof value === 'string' && /^oc_[0-9a-f]{32}$/.test(value);
+export const isLarkSenderId = value => typeof value === 'string' && /^ou_[0-9a-f]{32}$/.test(value);
+
+function isLarkGroupTurn(ctx, chatId) {
+  if (ctx.inputProvenance?.kind !== 'external_user' || !isLarkChatId(chatId) || !isLarkSenderId(ctx.senderId))
+    return false;
+  const prefix = `agent:${ctx.agentId}:feishu:group:${chatId}:`;
+  if (!ctx.sessionKey.startsWith(prefix)) return false;
+  const conversation = ctx.sessionKey.slice(prefix.length);
+  const sender = `sender:${ctx.senderId}`;
+  if (conversation === sender) return true;
+  const thread = conversation.match(/^topic:(?:om_[0-9a-f]{32}|omt_[0-9a-f]{1,64}):(.+)$/);
+  return thread?.[1] === sender;
+}
+
 const preferences = (raw, allowed, partial = false) => {
   keys(raw, ['primary', 'fallbacks']);
   if ((!partial || raw.primary !== undefined) && !allowed.has(raw.primary)) fail();
@@ -49,18 +65,19 @@ export function validateScopedPolicies(raw, routes, globalPaid) {
     const defaults = preferences(policy.default, allowed);
     const platforms = {};
     if (policy.platforms !== undefined) {
-      keys(policy.platforms, ['slack', 'discord']);
+      keys(policy.platforms, platformsSupported);
       for (const [platform, value] of Object.entries(policy.platforms)) platforms[platform] = preferences(value, allowed, true);
     }
     if (!Array.isArray(policy.origins) || !policy.origins.length || policy.origins.length > 32) fail();
     const origins = policy.origins.map(origin => {
       keys(origin, ['platform', 'accountId', 'workspaceId', 'channelIds', 'directMessages']);
-      if (!['slack', 'discord'].includes(origin.platform) || !id(origin.accountId) || !id(origin.workspaceId) || !list(origin.channelIds)) fail();
+      if (!platformsSupported.includes(origin.platform) || !id(origin.accountId) || !id(origin.workspaceId) || !list(origin.channelIds)) fail();
+      if (origin.platform === 'feishu' && !origin.channelIds.every(isLarkChatId)) fail();
       if (origin.directMessages !== undefined &&
           (typeof origin.directMessages !== 'boolean' || origin.platform !== 'discord')) fail();
       return { ...origin, channelIds: [...origin.channelIds] };
     });
-    if (origins.some(origin => origin.platform === 'discord') && !usageLimits) fail();
+    if (origins.some(origin => origin.platform !== 'slack') && !usageLimits) fail();
     const seen = new Set();
     const directAccounts = new Set();
     for (const origin of origins.filter(origin => origin.directMessages)) {
@@ -108,6 +125,7 @@ export function resolveScopedPolicy(policies, ctx, { hasAttachments = false, nat
   const channelId = ctx.channelContext?.chat?.id ?? ctx.chatId;
   if (!channelId || (ctx.chatId !== undefined && ctx.chatId !== channelId) ||
       (ctx.channelContext?.sender?.id !== undefined && ctx.channelContext.sender.id !== ctx.senderId)) return null;
+  if (ctx.channel === 'feishu' && !isLarkGroupTurn(ctx, channelId)) return null;
   const origin = policy.origins.find(origin => origin.platform === ctx.channel && origin.accountId === ctx.accountId &&
     (origin.channelIds.includes(channelId) || (origin.directMessages === true && ctx.channel === 'discord' &&
       /^\d{17,20}$/.test(ctx.senderId) && /^\d{17,20}$/.test(channelId) &&

@@ -4,6 +4,7 @@ import { validateRouterConfig, buildOpenClawFragment } from '../plugins/rein-rou
 import { resolveScopedPolicy, describeScopedPolicies } from '../plugins/rein-router/scoped-policy.mjs';
 import { createRouter, assertRuntimeConfig } from '../plugins/rein-router/runtime.mjs';
 import { createScopedFallbackStream } from '../plugins/rein-router/scoped-stream.mjs';
+import { configureLarkRouting } from '../scripts/configure-lark-routing.mjs';
 const key = name => `sk-magpie-key-fixture-singleton-${name}-00000000`;
 const route = id => ({ id, provider: 'Fixture', gatewayModel: `fixture/${id}`, gatewayKeyEnvVar: `M0_ROUTE_${id.toUpperCase()}`,
   billingSource: 'Synthetic subscription', billingMode: 'subscription', billingVerified: true, purpose: 'Synthetic test route',
@@ -252,4 +253,90 @@ test('scoped native fallback checks each candidate before credentials/network; d
       assert.deepEqual(attempts,['fixture/a:medium','fixture/b:medium']);assert.deepEqual(network,['a','b']);
     }
   }
+});
+
+test('Lark Community ingress is exact-account, exact-chat, and sender-scoped for groups and threads', () => {
+  const chatId = 'oc_' + 'a'.repeat(32);
+  const senderId = 'ou_' + 'b'.repeat(32);
+  const topicId = 'om_' + 'c'.repeat(32);
+  const raw = config();
+  const policy = raw.scopedPolicies['nori-community'];
+  policy.origins.push({ platform: 'feishu', accountId: 'lark-community', workspaceId: 'LARK_FIXTURE', channelIds: [chatId] });
+  const { scopedPolicies } = validateRouterConfig(raw);
+  const prefix = `agent:nori-community:feishu:group:${chatId}:`;
+  const group = ctx({ channel: 'feishu', messageProvider: 'feishu', accountId: 'lark-community',
+    chatId, senderId, sessionKey: prefix + 'sender:' + senderId });
+  assert.equal(resolveScopedPolicy(scopedPolicies, group).primary, 'a');
+  assert.equal(resolveScopedPolicy(scopedPolicies, { ...group,
+    sessionKey: prefix + `topic:${topicId}:sender:${senderId}` }).primary, 'a');
+  assert.equal(resolveScopedPolicy(scopedPolicies, { ...group,
+    sessionKey: prefix + `topic:omt_d4be107c616a:sender:${senderId}` }).primary, 'a');
+  for (const overrides of [
+    { accountId: 'lark-internal' }, { chatId: 'oc_' + 'd'.repeat(32) }, { messageProvider: 'discord' },
+    { inputProvenance: undefined }, { senderId: 'ou_' + 'e'.repeat(32) },
+    { sessionKey: prefix.slice(0, -1) }, { sessionKey: `agent:nori-community:feishu:direct:${senderId}` },
+    { channelContext: { chat: { id: 'oc_' + 'f'.repeat(32) } } },
+  ]) assert.equal(resolveScopedPolicy(scopedPolicies, { ...group, ...overrides }), null);
+  assert.equal(resolveScopedPolicy(scopedPolicies, group, { hasAttachments: true }), null);
+
+  const host = { ...buildOpenClawFragment(raw, '/fixture/plugin'), agents: { entries: { 'nori-community': {
+    model: { primary: 'rein-magpie/auto', fallbacks: [] },
+  } } }, channels: { feishu: { enabled: true, domain: 'lark', dmPolicy: 'disabled', groupPolicy: 'allowlist',
+    requireMention: true, groupSessionScope: 'group_topic_sender',
+    accounts: { 'lark-community': { enabled: true, groupAllowFrom: [chatId] } } } },
+  bindings: [{ agentId: 'nori-community', match: { channel: 'feishu', accountId: 'lark-community' } }] };
+  assert.doesNotThrow(() => assertRuntimeConfig(validateRouterConfig(raw), host));
+  assert.throws(() => assertRuntimeConfig(validateRouterConfig(raw), { ...host,
+    bindings: [{ agentId: 'main', match: { channel: 'feishu', accountId: 'lark-community' } }] }), /Lark origin/);
+  const unsafe = structuredClone(host);
+  unsafe.channels.feishu.accounts['lark-community'].groupAllowFrom.push('oc_' + '0'.repeat(32));
+  assert.throws(() => assertRuntimeConfig(validateRouterConfig(raw), unsafe), /Lark origin/);
+});
+
+test('Lark candidate binds two distinct accounts without altering Slack or Discord', () => {
+  const raw = config();
+  const original = buildOpenClawFragment(raw, '/fixture/plugin');
+  original.agents.entries = {
+    main: { tools: { allow: ['exec'] } },
+    'nori-community': { model: { primary: 'rein-magpie/auto', fallbacks: [] } },
+  };
+  original.channels = { slack: { enabled: true }, discord: { enabled: true } };
+  original.bindings = [
+    { agentId: 'main', match: { channel: 'slack', accountId: 'default' } },
+    { agentId: 'nori-community', match: { channel: 'discord', accountId: 'default' } },
+  ];
+  original.plugins.entries['memory-core'] = { enabled: true, config: {
+    memoryPolicy: { excludeSessions: { channels: ['discord'] } },
+  } };
+  const consoleSettings = { scopedPolicies: structuredClone(raw.scopedPolicies) };
+  const community = { appId: 'cli_' + '1'.repeat(16), appSecretEnv: 'LARK_COMMUNITY_APP_SECRET',
+    groupIds: ['oc_' + '1'.repeat(32)] };
+  const internal = { appId: 'cli_' + '2'.repeat(16), appSecretEnv: 'LARK_INTERNAL_APP_SECRET',
+    groupIds: ['oc_' + '2'.repeat(32)], senderIds: ['ou_' + '3'.repeat(32)] };
+  const input = { original, consoleSettings, workspaceId: 'LARK_FIXTURE', community, internal };
+  const candidate = configureLarkRouting(input);
+  assert.deepEqual(candidate.config.channels.slack, original.channels.slack);
+  assert.deepEqual(candidate.config.channels.discord, original.channels.discord);
+  assert.deepEqual(candidate.config.agents, original.agents);
+  assert.deepEqual(candidate.config.bindings, [...original.bindings,
+    { agentId: 'nori-community', match: { channel: 'feishu', accountId: 'lark-community' } },
+    { agentId: 'main', match: { channel: 'feishu', accountId: 'lark-internal' } },
+  ]);
+  const feishu = candidate.config.channels.feishu;
+  assert.equal(feishu.dmPolicy, 'disabled');
+  assert.equal(feishu.historyLimit, 0);
+  assert.equal(feishu.requireMention, true);
+  assert.deepEqual(feishu.accounts['lark-community'].groupAllowFrom, community.groupIds);
+  assert.deepEqual(feishu.accounts['lark-internal'].groupAllowFrom, internal.groupIds);
+  assert.deepEqual(feishu.accounts['lark-internal'].groupSenderAllowFrom, internal.senderIds);
+  assert.deepEqual(feishu.groups, { '*': { tools: { allow: ['rein_status', 'rein_route_status'] } } });
+  assert.deepEqual(candidate.config.plugins.entries['memory-core'].config.memoryPolicy.excludeSessions.channels,
+    ['discord', 'feishu']);
+  const scopes = candidate.config.plugins.entries['rein-router'].config.scopedPolicies;
+  assert.deepEqual(scopes['nori-community'].origins, candidate.consoleSettings.scopedPolicies['nori-community'].origins);
+  assert.equal(original.channels.feishu, undefined);
+  assert.equal(consoleSettings.scopedPolicies['nori-community'].origins.length, 1);
+  assert.throws(() => configureLarkRouting({ ...input, internal: { ...internal, groupIds: community.groupIds } }), /group_overlap/);
+  assert.throws(() => configureLarkRouting({ ...input, internal: { ...internal, appId: community.appId } }), /account_overlap/);
+  assert.throws(() => configureLarkRouting({ ...input, internal: { ...internal, senderIds: ['*'] } }), /trusted_internal/);
 });
