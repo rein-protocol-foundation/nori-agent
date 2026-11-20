@@ -1139,7 +1139,7 @@ SA-OPS-01 / SA-M1。Codex 在 OCI 独立 Gateway 用模拟 Slack 创建和调整
 
 ## NORI-BRANDING · 2026-11-19
 
-已更新本地初始化、社区配置生成器、主工作区身份和任务回复说明。现有实例使用隐式心跳目标时需应用文档中的配置变更。本次未部署。下一步为上游直发通知展示接口及频道验收。 [Nori branding](nori-branding.md). Owner: Codex.
+已更新本地初始化、社区配置生成器和任务回复说明。现有实例使用隐式心跳目标时需应用文档中的配置变更。本次未部署。下一步为上游直发通知展示接口及频道验收。 [Nori branding](nori-branding.md). Owner: Codex.
 
 ## NORI-BRANDING · 2026-11-20
 

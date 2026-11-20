@@ -141,3 +141,9 @@ Actual visibility depends on the enabled channel features and the delivery path.
 Extend the presentation proposal at these producers, including the native card
 and plain-text representations. Keep the same recipients, permission checks,
 approval action IDs, links, diagnostic references and delivery outcomes.
+
+On November 20, a read-only OCI check found that the main agent was configured
+to use the top-level workspace. Both IDENTITY.md and SOUL.md in that directory
+and in workspace/main matched the deployed Git revision. This branding change
+leaves all four files at their existing revision. The installed preservation
+list does not cover the three persona files initially edited in this PR.

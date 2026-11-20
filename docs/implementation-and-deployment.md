@@ -1648,7 +1648,7 @@ Codex activated the administrator-reviewed main routing and scheduling configura
 
 ## NORI-BRANDING · 2026-11-19
 
-Updated local initialization, community config builders, main workspace identity and task reply instructions. Existing installations require the documented config delta where the target is implicit. No deployment. Next: upstream direct-notice renderer and channel acceptance. [Nori branding](nori-branding.md). Owner: Codex.
+Updated local initialization, community config builders and task reply instructions. Existing installations require the documented config delta where the target is implicit. No deployment. Next: upstream direct-notice renderer and channel acceptance. [Nori branding](nori-branding.md). Owner: Codex.
 
 ## NORI-BRANDING · 2026-11-20
 
