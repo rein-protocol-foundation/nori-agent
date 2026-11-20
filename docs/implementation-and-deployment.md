@@ -2,7 +2,7 @@
 
 ## 2026-11-20 UTC — SA2 Slack acknowledgement
 
-Owner Codex. The live five-message context check passed on `fcf0b69`. A positive Jev decision now starts the native Slack acknowledgement for the admitted message before worker routing under the default group-mention policy. The worker continues while Slack processes the request. Live acknowledgement acceptance is pending. [Evidence](acceptance-evidence.md)
+Owner Codex. The live five-message context check passed on `fcf0b69`. A positive Jev decision now starts the native Slack acknowledgement for the admitted message before worker routing under the default group-mention policy. The worker continues while Slack processes the request. PR #142 deployed as `0bdc8be`. Tempest confirmed the reaction in production. The gateway write and Slack readback matched the original message. [Evidence](acceptance-evidence.md)
 
 ## 2026-11-19 · Slack participation context
 

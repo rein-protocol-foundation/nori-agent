@@ -2,7 +2,7 @@
 
 ## 2026-11-20 UTC — SA2 Slack participation
 
-Owner Codex. Live readback confirmed a positive decision with five prior messages and a threaded reply on `fcf0b69`. The missing acknowledgement is a separate delivery defect. Production verification of the receipt repair is pending. [Acceptance evidence](acceptance-evidence.md)
+Owner Codex. Live readback confirmed a positive decision with five prior messages and a threaded reply on `fcf0b69`. The missing acknowledgement is a separate delivery defect. The receipt repair passed production acceptance on `0bdc8be` with Tempest’s manual confirmation and a matching Slack readback. [Acceptance evidence](acceptance-evidence.md)
 
 ## 2026-11-20 UTC — SA-M1 / SA-M2 — Slack development follow-up acceptance
 

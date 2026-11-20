@@ -2,7 +2,7 @@
 
 ## 2026-11-20 UTC — SA2 Slack 表情回执
 
-负责人 Codex。线上版本 `fcf0b69` 已确认 Jev 收到了五条历史消息。修复后，在现网默认的群内提及策略下，Jev 判定应该回复时会立即请求 Slack 为原消息加上确认表情，同时让任务进入模型路由。表情回执仍待线上验收。[验收记录](acceptance-evidence.md)
+负责人 Codex。线上版本 `fcf0b69` 已确认 Jev 收到了五条历史消息。修复后，在现网默认的群内提及策略下，Jev 判定应该回复时会立即请求 Slack 为原消息加上确认表情，同时让任务进入模型路由。PR #142 已部署，版本为 `0bdc8be`。Tempest 在生产频道手测通过。网关记录了发送成功，Slack 回读也确认原消息上的 👀 来自现有的 Nori。[验收记录](acceptance-evidence.md)
 
 ## 2026-11-19 · Slack participation context
 
