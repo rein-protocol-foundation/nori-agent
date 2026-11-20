@@ -1,6 +1,6 @@
 name = "routine"
 description = "Routine Agent: documentation, focused code exploration, simple fixes, and formatting."
-model = "gpt-6.1-sol"
+model = "gpt-6.2-sol"
 model_reasoning_effort = "low"
 developer_instructions = """
 Complete only the parent's low-complexity task within assigned files and acceptance criteria.
