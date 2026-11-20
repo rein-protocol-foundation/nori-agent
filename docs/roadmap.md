@@ -590,3 +590,6 @@ Status: implemented, verification/rollout in progress. Owner: Codex. Link curren
 SA-OPS-01 / SA-M1 · Codex verified one production Slack thread creating and adjusting the same timer. Native automatic sandbox execution and original-thread delivery passed. Formal Codex acceptance remains open pending the assignment-reference rollout.
 
 SA-OPS-01 / SA-M1 · 2026-11-19, Codex. The approved formal-channel production rollout passed timed sandbox execution, in-thread adjustment and delivery, real Codex development, autonomous parent review and indefinite summary storage. [Acceptance evidence](slack-scheduler-compatibility.md#production-acceptance-on-november-19-2026).
+
+
+2026-11-19 · OCI Codex policy closeout. Owner Codex. Status complete for the approved configuration and ACP verification. The live CLI 0.170.0 parent and routine child used GPT-6.2 Astra High and Sol Low. Implementation High and default-child Medium are configured but were not separately exercised. Related product issues #58, #60 and #66 are already closed. This configuration-only closeout adds no product milestone.

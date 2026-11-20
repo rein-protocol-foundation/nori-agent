@@ -16,12 +16,12 @@ live in `README.md` and `docs/`; read those before changing behavior.
 This policy supersedes earlier project delegation guidance. Higher-priority instructions and
 explicit user requests still apply. It governs repository development, not Nori's runtime agents.
 
-- Keep the primary orchestrator on **GPT-6 Astra High** for planning, architecture, ambiguous
+- Keep the primary orchestrator on **GPT-6.2 Astra High** for planning, architecture, ambiguous
   requirements, complex reasoning/debugging, critical decisions, and final review of critical changes.
-- Prefer **implementation** (GPT-6.1 Sol High) for routine features, API integration, UI,
-  refactoring, and tests; prefer **routine** (GPT-6.1 Sol Low) for documentation, focused
+- Prefer **implementation** (GPT-6.2 Sol High) for routine features, API integration, UI,
+  refactoring, and tests; prefer **routine** (GPT-6.2 Sol Low) for documentation, focused
   exploration, simple fixes, formatting, and other low-complexity work.
-- Other spawned agents default to **GPT-6.1 Sol Medium**, not the primary Astra model.
+- Other spawned agents default to **GPT-6.2 Sol Medium**, not the primary Astra model.
   Project definitions are in `.codex/agents/`; routing defaults are in `.codex/config.toml`.
 - Use a fresh, concise task-specific context (`fork_turns="none"` when available): objective,
   owned files, relevant PRD/AC identifiers, constraints, verification criteria, and essential
@@ -36,7 +36,7 @@ explicit user requests still apply. It governs repository development, not Nori'
 - Verify resolved model and reasoning effort through runtime metadata before entrusting work to
   a new routing path. An agent's self-report or a parsed TOML file alone is not proof.
   If custom roles are unavailable in a running session, use explicit
-  `model="gpt-6.1-sol"`, `reasoning_effort="high"` or `"low"`, and `fork_turns="none"`
+  `model="gpt-6.2-sol"`, `reasoning_effort="high"` or `"low"`, and `fork_turns="none"`
   with the corresponding role instructions. Verify that fallback too. If model selection cannot
   be enforced, report the limitation and stop delegated work; never silently substitute Astra.
 - Track PRD milestones in `docs/roadmap.md`, acceptance evidence in `docs/acceptance-evidence.md`,
