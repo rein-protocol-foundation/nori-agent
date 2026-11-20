@@ -16,8 +16,7 @@ When the host exposes `rein_continuation`, use it for new background requests in
 legacy flow below. The host keeps goals and limits in native managed Flows, with the same
 native owner/audience and existing native child sessions. This skill is not retained task storage.
 
-1. Call `begin` with the agreed full `goal`, `criteria` and native `runtime`. Report the returned
-   flow ID, immutable deadline/attempt/no-progress bounds and queued state. Do not create a new
+1. Call `begin` with the agreed full `goal`, `criteria` and native `runtime`. Retain the returned flow ID for controls. Report the queued state and agreed limits in the requester’s language. Do not create a new
    flow to reset a stopped, limited or uncertain task's budgets. A new user request is distinct
    from an autonomous supplement.
 2. Call `delegate` with the flow ID and a concrete `instruction`, then call native `sessions_spawn`
@@ -102,8 +101,7 @@ Coding uses the existing configured ACP/Codex backend, `runtime="acp"`,
 authentication. Do not copy login tokens or route coding-client auth through Magpie.
 
 An accepted spawn returns real `runId` and `childSessionKey`, not a canonical task ID. Call
-`rein_task` action `status`, task=`runId`, to resolve the native `taskId`. Report the actual IDs,
-the agreed goal/criteria and accepted/queued state. Native ACP can accept a run before its task
+`rein_task` action `status`, task=`runId`, to resolve the native `taskId`. Keep the verified identifiers for controls. Report the agreed goal and accepted/queued state. Provide identifiers when requested or needed for a handoff. Native ACP can accept a run before its task
 record is visible. If that immediate lookup is unavailable, retain the actual accepted run/session
 receipt and say the canonical task record is not yet available; do not fabricate a task ID, report
 failure/completion, or spawn again. Resolve it on the next authorized status request or native
@@ -134,7 +132,7 @@ Pending, unavailable or failed cancellation forbids replacement. Report the unce
 for a new authorized user instruction; do not automatically retry or restart.
 
 When replacement is allowed, use the exact returned `replacementTask`, the same native runtime,
-and the existing configured harness/cwd. Report new actual IDs and the old/new scope association.
+and the existing configured harness/cwd. Keep both sets of verified IDs for controls. Explain which request the new scope replaces.
 Do not reuse an old run ID, silently reset attempt limits, or count a late result from the old
 scope as completion of the revised task. Cancellation is not rollback; disclose available native partial results and already performed
 or uncertain external actions separately in stop/status. If a cancelled completion arrives, return an

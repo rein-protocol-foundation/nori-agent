@@ -1,4 +1,5 @@
 // Pure candidate builder. Activation, credential loading and history migration are separate.
+import { configureDiscordVoiceIdentity } from './configure-discord-voice-identity.mjs';
 import { validateDashboardConfig } from './dashboard-server.mjs';
 import { configureCommunitySessionMemory } from './configure-community-session-memory.mjs';
 import { scopedGatewayKeyEnv } from '../plugins/rein-router/catalog-sync.mjs';
@@ -22,6 +23,9 @@ export function configureCommunityGateway({ internal, discord, consoleSettings, 
   if (!Array.isArray(dmUserIds) || !dmUserIds.length ||
       dmUserIds.some(id => !/^\d{17,20}$/.test(id))) fail('test_dm_allowlist_required');
   const prior = structuredClone(internal), cfg = structuredClone(internal);
+  cfg.agents.defaults ??= {};
+  cfg.agents.defaults.heartbeat ??= {};
+  cfg.agents.defaults.heartbeat.target ??= 'owner';
   const mainOperations = cfg.plugins?.entries?.['rein-operations'];
   const discordOperations = discord.plugins?.entries?.['rein-operations'];
   if (mainOperations?.enabled !== true || discordOperations?.enabled !== true ||
@@ -57,6 +61,7 @@ export function configureCommunityGateway({ internal, discord, consoleSettings, 
   if (discord.channels?.discord?.enabled !== true) fail('discord_disabled');
   cfg.channels ??= {}; cfg.channels.discord = structuredClone(discord.channels.discord);
   // Begin with explicitly authorized test identities. Public guild policy is retained.
+  configureDiscordVoiceIdentity(cfg.channels.discord);
   cfg.channels.discord.dmPolicy = 'allowlist'; cfg.channels.discord.allowFrom = [...new Set(dmUserIds)];
   const tools = ['read', 'web_search', 'web_fetch', 'message', 'memory_search', 'sessions_search',
     'sessions_history', 'rein_route_status', 'rein_resources_search', 'rein_resource_get',

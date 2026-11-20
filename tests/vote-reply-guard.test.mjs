@@ -1063,10 +1063,10 @@ test('the real entry registers the vote guard hooks, matched to the ballot and t
   );
   assert.ok(voteArm, 'the entry must register the ballot after_tool_call hook');
 
-  // Three reply hooks are registered in this order: the collect guard's, this guard's, and the poll
+  // Three governance reply hooks are registered in this order: the collect guard's, this guard's, and the poll
   // guard's last, so a run that also read the round keeps the poll guard's narration as the final word.
   const replyHooks = hooks.filter(hook => hook.hookName === 'reply_payload_sending');
-  assert.equal(replyHooks.length, 3, 'every reply guard must register its reply hook');
+  assert.equal(replyHooks.length, 4, 'three governance guards and one notice formatter');
   const voteReply = replyHooks[1].handler;
 
   // A direct call round-trips through the registered handlers.
