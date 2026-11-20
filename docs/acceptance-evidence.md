@@ -2,7 +2,19 @@
 
 ## 2026-11-20 UTC — SA-M1 / SA-M2 — original-thread follow-up and deletion
 
-Owner Codex. Two real Codex runs produced seven and thirteen passing tests. Both requested a native parent yield and were denied. During each run the owner-bound run lookup changed from the original task ID to the linked Flow projection ID. The host captured a settled lifecycle event for each child. At the subsequent read-only inspection, only stage one had a retained copy and the original thread had no queued inputs. No deletion had succeeded. The local task, review, summary and scheduler regression suites passed 125 tests. Two native Gateway probes passed with synthetic transport, model and harness. Live retest pending.
+Owner Codex. Two real Codex runs produced seven and thirteen passing tests. Both requested a native parent yield and were denied. During each run the owner-bound run lookup changed from the original task ID to the linked Flow projection ID. The host captured a settled lifecycle event for each child. At the subsequent read-only inspection, only stage one had a retained copy and the original thread had no queued inputs. No deletion had succeeded. The local task, review, summary and scheduler regression suites passed 125 tests. Two native Gateway probes passed with synthetic transport, model and harness. OCI deployed PR #139 as `227e8a7` at 03:15:46 UTC.
+
+In the original private Slack thread, an initial request created a fresh text-statistics CLI. A subsequent request added `--stdin` to the same project. Each stage launched Codex once, yielded and completed parent review without a human reminder. The parent read the 1,254-byte and 1,965-byte verification reports. The first review corrected a nonempty gaps field before completion. The authorized human then requested two `read_summary` calls. Both returned `complete` and `expiresAt=null`, with six and ten passing tests respectively. The completed summaries and the child reports were independently observable.
+
+| Post-deletion check | Production evidence |
+| --- | --- |
+| Four selected test Flows | Three existing copies returned `retainedCopy=deleted`. The original failed follow-up had no copy. All four subsequent reads returned `unavailable_or_deleted`. |
+| Tombstones and summary index | Native status on each of the three completed Flows returned `summaryRetention.status=deleted`. The scoped list returned zero rows and a null cursor. All three rereads remained unavailable. |
+| Slack thread | All 31 messages observed before the deletion request retained their IDs and text. |
+| Test artifacts | SHA-256 matched for all five files in each project, including both `TASK_SUMMARY.md` files. The four assigned review files also matched. |
+| Native execution and tests | Four Flow IDs, six Task IDs and their recorded states were preserved. Before and after deletion, read-only, network-isolated unittest runs passed 13/13 for the earlier project and 10/10 for the new project. |
+
+The earlier failed follow-up remains `cancellation_pending` after its deadline. Its historical result is distinct from the two new, reviewed runs. The live harness in this retest was Codex. [Release PR #139](https://github.com/rein-protocol-foundation/nori-agent/pull/139).
 
 
 ## 2026-11-19 — Super Agent v2
