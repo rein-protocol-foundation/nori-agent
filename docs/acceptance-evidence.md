@@ -36,6 +36,11 @@ In the original private Slack thread, an initial request created a fresh text-st
 
 The earlier failed follow-up remains `cancellation_pending` after its deadline. Its historical result is distinct from the two new, reviewed runs. The live harness in this retest was Codex. [Release PR #139](https://github.com/rein-protocol-foundation/nori-agent/pull/139).
 
+## 2026-11-19 · Super Agent v2 Slack activation
+
+Production Slack activation on November 19 (Pacific time). The existing Nori installation now accepts unmentioned requests in `#nori-development` with its existing channel user rules and main agent binding. Only this room was added to the participation policy. Runtime plugin inspection showed the reply-dispatch hook and the production gateway reported ready. No acceptance message was sent to the business channel during this activation. In `#rein-agent-test`, the same production bot read a newly uploaded text attachment and returned the verification word from the file in its original thread. For the synthetic #131 pair, mismatched account and team checks rejected the request after two and four successful provider reads respectively. An unapproved audience was rejected before network access. All three checks made zero remote writes. The requester waived independent human acceptance. The previous chat approval for github-reopen stands. Private observations and the production rollback configuration are retained on OCI.
+
+11 月 19 日（太平洋时间），原有线上 Nori 已在 `#nori-development` 开启免 @，沿用现有用户访问规则和 main 绑定。参与策略只匹配这个频道。运行时插件检查确认已注册回复分发钩子，生产网关就绪。本次上线按要求未在业务频道发验收消息。在 `#rein-agent-test`，同一线上机器人读取新上传的文本附件，在原线程回复了仅存于附件内的校验词。对测试工单 #131，账号和团队不匹配分别在两次、四次真实读取后被拒绝，受众未获准时网络调用为零。三项远端写入均为零。独立真人验收按要求跳过，先前对 github-reopen 的确认保留。原始证据和回退配置存放在 OCI 私有目录。
 
 ## 2026-11-19 — Super Agent v2
 

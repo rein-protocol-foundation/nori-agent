@@ -45,10 +45,10 @@ Nori 能在日常协作中判断是否值得参与，把长期工作关联到 Li
 
 ### 2.2 Rein Router 内的主动参与判断
 
-目标频道为 Slack **#nori-deployment**。部署时核对实际 account/workspace/channel/agent 组合，用稳定 ID 配置，
+负责人于 2026-11-19 指定首个生产频道为 Slack **#nori-development**，使用已有 Nori。部署时核对实际 account/workspace/channel/agent 组合，用稳定 ID 配置，
 不能仅以显示名授予能力。只在该明确配置的范围启用原生 `requireMention: false`。
 获准发送联调和验收消息的频道为 Slack **#rein-agent-test**。在该频道核对实际账号、工作区、频道和
-Agent 绑定，验证免提及、静默、原生命令和反馈。该测试范围与 `#nori-deployment` 的上线范围分别核定。
+Agent 绑定，验证免提及、静默、原生命令和反馈。该测试范围与 `#nori-development` 的上线范围分别核定。
 
 处理顺序：原生入口权限 → 低成本规则过滤 → Jev 参与判断 → 既有 Rein Router 模型选择 →
 模型执行/按需原生委派 → 判断是否有值得发送的内容 → 正常交付或静默结束。

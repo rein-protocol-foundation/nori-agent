@@ -48,7 +48,7 @@ fixture reproduces the claim and bypass. Restricted Gateway runtime settings may
 hooks, and heartbeat dispatch skips inbound hooks. The native Slack producer supplies no restricted
 Gateway runtime settings. These native paths remain available.
 
-Production activation in **#nori-deployment** remains blocked for a full-channel guarantee. The narrow
+The first production activation uses the existing Nori in **#nori-development**. The pre-binding gap still limits coverage for plugin-owned conversations. The narrow
 upstream extension would be a public pre-binding disposition hook at authenticated channel ingress. It
 would expose host-owned scope and explicit-intent facts, permit only continuation or silent completion,
 recheck the route after awaits, and leave native commands, attachments, memory and binding intact.
