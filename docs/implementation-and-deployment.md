@@ -1,16 +1,18 @@
 # Nori-Agent development, verification and deployment record
 
-## 2026-11-19 — Development ACP report handoff
+## 2026-11-19 — Super Agent v2 integration and partial product verification
 
-SA-M1 / SA-M2, owner Codex. Locally verified. Each new development ACP assignment
-has one designated UTF-8 review file in the configured harness directory. An
-authorized parent reads up to 64 KiB through `rein_continuation read_review_file`
-using the Flow ID and scope revision. The gateway account must be able to read
-that file. The response identifies the exact bytes with a SHA-256 digest.
-Previously created assignments have no designated file. A native blocked result
-now wakes the parent for review even when the harness exited normally. The
-original incident Flow was inspected read-only. Release and real-thread acceptance
-remain pending. [Verification record](acceptance-evidence.md#development-acp-text-review).
+An OCI replay exercised five recorded Slack inputs and one duplicate concurrently. Four hosted Jev calls succeeded. The candidate suppressed the fifth input at capacity and rejected the duplicate. A 100 ms deadline returned silence after one call. With paid inference disabled, the same help request returned silence with zero calls. These were isolated replays without outbound Slack delivery.
+
+A Slack CLI test sender initially received a generic error for `/status`. With its identity explicitly scoped to the test room and native commands, Slack returned the native status table. The sender selected `bailian-token-plan/auto` for that thread, verified the model with a second status read, and restored the default. The temporary grants were removed. A passive app-attributed message produced zero classifier calls and no candidate reply. The OCI executor retained the initial error and successful follow-up in separate private reports for Tempest.
+
+The independent test gateway delivered an unmentioned help reply and a useful out-of-duty clarification. It silenced chatter. An admitted worker emitted NO_REPLY after enabling native optional silence for Slack groups. The default had emitted a visible error. Native threaded send/edit, scoped Linear delegation on #131 and delayed revocation were verified. The staging Foundation administrator flag was true for the verified sender and false in production. The #124 public summary was found in Linear after Markdown normalization.
+
+Tempest returned only `github-reopen` for retest and accepted the observed result in chat. After GitHub #123 reopened, Linear REI-17 retained Backlog and the adapter reported synchronized. The adapter wrote only to GitHub. The first-round passes for `linear-close` and `github-recovery` were carried forward without rerunning either check. The private OCI readback records the retest. This closes the three issue-sync checks; the formal reviewer receipt and overall v2 acceptance remain open.
+
+Merged current main through #129. The integrated regression completed with 1,640 passes, four opt-in skips and zero failures. The OCI gateway completed two owner-verified native runs for the same real issue pair, #124 / REI-18. The dedicated Socket Mode app joined the private test room and the candidate gateway connected. [Implementation PR](https://github.com/rein-protocol-foundation/nori-agent/pull/130).
+
+SA2, owner Codex. Developed on an isolated branch and integrated upstream scheduler PR #121. Added task tracking and private run/report linkage, independent offline acceptance, scoped Slack participation and replay. Real Linear/GitHub verification exposed an incorrect detailed expectation on reopen. The corrected coarse projection passed. OCI produced private reports with separate OS principals for execution and review. The authorized Slack desktop account was a current Director without website administrator authority. New routing was measured in isolation. Production deployment and the positive administrator path remain open. [Checks, observations, rollback and pending work](super-agent-v2-verification.md).
 
 ## 2026-11-19 — Firecrawl enabled for OCI web search
 
@@ -29,6 +31,26 @@ COMMUNITY-ONBOARDING-01; owner Codex. Local copy update verified by 37 focused t
 Both messages invite members to introduce themselves with what they go by and a
 little about themselves. The Sunday invitation explains how to skip future reminders.
 Production rollout is pending. After release, review the next eligible scheduled message.
+
+## 2026-11-19 — Development ACP report handoff
+
+SA-M1 / SA-M2, owner Codex. Locally verified. Each new development ACP assignment
+has one designated UTF-8 review file in the configured harness directory. An
+authorized parent reads up to 64 KiB through `rein_continuation read_review_file`
+using the Flow ID and scope revision. The gateway account must be able to read
+that file. The response identifies the exact bytes with a SHA-256 digest.
+Previously created assignments have no designated file. A native blocked result
+now wakes the parent for review even when the harness exited normally. The
+original incident Flow was inspected read-only. Release and real-thread acceptance
+remain pending. [Verification record](acceptance-evidence.md#development-acp-text-review).
+
+The operator authorized read/write access for all tasks running as the SSH account
+`nori-dev` across the shared ACP workspace. On OCI, named and default POSIX ACLs
+were applied after a private permissions snapshot. All 77 files and 42 directories
+were accessible. Through the configured SSH connection, the worker read the original
+report and modified and created files in a new harness-owned directory. The gateway
+read both files. Default ACLs follow the creation mode requested by the writer.
+The gateway also recovered after restoring workspace traversal for its service group.
 
 ## 2026-11-18 — Discord daily archive deployed
 

@@ -442,7 +442,7 @@ function buildTools(config: ResolvedGovernanceReadConfig, ctx: any) {
     {
       name: 'rein_member_status',
       description:
-        'Read the current Discord/Slack sender linked Community Member profile and current Contributor/director standing. Use before deciding which restricted actions to offer. Profile fields may be unavailable; never infer them from nicknames or claimed email. Do not repeat private email in shared channels. Answers about the trusted sender only, from the organization database, and never returns the private contact ID. Read-only: it grants no role and authorizes no spending.',
+        'Read the current Discord/Slack sender linked Community Member profile and current Contributor, director and website administrator standing. A null isAdministrator means the backend did not report it. Use before deciding which restricted actions to offer. Profile fields may be unavailable; never infer them from nicknames or claimed email. Do not repeat private email in shared channels. Answers about the trusted sender only, from the organization database, and never returns the private contact ID. Read-only: it grants no role and authorizes no spending.',
       parameters: Type.Object({}, { additionalProperties: false }),
       async execute(_toolCallId: unknown, args: unknown) {
         try {
@@ -460,6 +460,7 @@ function buildTools(config: ResolvedGovernanceReadConfig, ctx: any) {
             reason: member.reason,
             isActiveContributor: linked && member.isActiveContributor,
             isDirector: linked && member.isDirector,
+            isAdministrator: linked ? member.isAdministrator ?? null : false,
             profile: linked ? member.profile ?? null : null,
             roles: linked ? ['community_member', ...(member.isActiveContributor ? ['contributor'] : []), ...(member.isDirector ? ['director'] : [])] : [],
             authorizesSpending: false,

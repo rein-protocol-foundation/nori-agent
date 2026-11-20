@@ -1,16 +1,20 @@
 # Nori-Agent implementation roadmap
 
-## 2026-11-19 — Development ACP text review
+## 2026-11-19 — Independent Super Agent v2
 
-SA-M1 / SA-M2, owner Codex. Local verification passed for reading a scoped ACP
-deliverable and waking its reviewer after a blocked result. Release and a fresh
-formal Slack thread test are pending. [Verification record](acceptance-evidence.md#development-acp-text-review).
+SA2; implementation owner Codex; reviewer Tempest. Real two-way Issue Sync and recovery on two new synthetic pairs passed. The OCI private report links to its real issue pair and awaits review. The dedicated inbound gateway verified unmentioned help, chatter, clarification and admitted-worker silence. The genuine desktop sender resolves as a Director with the website administrator flag false. Tempest accepted the scoped reopen retest. Staging verified the administrator positive. Production activation, independent human feedback and overall acceptance remain open. [All 16 scenarios and next checks](super-agent-v2-verification.md).
 
 ## 2026-11-19 — Discord welcome and reminder copy
 
 COMMUNITY-ONBOARDING-01; owner Codex. The daily invitation and Sunday reminder ask
 members to write a short self-introduction. Local verification passed. Production rollout is pending.
 [Verification](acceptance-evidence.md#2026-11-19--discord-welcome-and-reminder-copy).
+
+## 2026-11-19 — Development ACP text review
+
+SA-M1 / SA-M2, owner Codex. Local verification passed for reading a scoped ACP
+deliverable and waking its reviewer after a blocked result. Release and a fresh
+formal Slack thread test are pending. [Verification record](acceptance-evidence.md#development-acp-text-review).
 
 ## 2026-11-18 — Discord daily archive active; public reminders blocked
 
