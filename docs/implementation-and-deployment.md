@@ -32,6 +32,26 @@ Both messages invite members to introduce themselves with what they go by and a
 little about themselves. The Sunday invitation explains how to skip future reminders.
 Production rollout is pending. After release, review the next eligible scheduled message.
 
+## 2026-11-19 — Development ACP report handoff
+
+SA-M1 / SA-M2, owner Codex. Locally verified. Each new development ACP assignment
+has one designated UTF-8 review file in the configured harness directory. An
+authorized parent reads up to 64 KiB through `rein_continuation read_review_file`
+using the Flow ID and scope revision. The gateway account must be able to read
+that file. The response identifies the exact bytes with a SHA-256 digest.
+Previously created assignments have no designated file. A native blocked result
+now wakes the parent for review even when the harness exited normally. The
+original incident Flow was inspected read-only. Release and real-thread acceptance
+remain pending. [Verification record](acceptance-evidence.md#development-acp-text-review).
+
+The operator authorized read/write access for all tasks running as the SSH account
+`nori-dev` across the shared ACP workspace. On OCI, named and default POSIX ACLs
+were applied after a private permissions snapshot. All 77 files and 42 directories
+were accessible. Through the configured SSH connection, the worker read the original
+report and modified and created files in a new harness-owned directory. The gateway
+read both files. Default ACLs follow the creation mode requested by the writer.
+The gateway also recovered after restoring workspace traversal for its service group.
+
 ## 2026-11-18 — Discord daily archive deployed
 
 COMMUNITY-ONBOARDING-01; owner Codex. PR #117 passed CI and deployed `faaa9d0` at

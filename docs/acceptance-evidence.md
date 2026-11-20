@@ -27,6 +27,22 @@ Simulated Discord sends verified the daily invitation in separate and shared cha
 the Sunday invitation, and the opt-out wording. Eligibility, mention limits, cooldown,
 and restart reconciliation passed their existing checks. Live verification is pending deployment.
 
+## Development ACP text review
+
+2026-11-19, SA-M1 / SA-M2, owner Codex. Read-only OCI inspection found the
+reported 8,238-byte GTM report with 14 numbered candidates. The gateway service
+user could read it, while the development SSH sandbox user could not. The canonical
+ACP Task had succeeded with a blocked terminal outcome. Its owning Flow recorded
+launch acceptance and still had no settlement or review at inspection time.
+
+The pinned native Gateway probe passed for ordinary completion and for a normal
+harness exit with a blocked deliverable. In the second case the parent read
+the fixture file through the public SDK, recorded a blocked review and ran the
+child exactly once. Transport, model and harness were synthetic. Run
+`node scripts/verify-acp-settlement.mjs` with and without `--blocked-artifact`.
+The 92 controller and compatibility tests passed, including file bounds, links,
+owner-wake access and membership revocation. Live Slack acceptance of the repair is pending.
+
 ## 2026-11-18 — Discord onboarding production archive
 
 COMMUNITY-ONBOARDING-01; owner Codex. PR #117 passed all seven checks: full suite
