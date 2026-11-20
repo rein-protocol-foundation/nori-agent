@@ -1,5 +1,11 @@
 # Acceptance evidence
 
+## US14 operations · Slack acknowledgement monitor · 2026-11-19
+
+Nori maintenance deployed the acknowledgement observer and exporter. The OCI startup receipt and Axiom save receipt establish deployment and configuration. End-to-end trigger, suppression and Slack notifier delivery were not exercised at operator request. Product acceptance remains open. [Operational record](slack-acknowledgement-alert.md)
+
+2026-11-20 · Codex verified the checked-in ledger and exporter locally with simulated receipts and a stubbed Axiom response. Checks covered the exact deadline, missing and late receipts, a mismatched bot token, and durable export settlement. The scaffold check passed. Live alert delivery remains unverified.
+
 ## 2026-11-20 UTC — Lark routing
 
 Owner Codex. 16 scoped router tests passed. The pinned OpenClaw CLI accepted the generated Feishu channel configuration. The native SDK resolved both named bot accounts to the intended existing agents with isolated sender and topic session keys, and resolved the preexisting Slack and Discord bindings as before. Lark published the internal app with administrator-only availability. The OCI staging listener received an explicit mention from the administrator in a designated private test group. Shared gateway inference, reply delivery, and the full group rollout require live acceptance.

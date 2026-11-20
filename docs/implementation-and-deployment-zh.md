@@ -1,5 +1,9 @@
 # Nori-Agent 开发、验证与部署记录
 
+## 2026-11-19 · US14 运维 · Slack 表情确认告警
+
+Nori 运维已在 OCI 安装 Slack 确认事件插件和独立的 systemd 导出服务。网关报告插件启动，导出服务已启动，Axiom 返回监控 `eWp4aVfHFuP1lqLpYg` 更新成功。每条超时消息独立分组；共享规则每 5 分钟评估一次，并有 120 秒入库延迟。按操作方要求跳过功能测试和真实告警投递演练。主机配置备份位于 `/var/backups/nori-slack-acknowledgements/20261120T005537Z`。[事件口径与回滚](slack-acknowledgement-alert.md)
+
 ## 2026-11-20 UTC — Lark 社群与内部群路由
 
 负责人 Codex。`configureLarkRouting()` 基于现有 Slack、Discord 共享网关及 Router Console 设置生成候选配置。两个 Lark 应用使用各自的群名单，内部应用使用已核验的应用专属管理员身份。两边只接收群内 @ 提及，按群和发送者隔离会话，禁用网关群历史和 Lark 文档工具。社群助手沿用现有订阅模型及用量上限。内部应用已发布，OCI 测试监听器收到了管理员在私有测试群内的提及。共享网关启用和原群回复仍待[真实验收](acceptance-evidence.md#2026-11-20-utc--lark-routing)。

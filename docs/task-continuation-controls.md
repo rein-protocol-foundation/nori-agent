@@ -155,3 +155,9 @@ uncertainty notice; concurrent stop/change intent and original budgets remain in
 reuse the same unlaunched assignment without another attempt. The 56-test focused suite passes;
 final full-suite verification also passes: 1421 passed, 4 existing conditional skips, zero
 failures (1425 total). CI/review are followed on the amended PR.
+
+## November 16 live Slack verification
+
+On OCI revision `9ed4cb2`, which includes PR #94, changing a prepared assignment advanced its scope revision and retired the previous attempt. Stopping it persisted the stopped state. A subsequent delegation returned `terminal_no_restart`.
+
+A separate native subagent was observed running before stop. Its task record then showed cancellation, a settled attempt and no replacement. The original Slack thread received both the status response and the cancellation event. The durable delivery field still reported `pending_or_uncertain`, so exactly-once delivery remains unverified.

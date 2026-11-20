@@ -254,6 +254,8 @@ importers:
         specifier: link:../../vendor/openclaw
         version: link:../../vendor/openclaw
 
+  plugins/rein-slack-acknowledgements: {}
+
 packages:
 
   '@clawdbot/lobster@2026.9.13':
