@@ -2,14 +2,14 @@
 
 ## 2026-11-20 UTC — SA-M1 / SA-M2 — Slack development follow-up acceptance
 
-Owner Codex. The textstats initial and follow-up runs exposed an additional acceptance gap for Issues #58 and #60. The first retained copy required a human reminder. The second native run succeeded but its parent review and retained copy were missing. The original-thread deletion and preservation comparison are pending a live retest. Earlier dated acceptance applies to its recorded scenarios.
+Owner Codex. The original-thread initial and follow-up development, retained-summary readback and scoped deletion passed on OCI release `227e8a7`. Both parent reviews completed without reminders. Post-deletion checks preserved Slack message IDs and text, project and review-file hashes, and native records. The earlier failed follow-up remains in its recorded state. [Acceptance evidence](acceptance-evidence.md) · [Release PR #139](https://github.com/rein-protocol-foundation/nori-agent/pull/139).
 
 
 ## Completed task scope — November 19, 2026
 
 The requested task lifecycle, indefinite server-side summaries with explicit deletion, and autonomous development acceptance are complete within the recorded scope. Owner Codex. Issues #58 and #60 are closed as completed. Production evidence covers same-owner restart recovery, reviewed continuation and bounded supplements, indefinite summary retrieval, deletion tombstones preventing resurrection after restart, and real Codex development with original-thread results and summary readback.
 
-See [lifecycle and deletion acceptance](task-lifecycle-closeout-2026-11-17.md), [restart acceptance](task-continuation-live-2026-11-15.md), and [formal development-channel acceptance](slack-scheduler-compatibility.md#production-acceptance-on-november-19-2026). The earlier dated statuses below describe their original checkpoints. Broader product boundaries remain tracked in #65. Subsequent report-file access and blocked-result review work remains open in #132.
+See [lifecycle and deletion acceptance](task-lifecycle-closeout-2026-11-17.md), [restart acceptance](task-continuation-live-2026-11-15.md), and [formal development-channel acceptance](slack-scheduler-compatibility.md#production-acceptance-on-november-19-2026). The earlier dated statuses below describe their original checkpoints. Broader product boundaries remain tracked in #65. Subsequent report-file access and blocked-result review shipped in #132.
 
 
 ## 2026-11-19 — Independent Super Agent v2
