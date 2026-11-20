@@ -8,6 +8,10 @@ import { createProfileAdminAuthorizer, FOUNDATION_ADMIN_TIMEOUT_MS } from './fou
 import { createCronIngress, assertTrustedSlackBoundaries } from './cron-ingress.mjs';
 import { loadCronStore, resolveCronStorePath } from 'openclaw/plugin-sdk/cron-store-runtime';
 import { createSlackDevelopmentAuthorizer, createSlackScheduleAuthorizer, DEVELOPMENT_AUTH_TIMEOUT_MS } from './slack-development.mjs';
+import { createSlackParticipation } from './slack-participation.mjs';
+import { openParticipationEvidence } from './slack-participation-evidence.mjs';
+import { hasControlCommand } from 'openclaw/plugin-sdk/command-detection';
+import { isAbortRequestText } from 'openclaw/plugin-sdk/command-primitives-runtime';
 
 export default definePluginEntry({
   id: 'rein-router', name: 'Nori-Agent Subscription Router',
@@ -33,6 +37,31 @@ export default definePluginEntry({
     const router = createRouter({ config, decisions: api.runtime.decisions, gatewayReady: gateway?.isReady,
       authorizeAdmin, authorizeDevelopment, usage });
     if (!router.config.enabled) return;
+    const participationPolicy = config.participation;
+    if (participationPolicy?.enabled) {
+      let reportedEvidenceFailure = false;
+      const evidenceUnavailable = () => {
+        if (reportedEvidenceFailure) return;
+        reportedEvidenceFailure = true;
+        api.logger.warn('rein_router_participation_evidence_unavailable');
+      };
+      let evidence: ReturnType<typeof openParticipationEvidence> | undefined;
+      if (participationPolicy.recordEvidence) {
+        try {
+          evidence = openParticipationEvidence({ stateDir: api.runtime.state.resolveStateDir() });
+        } catch { evidenceUnavailable(); }
+      }
+      const participation = createSlackParticipation({ policy: participationPolicy,
+        decisions: api.runtime.decisions, allowPaidJev: config.decision.allowPaidJev,
+        isNativeCommand: (text, cfg) => isAbortRequestText(text) || hasControlCommand(text ?? '', cfg),
+        observe: observation => api.logger.info(`rein_router_participation ${JSON.stringify(observation)}`),
+        writeEvidence: record => evidence?.record(record, participationPolicy), evidenceUnavailable });
+      api.on('reply_dispatch', participation.replyDispatch,
+        { priority: 200, timeoutMs: participationPolicy.timeoutMs + 1000, eligibleDispatchKinds: ['agent', 'acp'] });
+      const dispose = () => { participation.close(); evidence?.close(); };
+      if (api.lifecycle.onDispose) api.lifecycle.onDispose(dispose);
+      else api.lifecycle.registerRuntimeLifecycle({ id: 'rein-router-participation', dispose });
+    }
     bindRouterLifecycle(router, { events: api.runtime.events, lifecycle: api.lifecycle });
     if (usage) {
       if (api.lifecycle.onDispose) api.lifecycle.onDispose(() => usage.close());

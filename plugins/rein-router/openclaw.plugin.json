@@ -12,6 +12,7 @@
     "gateway.apiKeyEnvVar": { "label": "Magpie credential environment variable", "help": "The variable name only. Keep the credential in the server environment." },
     "gateway.subscriptionOnly": { "label": "Subscription and coding-plan routes only", "help": "Enabled by default. Pay-as-you-go requires disabling this restriction and explicitly enabling allowPaidUsage." },
     "decision.allowPaidJev": { "label": "Allow separately billed Jev decisions", "help": "Disabled by default. Hosted Jev usage is separate from LLM subscription allowances; configure its credential through OpenClaw's TypeSafe decision provider." },
+    "participation": { "label": "Optional Slack participation policy", "help": "Staged: agent/ACP reply dispatch only; plugin-owned bindings claim earlier. Full-channel activation requires compatibility acceptance. Uses a separate bounded Jev decision before existing model routing." },
     "routes": { "label": "Verified gateway routes", "help": "Use fully qualified Magpie provider/model IDs. Verification covers billing and deployment eligibility; a successful login alone does not establish permission for a public service." }
   },
   "configSchema": {
@@ -21,6 +22,33 @@
       "enabled": { "type": "boolean", "default": false },
       "scheduleInPublicChannels": { "type": "boolean", "default": false, "description": "Allow verified workspace members to schedule in listed internal public Slack channels. Requires sandboxed scheduling agents." },
       "trustedSlackChannels": { "type": "array", "maxItems": 512, "items": { "$ref": "#/$defs/slackScheduleChannel" }, "description": "Approved Slack scheduling agents and channels. With scheduleInPublicChannels, a channelId of * matches member channels in the specified workspace." },
+      "participation": {
+        "type": "object", "additionalProperties": false,
+        "properties": {
+          "enabled": { "type": "boolean", "default": false },
+          "version": { "type": "string", "maxLength": 64, "pattern": "^[a-z0-9][a-z0-9._-]*$", "default": "slack-participation-v1" },
+          "duties": { "type": "string", "maxLength": 2000 },
+          "channels": {
+            "type": "array", "maxItems": 16, "default": [],
+            "items": {
+              "type": "object", "additionalProperties": false,
+              "required": ["accountId", "workspaceId", "channelId", "agentId"],
+              "properties": {
+                "accountId": { "type": "string", "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$" },
+                "workspaceId": { "type": "string", "pattern": "^T[A-Z0-9]{5,31}$" },
+                "channelId": { "type": "string", "pattern": "^[CG][A-Z0-9]{5,31}$" },
+                "agentId": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{0,63}$" }
+              }
+            }
+          },
+          "timeoutMs": { "type": "integer", "minimum": 100, "maximum": 10000, "default": 3000 },
+          "minProbability": { "type": "number", "minimum": 0.5, "maximum": 1, "default": 0.8 },
+          "recordEvidence": { "type": "boolean", "default": false },
+          "maxMessageChars": { "type": "integer", "minimum": 100, "maximum": 32000, "default": 4000 }
+        },
+        "allOf": [{ "if": { "required": ["enabled"], "properties": { "enabled": { "const": true } } },
+          "then": { "required": ["duties", "channels"], "properties": { "duties": { "minLength": 1 }, "channels": { "minItems": 1 } } } }]
+      },
       "nativeAgentRoutes": { "type": "object", "additionalProperties": { "type": "array", "items": { "$ref": "#/$defs/routeId" } }, "description": "Explicit subscription routes for native background work by Agent; full subscription development routes require explicit eligibility; Coding Plan and administrator-only routes remain excluded." },
       "gateway": {
         "type": "object",

@@ -23,7 +23,7 @@ export function createMemberStatusToolRegistration({ runtime }: { runtime: Backe
     create(ctx: unknown) {
       return [{
         name: 'rein_member_status', parameters,
-        description: 'Read only the CURRENT trusted Discord/Slack sender verified Community Member link and current Contributor/director standing. Accepts no claimed identity. Returns no email or private contact ID. Roles describe current standing; this read grants no role, governance access, or spending authority.',
+        description: 'Read only the CURRENT trusted Discord/Slack sender verified Community Member link and current Contributor, director and website administrator standing. A null isAdministrator means the backend did not report it. Accepts no claimed identity. Returns no email or private contact ID. Roles describe current standing; this read grants no role, governance access, or spending authority.',
         async execute(_callId: string, args: unknown) {
           assertCurrentInvocation(ctx);
           if (!Check(parameters, args)) return failure('invalid_request');
@@ -42,6 +42,7 @@ export function createMemberStatusToolRegistration({ runtime }: { runtime: Backe
             reason: member.reason,
             isActiveContributor: linked && member.isActiveContributor,
             isDirector: linked && member.isDirector,
+            isAdministrator: linked ? member.isAdministrator ?? null : false,
             profile: linked && member.profile ? { name: member.profile.name, joinedAt: member.profile.joinedAt } : null,
             roles: linked ? ['community_member', ...(member.isActiveContributor ? ['contributor'] : []),
               ...(member.isDirector ? ['director'] : [])] : [],

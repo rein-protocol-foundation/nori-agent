@@ -106,3 +106,13 @@ test('Community self-check rechecks invocation after identity read', async () =>
     onResolve: () => { active = false; } });
   await assert.rejects(tool.execute('fixture-call', {}), /retired/);
 });
+
+test('website administrator standing comes from its own backend field', async () => {
+  for (const value of [true, false, undefined]) {
+    const body = { ...linked, is_administrator: value };
+    const { tool } = fixture({ response: { ok: true, httpStatus: 200, body } });
+    const result = await tool.execute('website-role', {});
+    assert.equal(result.details.isDirector, true);
+    assert.equal(result.details.isAdministrator, value ?? null);
+  }
+});

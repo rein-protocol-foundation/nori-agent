@@ -35,6 +35,8 @@ export interface SlackMemberResolution {
   matchedBy: 'platform_link' | 'slack_link' | null;
   /** True only for a Contributor record whose status is exactly `'active'`. */
   isActiveContributor: boolean;
+  /** Absent when the backend did not attest current website administrator standing. */
+  isAdministrator?: boolean;
   /** True only for a current director record. */
   isDirector: boolean;
   /** HTTP status for a backend failure, otherwise null. */

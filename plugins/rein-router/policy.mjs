@@ -1,5 +1,6 @@
 import { validateScopedPolicies } from './scoped-policy.mjs';
 import { isAbsolute } from 'node:path';
+import { validateParticipationPolicy } from './slack-participation.mjs';
 
 const PROVIDER_ID = 'rein-magpie';
 const ROUTE_ID = /^[a-z][a-z0-9-]{0,63}$/;
@@ -124,7 +125,7 @@ function freeze(value) {
 /** Validate operator configuration without resolving secrets or contacting services. */
 export function validateRouterConfig(raw = {}) {
   object(raw, 'config', ['enabled', 'gateway', 'routes', 'defaultRoute', 'fallbackRoutes',
-    'allowPaidUsage', 'channels', 'adminSenders', 'developmentChannels', 'decision', 'scopedPolicies', 'trustedSlackChannels', 'scheduleInPublicChannels', 'nativeAgentRoutes']);
+    'allowPaidUsage', 'channels', 'adminSenders', 'developmentChannels', 'decision', 'scopedPolicies', 'trustedSlackChannels', 'scheduleInPublicChannels', 'nativeAgentRoutes', 'participation']);
   const enabled = boolean(raw.enabled, 'enabled', false);
   const allowPaidUsage = boolean(raw.allowPaidUsage, 'allowPaidUsage', false);
   const normalizedGateway = raw.gateway === undefined ? null : gateway(raw.gateway);
@@ -214,7 +215,8 @@ export function validateRouterConfig(raw = {}) {
       });
     }
   }
-  return freeze({ ...(scopedPolicies ? { scopedPolicies } : {}), enabled, gateway: normalizedGateway ?? undefined, routes, defaultRoute: defaultRoute ?? undefined, fallbackRoutes,
+  const participation = raw.participation === undefined ? undefined : validateParticipationPolicy(raw.participation);
+  return freeze({ ...(participation ? { participation } : {}), ...(scopedPolicies ? { scopedPolicies } : {}), enabled, gateway: normalizedGateway ?? undefined, routes, defaultRoute: defaultRoute ?? undefined, fallbackRoutes,
     allowPaidUsage, channels, adminSenders, developmentChannels, trustedSlackChannels, scheduleInPublicChannels: boolean(raw.scheduleInPublicChannels, 'scheduleInPublicChannels', false), ...(nativeAgentRoutes ? { nativeAgentRoutes } : {}), decision });
 }
 

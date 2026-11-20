@@ -261,6 +261,7 @@ test('my status reports the trusted sender without leaking the private contact I
     reason: 'resolved',
     isActiveContributor: true,
     isDirector: true,
+    isAdministrator: null,
     profile: null,
     roles: ['community_member', 'contributor', 'director'],
     authorizesSpending: false,

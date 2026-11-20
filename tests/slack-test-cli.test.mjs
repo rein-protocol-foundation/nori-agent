@@ -571,3 +571,12 @@ test('an optional guest token key in the document is recognised without enrollin
   // Recognition of the token key does not enroll the identity; enrolment needs the configured id.
   assert.deepEqual(activeIdentities({ env: {} }).map(i => i.id), ['lead', 'member', 'dir1', 'dir2', 'dir3']);
 });
+
+test('passive Slack probe preserves unmentioned text only in the dedicated test channel', async () => {
+  const { calls, fetchImpl } = mockFetch();
+  const options = { ...fixtureTokens(), fetchImpl, ledger: EMPTY_LEDGER };
+  const args = { accountId: 'member', channelId: CHANNEL, caseKey: 'test-passive', text: 'Synthetic weather sample.', noMention: true };
+  await assert.rejects(runSend({ ...args, channelId: BOARD }, options), error => error.code === 'passive-scope');
+  await captureConsole(() => runSend(args, options));
+  assert.equal(calls.find(call => call.method === 'chat.postMessage').init.body.get('text'), args.text);
+});

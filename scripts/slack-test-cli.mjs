@@ -70,7 +70,7 @@ const USAGE = `Rein Slack test harness (local, user tokens only)
 Usage:
   node scripts/slack-test-cli.mjs whoami [--file <path>]
   node scripts/slack-test-cli.mjs tokens [--file <path>]
-  node scripts/slack-test-cli.mjs send --case <key> --text <text> [--account <id>] [--channel <id>] [--dry-run] [--allow-default-text] [--file <path>]
+  node scripts/slack-test-cli.mjs send --case <key> --text <text> [--account <id>] [--channel <id>] [--dry-run] [--no-mention] [--allow-default-text] [--file <path>]
 
 Accounts:
 ${SLACK_TEST_IDENTITIES.map(i => `  ${i.id.padEnd(7)} expects ${i.expectedUserId}  (${i.env})`).join('\n')}
@@ -189,6 +189,7 @@ export async function runSend(
     caseKey,
     text: rawText,
     dryRun = false,
+    noMention = false,
     /** The placeholder body is opt-in; a real send needs explicit text unless this is set. */
     allowDefaultText = false,
   } = {},
@@ -210,7 +211,10 @@ export async function runSend(
   }
 
   const baseText = providedText || `Rein Slack governance test message for case ${caseKey}.`;
-  const text = hasMention(baseText) ? baseText : mentionText(baseText);
+  if (noMention && (channel.id !== 'C0C4L0YN814' || /<[@!]/.test(baseText))) {
+    throw new HarnessError('passive-scope', 'Passive probes require the dedicated test channel and a message without mentions.');
+  }
+  const text = noMention || hasMention(baseText) ? baseText : mentionText(baseText);
   const dedupeKey = idempotencyKey(caseKey, identity.id, channel.id);
   const clientMsgId = await clientMsgIdForKey(dedupeKey);
 
@@ -240,7 +244,7 @@ export async function runSend(
   console.log(`Case label: ${caseLabel(caseKey, identity.id)}`);
   console.log(`Idempotency key: ${dedupeKey}`);
   console.log(`client_msg_id: ${clientMsgId}`);
-  console.log(`Mention: <@${text.match(/<@([A-Z0-9]+)>/)?.[1] ?? ''}>`);
+  if (!noMention) console.log(`Mention: <@${text.match(/<@([A-Z0-9]+)>/)?.[1] ?? ''}>`);
   console.log(
     `Token expiry: ${describeTokenStore(store, meta).find(row => row.id === identity.id)?.expiresAt ?? 'unknown'}`,
   );
@@ -302,6 +306,7 @@ async function commandSend(options) {
       channelId: flag(options, 'channel'),
       caseKey,
       text: flag(options, 'text'),
+      noMention: options.flags.get('no-mention') === true,
       dryRun: options.flags.get('dry-run') === true,
       allowDefaultText: options.flags.get('allow-default-text') === true,
     },

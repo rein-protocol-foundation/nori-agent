@@ -211,6 +211,7 @@ export function readBackendMemberResolution(input: BackendResponse): SlackMember
       email: boundedProfileText(body.profile.email, 320),
       joinedAt: boundedProfileText(body.profile.joinedAt, 40),
     } : null,
+    ...(resolved && typeof body.is_administrator === 'boolean' ? { isAdministrator: body.is_administrator } : {}),
     isActiveContributor: resolved && body.is_active_contributor === true,
     isDirector: resolved && body.is_director === true,
     httpStatus: response.httpStatus,
