@@ -2,7 +2,7 @@
 
 ## 2026-11-20 UTC — SA2 Slack participation and acknowledgement
 
-On OCI release `fcf0b69`, a natural unmentioned request reached Jev with five preceding messages. The v3 rubric returned helpfulness 0.90 in 331 ms. The Slack thread contained a Nori reply 142 seconds after the request. Readback found zero reactions on the original message. Native Slack evaluated the default group-mention acknowledgement scope before Jev. The participation hook had no acknowledgement on its positive branch. This confirms live participation and reproduces the missing receipt. The receipt repair still needs live delivery evidence.
+On OCI release `fcf0b69`, a natural unmentioned request reached Jev with five preceding messages. The v3 rubric returned helpfulness 0.90 in 331 ms. The Slack thread contained a Nori reply 142 seconds after the request. Readback found zero reactions on the original message. Native Slack evaluated the default group-mention acknowledgement scope before Jev. The participation hook had no acknowledgement on its positive branch. This confirms live participation and reproduces the missing receipt. On release `0bdc8be` (PR #142), Tempest manually confirmed the acknowledgement in `#nori-development`. Jev admitted the new message with five preceding messages and helpfulness 0.95 in 58 ms. At 07:43:24 UTC the gateway logged a successful reaction write. A Slack history readback of the same source message showed the eyes reaction from the existing Nori bot. Production acceptance of this reaction passed.
 
 ## 2026-11-19 · Slack participation context
 
