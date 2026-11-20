@@ -1100,3 +1100,5 @@ SA-OPS-01 / SA-M1。Codex 在 OCI 独立 Gateway 用模拟 Slack 创建和调整
 2026-11-19 · Codex 已将 PR #121、#125 和 #126 部署到 OCI。正式频道实测同编号定时改期、SSH 沙箱自动执行、原线程投递、两项真实 Codex 开发任务及原线程摘要回读。最终版本由 main 自主发起补充执行并完成审核，服务器摘要无到期时间。Claude 专用账号待组织登录。[验收记录](slack-scheduler-compatibility.md#production-acceptance-on-november-19-2026)。
 
 2026-11-19 America/Los_Angeles · 管理员已批准新增 CODEX_PATH 启动器差异。OCI 的隔离 ACP 启动器现使用官方 Codex CLI 0.170.0。真实 ACP initialize 与 session/new 成功，返回 gpt-6.2-astra[high]。父子 turn_context 运行记录验证主任务 gpt-6.2-astra/high、routine 子任务 gpt-6.2-sol/low，双方均加载开发策略。启动器备份位于 /var/backups/nori-codex-launcher-20261120T002636Z；配置安装在独立服务账号目录，位于应用发布目录之外。
+
+2026-11-19 · 已将用户要求的任务闭环、摘要无期限保留与显式删除、自主开发验收标记完成，关联既有真实验收记录并纠正文档顶部过期状态。本次只进行文档收尾与分支清理；独立后续修复 PR #132 继续开放。
