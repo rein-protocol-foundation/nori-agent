@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createTaskContinuation } from '../plugins/rein-acp/continuation.mjs';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { link, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { createRetainedSummaries } from '../plugins/rein-acp/retained-summaries.mjs';
 import { createTaskLoop } from '../plugins/rein-acp/task-loop.mjs';
 
@@ -887,8 +888,9 @@ test('recovered backing cannot clear unrelated uncertainty or override expiry an
 });
 
 
-async function acpEventFixture(t, { accepted = true } = {}) {
+async function acpEventFixture(t, { accepted = true, development = false } = {}) {
   const f = fixture(), listeners = new Set();
+  if (development) f.dependencies.config = { ...config, channel: { ...config.channel, channelId: 'CTEST001' }, additionalChannelIds: [src.chatId] };
   f.dependencies.events = { onAgentEvent(listener) { listeners.add(listener); return () => listeners.delete(listener); } };
   f.dependencies.system = { enqueueSystemEvent() {}, requestHeartbeat() {} };
   f.dependencies.subagent.waitForRun = async () => ({ status: 'timeout' });
@@ -1010,6 +1012,7 @@ test('ACP failed, cancelled, timed-out and blocked lifecycle proof cannot comple
     ['failed', { phase: 'error' }], ['cancelled', { phase: 'end', status: 'cancelled', aborted: true, stopReason: 'stop' }],
     ['timed_out', { phase: 'error', status: 'timed_out', aborted: true, stopReason: 'timeout' }],
     ['succeeded', { phase: 'error', livenessState: 'blocked' }, 'blocked'],
+    ['succeeded', { phase: 'end', status: 'completed' }, 'blocked'],
   ]) {
     const probe = await acpEventFixture(t); probe.settle(status);
     if (terminalOutcome) probe.task.terminalOutcome = terminalOutcome;
@@ -1019,6 +1022,65 @@ test('ACP failed, cancelled, timed-out and blocked lifecycle proof cannot comple
     await assert.rejects(probe.f.call({ action: 'review', flow: probe.begun.flowId, scopeRevision: 1,
       outcome: 'complete', evidence: 'A terminal lifecycle is not success', effects: 'none' }), /complete_native_outcome_invalid/);
   }
+});
+
+test('development parent reads only its assigned settled ACP text and rechecks authority after I/O', async t => {
+  const probe = await acpEventFixture(t, { development: true });
+  const { f, begun, task } = probe;
+  const attempt = f.flows.get(begun.flowId).stateJson.attempts[0];
+  assert.match(attempt.reviewFile, /^acp-review-[a-f0-9]{64}\.md$/);
+  assert.ok(attempt.task.includes(attempt.reviewFile));
+  const reads = [];
+  const contents = Buffer.from('Actual candidate list');
+  f.dependencies.readFileWithinRoot = async args => { reads.push(args); return { buffer: contents }; };
+  await f.restart();
+  const request = { action: 'read_review_file', flow: begun.flowId, scopeRevision: 1 };
+  await assert.rejects(f.call(request), /requires_terminal_task/);
+  probe.settle();
+  await assert.rejects(f.call({ ...request, scopeRevision: 2 }), /review_file_unavailable/);
+  const result = await f.call(request);
+  assert.equal(result.content, contents.toString());
+  assert.equal(result.runId, task.runId);
+  assert.equal(result.bytes, contents.length);
+  assert.match(result.sha256, /^[a-f0-9]{64}$/);
+  assert.deepEqual(reads, [{rootDir: config.cwd, relativePath: attempt.reviewFile, maxBytes: 65536,
+    allowSymlinkTargetWithinRoot: false, rejectHardlinks: true, nonBlockingRead: true}]);
+  const assigned = attempt.reviewFile;
+  attempt.reviewFile = '../foreign.md';
+  await assert.rejects(f.call(request), /review_file_unavailable/);
+  delete attempt.reviewFile;
+  await assert.rejects(f.call(request), /review_file_unavailable/);
+  attempt.reviewFile = assigned;
+  f.dependencies.readFileWithinRoot = async () => { f.setMember(false); return { buffer: contents }; };
+  await f.restart();
+  await assert.rejects(f.call(request), /authority_unavailable/);
+});
+
+test('pinned SDK confines the native owner wake to one bounded regular review file', async t => {
+  const sqliteSdk = process.env.REIN_TEST_SQLITE_SDK;
+  const sdkDir = sqliteSdk ? (sqliteSdk.startsWith('file:') ? sqliteSdk : pathToFileURL(sqliteSdk))
+    : new URL('../vendor/openclaw/dist/plugin-sdk/sqlite-runtime.js', import.meta.url);
+  const { readFileWithinRoot } = await import(new URL('file-access-runtime.js', sdkDir));
+  const root = await mkdtemp(join(tmpdir(), 'rein-review-file-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const { f, begun, settle } = await acpEventFixture(t, { development: true });
+  f.dependencies.config = { ...f.dependencies.config, cwd: root };
+  f.dependencies.readFileWithinRoot = readFileWithinRoot;
+  const file = join(root, f.flows.get(begun.flowId).stateJson.attempts[0].reviewFile);
+  const other = join(root, 'other.md');
+  Object.assign(f.context, { runId: 'owner-wake', trigger: 'heartbeat', senderId: undefined,
+    requesterSenderId: undefined, inputProvenance: { kind: 'internal_system', sourceTool: 'background-task' } });
+  await f.restart(); settle();
+  const request = { action: 'read_review_file', flow: begun.flowId, scopeRevision: 1 };
+  await writeFile(other, 'Unrelated file');
+  await assert.rejects(f.call({ ...request, relativePath: 'other.md' }), /fixed_path/);
+  await assert.rejects(f.call(request));
+  await symlink(other, file); await assert.rejects(f.call(request)); await rm(file);
+  await link(other, file); await assert.rejects(f.call(request)); await rm(file);
+  await writeFile(file, Buffer.alloc(65537)); await assert.rejects(f.call(request));
+  await writeFile(file, Buffer.from([255])); await assert.rejects(f.call(request));
+  await writeFile(file, '正文'); assert.equal((await f.call(request)).content, '正文');
+  f.setMember(false); await assert.rejects(f.call(request), /authority_unavailable/);
 });
 
 test('ACP lifecycle CAS retries preserve concurrent stop/change and never review or reset bounds', async t => {
@@ -1069,7 +1131,7 @@ test('ACP lifecycle rejects a terminal task fingerprint changed by the second pu
   const original = runs.resolve; let reads = 0;
   runs.resolve = async token => {
     const task = await original(token);
-    if (token === probe.task.runId && ++reads === 2) return { ...task, endedAt: task.endedAt + 1 };
+    if (token === probe.task.id && ++reads === 2) return { ...task, endedAt: task.endedAt + 1 };
     return task;
   };
   probe.settle(); probe.emit(); await probe.f.runtime.gatewayStop();
@@ -1101,7 +1163,7 @@ async function parentObserverRace(t, action = 'status', afterProof) {
   }
   runs.resolve = async token => {
     const task = await originalResolve(token);
-    if (token === probe.task.runId && !injected && ++reads === (action === 'review' ? 2 : 1)) {
+    if (token === probe.task.id && !injected && ++reads === (action === 'review' ? 2 : 1)) {
       injected = true; probe.emit(); await proofWritten; await afterProof?.(probe);
     }
     return task;
@@ -1225,4 +1287,24 @@ test('short ACP assignment reference expands only at canonical launch for its pr
   assert.equal((await f.spawn(assignment, { ...params, runtime: 'subagent' })).gate.block, true);
   assert.deepEqual((await f.spawn(assignment, params)).gate.params, { ...params, task: assignment.task });
   assert.equal((await f.spawn(assignment, params)).gate.block, true);
+});
+
+test('ACP lifecycle saves and wakes when run lookup switches to a linked projection', async t => {
+  const probe = await acpEventFixture(t);
+  const { f, task, begun } = probe;
+  const runs = f.tasks.async.runs.bindSession(), original = runs.resolve;
+  runs.resolve = async token => token === task.runId
+    ? { ...task, id: 'managed-projection' } : original(token);
+  const wakes = [];
+  f.dependencies.system.requestHeartbeat = event => wakes.push(event);
+  probe.settle(); probe.emit();
+  await f.runtime.gatewayStop();
+  const receipt = f.flows.get(begun.flowId).stateJson.attempts[0].settlement;
+  assert.equal(receipt?.taskId, task.id);
+  assert.equal(wakes.length, 1);
+  await f.restart();
+  const result = await f.call({ action: 'review', flow: begun.flowId, scopeRevision: 1,
+    outcome: 'complete', evidence: 'Checked the completed coding assignment', effects: 'confirmed' });
+  assert.equal(result.phase, 'complete');
+  assert.equal(result.attempts[0].taskId, task.id);
 });

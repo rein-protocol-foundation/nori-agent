@@ -61,6 +61,8 @@ export function openParticipationEvidence({ stateDir, readOnly = false } = {}) {
         trigger: 'passive', duty: observation.duty, helpfulness: observation.helpfulness,
         route: observation.route, reason: observation.reason, failure: observation.failure,
         classifierCalls: observation.classifierCalls, elapsedMs: observation.elapsedMs,
+        ...(Number.isInteger(observation.contextMessages) && observation.contextMessages >= 0 && observation.contextMessages <= 5
+          ? { contextMessages: observation.contextMessages } : {}),
         dutyProbability, helpfulnessProbability, delivery, actualModel: null,
       };
       requirePrivate(directory, true);

@@ -14,6 +14,20 @@ const result = details => {
 };
 const text = (value, max) => typeof value === 'string' && value.trim() && value.length <= max;
 
+// A queued Slack reply omits NativeChannelId in the host template. The hook
+// then reports the raw peer from its session key (including the thread suffix).
+// Accept only that exact SDK representation for a configured development entry.
+export function normalizeQueuedDevelopmentTurn(config, ctx) {
+  if (!human(ctx) || ctx.channel !== 'slack' || ctx.messageProvider !== 'slack' ||
+      ctx.agentId !== config.channel.agentId || ctx.accountId !== config.channel.accountId ||
+      typeof ctx.chatId !== 'string') return ctx;
+  const match = /^([cg][a-z0-9]{5,31})(?::thread:\d+\.\d+)?$/.exec(ctx.chatId);
+  const channelId = match && config.additionalChannelIds?.find(id => id.toLowerCase() === match[1]);
+  if (!channelId || ctx.sessionKey !== `agent:${ctx.agentId}:slack:channel:${ctx.chatId}` ||
+      (ctx.channelContext?.chat?.id !== undefined && ctx.channelContext.chat.id !== channelId)) return ctx;
+  return { ...ctx, chatId: channelId };
+}
+
 // Check both the host session key and admitted source. Completion/heartbeat turns
 // can have no user requester but must keep the originating channel's restrictions.
 function developmentSession(config, ctx, turn) {
@@ -88,20 +102,40 @@ export function createTaskLoop({ config, authorize, tasks, subagent, scheduling,
       // Native prompt assembly precedes before_agent_run. Read authoritative state
       // here as well; admission-time bookkeeping cannot protect this first prompt.
       const provenance = ctx.inputProvenance;
+      let managedAcpAnnouncement = false;
       if (provenance?.kind === 'inter_session' && ['subagent_announce', 'subagent_settle'].includes(provenance.sourceTool) &&
           provenance.sourceSessionKey && ctx.sessionKey) {
         const task = await tasks.async.runs.bindSession({ sessionKey: ctx.sessionKey, agentId: ctx.agentId }).resolve(provenance.sourceSessionKey);
-        if (task?.ownerKey === ctx.sessionKey && task.status === 'cancelled' && !await continuationCurrent(task, ctx)) reports.set(ctx.runId, task);
+        if (task?.ownerKey === ctx.sessionKey) {
+          if (task.status === 'cancelled' && !await continuationCurrent(task, ctx)) reports.set(ctx.runId, task);
+          else if (config.continuation && developmentSession(config, ctx) && task.runtime === 'acp' &&
+              provenance.sourceTool === 'subagent_announce' && task.childSessionKey === provenance.sourceSessionKey)
+            managedAcpAnnouncement = await continuationCurrent(task, ctx);
+        }
       }
       const old = reports.get(ctx.runId);
       if (old) return { toolsAllow: [], prependContext: `CANCELLED / OLD-SCOPE REPORT for native task ${old.id}, run ${old.runId}. This incoming result cannot satisfy a revised goal. Report available partial results and performed or uncertain external actions from the native evidence and incoming result, clearly labeled cancelled/old scope. Cancellation is not rollback; absence of evidence is uncertainty. Send this report through the existing captured original destination. Do not launch, resume, retry or change work. Native progress: ${JSON.stringify(old.progressSummary ?? null)}; terminal summary: ${JSON.stringify(old.terminalSummary ?? null)}; diagnostic: ${JSON.stringify(old.error ?? null)}.` };
-      return { prependContext: `${developmentSession(config, ctx) ? 'Answer ordinary questions directly in this Slack thread. For a timed development task use native automations add with an isolated agentTurn message. Keep its job ID and adjust that same job with update in this thread. Use rein_continuation write_development_file for project files. For development without a named coding harness, delegate execution and verification to runtime=subagent agentId=nori-development in its sandbox. For a requested runtime config change show the exact proposed diff for separate administrator confirmation. ' : ''}${config.continuation ? 'Native continuation is enabled: use rein_continuation durable goals, review, stop/change and bounded supplements. Combined same-owner/audience replies may represent multiple flows; original thread delivery is not a per-flow guarantee. Legacy rein_task replacement instructions below apply to unmanaged tasks only. ' : ''}For background work follow the nori-task-loop skill. Research uses native sessions_spawn runtime="subagent", mode="run", cleanup="keep", with completionTarget omitted: retain default external original-thread delivery through parent review. When the user names Codex or Claude Code, keep that coding harness throughout the assignment. With continuation enabled, first call rein_continuation begin with goal, criteria and runtime="acp", then delegate with flow and instruction. Call sessions_spawn with task set to the short returned spawnTask, explicit runtime="acp" and the requested harness agentId. ${config.alternateHarness ? 'For Claude Code use agentId=claude.' : 'Claude Code is unavailable here; report this if requested.'} For Codex use agentId=${JSON.stringify(config.harnessAgentId)}, cwd=${JSON.stringify(config.cwd)}, mode="run", thread=false, streamTo="parent"; cwd is not an OS security boundary. Native tasks belong to the originating session/audience, not an individual speaker in a shared private channel. Resolve actual runId via rein_task status for canonical task ID. If native acceptance precedes task-record visibility, report the actual accepted run/session and unavailable canonical record; resolve on the next authorized status request or completion, never respawn or invent an ID. Use rein_task stop/change for confirmed cancellation plus replacement; pending/failed cancellation forbids replacement. Report results against current criteria in the original authorized thread. Cancelled/old-scope outcomes must disclose available partial evidence and performed/uncertain actions, never complete the revised goal. Never describe synthetic or missing evidence as verified.` };
+      // Direct ACP completion announcements inherit the child's restricted tool
+      // surface. The settled lifecycle subscriber wakes the owning reviewer.
+      if (managedAcpAnnouncement) {
+        return { prependContext: 'This ACP announcement relays child progress only. Give one short plain-text update that parent review is pending. End this announcement immediately without tool calls, file reads, summary claims or retries. The owning background-task turn handles review.' };
+      }
+      const reviewWake = config.continuation && developmentSession(config, ctx) &&
+        provenance?.kind === 'internal_system' && provenance.sourceTool === 'background-task'
+        ? 'For a settled ACP flow, inspect its status, review against the current criteria and actual test evidence, and report the returned summaryRetention status. If an operation is unavailable, report the gap once and end this turn. Retained-copy reads and deletes require a current human turn. ' : '';
+      const fileReview = config.continuation && developmentSession(config, ctx)
+        ? 'For ACP text deliverables use the assigned review file. On the tool-enabled parent turn call rein_continuation read_review_file with flow and scopeRevision, then review the actual content. A tool-less announcement leaves the review to the owning parent wake. ' : '';
+      return { prependContext: `${reviewWake}${fileReview}${developmentSession(config, ctx) ? 'Answer ordinary questions directly in this Slack thread. For a timed development task use native automations add with an isolated agentTurn message. Keep its job ID and adjust that same job with update in this thread. Use rein_continuation write_development_file for project files. For development without a named coding harness, delegate execution and verification to runtime=subagent agentId=nori-development in its sandbox. For a requested runtime config change show the exact proposed diff for separate administrator confirmation. ' : ''}${config.continuation ? 'Native continuation is enabled: use rein_continuation durable goals, review, stop/change and bounded supplements. Combined same-owner/audience replies may represent multiple flows; original thread delivery is not a per-flow guarantee. Legacy rein_task replacement instructions below apply to unmanaged tasks only. ' : ''}For background work follow the nori-task-loop skill. Research uses native sessions_spawn runtime="subagent", mode="run", cleanup="keep", with completionTarget omitted: retain default external original-thread delivery through parent review. When the user names Codex or Claude Code, keep that coding harness throughout the assignment. With continuation enabled, first call rein_continuation begin with goal, criteria and runtime="acp", then delegate with flow and instruction. Call sessions_spawn with task set to the short returned spawnTask, explicit runtime="acp" and the requested harness agentId. ${config.alternateHarness ? 'For Claude Code use agentId=claude.' : 'Claude Code is unavailable here; report this if requested.'} For Codex use agentId=${JSON.stringify(config.harnessAgentId)}, cwd=${JSON.stringify(config.cwd)}, mode="run", thread=false, streamTo="parent"; cwd is not an OS security boundary. Native tasks belong to the originating session/audience, not an individual speaker in a shared private channel. Resolve actual runId via rein_task status for canonical task ID. If native acceptance precedes task-record visibility, report the actual accepted run/session and unavailable canonical record; resolve on the next authorized status request or completion, never respawn or invent an ID. Use rein_task stop/change for confirmed cancellation plus replacement; pending/failed cancellation forbids replacement. Report results against current criteria in the original authorized thread. Cancelled/old-scope outcomes must disclose available partial evidence and performed/uncertain actions, never complete the revised goal. Never describe synthetic or missing evidence as verified.` };
     },
     async beforeToolCall(event, ctx) {
       const tool = unwrap(event), turn = turns.get(ctx.runId);
       const acp = tool.name === 'sessions_spawn' && tool.params?.runtime === 'acp';
       const deny = blockReason => ({ block: true, blockReason });
       if (selected(ctx) && developmentSession(config, ctx, turn)) {
+        if (tool.name === 'sessions_yield' && turn?.kind === 'interactive' && validTurn(turn, ctx)) {
+          if (await membership(turn.source) && validTurn(turn, ctx)) return;
+          return deny('Current trusted private-channel membership could not be verified.');
+        }
         if (scheduling && ['automations','cron'].includes(tool.name) && turn?.kind === 'interactive' &&
             schedulingChannels.includes(turn.source.channelContext?.chat?.id ?? turn.source.chatId) && validTurn(turn, ctx)) {
           return await scheduling.beforeToolCall(event, ctx);

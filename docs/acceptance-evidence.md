@@ -1,5 +1,30 @@
 # Acceptance evidence
 
+## 2026-11-20 UTC — SA2 Slack participation and acknowledgement
+
+On OCI release `fcf0b69`, a natural unmentioned request reached Jev with five preceding messages. The v3 rubric returned helpfulness 0.90 in 331 ms. The Slack thread contained a Nori reply 142 seconds after the request. Readback found zero reactions on the original message. Native Slack evaluated the default group-mention acknowledgement scope before Jev. The participation hook had no acknowledgement on its positive branch. This confirms live participation and reproduces the missing receipt. On release `0bdc8be` (PR #142), Tempest manually confirmed the acknowledgement in `#nori-development`. Jev admitted the new message with five preceding messages and helpfulness 0.95 in 58 ms. At 07:43:24 UTC the gateway logged a successful reaction write. A Slack history readback of the same source message showed the eyes reaction from the existing Nori bot. Production acceptance of this reaction passed.
+
+## 2026-11-19 · Slack participation context
+
+Two actual unmentioned development requests were admitted to the classifier and suppressed at helpfulness 0.61 and 0.24. A private replay supplied five earlier messages per request to the revised rubric. Hosted Jev admitted both at 0.95 and 0.96. A synthetic two-person exchange about Nori remained silent at 0.13. These are classifier observations. No Slack messages or tasks were replayed.
+
+## 2026-11-20 UTC — SA-M1 / SA-M2 — original-thread follow-up and deletion
+
+Owner Codex. Two real Codex runs produced seven and thirteen passing tests. Both requested a native parent yield and were denied. During each run the owner-bound run lookup changed from the original task ID to the linked Flow projection ID. The host captured a settled lifecycle event for each child. At the subsequent read-only inspection, only stage one had a retained copy and the original thread had no queued inputs. No deletion had succeeded. The local task, review, summary and scheduler regression suites passed 125 tests. Two native Gateway probes passed with synthetic transport, model and harness. OCI deployed PR #139 as `227e8a7` at 03:15:46 UTC.
+
+In the original private Slack thread, an initial request created a fresh text-statistics CLI. A subsequent request added `--stdin` to the same project. Each stage launched Codex once, yielded and completed parent review without a human reminder. The parent read the 1,254-byte and 1,965-byte verification reports. The first review corrected a nonempty gaps field before completion. The authorized human then requested two `read_summary` calls. Both returned `complete` and `expiresAt=null`, with six and ten passing tests respectively. The completed summaries and the child reports were independently observable.
+
+| Post-deletion check | Production evidence |
+| --- | --- |
+| Four selected test Flows | Three existing copies returned `retainedCopy=deleted`. The original failed follow-up had no copy. All four subsequent reads returned `unavailable_or_deleted`. |
+| Tombstones and summary index | Native status on each of the three completed Flows returned `summaryRetention.status=deleted`. The scoped list returned zero rows and a null cursor. All three rereads remained unavailable. |
+| Slack thread | All 31 messages observed before the deletion request retained their IDs and text. |
+| Test artifacts | SHA-256 matched for all five files in each project, including both `TASK_SUMMARY.md` files. The four assigned review files also matched. |
+| Native execution and tests | Four Flow IDs, six Task IDs and their recorded states were preserved. Before and after deletion, read-only, network-isolated unittest runs passed 13/13 for the earlier project and 10/10 for the new project. |
+
+The earlier failed follow-up remains `cancellation_pending` after its deadline. Its historical result is distinct from the two new, reviewed runs. The live harness in this retest was Codex. [Release PR #139](https://github.com/rein-protocol-foundation/nori-agent/pull/139).
+
+
 ## 2026-11-19 — Super Agent v2
 
 An OCI replay exercised five recorded Slack inputs and one duplicate concurrently. Four hosted Jev calls succeeded. The candidate suppressed the fifth input at capacity and rejected the duplicate. A 100 ms deadline returned silence after one call. With paid inference disabled, the same help request returned silence with zero calls. These were isolated replays without outbound Slack delivery.
@@ -26,6 +51,34 @@ COMMUNITY-ONBOARDING-01; owner Codex. All 37 focused tests passed on Node 24.16.
 Simulated Discord sends verified the daily invitation in separate and shared channels,
 the Sunday invitation, and the opt-out wording. Eligibility, mention limits, cooldown,
 and restart reconciliation passed their existing checks. Live verification is pending deployment.
+
+## Development ACP text review
+
+2026-11-19, SA-M1 / SA-M2, owner Codex. Read-only OCI inspection found the
+reported 8,238-byte GTM report with 14 numbered candidates. The gateway service
+user could read it, while the development SSH sandbox user could not. The canonical
+ACP Task had succeeded with a blocked terminal outcome. Its owning Flow recorded
+launch acceptance and still had no settlement or review at inspection time.
+
+The pinned native Gateway probe passed for ordinary completion and for a normal
+harness exit with a blocked deliverable. In the second case the parent read
+the fixture file through the public SDK, recorded a blocked review and ran the
+child exactly once. Transport, model and harness were synthetic. Run
+`node scripts/verify-acp-settlement.mjs` with and without `--blocked-artifact`.
+The 92 controller and compatibility tests passed, including file bounds, links,
+owner-wake access and membership revocation.
+
+Live Slack acceptance passed on November 20 UTC following deployment of `f19900a`.
+A single GTM request in the private development channel launched one ACP child.
+The first delivery reported the child's counts. At 01:24:23 UTC the parent tool
+returned the full report. Hashing the returned UTF-8 text independently matched
+the 13,420-byte file on disk, SHA-256
+`fe319e56161bdd14e6ab941fd2e703370a3901127fbf6d57425a29d1c109b33b`.
+Nori submitted its review at 01:24:57 UTC and replied in the requesting thread
+with 16 skills across seven stages. The Flow recorded `succeeded`, review outcome
+`complete` and a retained summary with no expiry. No reminder or second run was
+needed. Link availability was not independently rechecked by the parent.
+[Release PR](https://github.com/rein-protocol-foundation/nori-agent/pull/132).
 
 ## 2026-11-18 — Discord onboarding production archive
 
@@ -578,3 +631,7 @@ Native OpenClaw loader completed successfully for linked Discord/Slack registrat
 SA-OPS-01 / SA-M1 · Production Slack, November 19 UTC. One timer moved from 11:20:31 to 11:16:57 under the same native ID. It fired automatically as nori-dev, returned 4187 for 53 × 79 and received an original-thread delivery receipt. The first coding attempt ran on the development subagent. A separate ACP attempt stopped before launch while the model was copying the prepared task. Neither qualifies as a Codex run. The correction accepts a short, owner-scoped assignment reference and dispatches its complete stored text.
 
 SA-OPS-01 / SA-M1 · 2026-11-19, Codex. Formal-channel live acceptance passed for native timer ownership, sandbox execution and original-thread delivery. Two real Codex development flows produced independently verified artifacts. The final revision closed a two-attempt flow without human intervention. [Production evidence](slack-scheduler-compatibility.md#production-acceptance-on-november-19-2026).
+
+2026-11-19 America/Los_Angeles · OCI Codex delegation, owner Codex. The approved production launcher switch to CLI 0.170.0 passed live ACP handshake and default-model selection. Parent 01a1f659-649c-70b0-98a3-32251f20b891 and its routine child 01a1f659-7fda-7941-8243-ef9d5dcbe230 recorded Astra High and Sol Low respectively. Loaded policy and scope were checked from local runtime records. Implementation Sol High and default-child Sol Medium were installed as configuration; those two paths were not separately exercised. Configuration-only work advances no product milestone.
+
+2026-11-19 · Task lifecycle closeout, owner Codex. Completed the requested lifecycle, indefinite retained summaries with explicit deletion, and autonomous development acceptance. Issues #58/#60 remain closed. Evidence includes restart-preserved deletion tombstones and real formal-channel Codex review, supplement and summary readback. Updated stale document headers and retired merged continuation branches. Follow-up report-access/blocked-verdict work remains open in #132; broader product limits remain in #65.

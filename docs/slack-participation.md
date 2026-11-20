@@ -8,10 +8,12 @@ billing grant or private-memory access.
 
 ## Dispatch behavior
 
-The classifier receives only bounded current message text and operator-configured duties. It uses
-Slack’s native `CommandBody` projection, which strips Slack mentions from the original message text.
-It excludes retrieved history, attachments, resolved sender profiles, tool definitions and runtime
-credentials. Jev judges duty relevance and whether an unsolicited reply adds useful value separately.
+The classifier receives the current Slack text, configured duties and the five most recent prior
+messages available in the native, access-filtered conversation context, oldest first. Each prior
+message contributes up to 600 characters and a per-request speaker label. When fewer are available
+it uses that shorter window. The participation plugin never fetches additional history, future
+messages, private transcripts or attachments. Direct tasks and plain-text requests to Nori invite
+a response. An exchange directed only between other people normally stays silent, even about Nori.
 Useful out-of-duty clarification may proceed. Uncertain helpfulness, invalid results, outages, timeouts
 and Jev billing opt-out yield normal silent completion before worker dispatch.
 
@@ -20,6 +22,11 @@ The adapter uses OpenClaw’s own control-command and abort detectors as well as
 The existing router still checks manual model choice, attachments, current authority, restricted routes
 and billing. A positive decision adds one Jev request ahead of any separate Jev model-routing decision.
 The participation gate leaves positive decisions to native delivery, including native silence.
+With the default group-mention acknowledgement policy, the gate starts the configured Slack
+reaction on the admitted source message as soon as Jev chooses participation. It uses the native
+account and workspace. Reaction delivery runs independently of the worker. Explicit mentions,
+silent decisions, suppressed delivery and rerouted turns receive no additional reaction from the
+gate. Custom status-reaction or remove-after-reply lifecycles stay with the Slack adapter.
 Actual worker handling of `NO_REPLY` remains an end-to-end acceptance check. A passive attachment without current text skips
 classification. An eligible turn carries its thread and attachments to the native dispatch unchanged.
 

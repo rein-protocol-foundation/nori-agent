@@ -1,5 +1,18 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-20 UTC — SA2 Slack acknowledgement
+
+Owner Codex. The live five-message context check passed on `fcf0b69`. A positive Jev decision now starts the native Slack acknowledgement for the admitted message before worker routing under the default group-mention policy. The worker continues while Slack processes the request. PR #142 deployed as `0bdc8be`. Tempest confirmed the reaction in production. The gateway write and Slack readback matched the original message. [Evidence](acceptance-evidence.md)
+
+## 2026-11-19 · Slack participation context
+
+SA2, Codex. The participation classifier now uses up to five native, authorized prior messages and records the count without message text. Two previously missed production inputs passed hosted replay. Confirm the context count on the next natural event after deployment.
+
+## 2026-11-20 UTC — SA-M1 / SA-M2 — Slack development review and queued requests
+
+Owner Codex. Production was running f776627 when the stalled follow-up was inspected. The repair pins ACP lifecycle checks to the previously bound Task ID, distinguishes a managed ACP announcement from the owning review wake, and preserves native yield for a currently authorized human in the development channel. Queued turns can identify the exact configured peer through the host’s thread-qualified channel field. The sender, account, session and membership checks remain in force. All seven PR checks passed. The standard updater deployed `227e8a7` at 03:15:46 UTC. In the original private Slack thread, both Codex runs completed autonomous parent review and both retained summaries were read back with no expiry. Explicit deletion cleared three existing copies. Reconciliation preserved the tombstones. Independent comparisons preserved all 31 earlier messages, ten project files, four review files and six native tasks. Both projects passed their post-deletion tests (13 and 10). The previous failed follow-up still has no retained copy. No runtime configuration change was necessary. [Acceptance evidence](acceptance-evidence.md) · [Release PR #139](https://github.com/rein-protocol-foundation/nori-agent/pull/139).
+
+
 ## 2026-11-19 — Super Agent v2 integration and partial product verification
 
 An OCI replay exercised five recorded Slack inputs and one duplicate concurrently. Four hosted Jev calls succeeded. The candidate suppressed the fifth input at capacity and rejected the duplicate. A 100 ms deadline returned silence after one call. With paid inference disabled, the same help request returned silence with zero calls. These were isolated replays without outbound Slack delivery.
@@ -31,6 +44,28 @@ COMMUNITY-ONBOARDING-01; owner Codex. Local copy update verified by 37 focused t
 Both messages invite members to introduce themselves with what they go by and a
 little about themselves. The Sunday invitation explains how to skip future reminders.
 Production rollout is pending. After release, review the next eligible scheduled message.
+
+## 2026-11-19 — Development ACP report handoff
+
+SA-M1 / SA-M2, owner Codex. Locally verified. Each new development ACP assignment
+has one designated UTF-8 review file in the configured harness directory. An
+authorized parent reads up to 64 KiB through `rein_continuation read_review_file`
+using the Flow ID and scope revision. The gateway account must be able to read
+that file. The response identifies the exact bytes with a SHA-256 digest.
+Previously created assignments have no designated file. A native blocked result
+now wakes the parent for review even when the harness exited normally. The
+original incident Flow was inspected read-only. All seven release checks passed.
+OCI deployed `f19900a` and reconnected to Slack at 01:02 UTC on November 20.
+One live GTM request verified parent readback, an original-thread reply and
+retained Flow completion without a reminder. [Verification record](acceptance-evidence.md#development-acp-text-review).
+
+The operator authorized read/write access for all tasks running as the SSH account
+`nori-dev` across the shared ACP workspace. On OCI, named and default POSIX ACLs
+were applied after a private permissions snapshot. All 77 files and 42 directories
+were accessible. Through the configured SSH connection, the worker read the original
+report and modified and created files in a new harness-owned directory. The gateway
+read both files. Default ACLs follow the creation mode requested by the writer.
+The gateway also recovered after restoring workspace traversal for its service group.
 
 ## 2026-11-18 — Discord daily archive deployed
 
@@ -1602,3 +1637,7 @@ Owner: Codex. Implemented optional existing-profile association for Discord/Slac
 Codex activated the administrator-reviewed main routing and scheduling configuration on OCI. Both Gateway health checks passed. Sixteen original job definitions, 46 private files and the baseline history checks passed. Production natural-language timer creation, same-ID adjustment, automatic SSH sandbox execution and thread delivery succeeded. The initial named-harness attempts exposed a runtime-selection error and brittle model transcription of the assignment. The follow-up covers both and passed 104 focused checks. Codex execution and retained-summary readback await production confirmation.
 
 2026-11-19 · Codex deployed PRs #121, #125 and #126 to OCI. The formal-channel timer, two Codex flows and same-thread summary lookup were verified. The final revision closed the CLI task autonomously after a bounded supplement. The dedicated Claude account still needs an organization login. [Release and acceptance](slack-scheduler-compatibility.md#production-acceptance-on-november-19-2026).
+
+2026-11-19 America/Los_Angeles · Administrator approved the additional CODEX_PATH launcher difference. The isolated ACP launcher now selects official Codex CLI 0.170.0. Live ACP initialize and session/new succeeded and reported gpt-6.2-astra[high]. Actual parent/child turn_context records verified gpt-6.2-astra/high and routine gpt-6.2-sol/low with the development policy present. The launcher backup is stored under /var/backups/nori-codex-launcher-20261120T002636Z. Configuration is installed in the isolated service account, outside the replaceable application checkout.
+
+2026-11-19 · Marked the requested lifecycle, retained-summary deletion and autonomous development acceptance scope complete, linked its existing live evidence and corrected stale status headers. This is a documentation and branch-cleanup closeout. Separate PR #132 remains open.

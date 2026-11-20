@@ -1,5 +1,21 @@
 # Nori-Agent implementation roadmap
 
+## 2026-11-20 UTC — SA2 Slack participation
+
+Owner Codex. Live readback confirmed a positive decision with five prior messages and a threaded reply on `fcf0b69`. The missing acknowledgement is a separate delivery defect. The receipt repair passed production acceptance on `0bdc8be` with Tempest’s manual confirmation and a matching Slack readback. [Acceptance evidence](acceptance-evidence.md)
+
+## 2026-11-20 UTC — SA-M1 / SA-M2 — Slack development follow-up acceptance
+
+Owner Codex. The original-thread initial and follow-up development, retained-summary readback and scoped deletion passed on OCI release `227e8a7`. Both parent reviews completed without reminders. Post-deletion checks preserved Slack message IDs and text, project and review-file hashes, and native records. The earlier failed follow-up remains in its recorded state. [Acceptance evidence](acceptance-evidence.md) · [Release PR #139](https://github.com/rein-protocol-foundation/nori-agent/pull/139).
+
+
+## Completed task scope — November 19, 2026
+
+The requested task lifecycle, indefinite server-side summaries with explicit deletion, and autonomous development acceptance are complete within the recorded scope. Owner Codex. Issues #58 and #60 are closed as completed. Production evidence covers same-owner restart recovery, reviewed continuation and bounded supplements, indefinite summary retrieval, deletion tombstones preventing resurrection after restart, and real Codex development with original-thread results and summary readback.
+
+See [lifecycle and deletion acceptance](task-lifecycle-closeout-2026-11-17.md), [restart acceptance](task-continuation-live-2026-11-15.md), and [formal development-channel acceptance](slack-scheduler-compatibility.md#production-acceptance-on-november-19-2026). The earlier dated statuses below describe their original checkpoints. Broader product boundaries remain tracked in #65. Subsequent report-file access and blocked-result review shipped in #132.
+
+
 ## 2026-11-19 — Independent Super Agent v2
 
 SA2; implementation owner Codex; reviewer Tempest. Real two-way Issue Sync and recovery on two new synthetic pairs passed. The OCI private report links to its real issue pair and awaits review. The dedicated inbound gateway verified unmentioned help, chatter, clarification and admitted-worker silence. The genuine desktop sender resolves as a Director with the website administrator flag false. Tempest accepted the scoped reopen retest. Staging verified the administrator positive. Production activation, independent human feedback and overall acceptance remain open. [All 16 scenarios and next checks](super-agent-v2-verification.md).
@@ -9,6 +25,13 @@ SA2; implementation owner Codex; reviewer Tempest. Real two-way Issue Sync and r
 COMMUNITY-ONBOARDING-01; owner Codex. The daily invitation and Sunday reminder ask
 members to write a short self-introduction. Local verification passed. Production rollout is pending.
 [Verification](acceptance-evidence.md#2026-11-19--discord-welcome-and-reminder-copy).
+
+## 2026-11-19 — Development ACP text review
+
+SA-M1 / SA-M2, owner Codex. The deployed parent read the complete ACP report,
+replied in the requesting Slack thread and archived the Flow after one GTM
+request. The blocked-result wake passed the native Gateway probe.
+[Verification record](acceptance-evidence.md#development-acp-text-review).
 
 ## 2026-11-18 — Discord daily archive active; public reminders blocked
 
@@ -590,3 +613,6 @@ Status: implemented, verification/rollout in progress. Owner: Codex. Link curren
 SA-OPS-01 / SA-M1 · Codex verified one production Slack thread creating and adjusting the same timer. Native automatic sandbox execution and original-thread delivery passed. Formal Codex acceptance remains open pending the assignment-reference rollout.
 
 SA-OPS-01 / SA-M1 · 2026-11-19, Codex. The approved formal-channel production rollout passed timed sandbox execution, in-thread adjustment and delivery, real Codex development, autonomous parent review and indefinite summary storage. [Acceptance evidence](slack-scheduler-compatibility.md#production-acceptance-on-november-19-2026).
+
+
+2026-11-19 · OCI Codex policy closeout. Owner Codex. Status complete for the approved configuration and ACP verification. The live CLI 0.170.0 parent and routine child used GPT-6.2 Astra High and Sol Low. Implementation High and default-child Medium are configured but were not separately exercised. Related product issues #58, #60 and #66 are already closed. This configuration-only closeout adds no product milestone.
