@@ -1,50 +1,27 @@
 # Slack 👀 acknowledgement deadline
 
-**Cutover pending · 2026-11-19.** The production latency monitor still measures Slack message processing. This is the proposed replacement for its Slack message branch.
+The Slack gateway observes native message admission and Slack's authenticated response to the bot's `reactions.add` call. Both observations are written to a local SQLite ledger under the same opaque message key. The key includes the installation workspace, Slack conversation and original message timestamp. The exporter sends the event kind, key and timing to Axiom. The ledger and exported events contain no message content, Slack token or channel member names.
 
-## Event contract for the Slack adapter
+## Production rule
 
-The pinned OpenClaw Slack adapter (`4a11f89e`) holds the result of the native reaction call inside the adapter. Its public message hooks and OTEL delivery events do not expose the acknowledgement emoji, the original Slack message identity and a confirmed reaction timestamp together. A later read of Slack reactions confirms current membership but supplies no historical timestamp.
+For an admitted Slack request, the deadline is the original Slack message timestamp plus 120 seconds. A confirmed 👀 at the deadline counts as timely. The independent exporter checks the ledger every second during normal operation. Once the deadline passes, a missing or late confirmation produces one persistent breach per message. A task can finish, keep running or never finish without changing the deadline decision. The production Slack profile uses the default bot account and mention-gated channels. Its DM policy is disabled.
 
-Extend the public diagnostic interface with two independently exported events. They must survive retries and gateway restarts. Persist each event before considering it delivered to the exporter.
+The OpenClaw plugin observes accepted messages through the public hooks. The receipt collector uses Undici's public diagnostics channels filtered to the configured bot and the Slack `reactions.add` endpoint. It accepts only `eyes` and a successful API result or an `already_reacted` acknowledgement. The observed API response time is the confirmation time. Slack can apply the reaction before that response reaches the gateway. A later acknowledgement cannot establish an earlier time if the original response was lost.
 
-- **Required.** Record the final decision that a Slack message requires a response, independently of whether a reaction is configured, attempted or succeeds. Carry the original Slack message timestamp so that processing and queue delays consume the same deadline. Include admitted DMs and addressed thread replies. Exclude denied messages, passive room traffic and events the participation policy elects to skip. The message must have a reaction target.
-- **Confirmed.** Record the first trusted Slack event time for Nori's own `eyes` reaction on the original message. Match the installation, bot user, conversation and exact message timestamp. An API success observed within the deadline also proves timely delivery. A late `already_reacted` response, a current reaction list, or a late API response without a Slack event time leaves the original time uncertain. Reconcile that case with Slack's timestamped `reaction_added` event. Preserve the first confirmation if the reaction is later removed or replaced.
-- **Correlation.** Export an opaque per-message key scoped to the workspace, installation, channel and original message timestamp. Preserve microsecond precision. Export event times and the correlation key without message bodies or member names. Replayed ingress and duplicate confirmations use the same key.
+The exporter runs as `nori-slack-acknowledgements.service` independently of gateway restarts. Pending exports are retried with the same message key. Axiom uses ingest time for its monitor window so replayed breaches remain visible. The existing monitor uses one series per Slack breach. Discord message processing and both gateway RPC groups keep their original p95 budgets and sample minimum. The monitor runs every five minutes with a two-minute ingestion delay.
 
-## Evaluation
+## Host installation and rollback
 
-For each required message, the deadline is its Slack timestamp plus 120 seconds. A confirmation exactly at the deadline counts. Once the deadline passes, a missing or late confirmation breaches it even if the task is still running. Use durable per-message breach records and deduplicate notifications by key. Keep telemetry delivery failure distinguishable from a verified missed acknowledgement. A finite query window alone cannot retain unresolved messages through a prolonged outage.
+Plugin and exporter source live in `plugins/rein-slack-acknowledgements/`. The host loads the plugin from `/opt/nori-slack-acknowledgements`. Pending observations live under `/var/lib/nori-slack-acknowledgements`, outside the replaceable checkout. The exporter uses the restricted `/etc/nori-slack-acknowledgements.env` ingest credential. The Slack bot token stays in the Slack gateway.
 
-The following SQLite replay checks the decision with synthetic, normalized observations. Times are integer microseconds from an arbitrary origin. The receipt rows represent observations already verified for the same bot, reaction and original message. The query returns only the overdue and late cases.
+To roll back, restore the former Axiom query and description, remove this plugin's entry, allowlist item and load path from the **current** Slack profile, and restart the Slack gateway. Disable the acknowledgement exporter and retain the ledger and the dated pre-cutover config under `/var/backups/nori-slack-acknowledgements/`. Coordinate profile edits with the updater lock.
 
-```sql
-WITH
-  required(message_key, sent_us) AS (
-    VALUES ('long-task', 0), ('boundary', 0), ('missing', 0), ('late', 0),
-           ('still-waiting', 1), ('duplicate', 0), ('duplicate', 0)
-  ),
-  confirmed(message_key, added_us) AS (
-    VALUES ('long-task', 2000000), ('boundary', 120000000),
-           ('late', 120000001), ('duplicate', 2000000),
-           ('duplicate', 120000001), ('unaddressed', 10)
-  ),
-  first_due AS (
-    SELECT message_key, min(sent_us) + 120000000 AS due_us
-    FROM required GROUP BY message_key
-  ),
-  first_receipt AS (
-    SELECT message_key, min(added_us) AS first_us
-    FROM confirmed GROUP BY message_key
-  )
-SELECT message_key
-FROM first_due LEFT JOIN first_receipt USING (message_key)
-WHERE 120000001 > due_us AND (first_us IS NULL OR first_us > due_us)
-ORDER BY message_key;
+Former Axiom query for monitor `eWp4aVfHFuP1lqLpYg`:
+
+```kusto
+['nori-traces']
+| where ['service.name'] in ('nori-slack', 'nori-discord') and ['resource.deployment.environment.name'] == 'production'
+| where name in ('openclaw.message.processed', 'openclaw.gateway.rpc.response')
+| extend latency_ratio = (duration / 1ms) / iff(name == 'openclaw.message.processed', 120000.0, 5000.0)
+| summarize p95_budget_ratio = iff(count() >= 5, percentile(latency_ratio, 95), 0.0) by ['service.name'], name
 ```
-
-## Production cutover and verification
-
-1. Verify paired production events for a normal message. Exercise wrong-actor and wrong-message reactions, passive traffic, duplicate delivery, and restart between admission and timeout in an isolated integration test. Measure event-delivery delay separately from the 120-second user deadline.
-2. Route per-message deadline breaches to the existing Slack notifier. Use one breached message as the threshold. Exercise a timely 👀 on a task lasting over 120 seconds and an overdue 👀 on an unfinished task. Verify exact-boundary behavior, one notification per breached message and recovery.
-3. Save the current Axiom monitor definition. In its p95 query exclude only the pair `service.name == "nori-slack"` and `name == "openclaw.message.processed"`. Preserve the existing Discord and gateway RPC budgets, and retain processing latency on the dashboard. Read back the saved definition and verify the remaining groups. Keep the saved definition for rollback.

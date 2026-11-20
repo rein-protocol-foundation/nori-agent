@@ -1,5 +1,9 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-19 · US14 observability · Slack acknowledgement deadline
+
+Operations owner: Nori maintenance. Installed the optional gateway observer and independent systemd exporter on OCI. The gateway reported observer startup, the exporter started, and Axiom reported that monitor `eWp4aVfHFuP1lqLpYg` was updated. Each missed Slack 👀 deadline now has its own group. The shared monitor retains its five-minute schedule and 120-second ingestion delay. Functional tests and incident delivery exercises were skipped at the operator’s request. The host config backup is `/var/backups/nori-slack-acknowledgements/20261120T005537Z`. See the [event contract and rollback](slack-acknowledgement-alert.md).
+
 ## 2026-11-20 UTC — Lark community and internal routing
 
 Owner Codex. `configureLarkRouting()` builds a candidate from the existing shared Slack and Discord Gateway and Router Console settings. It takes two distinct Lark applications, disjoint group allowlists, and an app-specific internal administrator identity. Both accounts accept explicit group mentions. The candidate isolates conversations by group and sender and disables gateway chat history and Lark document tools. Community uses its existing metered subscription policy. The internal Lark app was published and OCI received an administrator test mention. Shared Gateway configuration and same-group replies are pending [live verification](acceptance-evidence.md#2026-11-20-utc--lark-routing).

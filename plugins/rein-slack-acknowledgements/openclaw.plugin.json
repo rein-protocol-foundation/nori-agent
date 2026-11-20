@@ -1,0 +1,11 @@
+{
+  "id": "rein-slack-acknowledgements",
+  "name": "Slack acknowledgement telemetry",
+  "activation": { "onStartup": true },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["workspaceId", "stateDirectory"],
+    "properties": { "stateDirectory": { "type": "string", "pattern": "^/" }, "workspaceId": { "type": "string", "pattern": "^T[A-Z0-9]+$" } }
+  }
+}

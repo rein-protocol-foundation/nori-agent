@@ -1,0 +1,21 @@
+[Unit]
+Description=Export Nori Slack acknowledgement deadlines to Axiom
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+UMask=0077
+WorkingDirectory=/home/ubuntu/rein-agent
+EnvironmentFile=/etc/nori-slack-acknowledgements.env
+ExecStart=/home/ubuntu/rein-agent/.toolchain/node_modules/.bin/node /opt/nori-slack-acknowledgements/export.mjs /var/lib/nori-slack-acknowledgements
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/nori-slack-acknowledgements
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
