@@ -1,5 +1,7 @@
 # Linear / GitHub task tracking
 
+The repository command `npm run task:tracking -- <arguments>` invokes the same CLI as `node scripts/task-tracking.mjs <arguments>`.
+
 Tracking: **Super Agent v2 / SA2-TASK**, independent of the original Super Agent PRD.
 Status: live create, status projection and read-only recovery verified on two labelled synthetic issue pairs. The installation uses the existing REI ↔ rein-protocol-foundation/nori-agent pairing. See the [dated matrix](super-agent-v2-verification.md).
 
