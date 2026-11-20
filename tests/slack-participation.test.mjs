@@ -66,12 +66,36 @@ test('self/bot loops, missing ingress proof and inconsistent identity never invo
   }
 });
 
-test('classifier receives bounded current message and duties, no private history or attachments', async () => {
+test('Jev receives five prior Slack messages with speaker continuity and no future or media entries', async () => {
+  let batch;
+  const gate = make(async input => { batch = input; return answer(1, 1); });
+  const history = Array.from({ length: 7 }, (_, index) => ({
+    messageId: `999.00000${index}`, sender: index % 2 ? 'Alice' : 'Bob', body: String(index),
+    media: [{ path: '/private/asset' }],
+  }));
+  history.push({ messageId: 'session:private', body: 'private transcript' },
+    { messageId: '1001.001', body: 'future' });
+  const result = await gate.evaluate(context({ InboundHistory: history, SenderName: 'Alice',
+    ChannelContext: { chat: { mentionStripPatterns: ['other'] } } }));
+  assert.deepEqual(batch.state.recentConversation, ['2', '3', '4', '5', '6'].map((text, i) =>
+    ({ speaker: i % 2 ? 'current sender' : 'participant 1', text })));
+  assert.equal(batch.state.mentionsAnotherUser, true);
+  assert.equal(result.observation.contextMessages, 5);
+});
+test('new thread seed contributes only the current Slack channel and deduplicates native entries', async () => {
+  let batch;
+  const gate = make(async input => { batch = input; return answer(1, 1); });
+  await gate.evaluate(context({ MessageThreadId: '998.001', SenderName: 'Alice',
+    ThreadHistoryBody: '[Slack Alice (user) today] first\n[slack message id: 998.001 channel: CFIXTURE1]\n\n[Slack Bob (user) today] other\n[slack message id: 999.001 channel: COTHER12]',
+    InboundHistory: [{ messageId: '999.002', sender: 'Alice', body: 'second' }] }));
+  assert.deepEqual(batch.state.recentConversation, [{ speaker: 'current sender', text: 'first' }, { speaker: 'current sender', text: 'second' }]);
+});
+test('classifier receives bounded native fields and no private transcript or attachments', async () => {
   let batch, options;
   const gate = make(async (input, opts) => { batch = input; options = opts; return answer(1, 1); });
   assert.equal((await gate.evaluate(context({ Body: 'PRIVATE_BODY', BodyForAgent: 'PRIVATE_PROMPT',
     RawBody: 'PRIVATE_ATTACHMENT_TEXT <@PRIVATE_ID> (PRIVATE_PROFILE)', InboundHistory: ['PRIVATE_HISTORY'], MediaPath: '/private/file', SessionTranscriptContext: { secret: 'PRIVATE_TRANSCRIPT' } }))).action, 'native');
-  assert.deepEqual(Object.keys(batch.state).sort(), ['currentMessage', 'duties']);
+  assert.deepEqual(Object.keys(batch.state).sort(), ['currentMessage', 'duties', 'mentionsAnotherUser', 'recentConversation']);
   assert.equal(Object.keys(batch.questions).length, 2);
   assert.ok(!JSON.stringify(batch).includes('PRIVATE_'));
   assert.equal(options.purpose, 'rein-router.participation');

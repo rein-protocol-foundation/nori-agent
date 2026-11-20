@@ -1,5 +1,9 @@
 # Acceptance evidence
 
+## 2026-11-19 · Slack participation context
+
+Two actual unmentioned development requests were admitted to the classifier and suppressed at helpfulness 0.61 and 0.24. A private replay supplied five earlier messages per request to the revised rubric. Hosted Jev admitted both at 0.95 and 0.96. A synthetic two-person exchange about Nori remained silent at 0.13. These are classifier observations. No Slack messages or tasks were replayed.
+
 ## 2026-11-20 UTC — SA-M1 / SA-M2 — original-thread follow-up and deletion
 
 Owner Codex. Two real Codex runs produced seven and thirteen passing tests. Both requested a native parent yield and were denied. During each run the owner-bound run lookup changed from the original task ID to the linked Flow projection ID. The host captured a settled lifecycle event for each child. At the subsequent read-only inspection, only stage one had a retained copy and the original thread had no queued inputs. No deletion had succeeded. The local task, review, summary and scheduler regression suites passed 125 tests. Two native Gateway probes passed with synthetic transport, model and harness. OCI deployed PR #139 as `227e8a7` at 03:15:46 UTC.

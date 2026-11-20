@@ -60,7 +60,9 @@ try {
     conversation: { kind: 'channel', id: 'CFIXTURE1', nativeChannelId: 'CFIXTURE1', spaceId: 'TFIXTURE1' },
     route: { agentId: 'main', accountId: 'default', routeSessionKey: 'agent:main:slack:channel:cfixture1' },
     reply: { to: 'channel:CFIXTURE1', nativeChannelId: 'CFIXTURE1' },
-    message: { rawBody: 'ordinary passive message' },
+    message: { rawBody: 'ordinary passive message', inboundHistory: Array.from({ length: 6 }, (_, i) => ({
+      sender: 'UALICE01', body: 'previous message ' + i, messageId: '999.00000' + i,
+    })) },
     access: { mentions: { canDetectMention: true, wasMentioned: false, requireMention: false } } });
   const dispatcher = createReplyDispatcher({ deliver: async () => { sends++; } });
   const result = await withPluginRuntimeRegistryScope(registry.registry, () => dispatchReplyFromConfig({
@@ -75,6 +77,7 @@ try {
   assert.equal(sends, 0);
   assert.equal(result.queuedFinal, false);
   assert.equal(participation.observations().at(-1)?.reason, 'passive');
+  assert.equal(participation.observations().at(-1)?.contextMessages, 5);
   console.log('PASS: native agent reply_dispatch silently handles ordinary Slack ingress before worker/lifecycle; global inbound_claim is not invoked.');
   const restricted = buildChannelInboundEventContext({ channel: 'slack', accountId: 'default',
     messageId: '1000.002', from: 'slack:channel:CFIXTURE1', sender: { id: 'UALICE01' },
