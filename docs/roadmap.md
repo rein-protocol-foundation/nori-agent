@@ -1,10 +1,23 @@
 # Nori-Agent implementation roadmap
 
+## 2026-11-20 UTC — Lark routing
+
+Owner Codex. Connect approved Lark community groups to the existing `nori-community` agent and approved internal groups to `main`. The candidate passed local routing checks. Production routing and same-group delivery require live acceptance. [Current evidence](acceptance-evidence.md#2026-11-20-utc--lark-routing).
+
+## 2026-11-20 UTC — SA2 Slack participation
+
+Owner Codex. Live readback confirmed a positive decision with five prior messages and a threaded reply on `fcf0b69`. The missing acknowledgement is a separate delivery defect. The receipt repair passed production acceptance on `0bdc8be` with Tempest’s manual confirmation and a matching Slack readback. [Acceptance evidence](acceptance-evidence.md)
+
+## 2026-11-20 UTC — SA-M1 / SA-M2 — Slack development follow-up acceptance
+
+Owner Codex. The original-thread initial and follow-up development, retained-summary readback and scoped deletion passed on OCI release `227e8a7`. Both parent reviews completed without reminders. Post-deletion checks preserved Slack message IDs and text, project and review-file hashes, and native records. The earlier failed follow-up remains in its recorded state. [Acceptance evidence](acceptance-evidence.md) · [Release PR #139](https://github.com/rein-protocol-foundation/nori-agent/pull/139).
+
+
 ## Completed task scope — November 19, 2026
 
 The requested task lifecycle, indefinite server-side summaries with explicit deletion, and autonomous development acceptance are complete within the recorded scope. Owner Codex. Issues #58 and #60 are closed as completed. Production evidence covers same-owner restart recovery, reviewed continuation and bounded supplements, indefinite summary retrieval, deletion tombstones preventing resurrection after restart, and real Codex development with original-thread results and summary readback.
 
-See [lifecycle and deletion acceptance](task-lifecycle-closeout-2026-11-17.md), [restart acceptance](task-continuation-live-2026-11-15.md), and [formal development-channel acceptance](slack-scheduler-compatibility.md#production-acceptance-on-november-19-2026). The earlier dated statuses below describe their original checkpoints. Broader product boundaries remain tracked in #65. Subsequent report-file access and blocked-result review work remains open in #132.
+See [lifecycle and deletion acceptance](task-lifecycle-closeout-2026-11-17.md), [restart acceptance](task-continuation-live-2026-11-15.md), and [formal development-channel acceptance](slack-scheduler-compatibility.md#production-acceptance-on-november-19-2026). The earlier dated statuses below describe their original checkpoints. Broader product boundaries remain tracked in #65. Subsequent report-file access and blocked-result review shipped in #132.
 
 
 ## 2026-11-19 — Independent Super Agent v2
@@ -607,3 +620,11 @@ SA-OPS-01 / SA-M1 · 2026-11-19, Codex. The approved formal-channel production r
 
 
 2026-11-19 · OCI Codex policy closeout. Owner Codex. Status complete for the approved configuration and ACP verification. The live CLI 0.170.0 parent and routine child used GPT-6.2 Astra High and Sol Low. Implementation High and default-child Medium are configured but were not separately exercised. Related product issues #58, #60 and #66 are already closed. This configuration-only closeout adds no product milestone.
+
+## NORI-BRANDING · 2026-11-19
+
+Partially implemented locally. Heartbeat configuration and task reply guidance updated. Direct ACP notifications and early Slack denials still require a public presentation interface. [Nori branding](nori-branding.md). Owner: Codex.
+
+## NORI-BRANDING · 2026-11-20
+
+Local implementation now covers marked status/error replies and configured Discord realtime voice identity. Channel-native surfaces remain pending upstream. No milestone advanced. [Coverage and pending producers](nori-branding.md). Owner: Codex.

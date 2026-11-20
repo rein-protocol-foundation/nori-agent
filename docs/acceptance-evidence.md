@@ -1,10 +1,46 @@
 # Acceptance evidence
 
-## Super Agent v2 · 2026-11-19
+## US14 operations · Slack acknowledgement monitor · 2026-11-19
 
-Production Slack activation on November 19 (Pacific time). The existing Nori installation now accepts unmentioned requests in `#nori-development` with its existing channel user rules and main agent binding. Only this room was added to the participation policy. Runtime plugin inspection showed the reply-dispatch hook and the production gateway reported ready. No acceptance message was sent to the business channel. In `#rein-agent-test`, the same production bot read a newly uploaded text attachment and returned the verification word from the file in its original thread. For the synthetic #131 pair, mismatched account and team checks rejected the request after two and four successful provider reads respectively. An unapproved audience was rejected before network access. All three checks made zero remote writes. The requester waived independent human acceptance. The previous chat approval for github-reopen stands. Private observations and the production rollback configuration are retained on OCI.
+Nori maintenance deployed the acknowledgement observer and exporter. The OCI startup receipt and Axiom save receipt establish deployment and configuration. End-to-end trigger, suppression and Slack notifier delivery were not exercised at operator request. Product acceptance remains open. [Operational record](slack-acknowledgement-alert.md)
 
-11 月 19 日（太平洋时间），原有线上 Nori 已在 `#nori-development` 开启免 @，沿用现有用户访问规则和 main 绑定。参与策略只匹配这个频道。运行时插件检查确认已注册回复分发钩子，生产网关就绪。按要求未在业务频道发验收消息。在 `#rein-agent-test`，同一线上机器人读取新上传的文本附件，在原线程回复了仅存于附件内的校验词。对测试工单 #131，账号和团队不匹配分别在两次、四次真实读取后被拒绝，受众未获准时网络调用为零。三项远端写入均为零。独立真人验收按要求跳过，先前对 github-reopen 的确认保留。原始证据和回退配置存放在 OCI 私有目录。
+2026-11-20 · Codex verified the checked-in ledger and exporter locally with simulated receipts and a stubbed Axiom response. Checks covered the exact deadline, missing and late receipts, a mismatched bot token, and durable export settlement. The scaffold check passed. Live alert delivery remains unverified.
+
+## 2026-11-20 UTC — Lark routing
+
+Owner Codex. 16 scoped router tests passed. The pinned OpenClaw CLI accepted the generated Feishu channel configuration. The native SDK resolved both named bot accounts to the intended existing agents with isolated sender and topic session keys, and resolved the preexisting Slack and Discord bindings as before. Lark published the internal app with administrator-only availability. The OCI staging listener received an explicit mention from the administrator in a designated private test group. Shared gateway inference, reply delivery, and the full group rollout require live acceptance.
+
+The shared gateway deployed `8cf504f`. The internal pilot returned the expected reply from `main` in the designated test group. The community pilot reached `nori-community` and the subscription boundary blocked it. OpenClaw's model hook can expose a sender-qualified peer identifier and omit redundant input provenance. The regression verifies that the raw group destination, typed destination and native peer name resolve to the same admitted sender session and group budget. Live community replay is pending.
+
+## 2026-11-20 UTC — SA2 Slack participation and acknowledgement
+
+On OCI release `fcf0b69`, a natural unmentioned request reached Jev with five preceding messages. The v3 rubric returned helpfulness 0.90 in 331 ms. The Slack thread contained a Nori reply 142 seconds after the request. Readback found zero reactions on the original message. Native Slack evaluated the default group-mention acknowledgement scope before Jev. The participation hook had no acknowledgement on its positive branch. This confirms live participation and reproduces the missing receipt. On release `0bdc8be` (PR #142), Tempest manually confirmed the acknowledgement in `#nori-development`. Jev admitted the new message with five preceding messages and helpfulness 0.95 in 58 ms. At 07:43:24 UTC the gateway logged a successful reaction write. A Slack history readback of the same source message showed the eyes reaction from the existing Nori bot. Production acceptance of this reaction passed.
+
+## 2026-11-19 · Slack participation context
+
+Two actual unmentioned development requests were admitted to the classifier and suppressed at helpfulness 0.61 and 0.24. A private replay supplied five earlier messages per request to the revised rubric. Hosted Jev admitted both at 0.95 and 0.96. A synthetic two-person exchange about Nori remained silent at 0.13. These are classifier observations. No Slack messages or tasks were replayed.
+
+## 2026-11-20 UTC — SA-M1 / SA-M2 — original-thread follow-up and deletion
+
+Owner Codex. Two real Codex runs produced seven and thirteen passing tests. Both requested a native parent yield and were denied. During each run the owner-bound run lookup changed from the original task ID to the linked Flow projection ID. The host captured a settled lifecycle event for each child. At the subsequent read-only inspection, only stage one had a retained copy and the original thread had no queued inputs. No deletion had succeeded. The local task, review, summary and scheduler regression suites passed 125 tests. Two native Gateway probes passed with synthetic transport, model and harness. OCI deployed PR #139 as `227e8a7` at 03:15:46 UTC.
+
+In the original private Slack thread, an initial request created a fresh text-statistics CLI. A subsequent request added `--stdin` to the same project. Each stage launched Codex once, yielded and completed parent review without a human reminder. The parent read the 1,254-byte and 1,965-byte verification reports. The first review corrected a nonempty gaps field before completion. The authorized human then requested two `read_summary` calls. Both returned `complete` and `expiresAt=null`, with six and ten passing tests respectively. The completed summaries and the child reports were independently observable.
+
+| Post-deletion check | Production evidence |
+| --- | --- |
+| Four selected test Flows | Three existing copies returned `retainedCopy=deleted`. The original failed follow-up had no copy. All four subsequent reads returned `unavailable_or_deleted`. |
+| Tombstones and summary index | Native status on each of the three completed Flows returned `summaryRetention.status=deleted`. The scoped list returned zero rows and a null cursor. All three rereads remained unavailable. |
+| Slack thread | All 31 messages observed before the deletion request retained their IDs and text. |
+| Test artifacts | SHA-256 matched for all five files in each project, including both `TASK_SUMMARY.md` files. The four assigned review files also matched. |
+| Native execution and tests | Four Flow IDs, six Task IDs and their recorded states were preserved. Before and after deletion, read-only, network-isolated unittest runs passed 13/13 for the earlier project and 10/10 for the new project. |
+
+The earlier failed follow-up remains `cancellation_pending` after its deadline. Its historical result is distinct from the two new, reviewed runs. The live harness in this retest was Codex. [Release PR #139](https://github.com/rein-protocol-foundation/nori-agent/pull/139).
+
+## 2026-11-19 · Super Agent v2 Slack activation
+
+Production Slack activation on November 19 (Pacific time). The existing Nori installation now accepts unmentioned requests in `#nori-development` with its existing channel user rules and main agent binding. Only this room was added to the participation policy. Runtime plugin inspection showed the reply-dispatch hook and the production gateway reported ready. No acceptance message was sent to the business channel during this activation. In `#rein-agent-test`, the same production bot read a newly uploaded text attachment and returned the verification word from the file in its original thread. For the synthetic #131 pair, mismatched account and team checks rejected the request after two and four successful provider reads respectively. An unapproved audience was rejected before network access. All three checks made zero remote writes. The requester waived independent human acceptance. The previous chat approval for github-reopen stands. Private observations and the production rollback configuration are retained on OCI.
+
+11 月 19 日（太平洋时间），原有线上 Nori 已在 `#nori-development` 开启免 @，沿用现有用户访问规则和 main 绑定。参与策略只匹配这个频道。运行时插件检查确认已注册回复分发钩子，生产网关就绪。本次上线按要求未在业务频道发验收消息。在 `#rein-agent-test`，同一线上机器人读取新上传的文本附件，在原线程回复了仅存于附件内的校验词。对测试工单 #131，账号和团队不匹配分别在两次、四次真实读取后被拒绝，受众未获准时网络调用为零。三项远端写入均为零。独立真人验收按要求跳过，先前对 github-reopen 的确认保留。原始证据和回退配置存放在 OCI 私有目录。
 
 ## 2026-11-19 — Super Agent v2
 
@@ -616,3 +652,20 @@ SA-OPS-01 / SA-M1 · 2026-11-19, Codex. Formal-channel live acceptance passed fo
 2026-11-19 America/Los_Angeles · OCI Codex delegation, owner Codex. The approved production launcher switch to CLI 0.170.0 passed live ACP handshake and default-model selection. Parent 01a1f659-649c-70b0-98a3-32251f20b891 and its routine child 01a1f659-7fda-7941-8243-ef9d5dcbe230 recorded Astra High and Sol Low respectively. Loaded policy and scope were checked from local runtime records. Implementation Sol High and default-child Sol Medium were installed as configuration; those two paths were not separately exercised. Configuration-only work advances no product milestone.
 
 2026-11-19 · Task lifecycle closeout, owner Codex. Completed the requested lifecycle, indefinite retained summaries with explicit deletion, and autonomous development acceptance. Issues #58/#60 remain closed. Evidence includes restart-preserved deletion tombstones and real formal-channel Codex review, supplement and summary readback. Updated stale document headers and retired merged continuation branches. Follow-up report-access/blocked-verdict work remains open in #132; broader product limits remain in #65.
+
+## NORI-BRANDING · 2026-11-19
+
+Local synthetic verification: 36 community configuration and ACP tests passed. Two selected native heartbeat delivery tests passed (41 deselected), including exact first-alert body with explicit owner routing. Direct ACP notices and real channel delivery remain unverified for Nori branding. [Nori branding](nori-branding.md). Owner: Codex.
+
+## NORI-BRANDING · 2026-11-20
+
+Owner: Codex. Local synthetic checks passed for typed host notices, ordinary
+quoted text, the English option and Discord voice configuration. Ten notices
+generated by the pinned host (seven ACP errors, stranded delivery, disk full and
+unavailable auth profile) passed its real reply hook runner with text rewritten
+and error classification and internal metadata preserved. Scaffold passed.
+The first full-suite run had one process-tree cleanup failure. Its nine tests
+passed in isolation. The full rerun at concurrency three passed 1,642 tests with
+five skips; the final four focused notice tests also passed separately. No live
+Slack or Discord acceptance. Remaining direct-send producers and the upstream
+proposal are listed in [Nori branding](nori-branding.md).

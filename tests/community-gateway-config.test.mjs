@@ -41,6 +41,7 @@ test('shared candidate preserves internal capability settings and isolates crede
   const before = structuredClone(input);
   const result = configureCommunityGateway(input), cfg = result.config;
   assert.deepEqual(input, before);
+  assert.equal(cfg.agents.defaults.heartbeat.target, 'owner');
   assert.deepEqual(cfg.channels.slack, input.internal.channels.slack);
   assert.deepEqual(cfg.bindings.slice(0, 2), input.internal.bindings);
   for (const id of ['main', 'development']) assert.deepEqual(cfg.agents.entries[id].tools, input.internal.agents.entries[id].tools);
@@ -66,7 +67,10 @@ test('shared candidate preserves internal capability settings and isolates crede
 });
 
 test('native console recompilation retains the scoped policy and singleton key without changing main tools', () => {
-  const input = fixture(), result = configureCommunityGateway(input);
+  const input = fixture();
+  input.internal.agents.defaults.heartbeat = { target: 'none', every: '45m' };
+  const result = configureCommunityGateway(input);
+  assert.deepEqual(result.config.agents.defaults.heartbeat, input.internal.agents.defaults.heartbeat);
   const catalog = [{ id: model, providerId: 'bailian-token-plan', provider: 'fixture', name: 'Flash',
     contextWindow: 32768, maxTokens: 8192, efforts: ['off', 'medium', 'high'], hasFallback: false }];
   const fragment = compileCatalog({ catalog, settings: result.consoleSettings,

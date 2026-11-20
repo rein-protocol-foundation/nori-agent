@@ -1,3 +1,4 @@
+import { registerChatNotices } from './chat-notices.ts';
 import { registerAgentProfiles } from './agent-profiles.mjs';
 import { Type } from "typebox";
 import { isAbsolute } from "node:path";
@@ -26,8 +27,9 @@ export default definePluginEntry({
   name: "Nori-Agent Operations",
   description: "Rein Protocol Foundation operations extension",
   register(api) {
-    if (api.pluginConfig?.agentProfiles !== undefined) return registerAgentProfiles(api, registerOperations);
-    return registerOperations(api);
+    if (api.pluginConfig?.agentProfiles !== undefined) registerAgentProfiles(api, registerOperations);
+    else registerOperations(api);
+    registerChatNotices(api);
   },
 });
 

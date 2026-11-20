@@ -1,5 +1,8 @@
 // Native dispatch feasibility proof. Synthetic Slack facts; no network or model calls.
 import assert from 'node:assert/strict';
+import { fileURLToPath } from 'node:url';
+import { PluginInstance } from '../../vendor/openclaw/src/plugins/plugin-instance.js';
+import { bindPluginInstanceModuleLoader } from '../../vendor/openclaw/src/plugins/plugin-instance-module-loader.js';
 import { buildChannelInboundEventContext } from '../../vendor/openclaw/src/plugin-sdk/channel-inbound.js';
 import { createPluginRecord, createPluginRegistry, createPluginRuntimeMock,
   disposePluginRegistryInstances, initializeGlobalHookRunner, resetPluginRuntimeStateForTest,
@@ -18,9 +21,10 @@ import { resolveRuntimeConversationBindingRouteAsync } from '../../vendor/opencl
 const state = await createOpenClawTestState({ label: 'slack-participation', env: { OPENCLAW_TEST_FAST: '0' } });
 const registry = createPluginRegistry({ logger: { info() {}, warn() {}, error() {}, debug() {} },
   runtime: createPluginRuntimeMock(), activateGlobalSideEffects: false });
+const receiptPlugin = new PluginInstance('rein-router');
 let adapter;
 try {
-  const cfg = withFullRuntimeReplyConfig({ agents: { defaults: { workspace: state.workspaceDir,
+  const cfg = withFullRuntimeReplyConfig({ channels: { slack: { botToken: 'xoxb-synthetic-ack' } }, agents: { defaults: { workspace: state.workspaceDir,
     skipBootstrap: true, model: { primary: 'mock-openai/synthetic' },
     models: { 'mock-openai/synthetic': { agentRuntime: { id: 'openclaw' } } } } },
     plugins: { enabled: true, allow: ['participation-proof'], entries: { 'participation-proof': { enabled: true } } } });
@@ -32,8 +36,21 @@ try {
   let claims = 0, hooks = 0, workers = 0, starts = 0, sends = 0;
   let helpful = 0;
   const classifierText: string[] = [];
+  const pluginRoot = new URL('../../plugins/rein-router/', import.meta.url);
+  const ackModule = fileURLToPath(new URL('slack-participation-ack.ts', pluginRoot));
+  bindPluginInstanceModuleLoader({ instance: receiptPlugin, origin: 'config', rootDir: fileURLToPath(pluginRoot),
+    source: fileURLToPath(new URL('index.ts', pluginRoot)), pluginSdkResolution: 'dist' });
+  const { acknowledgeSlackParticipation } = receiptPlugin.loadModule(ackModule);
+  const receipts: string[] = [];
+  let acknowledgment: Promise<void> | undefined;
   const participation = createSlackParticipation({ policy: { enabled: true, duties: 'Help with deployments.',
     channels: [{ accountId: 'default', workspaceId: 'TFIXTURE1', channelId: 'CFIXTURE1', agentId: 'main' }] },
+    acknowledge: receipt => {
+      receipts.push(receipt.messageId);
+      acknowledgment = acknowledgeSlackParticipation(receipt, {
+        info: message => receipts.push(message), warn: message => receipts.push(message),
+      });
+    },
     allowPaidJev: true, isNativeCommand: (text, cfg) => isAbortRequestText(text) || hasControlCommand(text ?? '', cfg),
     decisions: { evaluate: async request => {
       classifierText.push(request.state.currentMessage);
@@ -60,7 +77,9 @@ try {
     conversation: { kind: 'channel', id: 'CFIXTURE1', nativeChannelId: 'CFIXTURE1', spaceId: 'TFIXTURE1' },
     route: { agentId: 'main', accountId: 'default', routeSessionKey: 'agent:main:slack:channel:cfixture1' },
     reply: { to: 'channel:CFIXTURE1', nativeChannelId: 'CFIXTURE1' },
-    message: { rawBody: 'ordinary passive message' },
+    message: { rawBody: 'ordinary passive message', inboundHistory: Array.from({ length: 6 }, (_, i) => ({
+      sender: 'UALICE01', body: 'previous message ' + i, messageId: '999.00000' + i,
+    })) },
     access: { mentions: { canDetectMention: true, wasMentioned: false, requireMention: false } } });
   const dispatcher = createReplyDispatcher({ deliver: async () => { sends++; } });
   const result = await withPluginRuntimeRegistryScope(registry.registry, () => dispatchReplyFromConfig({
@@ -75,6 +94,7 @@ try {
   assert.equal(sends, 0);
   assert.equal(result.queuedFinal, false);
   assert.equal(participation.observations().at(-1)?.reason, 'passive');
+  assert.equal(participation.observations().at(-1)?.contextMessages, 5);
   console.log('PASS: native agent reply_dispatch silently handles ordinary Slack ingress before worker/lifecycle; global inbound_claim is not invoked.');
   const restricted = buildChannelInboundEventContext({ channel: 'slack', accountId: 'default',
     messageId: '1000.002', from: 'slack:channel:CFIXTURE1', sender: { id: 'UALICE01' },
@@ -151,10 +171,21 @@ try {
     media: [{ path: '/tmp/nori-fixture-image.png', contentType: 'image/png' }],
     access: { mentions: { canDetectMention: true, wasMentioned: false, requireMention: false } } });
   assert.equal(positive.media?.[0]?.path, '/tmp/nori-fixture-image.png');
+  assert.deepEqual(receipts, [], 'silent dispatches never start a receipt');
+  const slackRequests: { url: string; body: URLSearchParams }[] = [];
+  let response: { ok: boolean; error?: string } = { ok: true };
+  const originalFetch = globalThis.fetch;
+  process.env.SLACK_API_URL = 'http://127.0.0.1:1/api/';
+  globalThis.fetch = async (input, init) => {
+    const req = new Request(input, init);
+    slackRequests.push({ url: req.url, body: new URLSearchParams(await req.text()) });
+    return Response.json(response);
+  };
   const positiveDispatcher = createReplyDispatcher({ deliver: async () => { sends++; } });
   await withPluginRuntimeRegistryScope(registry.registry, () => dispatchReplyFromConfig({
     ctx: positive, cfg, dispatcher: positiveDispatcher, replyResolver: async ctx => {
       workers++;
+      assert.equal(receipts[0], '1000.005', 'start the receipt before worker resolution');
       assert.equal(ctx.media?.[0]?.path, '/tmp/nori-fixture-image.png');
       assert.equal(ctx.MessageThreadId, '900.001');
       return undefined;
@@ -162,6 +193,24 @@ try {
   }));
   positiveDispatcher.markComplete();
   await positiveDispatcher.waitForIdle();
+  await acknowledgment;
+  assert.deepEqual(receipts, ['1000.005', 'rein_router_participation_ack sent channel=CFIXTURE1 message=1000.005']);
+  assert.equal(slackRequests.length, 1);
+  assert.equal(slackRequests[0].url, 'http://127.0.0.1:1/api/reactions.add');
+  assert.equal(slackRequests[0].body.get('channel'), 'CFIXTURE1');
+  assert.equal(slackRequests[0].body.get('timestamp'), '1000.005');
+  assert.equal(slackRequests[0].body.get('name'), 'eyes');
+  const receipt = { scope: participation.policy.channels[0], messageId: '1000.006', isActive: () => true, cfg };
+  const logger = { info: message => receipts.push(message), warn: message => receipts.push(message) };
+  for (const messages of [{ ackReactionScope: 'off' }, { ackReactionScope: 'group-all' },
+    { ackReaction: '' }, { removeAckAfterReply: true }, { statusReactions: { enabled: true } }])
+    await acknowledgeSlackParticipation({ ...receipt, cfg: { ...cfg, messages } }, logger);
+  assert.equal(slackRequests.length, 1);
+  response = { ok: false, error: 'missing_scope' };
+  await acknowledgeSlackParticipation(receipt, logger);
+  assert.equal(receipts.at(-1), 'rein_router_participation_ack failed channel=CFIXTURE1 message=1000.006 reason=missing_scope');
+  globalThis.fetch = originalFetch;
+  delete process.env.SLACK_API_URL;
   assert.equal(workers, 2);
   assert.equal(classifierText.at(-1), 'useful clarification');
   assert.equal(participation.observations().at(-1)?.duty, 'no');
@@ -174,5 +223,6 @@ try {
   if (adapter) unregisterSessionBindingAdapter({ channel: 'slack', accountId: 'default', adapter });
   await disposePluginRegistryInstances(registry.registry);
   resetPluginRuntimeStateForTest();
+  await receiptPlugin.dispose();
   await state.cleanup();
 }

@@ -8,13 +8,14 @@ import { createProfileAdminAuthorizer, FOUNDATION_ADMIN_TIMEOUT_MS } from './fou
 import { createCronIngress, assertTrustedSlackBoundaries } from './cron-ingress.mjs';
 import { loadCronStore, resolveCronStorePath } from 'openclaw/plugin-sdk/cron-store-runtime';
 import { createSlackDevelopmentAuthorizer, createSlackScheduleAuthorizer, DEVELOPMENT_AUTH_TIMEOUT_MS } from './slack-development.mjs';
+import { acknowledgeSlackParticipation } from './slack-participation-ack.ts';
 import { createSlackParticipation } from './slack-participation.mjs';
 import { openParticipationEvidence } from './slack-participation-evidence.mjs';
 import { hasControlCommand } from 'openclaw/plugin-sdk/command-detection';
 import { isAbortRequestText } from 'openclaw/plugin-sdk/command-primitives-runtime';
 
 export default definePluginEntry({
-  id: 'rein-router', name: 'Nori-Agent Subscription Router',
+  id: 'rein-router', name: 'Nori Router',
   description: 'Opt-in Magpie subscription routes and bounded Jev decisions.',
   register(api) {
     const config = validateRouterConfig(api.pluginConfig);
@@ -53,6 +54,7 @@ export default definePluginEntry({
       }
       const participation = createSlackParticipation({ policy: participationPolicy,
         decisions: api.runtime.decisions, allowPaidJev: config.decision.allowPaidJev,
+        acknowledge: receipt => acknowledgeSlackParticipation(receipt, api.logger),
         isNativeCommand: (text, cfg) => isAbortRequestText(text) || hasControlCommand(text ?? '', cfg),
         observe: observation => api.logger.info(`rein_router_participation ${JSON.stringify(observation)}`),
         writeEvidence: record => evidence?.record(record, participationPolicy), evidenceUnavailable });

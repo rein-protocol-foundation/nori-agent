@@ -8,11 +8,11 @@ import { definePluginEntry } from 'openclaw/plugin-sdk/plugin-entry';
 import { isSubagentSessionKey, isAcpSessionKey } from 'openclaw/plugin-sdk/routing';
 import { createSlackDevelopmentAuthorizer, DEVELOPMENT_AUTH_TIMEOUT_MS } from '../rein-router/slack-development.mjs';
 import { taskChannels, validateAcpConfig, assertAcpRuntimeConfig, createDirectorAcp } from './runtime.mjs';
-import { createTaskLoop, assertTaskLoopRuntimeConfig } from './task-loop.mjs';
+import { createTaskLoop, assertTaskLoopRuntimeConfig, normalizeQueuedDevelopmentTurn } from './task-loop.mjs';
 import { createTaskContinuation } from './continuation.mjs';
 
 export default definePluginEntry({
-  id: 'rein-acp', name: 'Rein Slack ACP',
+  id: 'rein-acp', name: 'Nori task delegation',
   description: 'Trusted Slack delegation to one-shot ACP tasks with parent progress.',
   register(api) {
     const config = validateAcpConfig(api.pluginConfig);
@@ -53,7 +53,8 @@ export default definePluginEntry({
         api.on('gateway_start', continuation.gatewayStart);
         api.on('gateway_stop', continuation.gatewayStop);
       }
-      api.on('before_agent_run', async (event, ctx) => {
+      api.on('before_agent_run', async (event, hostContext) => {
+        const ctx = normalizeQueuedDevelopmentTurn(config, hostContext);
         const admitted = await runtime.beforeAgentRun(event, ctx);
         if (admitted?.outcome === 'block') return admitted;
         await continuation?.beforeAgentRun(event, ctx);

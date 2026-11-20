@@ -5,6 +5,7 @@
   "type": "module",
   "files": [
     "index.ts",
+    "chat-notices.ts",
     "agent-profiles.mjs",
     "proposals.ts",
     "proposal-store.ts",

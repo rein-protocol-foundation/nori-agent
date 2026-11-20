@@ -229,6 +229,10 @@ importers:
         version: link:../../vendor/openclaw
 
   plugins/rein-router:
+    dependencies:
+      '@openclaw/slack':
+        specifier: link:../../vendor/openclaw/dist/extensions/slack
+        version: link:../../vendor/openclaw/dist/extensions/slack
     devDependencies:
       openclaw:
         specifier: link:../../vendor/openclaw
@@ -249,6 +253,8 @@ importers:
       openclaw:
         specifier: link:../../vendor/openclaw
         version: link:../../vendor/openclaw
+
+  plugins/rein-slack-acknowledgements: {}
 
 packages:
 

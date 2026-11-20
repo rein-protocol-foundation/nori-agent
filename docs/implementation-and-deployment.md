@@ -1,8 +1,28 @@
 # Nori-Agent development, verification and deployment record
 
-## Super Agent v2 · 2026-11-19
+## 2026-11-19 · US14 observability · Slack acknowledgement deadline
 
-Production Slack activation on November 19 (Pacific time). The existing Nori installation now accepts unmentioned requests in `#nori-development` with its existing channel user rules and main agent binding. Only this room was added to the participation policy. Runtime plugin inspection showed the reply-dispatch hook and the production gateway reported ready. No acceptance message was sent to the business channel. In `#rein-agent-test`, the same production bot read a newly uploaded text attachment and returned the verification word from the file in its original thread. For the synthetic #131 pair, mismatched account and team checks rejected the request after two and four successful provider reads respectively. An unapproved audience was rejected before network access. All three checks made zero remote writes. The requester waived independent human acceptance. The previous chat approval for github-reopen stands. Private observations and the production rollback configuration are retained on OCI.
+Operations owner: Nori maintenance. Installed the optional gateway observer and independent systemd exporter on OCI. The gateway reported observer startup, the exporter started, and Axiom reported that monitor `eWp4aVfHFuP1lqLpYg` was updated. Each missed Slack 👀 deadline now has its own group. The shared monitor retains its five-minute schedule and 120-second ingestion delay. Functional tests and incident delivery exercises were skipped at the operator’s request. The host config backup is `/var/backups/nori-slack-acknowledgements/20261120T005537Z`. See the [event contract and rollback](slack-acknowledgement-alert.md).
+
+## 2026-11-20 UTC — Lark community and internal routing
+
+Owner Codex. `configureLarkRouting()` builds a candidate from the existing shared Slack and Discord Gateway and Router Console settings. It takes two distinct Lark applications, disjoint group allowlists, and an app-specific internal administrator identity. Both accounts accept explicit group mentions. The candidate isolates conversations by group and sender and disables gateway chat history and Lark document tools. Community uses its existing metered subscription policy. The internal Lark app was published and OCI received an administrator test mention. Shared Gateway configuration and same-group replies are pending [live verification](acceptance-evidence.md#2026-11-20-utc--lark-routing).
+
+## 2026-11-20 UTC — SA2 Slack acknowledgement
+
+Owner Codex. The live five-message context check passed on `fcf0b69`. A positive Jev decision now starts the native Slack acknowledgement for the admitted message before worker routing under the default group-mention policy. The worker continues while Slack processes the request. PR #142 deployed as `0bdc8be`. Tempest confirmed the reaction in production. The gateway write and Slack readback matched the original message. [Evidence](acceptance-evidence.md)
+
+## 2026-11-19 · Slack participation context
+
+SA2, Codex. The participation classifier now uses up to five native, authorized prior messages and records the count without message text. Two previously missed production inputs passed hosted replay. Confirm the context count on the next natural event after deployment.
+
+## 2026-11-20 UTC — SA-M1 / SA-M2 — Slack development review and queued requests
+
+Owner Codex. Production was running f776627 when the stalled follow-up was inspected. The repair pins ACP lifecycle checks to the previously bound Task ID, distinguishes a managed ACP announcement from the owning review wake, and preserves native yield for a currently authorized human in the development channel. Queued turns can identify the exact configured peer through the host’s thread-qualified channel field. The sender, account, session and membership checks remain in force. All seven PR checks passed. The standard updater deployed `227e8a7` at 03:15:46 UTC. In the original private Slack thread, both Codex runs completed autonomous parent review and both retained summaries were read back with no expiry. Explicit deletion cleared three existing copies. Reconciliation preserved the tombstones. Independent comparisons preserved all 31 earlier messages, ten project files, four review files and six native tasks. Both projects passed their post-deletion tests (13 and 10). The previous failed follow-up still has no retained copy. No runtime configuration change was necessary. [Acceptance evidence](acceptance-evidence.md) · [Release PR #139](https://github.com/rein-protocol-foundation/nori-agent/pull/139).
+
+## 2026-11-19 · Super Agent v2 Slack activation
+
+Production Slack activation on November 19 (Pacific time). The existing Nori installation now accepts unmentioned requests in `#nori-development` with its existing channel user rules and main agent binding. Only this room was added to the participation policy. Runtime plugin inspection showed the reply-dispatch hook and the production gateway reported ready. No acceptance message was sent to the business channel during this activation. In `#rein-agent-test`, the same production bot read a newly uploaded text attachment and returned the verification word from the file in its original thread. For the synthetic #131 pair, mismatched account and team checks rejected the request after two and four successful provider reads respectively. An unapproved audience was rejected before network access. All three checks made zero remote writes. The requester waived independent human acceptance. The previous chat approval for github-reopen stands. Private observations and the production rollback configuration are retained on OCI.
 
 ## 2026-11-19 — Super Agent v2 integration and partial product verification
 
@@ -1632,3 +1652,11 @@ Codex activated the administrator-reviewed main routing and scheduling configura
 2026-11-19 America/Los_Angeles · Administrator approved the additional CODEX_PATH launcher difference. The isolated ACP launcher now selects official Codex CLI 0.170.0. Live ACP initialize and session/new succeeded and reported gpt-6.2-astra[high]. Actual parent/child turn_context records verified gpt-6.2-astra/high and routine gpt-6.2-sol/low with the development policy present. The launcher backup is stored under /var/backups/nori-codex-launcher-20261120T002636Z. Configuration is installed in the isolated service account, outside the replaceable application checkout.
 
 2026-11-19 · Marked the requested lifecycle, retained-summary deletion and autonomous development acceptance scope complete, linked its existing live evidence and corrected stale status headers. This is a documentation and branch-cleanup closeout. Separate PR #132 remains open.
+
+## NORI-BRANDING · 2026-11-19
+
+Updated local initialization, community config builders and task reply instructions. Existing installations require the documented config delta where the target is implicit. No deployment. Next: upstream direct-notice renderer and channel acceptance. [Nori branding](nori-branding.md). Owner: Codex.
+
+## NORI-BRANDING · 2026-11-20
+
+Implemented Nori rendering for recognized typed chat notices, Discord realtime voice defaults and plugin display labels. Existing explicit voice prompts take precedence. No deployment or live channel sends. [Coverage and pending producers](nori-branding.md). Owner: Codex.

@@ -1,4 +1,4 @@
-import { resolveScopedPolicy, describeScopedPolicies } from './scoped-policy.mjs';
+import { resolveLarkGroupTurn, resolveScopedPolicy, describeScopedPolicies } from './scoped-policy.mjs';
 import { createScopedFallbackStream } from './scoped-stream.mjs';
 import { usageIdentity, nativeUsageIdentity } from './usage-limits.mjs';
 import { validateRouterConfig, selectRoute, describeRoute, isRestrictedRoute } from './policy.mjs';
@@ -77,6 +77,25 @@ export function assertRuntimeConfig(config, host) {
     const model = agent?.model ?? defaults;
     if (!agent || !usesRein(model) || JSON.stringify(model?.fallbacks ?? defaults?.fallbacks) !== '[]')
       throw new Error('rein_router_runtime_invalid: scoped agent requires explicit empty native fallbacks');
+    for (const origin of config.scopedPolicies[agentId].origins.filter(origin => origin.platform === 'feishu')) {
+      const feishu = host.channels?.feishu;
+      const account = feishu?.accounts?.[origin.accountId];
+      const larkBindings = (host.bindings ?? []).filter(binding => binding.match?.channel === 'feishu');
+      const bindings = larkBindings.filter(binding => binding.match.accountId === origin.accountId);
+      if (feishu?.enabled !== true || account?.enabled !== true ||
+          (account.domain ?? feishu.domain) !== 'lark' ||
+          (account.connectionMode ?? feishu.connectionMode ?? 'websocket') !== 'websocket' ||
+          (account.dmPolicy ?? feishu.dmPolicy) !== 'disabled' ||
+          (account.groupPolicy ?? feishu.groupPolicy) !== 'allowlist' ||
+          (account.requireMention ?? feishu.requireMention) !== true ||
+          (account.groupSessionScope ?? feishu.groupSessionScope) !== 'group_topic_sender' ||
+          account.groupAllowFrom?.length !== origin.channelIds.length ||
+          origin.channelIds.some(id => !account.groupAllowFrom.includes(id)) ||
+          bindings.length !== 1 || bindings[0].agentId !== agentId ||
+          Object.keys(bindings[0].match).some(key => key !== 'channel' && key !== 'accountId') ||
+          larkBindings.some(binding => !binding.match.accountId || binding.match.accountId === '*'))
+        throw new Error('rein_router_runtime_invalid: Lark origin requires an exact mention-only group account binding');
+    }
     for (const origin of config.scopedPolicies[agentId].origins.filter(origin => origin.directMessages)) {
       const bindings = (host.bindings ?? []).filter(binding => binding.agentId === agentId &&
         binding.match?.channel === 'discord' && binding.match.accountId === origin.accountId);
@@ -119,9 +138,13 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
     route?.access === 'admin-complex-coding' ? admin : route?.access === 'development-complex-coding' ? developer : true;
   const isAdmin = ctx => config.adminSenders.some(sender => sender.channel === (ctx.channel ?? ctx.messageProvider) &&
     sender.accountId === ctx.accountId && sender.senderId === ctx.senderId);
-  const requester = ctx => JSON.stringify([ctx.agentId, ctx.sessionKey, ctx.sessionId, ctx.channel ?? ctx.messageProvider,
-    ctx.accountId, ctx.senderId, ctx.chatId, ctx.channelContext?.chat?.id, ctx.channelContext?.sender?.id,
-    ctx.inputProvenance?.kind, ctx.trigger]);
+  const requester = ctx => {
+    const larkGroup = resolveLarkGroupTurn(ctx);
+    const identity = larkGroup ? [larkGroup, ctx.channelContext?.sender?.id ?? ctx.senderId, 'external_user'] :
+      [ctx.chatId, ctx.channelContext?.chat?.id, ctx.channelContext?.sender?.id, ctx.inputProvenance?.kind];
+    return JSON.stringify([ctx.agentId, ctx.sessionKey, ctx.sessionId, ctx.channel ?? ctx.messageProvider,
+      ctx.accountId, ctx.senderId, ...identity, ctx.trigger]);
+  };
   const nativeTurn = ctx => !ctx.senderId || Boolean(ctx.trigger && ctx.trigger !== 'user') ||
     Boolean(ctx.inputProvenance && ctx.inputProvenance.kind !== 'external_user');
   const nativeRouteAllowed = (ctx, id) => {
@@ -372,7 +395,8 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
         const limits = config.scopedPolicies[ctx.agentId].usageLimits;
         if (limits) {
           try {
-            run.usageIdentity = run.native ? nativeUsageIdentity(ctx) : usageIdentity(ctx, run.scopedPlan.workspaceId);
+            run.usageIdentity = run.native ? nativeUsageIdentity(ctx) :
+              usageIdentity(ctx, run.scopedPlan.workspaceId, resolveLarkGroupTurn(ctx));
             usage.admit(run.usageIdentity, limits);
           } catch {
             return { outcome: 'block', reason: 'rein_router_usage_limit',

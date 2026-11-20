@@ -46,7 +46,7 @@ test('one registration owner exposes only Community identity, self-status and ca
   assert.equal(status.details.implemented.includes('rein_poll_vote'), false);
   assert.equal(status.details.implemented.includes('rein_member_status'), true);
   assert.equal(status.details.memberStatusToolEnabled, true);
-  assert.equal(loaded.hooks.filter(([name]) => name === 'reply_payload_sending').length, 3);
+  assert.equal(loaded.hooks.filter(([name]) => name === 'reply_payload_sending').length, 4);
 });
 
 test('unknown agents, swapped platforms/accounts, and missing authority expose no tools', () => {
@@ -63,9 +63,9 @@ test('Community-first ordering retains exactly one set of internal reply guards'
   const p = profiles();
   const loaded = register({ 'nori-community': p['nori-community'], main: p.main,
     'director-control': structuredClone(p.main) });
-  assert.equal(loaded.hooks.filter(([name]) => name === 'reply_payload_sending').length, 3);
+  assert.equal(loaded.hooks.filter(([name]) => name === 'reply_payload_sending').length, 4);
   assert.ok(loaded.create(context('main', 'slack')).some(tool => tool.name === 'rein_poll_vote'));
-  assert.equal(register({ 'nori-community': p['nori-community'] }).hooks.length, 0);
+  assert.equal(register({ 'nori-community': p['nori-community'] }).hooks.map(([name]) => name).join(), 'reply_payload_sending');
 });
 
 test('retained tools recheck current authority and cannot change their selected profile', async () => {

@@ -1,6 +1,6 @@
 {
   "id": "rein-acp",
-  "name": "Rein Director ACP",
+  "name": "Nori task delegation",
   "description": "Opt-in trusted Slack native task controls or the legacy bounded ACP controller.",
   "categories": ["agent-orchestration"],
   "enabledByDefault": false,

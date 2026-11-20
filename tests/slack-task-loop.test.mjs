@@ -316,3 +316,38 @@ test('development thread denies host execution and config writes, including afte
   }
   assert.equal((await runtime.beforeToolCall({ toolName: 'sessions_spawn', params: { runtime: 'subagent', agentId: 'main' } }, ctx)).block, true);
 });
+
+test('queued Slack thread preserves the current human and checks live membership for yield', async () => {
+  const { normalizeQueuedDevelopmentTurn } = await import('../plugins/rein-acp/task-loop.mjs');
+  const options = { ...config, additionalChannelIds: ['CDEV0001'], continuation: {}, alternateHarness: 'claude' };
+  const host = source({ chatId: 'cdev0001:thread:123.456', messageProvider: 'slack',
+    sessionKey: 'agent:main:slack:channel:cdev0001:thread:123.456' });
+  const src = normalizeQueuedDevelopmentTurn(options, host);
+  assert.equal(src.chatId, 'CDEV0001');
+  let member = true;
+  const runtime = createTaskLoop({ config: options, authorize: async turn => member && turn.senderId === host.senderId });
+  await runtime.beforeAgentRun({}, src);
+  const yielding = { toolName: 'sessions_yield', params: {} };
+  assert.equal(await runtime.beforeToolCall(yielding, toolContext(host)), undefined);
+  member = false;
+  assert.equal((await runtime.beforeToolCall(yielding, toolContext(host))).block, true);
+  for (const delta of [{ channelContext: { chat: { id: 'COTHER01' } } }, { sessionKey: host.sessionKey + '1' },
+    { accountId: 'other' }, { trigger: 'cron' }, { inputProvenance: { kind: 'inter_session' } }]) {
+    const other = { ...host, ...delta };
+    assert.equal(normalizeQueuedDevelopmentTurn(options, other), other);
+  }
+});
+
+test('ACP direct announcement gives a progress update and leaves review to the owning wake', async () => {
+  const options = { ...config, additionalChannelIds: ['CDEV0001'], continuation: {} };
+  const runtime = createTaskLoop({ config: options, isCurrentContinuation: async () => true, tasks: { async: { runs: {
+    bindSession: ({ sessionKey }) => ({ resolve: async token => ({ ownerKey: sessionKey, runtime: 'acp', childSessionKey: token, status: 'succeeded' }) })
+  } } } });
+  const ctx = source({ sessionKey: 'agent:main:slack:channel:cdev0001:thread:123.456',
+    inputProvenance: { kind: 'inter_session', sourceTool: 'subagent_announce', sourceSessionKey: 'agent:codex:acp:child' } });
+  const announcement = await runtime.beforePromptBuild({}, ctx);
+  assert.match(announcement.prependContext, /End this announcement immediately without tool calls/);
+  assert.doesNotMatch(announcement.prependContext, /read_review_file/);
+  const wake = await runtime.beforePromptBuild({}, { ...ctx, inputProvenance: { kind: 'internal_system', sourceTool: 'background-task' } });
+  assert.match(wake.prependContext, /read_review_file/);
+});

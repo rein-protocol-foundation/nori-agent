@@ -10,7 +10,7 @@ if (existsSync(env.OPENCLAW_CONFIG_PATH)) {
 } else {
   const config = {
     gateway: { mode: 'local', bind: 'loopback', port: 18791, auth: { mode: 'token', token: randomBytes(32).toString('hex') } },
-    agents: { defaults: { workspace: resolve(root, 'workspace') } },
+    agents: { defaults: { workspace: resolve(root, 'workspace'), heartbeat: { target: 'owner' } } },
     plugins: { allow: ['rein-operations'], load: { paths: [resolve(root, 'plugins/rein-operations')] }, entries: { 'rein-operations': { enabled: true } } },
   };
   writeFileSync(env.OPENCLAW_CONFIG_PATH, JSON.stringify(config, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
