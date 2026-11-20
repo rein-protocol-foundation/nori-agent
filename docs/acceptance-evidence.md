@@ -1,5 +1,9 @@
 # Acceptance evidence
 
+## 2026-11-20 UTC — SA2 Slack participation and acknowledgement
+
+On OCI release `fcf0b69`, a natural unmentioned request reached Jev with five preceding messages. The v3 rubric returned helpfulness 0.90 in 331 ms. The Slack thread contained a Nori reply 142 seconds after the request. Readback found zero reactions on the original message. Native Slack evaluated the default group-mention acknowledgement scope before Jev. The participation hook had no acknowledgement on its positive branch. This confirms live participation and reproduces the missing receipt. The receipt repair still needs live delivery evidence.
+
 ## 2026-11-19 · Slack participation context
 
 Two actual unmentioned development requests were admitted to the classifier and suppressed at helpfulness 0.61 and 0.24. A private replay supplied five earlier messages per request to the revised rubric. Hosted Jev admitted both at 0.95 and 0.96. A synthetic two-person exchange about Nori remained silent at 0.13. These are classifier observations. No Slack messages or tasks were replayed.

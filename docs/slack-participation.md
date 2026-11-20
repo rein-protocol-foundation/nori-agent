@@ -22,6 +22,11 @@ The adapter uses OpenClaw’s own control-command and abort detectors as well as
 The existing router still checks manual model choice, attachments, current authority, restricted routes
 and billing. A positive decision adds one Jev request ahead of any separate Jev model-routing decision.
 The participation gate leaves positive decisions to native delivery, including native silence.
+With the default group-mention acknowledgement policy, the gate starts the configured Slack
+reaction on the admitted source message as soon as Jev chooses participation. It uses the native
+account and workspace. Reaction delivery runs independently of the worker. Explicit mentions,
+silent decisions, suppressed delivery and rerouted turns receive no additional reaction from the
+gate. Custom status-reaction or remove-after-reply lifecycles stay with the Slack adapter.
 Actual worker handling of `NO_REPLY` remains an end-to-end acceptance check. A passive attachment without current text skips
 classification. An eligible turn carries its thread and attachments to the native dispatch unchanged.
 
