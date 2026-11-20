@@ -1140,3 +1140,11 @@ SA-OPS-01 / SA-M1。Codex 在 OCI 独立 Gateway 用模拟 Slack 创建和调整
 2026-11-19 America/Los_Angeles · 管理员已批准新增 CODEX_PATH 启动器差异。OCI 的隔离 ACP 启动器现使用官方 Codex CLI 0.170.0。真实 ACP initialize 与 session/new 成功，返回 gpt-6.2-astra[high]。父子 turn_context 运行记录验证主任务 gpt-6.2-astra/high、routine 子任务 gpt-6.2-sol/low，双方均加载开发策略。启动器备份位于 /var/backups/nori-codex-launcher-20261120T002636Z；配置安装在独立服务账号目录，位于应用发布目录之外。
 
 2026-11-19 · 已将用户要求的任务闭环、摘要无期限保留与显式删除、自主开发验收标记完成，关联既有真实验收记录并纠正文档顶部过期状态。本次只进行文档收尾与分支清理；独立后续修复 PR #132 继续开放。
+
+## NORI-BRANDING · 2026-11-19
+
+已更新本地初始化、社区配置生成器和任务回复说明。现有实例使用隐式心跳目标时需应用文档中的配置变更。本次未部署。下一步为上游直发通知展示接口及频道验收。 [Nori branding](nori-branding.md). Owner: Codex.
+
+## NORI-BRANDING · 2026-11-20
+
+已在本地实现有状态或错误标记的通知文案、Discord 实时语音默认身份和插件展示名称。保留已有自定义语音指令。本次未部署，未向频道发送消息。 [Coverage and pending producers](nori-branding.md). Owner: Codex.

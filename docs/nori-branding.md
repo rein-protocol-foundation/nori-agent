@@ -73,3 +73,77 @@ runtime-loaded workspace policies and skills may be Markdown and do need deliver
 A future deployment optimization should compare the complete deployed-to-target
 revision range and skip only positively classified non-runtime documentation;
 unknown paths fail toward deployment. No deployment policy change is made here.
+
+## Heartbeats and task updates, November 19, 2026
+
+The first-alert administrator tip is appended by `src/infra/heartbeat-dispatch.ts`
+only on an implicit delivery route. Nori's local initializer and community gateway
+configuration builders explicitly select the same default owner route. For an
+existing installation with an unset target, the corresponding configuration delta
+is `agents.defaults.heartbeat.target = "owner"`. Preserve explicit channel and agent
+overrides. Reverting this delta restores the implicit first-alert behavior.
+
+The pinned task registry formats a parent-review event in
+`src/tasks/task-executor-policy.ts`. In `src/tasks/task-registry-delivery.ts` a
+threaded ACP success can go straight to sendMessage, independently of a model turn.
+The public message_sending hook receives text, target and transport context. It
+does not receive the task notification's idempotency key or a trusted notice kind.
+Matching English text would also rewrite a member's verbatim quotation.
+
+Extend the public presentation proposal above with a typed direct-task notice
+renderer at the registry's direct-send boundary. Supply the event kind, display
+title, detail and locale. Keep parent-session events, task records, routing,
+deduplication and delivery receipts native. For a Chinese thread, an ACP success
+awaiting review should read “任务结果已返回，Nori 将核对是否符合你的要求。”
+Render blocked, timeout, cancellation and failure as distinct states and preserve
+actionable details. Until this interface is available, the direct notice remains
+upstream English. Model-authored progress and review replies use Nori's workspace
+and task instructions.
+
+## Additional chat surfaces, November 20, 2026
+
+With `rein-operations` active, the public `reply_payload_sending` hook renders
+recognized host status and error payloads using Nori copy. Coverage includes new
+and reset conversations, task-session reset, five compaction refusals, failed
+original-channel delivery, storage exhaustion, unavailable credentials, missing
+OpenAI key, generic processing failure and the seven ACP error/recovery envelopes
+in the pinned runtime. The task backend's detail is preserved. An ordinary reply
+can still quote the original wording. Unknown messages pass through, including
+errors with a new recovery hint. The formatter only changes the text field.
+
+These short notices default to Chinese. Set `NORI_CHAT_NOTICE_LANGUAGE=en` on
+the gateway process for English notices. This deployment setting does not infer
+language from conversation history. Native direct-send paths that bypass this
+hook still use their own renderers.
+
+Community gateway builders now set Nori's voice instructions for configured
+Discord realtime voice accounts that lack custom instructions. Existing voice
+enablement and explicit instructions are preserved. The ACP plugin and the
+Router plugin/model selector now use consistent display names.
+
+### Native surfaces still requiring an upstream presentation interface
+
+Paths below are relative to the pinned upstream source. These are source findings.
+Actual visibility depends on the enabled channel features and the delivery path.
+
+| Surface | Producer |
+| --- | --- |
+| Slack Home heading and start instructions | `extensions/slack/src/monitor/events/home.ts` calls `views.publish` |
+| Slack progress card button and stream link | `extensions/slack/src/progress-blocks.ts` builds “Open in OpenClaw” in both formats |
+| Slack and Discord system-change approval cards | Each channel's `src/approval-handler.runtime.ts` builds the approval label and prompt |
+| Slack channel refusal and DM pairing challenge | Slack `monitor/message-handler/prepare.ts`; core `src/pairing/pairing-messages.ts` |
+| Discord thread webhook identity, offline activity and runtime picker | Discord `src/monitor/thread-bindings.discord-api.ts`, `src/activities/shell.ts`, `src/monitor/native-command-model-picker-interaction.ts` |
+| Status header, restart receipt and allowlist diagnostics | `src/status/status-message.ts` and `src/auto-reply/reply/commands-{session,allowlist}.ts` |
+| Workspace recovery, no-visible-reply fallback and CLI timeout | `src/auto-reply/reply/get-reply.ts`, `dispatch-from-config.payloads.ts` and `src/agents/failover/user-copy.ts` |
+| Direct threaded task progress, review and terminal notices | `src/tasks/task-registry-delivery.ts` and `task-executor-policy.ts` |
+| Discord voice ingress prompt outside the configured realtime speaker | `extensions/discord/src/voice/prompt.ts` |
+
+Extend the presentation proposal at these producers, including the native card
+and plain-text representations. Keep the same recipients, permission checks,
+approval action IDs, links, diagnostic references and delivery outcomes.
+
+On November 20, a read-only OCI check found that the main agent was configured
+to use the top-level workspace. Both IDENTITY.md and SOUL.md in that directory
+and in workspace/main matched the deployed Git revision. This branding change
+leaves all four files at their existing revision. The installed preservation
+list does not cover the three persona files initially edited in this PR.
