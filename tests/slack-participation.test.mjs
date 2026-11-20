@@ -242,6 +242,21 @@ test('dispatcher adapter emits normal silence, preserves native fallthrough and 
   assert.equal(effects.length, 2);
 });
 
+test('only a new positive decision with visible local delivery starts a receipt', async () => {
+  const host = { cfg: {}, dispatcher: { getQueuedCounts: () => ({}) }, recordProcessed() {}, markIdle() {} };
+  const sent = [];
+  const gate = make(async () => answer(1, 1), { acknowledge: ({ messageId }) => { sent.push(messageId); } });
+  const event = { ctx: context(), sendPolicy: 'allow' };
+  for (const [i, overrides] of [{ sendPolicy: 'deny' }, { suppressUserDelivery: true },
+    { suppressReplyLifecycle: true }, { shouldRouteToOriginating: true }, { isTailDispatch: true }].entries())
+    await gate.replyDispatch({ ...event, ctx: context({ MessageSid: '2000.' + i }), ...overrides }, host);
+  await gate.replyDispatch({ ...event, ctx: context({ WasMentioned: true }) }, host);
+  await gate.replyDispatch({ ...event, ctx: context({ ChatType: 'direct' }) }, host);
+  await gate.replyDispatch(event, host);
+  await gate.replyDispatch(event, host);
+  assert.deepEqual(sent, ['1000.001']);
+});
+
 test('Router package ships the participation module required by its entry and validator', async () => {
   const root = new URL('../plugins/rein-router/', import.meta.url);
   const pkg = JSON.parse(await readFile(new URL('package.json', root), 'utf8'));

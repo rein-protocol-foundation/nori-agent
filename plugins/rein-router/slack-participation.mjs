@@ -93,7 +93,7 @@ function conversationWindow(ctx, currentId) {
  * Plugin-owned bindings claim before this seam. Full target-channel activation remains staged.
  */
 export function createSlackParticipation({ policy: raw, decisions, allowPaidJev = false,
-  observe, writeEvidence, evidenceUnavailable, isNativeCommand, clock = () => Date.now() } = {}) {
+  acknowledge, observe, writeEvidence, evidenceUnavailable, isNativeCommand, clock = () => Date.now() } = {}) {
   const policy = validateParticipationPolicy(raw);
   const recent = new Map();
   const startsByScope = new Map();
@@ -228,6 +228,14 @@ export function createSlackParticipation({ policy: raw, decisions, allowPaidJev 
       context.recordProcessed('completed', { reason: 'rein_router_passive_silence' });
       context.markIdle('message_completed');
       handled = { handled: true, queuedFinal: false, counts: context.dispatcher.getQueuedCounts() };
+    }
+    // Native Slack already handles explicit mentions and unconditional reaction scopes.
+    // A positive Jev decision is the first point at which this unmentioned message is addressed.
+    if (result.observation.reason === 'participate' && acknowledge && active &&
+        !context.abortSignal?.aborted && event.sendPolicy === 'allow' && !event.suppressUserDelivery &&
+        !event.suppressReplyLifecycle && !event.shouldRouteToOriginating) {
+      const { scope, messageId } = result.evidence;
+      void acknowledge({ scope, messageId, cfg: context.cfg, signal: context.abortSignal, isActive: () => active });
     }
     if (policy.recordEvidence && result.evidence && active && !context.abortSignal?.aborted) {
       try {

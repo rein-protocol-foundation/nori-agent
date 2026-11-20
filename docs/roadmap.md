@@ -1,5 +1,9 @@
 # Nori-Agent implementation roadmap
 
+## 2026-11-20 UTC — SA2 Slack participation
+
+Owner Codex. Live readback confirmed a positive decision with five prior messages and a threaded reply on `fcf0b69`. The missing acknowledgement is a separate delivery defect. Production verification of the receipt repair is pending. [Acceptance evidence](acceptance-evidence.md)
+
 ## 2026-11-20 UTC — SA-M1 / SA-M2 — Slack development follow-up acceptance
 
 Owner Codex. The original-thread initial and follow-up development, retained-summary readback and scoped deletion passed on OCI release `227e8a7`. Both parent reviews completed without reminders. Post-deletion checks preserved Slack message IDs and text, project and review-file hashes, and native records. The earlier failed follow-up remains in its recorded state. [Acceptance evidence](acceptance-evidence.md) · [Release PR #139](https://github.com/rein-protocol-foundation/nori-agent/pull/139).
