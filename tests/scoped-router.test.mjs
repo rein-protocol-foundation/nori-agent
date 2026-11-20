@@ -255,7 +255,7 @@ test('scoped native fallback checks each candidate before credentials/network; d
   }
 });
 
-test('Lark Community ingress is exact-account, exact-chat, and sender-scoped for groups and threads', () => {
+test('Lark Community ingress is exact-account, exact-chat, and sender-scoped for groups and threads', async () => {
   const chatId = 'oc_' + 'a'.repeat(32);
   const senderId = 'ou_' + 'b'.repeat(32);
   const topicId = 'om_' + 'c'.repeat(32);
@@ -271,13 +271,22 @@ test('Lark Community ingress is exact-account, exact-chat, and sender-scoped for
     sessionKey: prefix + `topic:${topicId}:sender:${senderId}` }).primary, 'a');
   assert.equal(resolveScopedPolicy(scopedPolicies, { ...group,
     sessionKey: prefix + `topic:omt_d4be107c616a:sender:${senderId}` }).primary, 'a');
+  const peer = `${chatId}:sender:${senderId}`;
+  const projected = { ...group, chatId: peer, inputProvenance: undefined };
+  assert.equal(resolveScopedPolicy(scopedPolicies, projected).primary, 'a');
+  const router = fixtureRouter(raw);
+  assert.equal((await router.beforeModelResolve({}, projected)).modelOverride, 'a');
+  assert.equal(router.beforeAgentRun({}, { ...group, chatId: `chat:${chatId}`, modelId: 'a',
+    channelContext: { chat: { id: chatId }, sender: { id: senderId } } }).outcome, 'pass');
   for (const overrides of [
     { accountId: 'lark-internal' }, { chatId: 'oc_' + 'd'.repeat(32) }, { messageProvider: 'discord' },
-    { inputProvenance: undefined }, { senderId: 'ou_' + 'e'.repeat(32) },
+    { inputProvenance: { kind: 'inter_session' } }, { senderId: 'ou_' + 'e'.repeat(32) },
+    { chatId: undefined }, { chatId: chatId + ':sender:ou_' + 'e'.repeat(32) },
     { sessionKey: prefix.slice(0, -1) }, { sessionKey: `agent:nori-community:feishu:direct:${senderId}` },
     { channelContext: { chat: { id: 'oc_' + 'f'.repeat(32) } } },
   ]) assert.equal(resolveScopedPolicy(scopedPolicies, { ...group, ...overrides }), null);
   assert.equal(resolveScopedPolicy(scopedPolicies, group, { hasAttachments: true }), null);
+  assert.equal(resolveScopedPolicy(scopedPolicies, { ...group, trigger: 'cron' }, { native: true }), null);
 
   const host = { ...buildOpenClawFragment(raw, '/fixture/plugin'), agents: { entries: { 'nori-community': {
     model: { primary: 'rein-magpie/auto', fallbacks: [] },

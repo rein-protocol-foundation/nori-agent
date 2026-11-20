@@ -1,4 +1,4 @@
-import { resolveScopedPolicy, describeScopedPolicies } from './scoped-policy.mjs';
+import { resolveLarkGroupTurn, resolveScopedPolicy, describeScopedPolicies } from './scoped-policy.mjs';
 import { createScopedFallbackStream } from './scoped-stream.mjs';
 import { usageIdentity, nativeUsageIdentity } from './usage-limits.mjs';
 import { validateRouterConfig, selectRoute, describeRoute, isRestrictedRoute } from './policy.mjs';
@@ -138,9 +138,13 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
     route?.access === 'admin-complex-coding' ? admin : route?.access === 'development-complex-coding' ? developer : true;
   const isAdmin = ctx => config.adminSenders.some(sender => sender.channel === (ctx.channel ?? ctx.messageProvider) &&
     sender.accountId === ctx.accountId && sender.senderId === ctx.senderId);
-  const requester = ctx => JSON.stringify([ctx.agentId, ctx.sessionKey, ctx.sessionId, ctx.channel ?? ctx.messageProvider,
-    ctx.accountId, ctx.senderId, ctx.chatId, ctx.channelContext?.chat?.id, ctx.channelContext?.sender?.id,
-    ctx.inputProvenance?.kind, ctx.trigger]);
+  const requester = ctx => {
+    const larkGroup = resolveLarkGroupTurn(ctx);
+    const identity = larkGroup ? [larkGroup, ctx.channelContext?.sender?.id ?? ctx.senderId, 'external_user'] :
+      [ctx.chatId, ctx.channelContext?.chat?.id, ctx.channelContext?.sender?.id, ctx.inputProvenance?.kind];
+    return JSON.stringify([ctx.agentId, ctx.sessionKey, ctx.sessionId, ctx.channel ?? ctx.messageProvider,
+      ctx.accountId, ctx.senderId, ...identity, ctx.trigger]);
+  };
   const nativeTurn = ctx => !ctx.senderId || Boolean(ctx.trigger && ctx.trigger !== 'user') ||
     Boolean(ctx.inputProvenance && ctx.inputProvenance.kind !== 'external_user');
   const nativeRouteAllowed = (ctx, id) => {
@@ -391,7 +395,8 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
         const limits = config.scopedPolicies[ctx.agentId].usageLimits;
         if (limits) {
           try {
-            run.usageIdentity = run.native ? nativeUsageIdentity(ctx) : usageIdentity(ctx, run.scopedPlan.workspaceId);
+            run.usageIdentity = run.native ? nativeUsageIdentity(ctx) :
+              usageIdentity(ctx, run.scopedPlan.workspaceId, resolveLarkGroupTurn(ctx));
             usage.admit(run.usageIdentity, limits);
           } catch {
             return { outcome: 'block', reason: 'rein_router_usage_limit',

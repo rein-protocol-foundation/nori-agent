@@ -11,8 +11,8 @@ const liveProcess = pid => { try { process.kill(pid, 0); return true; } catch (e
 const DAY = 86400000;
 const RUN_LIMIT = 100000;
 
-export function usageIdentity(ctx, workspaceId) {
-  const chat = ctx.channelContext?.chat?.id ?? ctx.chatId;
+export function usageIdentity(ctx, workspaceId, canonicalChatId) {
+  const chat = canonicalChatId ?? ctx.channelContext?.chat?.id ?? ctx.chatId;
   if (![ctx.runId, ctx.agentId, ctx.sessionKey, ctx.channel, ctx.accountId, workspaceId, ctx.senderId, chat].every(present)) fail();
   const base = [ctx.agentId, ctx.channel, ctx.accountId, workspaceId];
   return Object.freeze({ run: hash(['run', ctx.runId]), agent: hash(['agent', ctx.agentId]),
