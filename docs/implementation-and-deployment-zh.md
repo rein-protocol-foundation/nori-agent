@@ -1,5 +1,9 @@
 # Nori-Agent 开发、验证与部署记录
 
+## 2026-11-20 UTC — Lark 社群与内部群路由
+
+负责人 Codex。`configureLarkRouting()` 基于现有 Slack、Discord 共享网关及 Router Console 设置生成候选配置。两个 Lark 应用使用各自的群名单，内部应用使用已核验的应用专属管理员身份。两边只接收群内 @ 提及，按群和发送者隔离会话，禁用网关群历史和 Lark 文档工具。社群助手沿用现有订阅模型及用量上限。内部应用已发布，OCI 测试监听器收到了管理员在私有测试群内的提及。共享网关启用和原群回复仍待[真实验收](acceptance-evidence.md#2026-11-20-utc--lark-routing)。
+
 ## 2026-11-20 UTC — SA2 Slack 表情回执
 
 负责人 Codex。线上版本 `fcf0b69` 已确认 Jev 收到了五条历史消息。修复后，在现网默认的群内提及策略下，Jev 判定应该回复时会立即请求 Slack 为原消息加上确认表情，同时让任务进入模型路由。PR #142 已部署，版本为 `0bdc8be`。Tempest 在生产频道手测通过。网关记录了发送成功，Slack 回读也确认原消息上的 👀 来自现有的 Nori。[验收记录](acceptance-evidence.md)

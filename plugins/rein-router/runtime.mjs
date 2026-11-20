@@ -77,6 +77,25 @@ export function assertRuntimeConfig(config, host) {
     const model = agent?.model ?? defaults;
     if (!agent || !usesRein(model) || JSON.stringify(model?.fallbacks ?? defaults?.fallbacks) !== '[]')
       throw new Error('rein_router_runtime_invalid: scoped agent requires explicit empty native fallbacks');
+    for (const origin of config.scopedPolicies[agentId].origins.filter(origin => origin.platform === 'feishu')) {
+      const feishu = host.channels?.feishu;
+      const account = feishu?.accounts?.[origin.accountId];
+      const larkBindings = (host.bindings ?? []).filter(binding => binding.match?.channel === 'feishu');
+      const bindings = larkBindings.filter(binding => binding.match.accountId === origin.accountId);
+      if (feishu?.enabled !== true || account?.enabled !== true ||
+          (account.domain ?? feishu.domain) !== 'lark' ||
+          (account.connectionMode ?? feishu.connectionMode ?? 'websocket') !== 'websocket' ||
+          (account.dmPolicy ?? feishu.dmPolicy) !== 'disabled' ||
+          (account.groupPolicy ?? feishu.groupPolicy) !== 'allowlist' ||
+          (account.requireMention ?? feishu.requireMention) !== true ||
+          (account.groupSessionScope ?? feishu.groupSessionScope) !== 'group_topic_sender' ||
+          account.groupAllowFrom?.length !== origin.channelIds.length ||
+          origin.channelIds.some(id => !account.groupAllowFrom.includes(id)) ||
+          bindings.length !== 1 || bindings[0].agentId !== agentId ||
+          Object.keys(bindings[0].match).some(key => key !== 'channel' && key !== 'accountId') ||
+          larkBindings.some(binding => !binding.match.accountId || binding.match.accountId === '*'))
+        throw new Error('rein_router_runtime_invalid: Lark origin requires an exact mention-only group account binding');
+    }
     for (const origin of config.scopedPolicies[agentId].origins.filter(origin => origin.directMessages)) {
       const bindings = (host.bindings ?? []).filter(binding => binding.agentId === agentId &&
         binding.match?.channel === 'discord' && binding.match.accountId === origin.accountId);
