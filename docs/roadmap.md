@@ -19,9 +19,10 @@ members to write a short self-introduction. Local verification passed. Productio
 
 ## 2026-11-19 — Development ACP text review
 
-SA-M1 / SA-M2, owner Codex. Local verification passed for reading a scoped ACP
-deliverable and waking its reviewer after a blocked result. Release and a fresh
-formal Slack thread test are pending. [Verification record](acceptance-evidence.md#development-acp-text-review).
+SA-M1 / SA-M2, owner Codex. The deployed parent read the complete ACP report,
+replied in the requesting Slack thread and archived the Flow after one GTM
+request. The blocked-result wake passed the native Gateway probe.
+[Verification record](acceptance-evidence.md#development-acp-text-review).
 
 ## 2026-11-18 — Discord daily archive active; public reminders blocked
 
