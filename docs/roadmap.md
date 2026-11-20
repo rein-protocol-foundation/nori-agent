@@ -620,3 +620,11 @@ SA-OPS-01 / SA-M1 · 2026-11-19, Codex. The approved formal-channel production r
 
 
 2026-11-19 · OCI Codex policy closeout. Owner Codex. Status complete for the approved configuration and ACP verification. The live CLI 0.170.0 parent and routine child used GPT-6.2 Astra High and Sol Low. Implementation High and default-child Medium are configured but were not separately exercised. Related product issues #58, #60 and #66 are already closed. This configuration-only closeout adds no product milestone.
+
+## NORI-BRANDING · 2026-11-19
+
+Partially implemented locally. Heartbeat configuration and task reply guidance updated. Direct ACP notifications and early Slack denials still require a public presentation interface. [Nori branding](nori-branding.md). Owner: Codex.
+
+## NORI-BRANDING · 2026-11-20
+
+Local implementation now covers marked status/error replies and configured Discord realtime voice identity. Channel-native surfaces remain pending upstream. No milestone advanced. [Coverage and pending producers](nori-branding.md). Owner: Codex.

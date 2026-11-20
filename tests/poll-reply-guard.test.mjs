@@ -1210,11 +1210,10 @@ test('the real entry registers the poll guard hooks, matched to the result tool 
   );
   assert.ok(pollArm, 'the entry must register the poll-result after_tool_call hook');
   assert.deepEqual(pollArm.options, { matcher: [...POLL_REPLY_GUARD_TOOL_NAMES] });
-  // Every reply guard registers a reply hook, the collect guard's first and the poll guard's last,
-  // so the last one is this guard's own handler.
+  // The poll guard follows the collect and vote guards.
   const replyHooks = hooks.filter(hook => hook.hookName === 'reply_payload_sending');
-  assert.equal(replyHooks.length, 3, 'every reply guard must register its reply hook');
-  const pollReply = replyHooks[replyHooks.length - 1].handler;
+  assert.equal(replyHooks.length, 4, 'three governance guards and one notice formatter');
+  const pollReply = replyHooks[2].handler;
 
   // A direct call round-trips through the registered handlers.
   pollArm.handler({

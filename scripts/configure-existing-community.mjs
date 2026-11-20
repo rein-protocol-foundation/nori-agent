@@ -1,4 +1,5 @@
 // Transitional native configuration: retain the existing Discord database owner and histories.
+import { configureDiscordVoiceIdentity } from './configure-discord-voice-identity.mjs';
 import { configureCommunitySessionMemory } from './configure-community-session-memory.mjs';
 import { COMMUNITY_REQUEST_LIMITS } from './configure-community-gateway.mjs';
 import { validateRouterConfig } from '../plugins/rein-router/policy.mjs';
@@ -19,6 +20,8 @@ export function configureExistingCommunity({ original, workspace, sandbox, dmUse
     'rein_events_search', 'rein_event_get', 'rein_identity_bind_start', 'rein_identity_bind_status',
     'rein_identity_bind_complete', 'rein_status'];
   cfg.agents ??= {}; cfg.agents.defaults ??= {};
+  cfg.agents.defaults.heartbeat ??= {};
+  cfg.agents.defaults.heartbeat.target ??= 'owner';
   // This standalone Gateway has only the Community agent. Its public seed is provisioned
   // before activation; runtime bootstrap must not try to create files in the immutable seed.
   cfg.agents.defaults.skipBootstrap = true;
@@ -29,6 +32,7 @@ export function configureExistingCommunity({ original, workspace, sandbox, dmUse
       sandbox: { tools: { alsoAllow: allow } } } } };
   cfg.bindings = [{ agentId: 'main', match: { channel: 'discord', accountId: 'default' },
     session: { dmScope: 'per-account-channel-peer' } }];
+  configureDiscordVoiceIdentity(cfg.channels.discord);
   cfg.channels.discord.dmPolicy = 'allowlist'; cfg.channels.discord.allowFrom = [...new Set(dmUserIds)];
   for (const guild of Object.values(cfg.channels.discord.guilds ?? {}))
     if (Array.isArray(guild.tools?.allow)) guild.tools.allow = [...new Set([...guild.tools.allow, ...recall])];

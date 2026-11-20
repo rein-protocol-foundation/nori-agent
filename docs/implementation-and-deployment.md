@@ -1645,3 +1645,11 @@ Codex activated the administrator-reviewed main routing and scheduling configura
 2026-11-19 America/Los_Angeles · Administrator approved the additional CODEX_PATH launcher difference. The isolated ACP launcher now selects official Codex CLI 0.170.0. Live ACP initialize and session/new succeeded and reported gpt-6.2-astra[high]. Actual parent/child turn_context records verified gpt-6.2-astra/high and routine gpt-6.2-sol/low with the development policy present. The launcher backup is stored under /var/backups/nori-codex-launcher-20261120T002636Z. Configuration is installed in the isolated service account, outside the replaceable application checkout.
 
 2026-11-19 · Marked the requested lifecycle, retained-summary deletion and autonomous development acceptance scope complete, linked its existing live evidence and corrected stale status headers. This is a documentation and branch-cleanup closeout. Separate PR #132 remains open.
+
+## NORI-BRANDING · 2026-11-19
+
+Updated local initialization, community config builders and task reply instructions. Existing installations require the documented config delta where the target is implicit. No deployment. Next: upstream direct-notice renderer and channel acceptance. [Nori branding](nori-branding.md). Owner: Codex.
+
+## NORI-BRANDING · 2026-11-20
+
+Implemented Nori rendering for recognized typed chat notices, Discord realtime voice defaults and plugin display labels. Existing explicit voice prompts take precedence. No deployment or live channel sends. [Coverage and pending producers](nori-branding.md). Owner: Codex.

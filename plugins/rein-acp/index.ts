@@ -12,7 +12,7 @@ import { createTaskLoop, assertTaskLoopRuntimeConfig, normalizeQueuedDevelopment
 import { createTaskContinuation } from './continuation.mjs';
 
 export default definePluginEntry({
-  id: 'rein-acp', name: 'Rein Slack ACP',
+  id: 'rein-acp', name: 'Nori task delegation',
   description: 'Trusted Slack delegation to one-shot ACP tasks with parent progress.',
   register(api) {
     const config = validateAcpConfig(api.pluginConfig);

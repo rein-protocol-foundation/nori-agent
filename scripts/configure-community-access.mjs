@@ -1,5 +1,6 @@
 // Pure access/configuration update for an existing isolated Community agent.
 // Deployment, credentials, skills publication and provider acceptance remain operator actions.
+import { configureDiscordVoiceIdentity } from './configure-discord-voice-identity.mjs';
 import { isAbsolute } from 'node:path';
 
 export const COMMUNITY_SERVICE_TOOLS = Object.freeze([
@@ -24,6 +25,7 @@ export function configureCommunityAccess(input, { sharedSkillsDir } = {}) {
     throw new Error('community_access_unique_dm_workspace_required');
   }
   workspaces[0].directMessages = true;
+  configureDiscordVoiceIdentity(discord);
   discord.dmPolicy = 'open';
   discord.allowFrom = ['*'];
   const add = values => [...new Set([...values, ...COMMUNITY_SERVICE_TOOLS])];

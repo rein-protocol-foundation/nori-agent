@@ -15,7 +15,7 @@ import { hasControlCommand } from 'openclaw/plugin-sdk/command-detection';
 import { isAbortRequestText } from 'openclaw/plugin-sdk/command-primitives-runtime';
 
 export default definePluginEntry({
-  id: 'rein-router', name: 'Nori-Agent Subscription Router',
+  id: 'rein-router', name: 'Nori Router',
   description: 'Opt-in Magpie subscription routes and bounded Jev decisions.',
   register(api) {
     const config = validateRouterConfig(api.pluginConfig);

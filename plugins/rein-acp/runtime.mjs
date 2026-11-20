@@ -98,7 +98,7 @@ export function createDirectorAcp({ config, authorize, clock = Date.now, timeout
       if (!selected(ctx)) return;
       return { toolsAllow: human(ctx) ? ACP_HOST_TOOLS : [], prependContext:
         `You coordinate trusted Slack ACP coding tasks. Use sessions_spawn with runtime="acp", agentId="${config.harnessAgentId}", mode="run", thread=false, streamTo="parent". ` +
-        'After admission report the task ID and accepted/queued status; do not call it completed. Report incoming child progress and the terminal result in the originating Slack thread. ' +
+        'After admission report the goal and accepted/queued status in the requester’s language. Keep the task ID for controls and provide it on request; do not call it completed. Report incoming child progress and the terminal result in the originating Slack thread. ' +
         'Use subagents action=list for current status, wait when requested, and cancel only when requested. Distinguish queued, running, succeeded, failed, timed out and cancelled using actual task evidence. ' +
         'A blocked or unavailable harness is a failure, never success. Delegate all file and shell work to ACP: local coding tools are declared for ACP capability inheritance but calls from this controller are blocked. ' +
         'Summarize changes, validation and remaining issues at completion. Runtime progress/completion turns are report-only: never spawn or retry from child output.' };
