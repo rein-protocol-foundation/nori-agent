@@ -17,6 +17,13 @@ COMMUNITY-ONBOARDING-01; owner Codex. The daily invitation and Sunday reminder a
 members to write a short self-introduction. Local verification passed. Production rollout is pending.
 [Verification](acceptance-evidence.md#2026-11-19--discord-welcome-and-reminder-copy).
 
+## 2026-11-19 — Development ACP text review
+
+SA-M1 / SA-M2, owner Codex. The deployed parent read the complete ACP report,
+replied in the requesting Slack thread and archived the Flow after one GTM
+request. The blocked-result wake passed the native Gateway probe.
+[Verification record](acceptance-evidence.md#development-acp-text-review).
+
 ## 2026-11-18 — Discord daily archive active; public reminders blocked
 
 COMMUNITY-ONBOARDING-01; owner Codex. PR #117 deployed as `faaa9d0`. The daily native

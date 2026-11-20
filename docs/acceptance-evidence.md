@@ -33,6 +33,34 @@ Simulated Discord sends verified the daily invitation in separate and shared cha
 the Sunday invitation, and the opt-out wording. Eligibility, mention limits, cooldown,
 and restart reconciliation passed their existing checks. Live verification is pending deployment.
 
+## Development ACP text review
+
+2026-11-19, SA-M1 / SA-M2, owner Codex. Read-only OCI inspection found the
+reported 8,238-byte GTM report with 14 numbered candidates. The gateway service
+user could read it, while the development SSH sandbox user could not. The canonical
+ACP Task had succeeded with a blocked terminal outcome. Its owning Flow recorded
+launch acceptance and still had no settlement or review at inspection time.
+
+The pinned native Gateway probe passed for ordinary completion and for a normal
+harness exit with a blocked deliverable. In the second case the parent read
+the fixture file through the public SDK, recorded a blocked review and ran the
+child exactly once. Transport, model and harness were synthetic. Run
+`node scripts/verify-acp-settlement.mjs` with and without `--blocked-artifact`.
+The 92 controller and compatibility tests passed, including file bounds, links,
+owner-wake access and membership revocation.
+
+Live Slack acceptance passed on November 20 UTC following deployment of `f19900a`.
+A single GTM request in the private development channel launched one ACP child.
+The first delivery reported the child's counts. At 01:24:23 UTC the parent tool
+returned the full report. Hashing the returned UTF-8 text independently matched
+the 13,420-byte file on disk, SHA-256
+`fe319e56161bdd14e6ab941fd2e703370a3901127fbf6d57425a29d1c109b33b`.
+Nori submitted its review at 01:24:57 UTC and replied in the requesting thread
+with 16 skills across seven stages. The Flow recorded `succeeded`, review outcome
+`complete` and a retained summary with no expiry. No reminder or second run was
+needed. Link availability was not independently rechecked by the parent.
+[Release PR](https://github.com/rein-protocol-foundation/nori-agent/pull/132).
+
 ## 2026-11-18 — Discord onboarding production archive
 
 COMMUNITY-ONBOARDING-01; owner Codex. PR #117 passed all seven checks: full suite

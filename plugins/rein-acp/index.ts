@@ -1,4 +1,4 @@
-import { writeFileWithinRoot } from 'openclaw/plugin-sdk/file-access-runtime';
+import { readFileWithinRoot, writeFileWithinRoot } from 'openclaw/plugin-sdk/file-access-runtime';
 import { openSqliteWorkerStore } from 'openclaw/plugin-sdk/sqlite-runtime';
 import { createRetainedSummaries, retainedSummaryBackendUrlForRuntime } from './retained-summaries.mjs';
 import { createCronIngress } from '../rein-router/cron-ingress.mjs';
@@ -43,7 +43,7 @@ export default definePluginEntry({
           backendModuleUrl: retainedSummaryBackendUrlForRuntime(api.runtimeSource) }) : undefined;
       continuation = config.continuation ? createTaskContinuation({ config: { ...config, hostConfig: api.config }, authorize,
         tasks: api.runtime.tasks, subagent: api.runtime.subagent, system: api.runtime.system, session: api.runtime.agent.session,
-        events: api.runtime.events, writeFileWithinRoot,
+        events: api.runtime.events, readFileWithinRoot, writeFileWithinRoot,
         isNativeChild: ctx => isSubagentSessionKey(ctx.sessionKey) || isAcpSessionKey(ctx.sessionKey),
         confirmedReplacement: runtime.confirmedReplacement, logger: api.logger, retainedSummaries }) : undefined;
       api.registerTool(runtime.toolFactory, { names: ['rein_task'], optional: true });
