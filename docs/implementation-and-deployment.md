@@ -1,5 +1,9 @@
 # Nori-Agent development, verification and deployment record
 
+## Super Agent v2 · 2026-11-19
+
+Production Slack activation on November 19 (Pacific time). The existing Nori installation now accepts unmentioned requests in `#nori-development` with its existing channel user rules and main agent binding. Only this room was added to the participation policy. Runtime plugin inspection showed the reply-dispatch hook and the production gateway reported ready. No acceptance message was sent to the business channel. In `#rein-agent-test`, the same production bot read a newly uploaded text attachment and returned the verification word from the file in its original thread. For the synthetic #131 pair, mismatched account and team checks rejected the request after two and four successful provider reads respectively. An unapproved audience was rejected before network access. All three checks made zero remote writes. The requester waived independent human acceptance. The previous chat approval for github-reopen stands. Private observations and the production rollback configuration are retained on OCI.
+
 ## 2026-11-19 — Super Agent v2 integration and partial product verification
 
 An OCI replay exercised five recorded Slack inputs and one duplicate concurrently. Four hosted Jev calls succeeded. The candidate suppressed the fifth input at capacity and rejected the duplicate. A 100 ms deadline returned silence after one call. With paid inference disabled, the same help request returned silence with zero calls. These were isolated replays without outbound Slack delivery.
