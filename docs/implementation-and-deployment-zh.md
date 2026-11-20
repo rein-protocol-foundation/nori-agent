@@ -35,7 +35,9 @@ SA-M1 / SA-M2，负责人 Codex。本地已验证。新的开发频道 ACP 任�
 UTF-8 复核文件，位于已配置的工作目录。网关账号需要能读取该文件。原线程父会话使用
 Flow ID 和范围版本调用 `rein_continuation read_review_file`，可读取至多 64 KiB 正文并取得
 SHA-256 摘要。历史任务没有分配复核文件。即使 harness 正常退出，原生任务标记交付受阻时也会
-唤醒父会话进行复核。本次仅只读检查线上原 Flow。待发布并在真实 Slack 线程验收。
+唤醒父会话进行复核。历史故障 Flow 只做了只读检查。七项发布检查通过，OCI 已部署
+`f19900a`，于 11 月 20 日 01:02 UTC 重新连上 Slack。开发频道的一条 GTM 请求
+验证了父会话读取报告全文、在请求原线程回复并正式归档 Flow，全程无需追加提醒。
 [验收记录](acceptance-evidence.md#development-acp-text-review)。
 
 管理员已授权所有使用 SSH 账号 `nori-dev` 的任务读写整个共享 ACP 工作区。OCI

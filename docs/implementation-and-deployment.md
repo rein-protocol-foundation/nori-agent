@@ -41,8 +41,10 @@ using the Flow ID and scope revision. The gateway account must be able to read
 that file. The response identifies the exact bytes with a SHA-256 digest.
 Previously created assignments have no designated file. A native blocked result
 now wakes the parent for review even when the harness exited normally. The
-original incident Flow was inspected read-only. Release and real-thread acceptance
-remain pending. [Verification record](acceptance-evidence.md#development-acp-text-review).
+original incident Flow was inspected read-only. All seven release checks passed.
+OCI deployed `f19900a` and reconnected to Slack at 01:02 UTC on November 20.
+One live GTM request verified parent readback, an original-thread reply and
+retained Flow completion without a reminder. [Verification record](acceptance-evidence.md#development-acp-text-review).
 
 The operator authorized read/write access for all tasks running as the SSH account
 `nori-dev` across the shared ACP workspace. On OCI, named and default POSIX ACLs
