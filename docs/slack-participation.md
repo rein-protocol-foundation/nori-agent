@@ -8,10 +8,12 @@ billing grant or private-memory access.
 
 ## Dispatch behavior
 
-The classifier receives only bounded current message text and operator-configured duties. It uses
-Slack’s native `CommandBody` projection, which strips Slack mentions from the original message text.
-It excludes retrieved history, attachments, resolved sender profiles, tool definitions and runtime
-credentials. Jev judges duty relevance and whether an unsolicited reply adds useful value separately.
+The classifier receives the current Slack text, configured duties and the five most recent prior
+messages available in the native, access-filtered conversation context, oldest first. Each prior
+message contributes up to 600 characters and a per-request speaker label. When fewer are available
+it uses that shorter window. The participation plugin never fetches additional history, future
+messages, private transcripts or attachments. Direct tasks and plain-text requests to Nori invite
+a response. An exchange directed only between other people normally stays silent, even about Nori.
 Useful out-of-duty clarification may proceed. Uncertain helpfulness, invalid results, outages, timeouts
 and Jev billing opt-out yield normal silent completion before worker dispatch.
 

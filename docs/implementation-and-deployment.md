@@ -1,5 +1,9 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-19 · Slack participation context
+
+SA2, Codex. The participation classifier now uses up to five native, authorized prior messages and records the count without message text. Two previously missed production inputs passed hosted replay. Confirm the context count on the next natural event after deployment.
+
 ## 2026-11-20 UTC — SA-M1 / SA-M2 — Slack development review and queued requests
 
 Owner Codex. Production was running f776627 when the stalled follow-up was inspected. The repair pins ACP lifecycle checks to the previously bound Task ID, distinguishes a managed ACP announcement from the owning review wake, and preserves native yield for a currently authorized human in the development channel. Queued turns can identify the exact configured peer through the host’s thread-qualified channel field. The sender, account, session and membership checks remain in force. Deployment and original-thread verification are pending.
