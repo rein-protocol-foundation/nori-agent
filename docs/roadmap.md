@@ -1,5 +1,10 @@
 # Nori-Agent implementation roadmap
 
+## 2026-11-20 UTC — SA-M1 / SA-M2 — Slack development follow-up acceptance
+
+Owner Codex. The textstats initial and follow-up runs exposed an additional acceptance gap for Issues #58 and #60. The first retained copy required a human reminder. The second native run succeeded but its parent review and retained copy were missing. The original-thread deletion and preservation comparison are pending a live retest. Earlier dated acceptance applies to its recorded scenarios.
+
+
 ## Completed task scope — November 19, 2026
 
 The requested task lifecycle, indefinite server-side summaries with explicit deletion, and autonomous development acceptance are complete within the recorded scope. Owner Codex. Issues #58 and #60 are closed as completed. Production evidence covers same-owner restart recovery, reviewed continuation and bounded supplements, indefinite summary retrieval, deletion tombstones preventing resurrection after restart, and real Codex development with original-thread results and summary readback.

@@ -1,5 +1,10 @@
 # Acceptance evidence
 
+## 2026-11-20 UTC — SA-M1 / SA-M2 — original-thread follow-up and deletion
+
+Owner Codex. Two real Codex runs produced seven and thirteen passing tests. Both requested a native parent yield and were denied. During each run the owner-bound run lookup changed from the original task ID to the linked Flow projection ID. The host captured a settled lifecycle event for each child. At the subsequent read-only inspection, only stage one had a retained copy and the original thread had no queued inputs. No deletion had succeeded. The local task, review, summary and scheduler regression suites passed 125 tests. Two native Gateway probes passed with synthetic transport, model and harness. Live retest pending.
+
+
 ## 2026-11-19 — Super Agent v2
 
 An OCI replay exercised five recorded Slack inputs and one duplicate concurrently. Four hosted Jev calls succeeded. The candidate suppressed the fifth input at capacity and rejected the duplicate. A 100 ms deadline returned silence after one call. With paid inference disabled, the same help request returned silence with zero calls. These were isolated replays without outbound Slack delivery.
