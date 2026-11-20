@@ -1,5 +1,9 @@
 # Nori-Agent development, verification and deployment record
 
+## 2026-11-20 UTC — Lark community and internal routing
+
+Owner Codex. `configureLarkRouting()` builds a candidate from the existing shared Slack and Discord Gateway and Router Console settings. It takes two distinct Lark applications, disjoint group allowlists, and an app-specific internal administrator identity. Both accounts accept explicit group mentions. The candidate isolates conversations by group and sender and disables gateway chat history and Lark document tools. Community uses its existing metered subscription policy. The internal Lark app was published and OCI received an administrator test mention. Shared Gateway configuration and same-group replies are pending [live verification](acceptance-evidence.md#2026-11-20-utc--lark-routing).
+
 ## 2026-11-20 UTC — SA2 Slack acknowledgement
 
 Owner Codex. The live five-message context check passed on `fcf0b69`. A positive Jev decision now starts the native Slack acknowledgement for the admitted message before worker routing under the default group-mention policy. The worker continues while Slack processes the request. PR #142 deployed as `0bdc8be`. Tempest confirmed the reaction in production. The gateway write and Slack readback matched the original message. [Evidence](acceptance-evidence.md)

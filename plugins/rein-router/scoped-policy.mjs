@@ -6,6 +6,26 @@ const keys = (value, allowed) => { if (!object(value) || Object.keys(value).some
 const id = value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/.test(value);
 const list = value => Array.isArray(value) && value.length > 0 && value.length <= 64 &&
   value.every(id) && new Set(value).size === value.length;
+const platformsSupported = ['slack', 'discord', 'feishu'];
+export const isLarkChatId = value => typeof value === 'string' && /^oc_[0-9a-f]{32}$/.test(value);
+export const isLarkSenderId = value => typeof value === 'string' && /^ou_[0-9a-f]{32}$/.test(value);
+
+export function resolveLarkGroupTurn(ctx) {
+  if (ctx.channel !== 'feishu' || ctx.trigger !== 'user' || !isLarkSenderId(ctx.senderId) ||
+      (ctx.inputProvenance !== undefined && ctx.inputProvenance?.kind !== 'external_user')) return null;
+  const prefix = `agent:${ctx.agentId}:feishu:group:`;
+  if (!ctx.sessionKey?.startsWith(prefix)) return null;
+  const peer = ctx.sessionKey.slice(prefix.length);
+  const group = peer.match(/^(oc_[0-9a-f]{32}):(?:topic:(?:om|omt)_[a-z0-9]{1,64}:)?sender:(ou_[0-9a-f]{32})$/);
+  if (!group || group[2] !== ctx.senderId) return null;
+  const chatId = group[1];
+  // Native model hooks expose the session peer or the original chat destination.
+  // Accept either representation only when it names the same host-owned conversation.
+  const refs = [ctx.chatId, ctx.channelContext?.chat?.id].filter(value => value !== undefined);
+  if (!refs.length || refs.some(value => value !== chatId && value !== `chat:${chatId}` && value !== peer)) return null;
+  return chatId;
+}
+
 const preferences = (raw, allowed, partial = false) => {
   keys(raw, ['primary', 'fallbacks']);
   if ((!partial || raw.primary !== undefined) && !allowed.has(raw.primary)) fail();
@@ -49,18 +69,19 @@ export function validateScopedPolicies(raw, routes, globalPaid) {
     const defaults = preferences(policy.default, allowed);
     const platforms = {};
     if (policy.platforms !== undefined) {
-      keys(policy.platforms, ['slack', 'discord']);
+      keys(policy.platforms, platformsSupported);
       for (const [platform, value] of Object.entries(policy.platforms)) platforms[platform] = preferences(value, allowed, true);
     }
     if (!Array.isArray(policy.origins) || !policy.origins.length || policy.origins.length > 32) fail();
     const origins = policy.origins.map(origin => {
       keys(origin, ['platform', 'accountId', 'workspaceId', 'channelIds', 'directMessages']);
-      if (!['slack', 'discord'].includes(origin.platform) || !id(origin.accountId) || !id(origin.workspaceId) || !list(origin.channelIds)) fail();
+      if (!platformsSupported.includes(origin.platform) || !id(origin.accountId) || !id(origin.workspaceId) || !list(origin.channelIds)) fail();
+      if (origin.platform === 'feishu' && !origin.channelIds.every(isLarkChatId)) fail();
       if (origin.directMessages !== undefined &&
           (typeof origin.directMessages !== 'boolean' || origin.platform !== 'discord')) fail();
       return { ...origin, channelIds: [...origin.channelIds] };
     });
-    if (origins.some(origin => origin.platform === 'discord') && !usageLimits) fail();
+    if (origins.some(origin => origin.platform !== 'slack') && !usageLimits) fail();
     const seen = new Set();
     const directAccounts = new Set();
     for (const origin of origins.filter(origin => origin.directMessages)) {
@@ -95,7 +116,7 @@ export function validateScopedPolicies(raw, routes, globalPaid) {
 export function resolveScopedPolicy(policies, ctx, { hasAttachments = false, native = false } = {}) {
   const policy = policies?.[ctx?.agentId];
   if (native) {
-    if (!policy || !ctx.runId || !ctx.sessionId || !ctx.sessionKey || hasAttachments) return null;
+    if (!policy || !ctx.runId || !ctx.sessionId || !ctx.sessionKey || ctx.channel === 'feishu' || hasAttachments) return null;
     const primary = ctx.modelId === 'auto' ? policy.default.primary : ctx.modelId;
     if (!policy.allowedRoutes.includes(primary)) return null;
     return Object.freeze({ primary, fallbacks: Object.freeze(ctx.modelId === 'auto' ? policy.default.fallbacks : []),
@@ -105,8 +126,8 @@ export function resolveScopedPolicy(policies, ctx, { hasAttachments = false, nat
   if (!policy || !ctx.runId || !ctx.sessionId || !ctx.sessionKey || !ctx.senderId ||
       ctx.trigger !== 'user' || (ctx.inputProvenance !== undefined && ctx.inputProvenance.kind !== 'external_user') ||
       (ctx.messageProvider !== undefined && ctx.messageProvider !== ctx.channel) || hasAttachments) return null;
-  const channelId = ctx.channelContext?.chat?.id ?? ctx.chatId;
-  if (!channelId || (ctx.chatId !== undefined && ctx.chatId !== channelId) ||
+  const channelId = ctx.channel === 'feishu' ? resolveLarkGroupTurn(ctx) : ctx.channelContext?.chat?.id ?? ctx.chatId;
+  if (!channelId || (ctx.channel !== 'feishu' && ctx.chatId !== undefined && ctx.chatId !== channelId) ||
       (ctx.channelContext?.sender?.id !== undefined && ctx.channelContext.sender.id !== ctx.senderId)) return null;
   const origin = policy.origins.find(origin => origin.platform === ctx.channel && origin.accountId === ctx.accountId &&
     (origin.channelIds.includes(channelId) || (origin.directMessages === true && ctx.channel === 'discord' &&
