@@ -1,5 +1,7 @@
 # Acceptance evidence
 
+UC09 · An existing #ask-nori conversation on b6359e3 still described an old site lookup as current and exposed internal terminology. A new thread was separately refused by the configured route. The existing-channel acceptance remains open pending the scoped public-reference change.
+
 UC09 · First production retest failed on release `01bb0b3`. In #ask-nori the response described a current website and course lookup. The turn recorded no tool call. Startup diagnostics showed that the operations plugin had no conversation-hook grant. The correction supplies dated public context on the already-enabled scoped Discord route without reading the turn or changing grants. A new real-channel retest is required.
 
 Discord onboarding UC09 · Owner Codex. The original question and two-turn evidence rubric are in [the acceptance cases](discord-onboarding-use-cases-zh.md#uc09--从组织治理讲到一个已完成的真实任务). The release requires actual Discord readback after automatic OCI deployment.

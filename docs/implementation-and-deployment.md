@@ -1,5 +1,7 @@
 # Nori-Agent development, verification and deployment record
 
+2026-11-21 UTC · UC09, Codex. Attach public source notes to relevant current questions on admitted Discord Community requests. Preserve native history and the original message. A content-free delivery marker allows OCI verification.
+
 2026-11-21 UTC · UC09 failed real Discord acceptance on PR #240. The production host rejected its prompt hook. The scoped Discord route now supplies public facts at reply time. Owner Codex. Verify after the next merge-triggered release.
 
 Discord onboarding UC09 · Owner Codex. The shared public operations guide and the Discord Community prompt ship in the release. Verify the updater revision after merge, then ask the original question and its evidence follow-up in Discord.

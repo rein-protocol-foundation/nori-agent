@@ -36,7 +36,7 @@ export default definePluginEntry({
     if (config.enabled) { assertRuntimeConfig(config, api.config); assertTrustedSlackBoundaries(config.trustedSlackChannels, api.config); }
     const usage = config.enabled && Object.values(config.scopedPolicies ?? {}).some(policy => policy.usageLimits)
       ? createUsageLedger({ stateDir: api.runtime.state.resolveStateDir() }) : undefined;
-    const router = createRouter({ config, decisions: api.runtime.decisions, gatewayReady: gateway?.isReady,
+    const router = createRouter({ config, observeCommunityReference: () => api.logger.info('Discord community public reference attached'), decisions: api.runtime.decisions, gatewayReady: gateway?.isReady,
       authorizeAdmin, authorizeDevelopment, usage });
     if (!router.config.enabled) return;
     if (config.scopedPolicies?.['nori-community']?.origins.some(origin => origin.platform === 'discord')) {

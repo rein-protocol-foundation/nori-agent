@@ -1,3 +1,4 @@
+import { withCommunityReferences } from './community-reply-guidance.mjs';
 import { resolveLarkGroupTurn, resolveScopedPolicy, describeScopedPolicies } from './scoped-policy.mjs';
 import { createScopedFallbackStream } from './scoped-stream.mjs';
 import { usageIdentity, nativeUsageIdentity } from './usage-limits.mjs';
@@ -123,7 +124,7 @@ export function assertRuntimeConfig(config, host) {
   }
 }
 
-export function createRouter({ config: raw, decisions, clock = () => Date.now(), environment = process.env,
+export function createRouter({ config: raw, decisions, observeCommunityReference, clock = () => Date.now(), environment = process.env,
   fetchImpl = globalThis.fetch, gatewayReady, authorizeAdmin, authorizeDevelopment, usage }) {
   const config = validateRouterConfig(raw);
   if (config.enabled && Object.values(config.scopedPolicies ?? {}).some(policy => policy.usageLimits) && !usage)
@@ -403,6 +404,7 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
               message: 'The configured request or usage limit is currently unavailable. Try again later or ask an operator to check the limits.' };
           }
         }
+        run.communityDiscord = !run.native && ctx.channel === 'discord' && ctx.agentId === 'nori-community';
         run.admitted = true;
         return { outcome: 'pass' };
       }
@@ -494,7 +496,7 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
     },
     wrapStreamFn({ streamFn, agentId, simpleCompletion = false }) {
       if (typeof streamFn !== 'function') throw new Error('rein_router_transport_unavailable');
-      const send = (model, context, options, scoped = false) => {
+      const send = (model, context, options, scoped = false, communityRun) => {
         if (config.gateway.managed && config.gateway.managed.mode !== 'console' && !gatewayReady?.()) throw new Error('rein_router_gateway_unavailable');
         const route = routeById(model.id);
         if (!route || model.provider !== PROVIDER_ID || model.baseUrl !== config.gateway.baseUrl || model.api !== 'openai-completions')
@@ -552,6 +554,16 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
                 finalPayload[key] = Math.min(Number.isSafeInteger(finalPayload[key]) && finalPayload[key] > 0 ? finalPayload[key] : maximum, maximum);
               if (finalPayload.max_tokens === undefined && finalPayload.max_completion_tokens === undefined) finalPayload.max_tokens = maximum;
             }
+            if (communityRun?.communityDiscord) {
+              const messages = withCommunityReferences(finalPayload.messages);
+              if (messages !== finalPayload.messages) {
+                if (!communityRun.referenceReported) {
+                  communityRun.referenceReported = true;
+                  observeCommunityReference?.();
+                }
+                return { ...finalPayload, messages };
+              }
+            }
             return finalPayload;
           } }), async message => {
             const quota = normalizeIncludedQuotaError(message);
@@ -608,7 +620,7 @@ export function createRouter({ config: raw, decisions, clock = () => Date.now(),
             assertCurrent();
             if (policy.usageLimits) usage.reserveRequest(run.usageIdentity, policy.usageLimits);
             return send({ ...model, id: routeId, maxTokens: route.maxTokens, contextWindow: route.contextWindow }, context,
-              { ...options, signal, maxTokens: Math.min(route.maxTokens, plan.maxOutputTokens, options?.maxTokens ?? Infinity) }, true);
+              { ...options, signal, maxTokens: Math.min(route.maxTokens, plan.maxOutputTokens, options?.maxTokens ?? Infinity) }, true, run);
           } });
       };
     },
