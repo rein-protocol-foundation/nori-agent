@@ -1663,4 +1663,4 @@ Implemented Nori rendering for recognized typed chat notices, Discord realtime v
 
 ## 2026-11-20 — Development Codex credential delivery
 
-SA2-TASK · Owner Codex. Prepared the dedicated Unix account, workspace, binding directory and launcher. The owner confirmed all other admitted Slack channels are trusted and should retain their current execution identities. Enable the dedicated route after deployment and verify the Linear import through the original thread.
+SA2-TASK · Owner Codex. Deployed the opt-in route from PR #147. A retained plugin operation prevented hot reload. A service restart loaded the validated config, and a fresh trusted Slack request completed binding. Existing Slack execution identities were preserved. The two dedicated Codex runs and parent review completed the 94-task Linear acceptance. The credential binding and project remain in place.

@@ -631,4 +631,4 @@ Local implementation now covers marked status/error replies and configured Disco
 
 ## 2026-11-20 — Development Codex credential delivery
 
-SA2-TASK · Owner Codex. The development-channel credential binding is opt-in. The original Linear project import and Slack delivery remain pending live acceptance.
+SA2-TASK · Owner Codex. The trusted development-channel handoff passed live acceptance for the Linear project import. All 94 tasks through v2.1 were read back in 11 milestones. Detailed results are recorded in [acceptance evidence](acceptance-evidence.md).
