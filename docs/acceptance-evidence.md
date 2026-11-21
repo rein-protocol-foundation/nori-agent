@@ -1,5 +1,7 @@
 # Acceptance evidence
 
+UC09 · On fc04171, source attachment and the historical course example were confirmed in #ask-nori. The answer still used an infrastructure term and treated planned workshop coordination as routine work. The final copy revision keeps responsibility with the named person and future work explicitly conditional.
+
 UC09 · An existing #ask-nori conversation on b6359e3 still described an old site lookup as current and exposed internal terminology. A new thread was separately refused by the configured route. The existing-channel acceptance remains open pending the scoped public-reference change.
 
 UC09 · First production retest failed on release `01bb0b3`. In #ask-nori the response described a current website and course lookup. The turn recorded no tool call. Startup diagnostics showed that the operations plugin had no conversation-hook grant. The correction supplies dated public context on the already-enabled scoped Discord route without reading the turn or changing grants. A new real-channel retest is required.
