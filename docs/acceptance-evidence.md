@@ -1,12 +1,14 @@
 # Acceptance evidence
 
-UC09 · On fc04171, source attachment and the historical course example were confirmed in #ask-nori. The answer still used an infrastructure term and treated planned workshop coordination as routine work. The final copy revision keeps responsibility with the named person and future work explicitly conditional.
+## Discord onboarding UC09 · November 21, 2026 UTC
 
-UC09 · An existing #ask-nori conversation on b6359e3 still described an old site lookup as current and exposed internal terminology. A new thread was separately refused by the configured route. The existing-channel acceptance remains open pending the scoped public-reference change.
+Owner Codex. The [original Chinese question and two-turn rubric](discord-onboarding-use-cases-zh.md#uc09--从组织治理讲到一个已完成的真实任务) passed in the enrolled #ask-nori channel on OCI release `a2b3bca`. [PR #243](https://github.com/rein-protocol-foundation/nori-agent/pull/243) merged after its required GitHub checks. The updater reported success at 07:39:32 UTC. The test used the Foundation Discord account, the deployed Nori app and an existing conversation with earlier failed answers.
 
-UC09 · First production retest failed on release `01bb0b3`. In #ask-nori the response described a current website and course lookup. The turn recorded no tool call. Startup diagnostics showed that the operations plugin had no conversation-hook grant. The correction supplies dated public context on the already-enabled scoped Discord route without reading the turn or changing grants. A new real-channel retest is required.
+The 07:40 UTC reply explained the mission, who proposes and decides, how assistants coordinate and who signs or pays. It identified the free workshop as a published plan and attributed the completed three-resource course lookup to the team's November 18 Discord test. The reply linked Governance, the public community roadmap and the dated acceptance record. The five Chinese infrastructure terms in the rubric were absent from the original-question reply.
 
-Discord onboarding UC09 · Owner Codex. The original question and two-turn evidence rubric are in [the acceptance cases](discord-onboarding-use-cases-zh.md#uc09--从组织治理讲到一个已完成的真实任务). The release requires actual Discord readback after automatic OCI deployment.
+OCI recorded the public source attachment for each turn. The original and follow-up each had a user message and an assistant reply, with zero tool calls. On follow-up, Nori attributed the story to existing references and correctly said it had not opened the linked pages or rerun the lookup. This acceptance covers the Chinese UC09 exchange in the enrolled parent channel.
+
+Earlier results remain relevant. On `01bb0b3` the operations prompt hook was blocked by host policy and Nori claimed a fresh lookup without making one. On `b6359e3` it reused earlier engineering explanations in the parent channel; a separate new thread was refused by the route policy. On `fc04171` it used the right case but retained an infrastructure term and presented workshop duties as routine. Thread routing was not changed.
 
 ## US14 operations · Slack acknowledgement monitor · 2026-11-19
 
