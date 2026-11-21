@@ -21,7 +21,7 @@ export function communityReplyGuidance(ctx) {
 
 const operationsTopic = /基金[会會]|组织.{0,10}(运作|运营|治理)|組織.{0,10}(運作|營運|治理)|运营.{0,10}(组织|分工)|人.{0,10}(分工|拍板)|[Nn]ori [Tt]eam|foundation.{0,40}(operat|work|govern)|how.{0,25}(rein|foundation).{0,20}(work|run)|who.{0,20}(decides|built)/iu;
 const evidenceTopic = /刚才.{0,30}(原问题|做了|查了)|剛才.{0,30}(原問題|做了|查了)|历史记录|歷史紀錄|what did you (actually |just )?(do|check)|this turn/iu;
-const evidenceNote = '只回答对方问的那一轮、这条追问和历史案例。按每条用户消息划开记录。只有那一轮确实成功做过的事才能说是刚做的。随题提供的资料不算主动检查。用日常动词说清楚。';
+const evidenceNote = '只回答对方问的那一轮、这条追问和历史案例。按每条用户消息划开记录。只有那一轮确实成功做过的事才能说是刚做的。随题提供的资料不算主动检查。只需交代紧挨追问的那次回答、其中引用的那件往事以及现在这条追问。举例时说团队当时验证账号、找到了课程；不要顺带回顾频道里其他日期的查询或软件细节。用日常动词说清楚。';
 const attachmentLabel = '\n\n[Rein Community · 本轮附带的公开参考，由社区助手提供]\n';
 
 export function withCommunityReferences(messages) {
