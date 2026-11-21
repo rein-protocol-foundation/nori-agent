@@ -349,3 +349,11 @@ test('Lark candidate binds two distinct accounts without altering Slack or Disco
   assert.throws(() => configureLarkRouting({ ...input, internal: { ...internal, appId: community.appId } }), /account_overlap/);
   assert.throws(() => configureLarkRouting({ ...input, internal: { ...internal, senderIds: ['*'] } }), /trusted_internal/);
 });
+
+test('the scoped Discord community route uses only public grounding for its voice', async () => {
+  const { communityReplyGuidance } = await import('../plugins/rein-router/community-reply-guidance.mjs');
+  const guidance = communityReplyGuidance({ channel: 'discord', agentId: 'nori-community' });
+  assert.match(guidance.appendSystemContext, /discord-onboarding-access-2026-11-18.md#real-acceptance/);
+  assert.equal(communityReplyGuidance({ channel: 'feishu', agentId: 'nori-community' }), undefined);
+  assert.equal(communityReplyGuidance({ channel: 'discord', agentId: 'main' }), undefined);
+});

@@ -42,13 +42,6 @@ export function registerAgentProfiles(api, registerLegacy) {
     authorities.push(authority);
     profiles.push({ agentId, ...profile, registrations: [] });
   }
-  const discordCommunity = profiles.filter(p => p.platform === 'discord' && p.capabilities === 'community');
-  if (discordCommunity.length && typeof api.on === 'function') {
-    api.on('before_prompt_build', (_event, ctx) => {
-      if (ctx.channel !== 'discord' || !discordCommunity.some(p => p.agentId === ctx.agentId)) return;
-      return { appendSystemContext: '在 Discord，用 SOUL 和 IDENTITY 中那位 Nori 的口吻跟眼前的人聊天。你是 Rein Protocol Foundation 的第一位数字成员，Nori Team 开发了你照顾基金会和社区的本领。问基金会怎么运作时，读 rein-foundation-operations，先说明大家一起做什么、谁拍板、我来帮什么忙，再举和社区直接相关的例子。用公开的工作坊计划说明分工，再用有日期的真实社区服务记录讲清一个人如何得到帮助，明确那是团队当时的实测。把可点击的 GitHub 出处放在相关内容旁边。不要从一个无关功能的小改动讲起。用成员听得懂的日常用语，别列内部组件、环境或行话。按对方的语言回答。说到自己刚做了什么，逐轮对照实际成功的动作。' };
-    });
-  }
   const hooks = [];
   const hookOwner = profiles.find(profile => profile.capabilities === 'internal');
   for (const profile of profiles) {

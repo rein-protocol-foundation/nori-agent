@@ -1,3 +1,4 @@
+import { communityReplyGuidance } from './community-reply-guidance.mjs';
 import { definePluginEntry } from 'openclaw/plugin-sdk/plugin-entry';
 import { createRouter, assertRuntimeConfig, bindRouterLifecycle, PROVIDER_ID } from './runtime.mjs';
 import { createUsageLedger } from './usage-limits.mjs';
@@ -38,6 +39,9 @@ export default definePluginEntry({
     const router = createRouter({ config, decisions: api.runtime.decisions, gatewayReady: gateway?.isReady,
       authorizeAdmin, authorizeDevelopment, usage });
     if (!router.config.enabled) return;
+    if (config.scopedPolicies?.['nori-community']?.origins.some(origin => origin.platform === 'discord')) {
+      api.on('before_prompt_build', (_event, ctx) => communityReplyGuidance(ctx));
+    }
     const participationPolicy = config.participation;
     if (participationPolicy?.enabled) {
       let reportedEvidenceFailure = false;
