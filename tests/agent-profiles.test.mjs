@@ -42,6 +42,7 @@ test('one registration owner exposes only Community identity, self-status and ca
   const internal = loaded.create(context('main', 'slack'));
   assert.ok(internal.some(tool => tool.name === 'rein_poll_vote'));
   const status = await community.find(tool => tool.name === 'rein_status').execute('fixture-call', {});
+  assert.equal(status.details.scope, 'community-plugin-configuration');
   assert.equal(status.details.foundationDbWriteToolsEnabled, false);
   assert.equal(status.details.implemented.includes('rein_poll_vote'), false);
   assert.equal(status.details.implemented.includes('rein_member_status'), true);
@@ -65,7 +66,12 @@ test('Community-first ordering retains exactly one set of internal reply guards'
     'director-control': structuredClone(p.main) });
   assert.equal(loaded.hooks.filter(([name]) => name === 'reply_payload_sending').length, 4);
   assert.ok(loaded.create(context('main', 'slack')).some(tool => tool.name === 'rein_poll_vote'));
-  assert.equal(register({ 'nori-community': p['nori-community'] }).hooks.map(([name]) => name).join(), 'reply_payload_sending');
+  const { hooks } = register({ 'nori-community': p['nori-community'] });
+  assert.deepEqual(hooks.map(([name]) => name), ['before_prompt_build', 'reply_payload_sending']);
+  const voice = hooks.find(([name]) => name === 'before_prompt_build')[1];
+  assert.match(voice({}, { channel: 'discord', agentId: 'nori-community' }).appendSystemContext, /rein-foundation-operations/);
+  assert.equal(voice({}, { channel: 'lark', agentId: 'nori-community' }), undefined);
+  assert.equal(voice({}, { channel: 'discord', agentId: 'main' }), undefined);
 });
 
 test('retained tools recheck current authority and cannot change their selected profile', async () => {

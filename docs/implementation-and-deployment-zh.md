@@ -1,5 +1,7 @@
 # Nori-Agent 开发、验证与部署记录
 
+Discord 迎新 UC09，由 Codex 负责。基金会公开说明和社区助手的说话方式随版本发布。PR 合并后核对 OCI 自动部署版本，再在 Discord 用原问题及追问验收。
+
 ## 2026-11-19 · US14 运维 · Slack 表情确认告警
 
 Nori 运维已在 OCI 安装 Slack 确认事件插件和独立的 systemd 导出服务。网关报告插件启动，导出服务已启动，Axiom 返回监控 `eWp4aVfHFuP1lqLpYg` 更新成功。每条超时消息独立分组；共享规则每 5 分钟评估一次，并有 120 秒入库延迟。按操作方要求跳过功能测试和真实告警投递演练。主机配置备份位于 `/var/backups/nori-slack-acknowledgements/20261120T005537Z`。[事件口径与回滚](slack-acknowledgement-alert.md)

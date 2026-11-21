@@ -43,10 +43,10 @@ function registerOperations(api: OpenClawPluginApi, { communityOnly = false, com
       api.registerTool(createMemberStatusToolRegistration({ runtime }), { names: [...MEMBER_STATUS_TOOL_NAMES] });
       api.registerTool(runtime.wrapRegistration(createIdentityToolsRegistration({ runtime, proofProvider: runtime.proofProvider })),
         { names: [...IDENTITY_BIND_TOOL_NAMES] });
-      api.registerTool({ name: 'rein_status', description: 'Report Community capabilities without querying organization records.',
+      api.registerTool({ name: 'rein_status', description: 'Report only this Community plugin’s tool configuration. For questions about Foundation operations or historical workflows, consult the public rein-foundation-operations skill.',
         parameters: Type.Object({}, { additionalProperties: false }),
         async execute() {
-          const details = { stage: 'development', implemented: ['rein_status', ...MEMBER_STATUS_TOOL_NAMES, ...IDENTITY_BIND_TOOL_NAMES, ...COMMUNITY_TOOL_NAMES],
+          const details = { scope: 'community-plugin-configuration', stage: 'development', implemented: ['rein_status', ...MEMBER_STATUS_TOOL_NAMES, ...IDENTITY_BIND_TOOL_NAMES, ...COMMUNITY_TOOL_NAMES],
             identityBindToolsEnabled: true, memberStatusToolEnabled: true, communityQueryToolsEnabled: true,
             foundationDbReadToolsEnabled: false, foundationDbWriteToolsEnabled: false,
             foundationDbCollectToolsEnabled: false, foundationDbFeedbackToolsEnabled: false, automationEnabled: false };
