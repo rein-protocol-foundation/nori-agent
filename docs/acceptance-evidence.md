@@ -1,5 +1,7 @@
 # Acceptance evidence
 
+Discord onboarding UC09 · Owner Codex. The original question and two-turn evidence rubric are in [the acceptance cases](discord-onboarding-use-cases-zh.md#uc09--从组织治理讲到一个已完成的真实任务). The release requires actual Discord readback after automatic OCI deployment.
+
 ## US14 operations · Slack acknowledgement monitor · 2026-11-19
 
 Nori maintenance deployed the acknowledgement observer and exporter. The OCI startup receipt and Axiom save receipt establish deployment and configuration. End-to-end trigger, suppression and Slack notifier delivery were not exercised at operator request. Product acceptance remains open. [Operational record](slack-acknowledgement-alert.md)

@@ -24,6 +24,7 @@ const cases = {
   CASE_PUBLIC: { path: join(workspace, 'public.md'), expected: 'COMMUNITY_PUBLIC_REFERENCE' },
   CASE_SHARED_SKILL: { path: join(skill, 'references/public.md'), expected: 'SHARED_SKILL_REFERENCE' },
   CASE_EXISTING_SKILL: { path: join(root, 'workspace/skills/rein-community-discovery/SKILL.md'), expected: '# Find organization resources and activities' },
+  CASE_OPERATIONS: { path: join(root, 'workspace/skills/rein-foundation-operations/SKILL.md'), expected: 'discord-onboarding-access-2026-11-18.md#real-acceptance' },
   CASE_PRIVATE: { path: join(internal, 'private.md'), denied: true },
   CASE_SKILL_ESCAPE: { path: join(skill, 'references/escape.md'), denied: true },
   CASE_MAIN: { path: join(internal, 'private.md'), expected: 'INTERNAL_PRIVATE_CANARY', agentId: 'main' },

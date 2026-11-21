@@ -1,4 +1,4 @@
-# Discord onboarding: 8 natural-language use cases
+# Discord onboarding use cases
 
 [中文版](discord-onboarding-use-cases-zh.md)
 
@@ -6,7 +6,7 @@ Based on [Nori's Discord onboarding flow](discord-onboarding.md), these cases tr
 R25, US01 and US02. They follow newcomers from their first message to meaningful participation,
 without turning joining the community into a checklist.
 
-All people, experiences, courses, discussions and events below are fictional rehearsal material.
+The people, experiences, courses, discussions and events in UC01–UC08 are fictional rehearsal material.
 Nori's replies illustrate expected behavior; they are not transcripts of completed tests. Cases
 that recommend an entry point assume the relevant public information exists in the current server
 and has been verified in the current turn. Rehearsal notes are for evaluators: actual replies must
@@ -330,6 +330,14 @@ how a self-organized learning group could later seek organizational support. Nor
 Hong Kong events, create an event, invite friends or request funding. With or without an application
 link, there is a clear human next step: apply, ask through public help or contact an administrator
 about finding a lead. A missing directory does not end the help.
+
+## UC09 · How does Rein operate, from governance to a completed task?
+
+Use the [original Chinese question and full rubric](discord-onboarding-use-cases-zh.md#uc09--从组织治理讲到一个已完成的真实任务) verbatim in a fresh Community session. Check the answer against the public sources and the successful calls in that turn. It should connect human authority to agent execution, explain in everyday language how the work is shared and walk through a dated, attributable case. A status check or a read of an earlier acceptance record cannot substantiate a claim of running those operations. Use the follow-up in the rubric to check the distinction across turns.
+
+## UC10 · Getting to know Nori
+
+Use the [newcomer, team credit and private conversation prompts](discord-onboarding-use-cases-zh.md#uc10--nori-是谁谁帮她学会社区里的这些事). Check for a warm response to the quiet newcomer, accurate credit to Nori Team, and a calm, specific answer about private conversations. The conversation should make sense to someone unfamiliar with the software.
 
 ## How to use these cases
 

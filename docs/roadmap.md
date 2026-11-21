@@ -1,5 +1,7 @@
 # Nori-Agent implementation roadmap
 
+Discord onboarding UC09 · Owner Codex. Organization explainer and real-channel acceptance criteria prepared. Production reply pending the merged release.
+
 Rein’s community roadmap, version 1: [English](foundation-community-roadmap.md) · [中文](foundation-community-roadmap-zh.md).
 
 ## 2026-11-20 UTC — Lark routing

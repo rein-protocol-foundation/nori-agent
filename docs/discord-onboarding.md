@@ -10,6 +10,8 @@ This refinement traces to PRD R01, R03, R25, US01 and US02, within C16 / D12. Th
 remain preserved snapshots. This document describes the new conversation requirements separately
 from P0 v0.1 governance acceptance.
 
+For a member asking how Rein operates, read the shared `rein-foundation-operations` skill. Use Nori’s community voice and everyday examples. Explain human decisions, the roles of the Community and main assistants, and a dated task from request through review and readback. Cite public records and distinguish recorded events from tool results in the current conversation. See the [organizational walkthrough acceptance case](discord-onboarding-use-cases-zh.md#uc09--从组织治理讲到一个已完成的真实任务).
+
 ## Member experience
 
 Follow the member's current intent through four independently accessible paths. When a next step
