@@ -1,6 +1,6 @@
 # Nori-Agent implementation roadmap
 
-Discord onboarding UC09 · Owner Codex. Organization explainer and real-channel acceptance criteria prepared. Production reply pending the merged release.
+Discord onboarding UC09 · Owner Codex. Chinese organization explainer and evidence follow-up passed in the live #ask-nori channel on OCI release `a2b3bca`. [Evidence](acceptance-evidence.md#discord-onboarding-uc09--november-21-2026-utc).
 
 Rein’s community roadmap, version 1: [English](foundation-community-roadmap.md) · [中文](foundation-community-roadmap-zh.md).
 

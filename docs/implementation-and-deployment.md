@@ -1,12 +1,8 @@
 # Nori-Agent development, verification and deployment record
 
-2026-11-21 UTC · UC09. Refine public source notes after real-channel readback surfaced one internal term and an overstatement about workshop operations. Owner Codex. Retest after automatic deployment.
+## November 21, 2026 UTC · Discord onboarding UC09
 
-2026-11-21 UTC · UC09, Codex. Attach public source notes to relevant current questions on admitted Discord Community requests. Preserve native history and the original message. A content-free delivery marker allows OCI verification.
-
-2026-11-21 UTC · UC09 failed real Discord acceptance on PR #240. The production host rejected its prompt hook. The scoped Discord route now supplies public facts at reply time. Owner Codex. Verify after the next merge-triggered release.
-
-Discord onboarding UC09 · Owner Codex. The shared public operations guide and the Discord Community prompt ship in the release. Verify the updater revision after merge, then ask the original question and its evidence follow-up in Discord.
+Owner Codex. PRs #240–#243 merged after applicable GitHub checks and deployed through the GitHub-triggered OCI updater. Production acceptance passed on `a2b3bca` in #ask-nori using the original Chinese question and its evidence follow-up. Both turns used supplied public material and made zero tool calls. Earlier attempts and the separate thread-routing limit are recorded in [acceptance evidence](acceptance-evidence.md#discord-onboarding-uc09--november-21-2026-utc).
 
 ## 2026-11-19 · US14 observability · Slack acknowledgement deadline
 
