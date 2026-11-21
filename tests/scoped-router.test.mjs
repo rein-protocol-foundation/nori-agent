@@ -357,3 +357,20 @@ test('the scoped Discord community route uses only public grounding for its voic
   assert.equal(communityReplyGuidance({ channel: 'feishu', agentId: 'nori-community' }), undefined);
   assert.equal(communityReplyGuidance({ channel: 'discord', agentId: 'main' }), undefined);
 });
+
+test('public references accompany the latest question while preserving original chat and tool results', async () => {
+  const { withCommunityReferences } = await import('../plugins/rein-router/community-reply-guidance.mjs');
+  const input = [{ role: 'user', content: '基金会怎么运作？' }, { role: 'tool', content: 'result' }];
+  const annotated = withCommunityReferences(input);
+  assert.match(annotated[0].content, /11 月 18 日/);
+  assert.equal(annotated[1], input[1]);
+  assert.equal(input[0].content, '基金会怎么运作？');
+  assert.equal(withCommunityReferences(annotated), annotated);
+  const other = [...input, { role: 'user', content: 'hello' }];
+  assert.equal(withCommunityReferences(other), other);
+  const image = { type: 'image_url', image_url: { url: 'fixture' } };
+  const parts = [{ role: 'user', content: [image, { type: 'text', text: '回答我刚才的原问题时做了什么？' }] }];
+  const next = withCommunityReferences(parts);
+  assert.equal(next[0].content[0], image);
+  assert.match(next[0].content.at(-1).text, /按每条用户消息划开记录/);
+});
