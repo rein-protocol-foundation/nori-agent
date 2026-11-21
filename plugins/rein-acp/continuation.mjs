@@ -113,7 +113,7 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
   const previousCapture = events?.onAgentEvent ? eventScopes.get(eventScope) : undefined;
   const lifecycleEvents = previousCapture?.cache ?? new Map(), lifecyclePending = previousCapture?.pending ?? new Map();
   let eventSlot, unsubscribe, eventRetired = false, eventClosed = false;
-  const harnesses = [config.harnessAgentId, config.alternateHarness].filter(Boolean);
+  const harnesses = [config.harnessAgentId, config.alternateHarness, config.developmentCodex && 'codex-development'].filter(Boolean);
   const lifecycleFact = event => {
     const data = event?.data;
     if (event?.stream !== 'lifecycle' || !['end', 'error'].includes(data?.phase) ||
@@ -496,6 +496,19 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
     // M1's unmanaged cancellation reports must not remove the tools needed to
     // review a current managed attempt interrupted by the host. A saved goal is
     // insufficient: require current owner, audience, authority and exact backing.
+    async permitsDevelopmentAssignment(ctx, task) {
+      const channelId = config.developmentCodex?.channelId;
+      if (!channelId || !selected(ctx) || !turns.has(ctx.runId)) return false;
+      for (const flow of await ownList(ctx.sessionKey)) {
+        const state = flow.stateJson, attempt = last(state);
+        if (state.source.chatId !== channelId || state.runtime !== 'acp' || terminalFlow(flow) ||
+            state.stopRequested || state.pendingChange || clock() >= state.deadlineAt || attempt?.phase !== 'prepared' ||
+            attempt.scopeRevision !== state.scopeRevision || (task !== attempt.task && task !== assignmentRef(flow, attempt))) continue;
+        await sourceCurrent(flow, ctx);
+        return true;
+      }
+      return false;
+    },
     async isCurrentAttempt(task, ctx) {
       if (!selected(ctx) || task?.ownerKey !== ctx.sessionKey || task.scope !== 'session' || !task.runId) return false;
       for (const flow of await ownList(ctx.sessionKey)) {
@@ -745,7 +758,8 @@ export function createTaskContinuation({ config, tasks, subagent, system, sessio
             if (!terminalRun(task?.status) || !Number.isFinite(task.endedAt))
               throw Error('rein_continuation_review_file_requires_terminal_task');
             if (args.relativePath !== undefined) throw Error('rein_continuation_review_file_has_fixed_path');
-            const { buffer } = await readFileWithinRoot({ rootDir: config.cwd, relativePath: attempt.reviewFile,
+            const { buffer } = await readFileWithinRoot({ rootDir: config.developmentCodex && task.childSessionKey?.startsWith('agent:codex-development:acp:')
+                ? config.developmentCodex.cwd : config.cwd, relativePath: attempt.reviewFile,
               allowSymlinkTargetWithinRoot: false, rejectHardlinks: true, nonBlockingRead: true, maxBytes: 65536 });
             const latest = await binding.get(flow.flowId);
             if (!owned(latest, ctx.sessionKey)) throw Error('rein_continuation_review_file_unavailable');

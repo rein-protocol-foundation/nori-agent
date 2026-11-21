@@ -100,3 +100,11 @@ Current local verification is recorded in [SA-OPS-01/#66 evidence](sa-ops-native
 Live pilot acceptance remains a separate operator action: verify the deployed revision/backend, send a tiny task from an approved current member, inspect running/final delivery, then verify membership-revocation denial. No real account setup, Slack message, deployment, paid harness request or production member-data change is performed by these local checks.
 
 中文摘要：指定 Slack 私有频道的当前成员可委派普通 ACP 工作，无需 Foundation Contributor/Director 角色。保留固定 harness/cwd、单次任务、状态/等待/取消与原线程进度和结果；业务工具自己的角色检查不变。测试使用真实 native ACP 流程及本地合成后端，不代表真实 Slack 或生产验收。
+
+## Development Codex credentials
+
+With the native task loop enabled, operators can configure `developmentCodex` for one existing private development channel. Its `channelId` must be one of the configured additional channels. Set `names` to the managed development variables, `sourceFile` to an owner-only dotenv file, `bindingDir` to `/etc/nori-codex-development/bindings` and `cwd` to `/var/lib/nori-codex-development/workspace`. A current member can then ask Nori to give Codex a named credential. The `rein_task` action `bind_credential` takes only `credential`, returns its name and binding status, and refreshes the value for new launches. Existing running processes retain their original environments.
+
+Configure a separate `codex-development` acpx adapter with command `/usr/bin/sudo` and arguments `["-n","-H","-u","nori-codex-development","--","/usr/local/bin/nori-launch-development-codex"]`. Install the repository launcher root-owned. Its dedicated Unix account needs a private Codex home, workspace, provider configuration and provider credential. The Gateway owns the setgid bindings directory with mode 2750 and the worker's private group. The worker reads bound values with mode 0640. The normal shared ACP adapter and other Slack routes retain their existing execution identities.
+
+Verify with a synthetic value first, including a refresh and a denied read from the shared worker. For live acceptance require a fresh delegated Codex run, an authenticated provider read, the requested operation and a readback. To withdraw a binding, remove its name from configuration and its matching binding file. Terminate affected sessions and revoke the provider credential if immediate withdrawal is necessary.

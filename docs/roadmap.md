@@ -628,3 +628,7 @@ Partially implemented locally. Heartbeat configuration and task reply guidance u
 ## NORI-BRANDING · 2026-11-20
 
 Local implementation now covers marked status/error replies and configured Discord realtime voice identity. Channel-native surfaces remain pending upstream. No milestone advanced. [Coverage and pending producers](nori-branding.md). Owner: Codex.
+
+## 2026-11-20 — Development Codex credential delivery
+
+SA2-TASK · Owner Codex. The development-channel credential binding is opt-in. The original Linear project import and Slack delivery remain pending live acceptance.

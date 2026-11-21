@@ -26,6 +26,15 @@
           }
         }
       },
+      "developmentCodex": {
+        "type": "object", "additionalProperties": false,
+        "required": ["channelId", "sourceFile", "bindingDir", "names", "cwd"],
+        "properties": {
+          "channelId": { "type": "string" },
+          "sourceFile": { "type": "string" }, "bindingDir": { "type": "string" }, "cwd": { "type": "string" },
+          "names": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^NORI_[A-Z0-9_]+$" } }
+        }
+      },
       "alternateHarness": { "type": "string", "enum": ["claude"] },
       "additionalChannelIds": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9]{5,31}$" } },
       "channel": {
