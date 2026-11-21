@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "files": ["index.ts", "catalog-sync.mjs", "console", "policy.mjs", "runtime.mjs", "slack-participation.mjs", "slack-participation-ack.ts", "slack-participation-evidence.mjs", "scoped-policy.mjs", "scoped-stream.mjs", "usage-limits.mjs", "quota.mjs", "provenance.mjs", "upstream-errors.mjs", "managed-gateway.mjs", "service-bridge.mjs", "process-tree.mjs", "spend-policy.mjs", "magpie.lock.json", "openclaw.plugin.json"],
+  "files": ["index.ts", "community-reply-guidance.mjs", "catalog-sync.mjs", "console", "policy.mjs", "runtime.mjs", "slack-participation.mjs", "slack-participation-ack.ts", "slack-participation-evidence.mjs", "scoped-policy.mjs", "scoped-stream.mjs", "usage-limits.mjs", "quota.mjs", "provenance.mjs", "upstream-errors.mjs", "managed-gateway.mjs", "service-bridge.mjs", "process-tree.mjs", "spend-policy.mjs", "magpie.lock.json", "openclaw.plugin.json"],
   "dependencies": { "@openclaw/slack": "link:../../vendor/openclaw/dist/extensions/slack" },
   "devDependencies": { "openclaw": "link:../../vendor/openclaw" },
   "peerDependencies": { "openclaw": "2026.9.5" },
