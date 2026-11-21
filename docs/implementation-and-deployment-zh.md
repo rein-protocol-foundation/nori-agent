@@ -1151,3 +1151,7 @@ SA-OPS-01 / SA-M1。Codex 在 OCI 独立 Gateway 用模拟 Slack 创建和调整
 ## NORI-BRANDING · 2026-11-20
 
 已在本地实现有状态或错误标记的通知文案、Discord 实时语音默认身份和插件展示名称。保留已有自定义语音指令。本次未部署，未向频道发送消息。 [Coverage and pending producers](nori-branding.md). Owner: Codex.
+
+## 2026-11-20 — Development Codex credential delivery
+
+SA2-TASK · 负责人 Codex。已准备专用账号、工作区、绑定目录和启动器。负责人确认其他获准 Slack 频道均可信，继续沿用现有执行身份。部署后启用专用路由，通过原线程核对实际凭证交付和 Linear 建项。

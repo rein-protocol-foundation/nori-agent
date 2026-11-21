@@ -669,3 +669,7 @@ passed in isolation. The full rerun at concurrency three passed 1,642 tests with
 five skips; the final four focused notice tests also passed separately. No live
 Slack or Discord acceptance. Remaining direct-send producers and the upstream
 proposal are listed in [Nori branding](nori-branding.md).
+
+## 2026-11-20 — Development Codex credential delivery
+
+SA2-TASK · Owner Codex. 98 task-loop, ACP and continuation checks passed locally. An OCI synthetic binding and refresh succeeded under the dedicated identity and the shared ACP identity could not read it. An operator-side authenticated Linear read found REI. The 94 candidate rows were staged. Live Nori binding, delegated Codex writes and Slack receipt remain pending.

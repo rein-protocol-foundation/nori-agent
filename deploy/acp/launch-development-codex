@@ -1,0 +1,47 @@
+#!/usr/bin/python3 -I
+"""Installed root-owned; invoked as the dedicated, unprivileged development UID."""
+import os
+import pwd
+import re
+import stat
+import sys
+from pathlib import Path
+
+base = Path('/var/lib/nori-codex-development')
+bindings = Path('/etc/nori-codex-development/bindings')
+runtime = Path('/opt/nori-acp-pilot')
+
+
+def launch():
+    account = pwd.getpwnam('nori-codex-development')
+    if os.getuid() != account.pw_uid or os.geteuid() != account.pw_uid:
+        raise ValueError('unexpected launcher identity')
+    env = {
+        'HOME': str(base),
+        'CODEX_HOME': str(base / 'codex-home'),
+        'LANG': 'C.UTF-8',
+        'PATH': f'{runtime}:/usr/bin:/bin',
+        'CODEX_PATH': '/opt/nori-codex-candidate-0.170.0/node_modules/.bin/codex',
+        'OPENAI_API_KEY': (bindings.parent / 'provider-key').read_text().strip(),
+    }
+    if not env['OPENAI_API_KEY']:
+        raise ValueError('provider credential missing')
+    for path in bindings.iterdir():
+        if path.name.startswith('.'):
+            continue
+        info = path.lstat()
+        if (not re.fullmatch(r'NORI_[A-Z0-9_]+', path.name)
+                or not stat.S_ISREG(info.st_mode) or stat.S_IMODE(info.st_mode) != 0o640
+                or info.st_gid != account.pw_gid or info.st_uid == account.pw_uid):
+            raise ValueError('invalid binding')
+        env[path.name] = path.read_text()
+    os.chdir(base / 'workspace')
+    adapter = runtime / 'node_modules/@agentclientprotocol/codex-acp/dist/index.js'
+    os.execve(runtime / 'node', ['node', str(adapter)], env)
+
+
+if __name__ == '__main__':
+    try:
+        launch()
+    except Exception:
+        sys.exit('Development Codex launcher unavailable')

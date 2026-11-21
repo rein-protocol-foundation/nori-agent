@@ -29,6 +29,12 @@ export function validateAcpConfig(raw = {}) {
   if (alternateHarness !== undefined && (raw.taskLoop !== true || alternateHarness !== 'claude' ||
       alternateHarness === channel.agentId || alternateHarness === raw.harnessAgentId))
     throw Error('rein_acp_harness_invalid');
+  const developmentCodex = raw.developmentCodex;
+  if (developmentCodex && (!additionalChannelIds.includes(developmentCodex.channelId) ||
+      ![developmentCodex.sourceFile, developmentCodex.bindingDir, developmentCodex.cwd].every(path => typeof path === 'string' && isAbsolute(path)) ||
+      developmentCodex.cwd === raw.cwd || !Array.isArray(developmentCodex.names) || !developmentCodex.names.length ||
+      !developmentCodex.names.every(name => typeof name === 'string' && /^NORI_[A-Z0-9_]+$/.test(name))))
+    throw Error('rein_development_codex_invalid');
   let continuation;
   if (raw.continuation?.enabled === true) {
     if (raw.taskLoop !== true) throw Error('rein_continuation_requires_task_loop');
@@ -40,7 +46,7 @@ export function validateAcpConfig(raw = {}) {
     for (const [key, max] of Object.entries({ maxAttempts: 12, maxNoProgress: 12, maxRuntimeMs: 86_400_000, maxActiveFlows: 64 }))
       if (!Number.isSafeInteger(continuation[key]) || continuation[key] < 1 || continuation[key] > max) throw Error('rein_continuation_bounds_invalid');
   }
-  return { enabled: true, channel: { ...channel }, additionalChannelIds: [...additionalChannelIds], alternateHarness, harnessAgentId: raw.harnessAgentId, cwd: raw.cwd, ...(continuation ? { continuation } : {}) };
+  return { enabled: true, channel: { ...channel }, additionalChannelIds: [...additionalChannelIds], alternateHarness, ...(developmentCodex ? { developmentCodex } : {}), harnessAgentId: raw.harnessAgentId, cwd: raw.cwd, ...(continuation ? { continuation } : {}) };
 }
 
 /** An explicit controller avoids relaxing the sandbox on the existing development agent. */

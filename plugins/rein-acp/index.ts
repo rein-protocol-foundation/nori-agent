@@ -36,6 +36,7 @@ export default definePluginEntry({
         scheduling, schedulingChannels: devChannels.map(entry => entry.channelId),
         allowScheduledSpawn: scheduling && ((ctx, args) => scheduledSpawnAllowed(ctx, args, devChannels,
           async id => (await readJobs()).find(job => job.id === id))),
+        permitsDevelopmentAssignment: (ctx, task) => continuation?.permitsDevelopmentAssignment(ctx, task) ?? false,
         isCurrentContinuation: (task, ctx) => continuation?.isCurrentAttempt(task, ctx) ?? false,
         isNativeChild: ctx => isSubagentSessionKey(ctx.sessionKey) || isAcpSessionKey(ctx.sessionKey) });
       const retainedSummaries = config.continuation?.retainedSummaries?.enabled === true

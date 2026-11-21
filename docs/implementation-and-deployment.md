@@ -1660,3 +1660,7 @@ Updated local initialization, community config builders and task reply instructi
 ## NORI-BRANDING · 2026-11-20
 
 Implemented Nori rendering for recognized typed chat notices, Discord realtime voice defaults and plugin display labels. Existing explicit voice prompts take precedence. No deployment or live channel sends. [Coverage and pending producers](nori-branding.md). Owner: Codex.
+
+## 2026-11-20 — Development Codex credential delivery
+
+SA2-TASK · Owner Codex. Prepared the dedicated Unix account, workspace, binding directory and launcher. The owner confirmed all other admitted Slack channels are trusted and should retain their current execution identities. Enable the dedicated route after deployment and verify the Linear import through the original thread.

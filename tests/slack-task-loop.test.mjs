@@ -351,3 +351,35 @@ test('ACP direct announcement gives a progress update and leaves review to the o
   const wake = await runtime.beforePromptBuild({}, { ...ctx, inputProvenance: { kind: 'internal_system', sourceTool: 'background-task' } });
   assert.match(wake.prependContext, /read_review_file/);
 });
+
+test('only a current private development member can bind and launch credentialed Codex', async () => {
+  const channelId = 'CDEV0001';
+  const target = { channelId, names: ['NORI_TEST_TOKEN'], cwd: '/private/development' };
+  const configured = { ...config, additionalChannelIds: [channelId], developmentCodex: target };
+  let member = true;
+  const bound = [];
+  const runtime = createTaskLoop({ config: configured, authorize: async () => member,
+    bindCredential: async name => { bound.push(name); return { status: 'bound', name }; } });
+  for (const dev of [true, false]) {
+    const id = dev ? channelId : config.channel.channelId;
+    const src = source({ chatId: id, sessionKey: 'agent:main:slack:channel:' + id.toLowerCase() });
+    await runtime.beforeAgentRun({}, src);
+    const ctx = toolContext(src);
+    const args = { action: 'bind_credential', credential: 'NORI_TEST_TOKEN' };
+    const tool = runtime.toolFactory.create({ agentId: 'main', sessionKey: src.sessionKey,
+      requesterSenderId: src.senderId, assertInvocationCurrent() {} });
+    await runtime.beforeToolCall({ toolName: 'rein_task', params: args }, ctx);
+    if (dev) assert.equal((await tool.execute(ctx.toolCallId, args)).details.status, 'bound');
+    else await assert.rejects(tool.execute(ctx.toolCallId, args), /denied/);
+    const spawn = { toolName: 'sessions_spawn', params: { runtime: 'acp', agentId: 'codex', task: 'work' } };
+    const route = await runtime.beforeToolCall(spawn, ctx);
+    assert.equal(route.params.agentId, dev ? 'codex-development' : 'codex');
+    assert.equal(route.params.cwd, dev ? target.cwd : config.cwd);
+    if (!dev) assert.equal((await runtime.beforeToolCall({ ...spawn, params: { ...spawn.params, agentId: 'codex-development' } }, ctx)).block, true);
+    member = false;
+    assert.equal((await runtime.beforeToolCall(spawn, ctx)).block, true);
+    member = true;
+    runtime.agentEnd({}, src);
+  }
+  assert.deepEqual(bound, ['NORI_TEST_TOKEN']);
+});
