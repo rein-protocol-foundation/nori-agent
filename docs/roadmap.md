@@ -1,5 +1,7 @@
 # Nori-Agent implementation roadmap
 
+Rein’s community roadmap, version 1: [English](foundation-community-roadmap.md) · [中文](foundation-community-roadmap-zh.md).
+
 ## 2026-11-20 UTC — Lark routing
 
 Owner Codex. Connect approved Lark community groups to the existing `nori-community` agent and approved internal groups to `main`. The candidate passed local routing checks. Production routing and same-group delivery require live acceptance. [Current evidence](acceptance-evidence.md#2026-11-20-utc--lark-routing).
