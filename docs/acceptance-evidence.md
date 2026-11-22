@@ -1,5 +1,7 @@
 # Acceptance evidence
 
+SA2 · November 21, 2026. Codex reconciled the [November 20 status report](super-agent-status-2026-11-20.md) against existing Gateway, Slack, Lark and v2 records. Slack participation and acknowledgement have production readback. The owner confirmed Lark group assignments. Post-fix public-group reply readback remains outstanding. No live probes were run for this review.
+
 ## Discord onboarding UC09 · November 21, 2026 UTC
 
 Owner Codex. The [original Chinese question and two-turn rubric](discord-onboarding-use-cases-zh.md#uc09--从组织治理讲到一个已完成的真实任务) passed in the enrolled #ask-nori channel on OCI release `a2b3bca`. [PR #243](https://github.com/rein-protocol-foundation/nori-agent/pull/243) merged after its required GitHub checks. The updater reported success at 07:39:32 UTC. The test used the Foundation Discord account, the deployed Nori app and an existing conversation with earlier failed answers.

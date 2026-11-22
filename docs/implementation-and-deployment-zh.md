@@ -1,5 +1,7 @@
 # Nori-Agent 开发、验证与部署记录
 
+SA2 · 2026-11-21。Codex 对照已记录的生产验收与负责人确认的 Lark 群接入情况，更新交付计划和 v2 验收矩阵。[状态说明](super-agent-status-2026-11-20.md)列出剩余证据缺口和已豁免的人工评审。本次仅更新文档。
+
 ## 2026-11-21 UTC · Discord 迎新 UC09
 
 负责人 Codex。PR #240 至 #243 在 GitHub 检查通过后合并，随后由 OCI 自动部署。最终版本 `a2b3bca` 在真实 #ask-nori 频道通过中文原题和追问验收。两轮都收到了公开资料，工具调用均为零。早期失败以及新讨论串的路由限制已记入[验收记录](acceptance-evidence.md#discord-onboarding-uc09--november-21-2026-utc)。
