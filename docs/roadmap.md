@@ -1,5 +1,7 @@
 # Nori-Agent implementation roadmap
 
+SA2 · November 21, 2026. Owner Codex. The [November 20 status review](super-agent-status-2026-11-20.md) distinguishes completed Gateway migration and Slack participation from remaining evidence gaps. This documentation update leaves product milestones at their previously verified status.
+
 Discord onboarding UC09 · Owner Codex. Chinese organization explainer and evidence follow-up passed in the live #ask-nori channel on OCI release `a2b3bca`. [Evidence](acceptance-evidence.md#discord-onboarding-uc09--november-21-2026-utc).
 
 Rein’s community roadmap, version 1: [English](foundation-community-roadmap.md) · [中文](foundation-community-roadmap-zh.md).

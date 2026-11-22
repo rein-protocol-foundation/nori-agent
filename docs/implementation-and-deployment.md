@@ -1,5 +1,7 @@
 # Nori-Agent development, verification and deployment record
 
+SA2 · November 21, 2026. Codex reconciled the delivery plan and v2 matrix with dated production records and the owner’s Lark rollout confirmation. The [status report](super-agent-status-2026-11-20.md) records verification gaps and the prior review waiver. This change updates documentation only.
+
 ## November 21, 2026 UTC · Discord onboarding UC09
 
 Owner Codex. PRs #240–#243 merged after applicable GitHub checks and deployed through the GitHub-triggered OCI updater. Production acceptance passed on `a2b3bca` in #ask-nori using the original Chinese question and its evidence follow-up. Both turns used supplied public material and made zero tool calls. Earlier attempts and the separate thread-routing limit are recorded in [acceptance evidence](acceptance-evidence.md#discord-onboarding-uc09--november-21-2026-utc).
