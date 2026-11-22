@@ -685,3 +685,7 @@ proposal are listed in [Nori branding](nori-branding.md).
 ## 2026-11-20 — Development Codex credential delivery
 
 SA2-TASK · Owner Codex. The live binding was absent before the Slack request. Nori bound the credential and launched the dedicated ACP worker. Its authenticated Linear viewer request returned HTTP 200. The first run created a project, 11 milestones and 70 issues, leaving 24 items represented only in milestone text. The follow-up added 20 distinct child issues and placed four existing issues in the project. Independent API readback found one project and 94 distinct issues with milestones and GitHub evidence in descriptions or attachments. The final split was 50 Done, 26 In Progress and 18 Backlog. Four source rows moved from In Progress to Done based on newer repository acceptance records. Nori reviewed the follow-up, marked the managed flow complete and posted the project link, breakdown by milestone and final run reference in the original Slack thread. The thread reply was read back after delivery. Private thread, account, issue and run identifiers are retained in the operational records.
+
+## 2026-11-22 · Foundation People workflow
+
+Owner Codex. The `rein-people` skill passed frontmatter validation. Scaffold checks, all eight CI scope tests, and all 39 AI news pipeline tests passed locally. This records repository verification. Manual skill acceptance is deferred.
