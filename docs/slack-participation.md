@@ -178,10 +178,11 @@ references. It stores no text, tokens, actor profiles, or raw API responses.
 
 ## Compare, apply and roll back in the isolated policy store
 
-Initialize the isolated store from the exact active one-scope participation policy. It keeps its
-active policy and transition journal in the private companion SQLite file. Use separate runtime
-state directories for distinct policy scopes. The existing gateway continues to read its native
-configuration.
+Initialize the store from the exact configured participation policy, with `enabled: true`,
+`recordEvidence: true`, and one Slack account, workspace, channel and agent tuple. The private
+companion SQLite file holds its active policy and transition journal. Use separate runtime state
+directories for distinct policy scopes. By default the gateway reads `participation` from its
+native configuration.
 
 ```sh
 node scripts/slack-participation-review.mjs init-policy --state-dir /private/runtime/openclaw --policy-file /private/runtime/policy.json --output /private/runtime/policy-init.json
@@ -201,8 +202,40 @@ feedback makes a previous stage stale. `rollback-policy` checks that the selecte
 active and atomically restores its earlier policy. Use `status-policy` to recover the authoritative
 policy and transition history after an interrupted command or output failure.
 
-Real Slack feedback capture, scheduled operation, and promotion to a live gateway still require
-their own acceptance evidence and existing operator authorization.
+For an authorized controlled rollout, set `participationPolicySource: "review-store"` alongside
+`participation` in `plugins.entries.rein-router.config`. Keep the original one-scope policy in
+`participation`. It anchors the store to the configured baseline and is used if the private store
+is unavailable or fails its baseline, journal or policy checks. The rollout can change the policy
+version and probability threshold for that exact tuple. The source setting is inert when
+participation is disabled or omitted.
+
+1. Initialize the store as the gateway's OS owner, using the gateway's existing state directory.
+   After enabling the source, restart the gateway and check that its `rein_router_participation_policy`
+   log reports `source: "review-store"`, generation `0` and the baseline digest from `status-policy`.
+2. Review the comparison, apply the selected stage, then restart the gateway. Check the running
+   gateway's policy log for the candidate version, generation and digest from `status-policy`.
+   Check that the expected decision behavior changes in the intended tuple. An apply changes the
+   store immediately and takes effect when the Router registers again.
+3. Roll back the same stage and restart the gateway. Compare the new generation and restored
+   version and digest in the running gateway's log with `status-policy`. Check the baseline decision
+   behavior again. To return policy ownership to the gateway config, remove the source setting and
+   restart the gateway. The companion store and decision history remain available.
+
+If registration logs `rein_router_participation_review_store_unavailable`, it uses the configured
+policy and reports `source: "config"`. Compare its digest with the intended baseline and check
+`status-policy` and the state directory's ownership and permissions before retrying. Keep the original
+configured baseline when reviewing later candidates. For `compare-captured`, supply the currently
+effective policy from `status-policy` after confirming it matches the running gateway.
+
+Slack author verification establishes the source and scope of a feedback label. Candidate answer
+quality and manually attributed worker models are independent review items. The release owner carried
+the November 19 independent human review waiver forward for this rollout’s acceptance. Record those
+review items as waived and verify Slack identity and gateway behavior through their own evidence.
+The local rollout and rollback fixture uses synthetic feedback and a stubbed decision API. It
+registers the real Router and checks the reply-dispatch hook outcome against native-built inbound
+contexts. A separate fixture exercises the native dispatcher. Live Slack feedback capture,
+scheduled operation, and promotion to a live gateway require their own evidence and existing
+operator authorization.
 
 ## Silence after worker admission
 

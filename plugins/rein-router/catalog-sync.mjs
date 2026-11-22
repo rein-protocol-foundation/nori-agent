@@ -136,7 +136,7 @@ export function mergeRouterFragment(host, fragment, { pluginPath, typesafePath, 
   // must not turn omission/inheritance into an explicit grant or resurrect a revocation.
   const authority = host.plugins?.entries?.['rein-router']?.config ?? {};
   const nextConfig = { ...fragment.plugins.entries['rein-router'].config };
-  const hostPolicies = ['trustedSlackChannels', 'scheduleInPublicChannels', 'nativeAgentRoutes', 'participation'];
+  const hostPolicies = ['trustedSlackChannels', 'scheduleInPublicChannels', 'nativeAgentRoutes', 'participation', 'participationPolicySource'];
   for (const field of hostPolicies) {
     if (Object.hasOwn(authority, field)) nextConfig[field] = structuredClone(authority[field]);
     else delete nextConfig[field];

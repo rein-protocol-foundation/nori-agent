@@ -1670,3 +1670,5 @@ Implemented Nori rendering for recognized typed chat notices, Discord realtime v
 ## 2026-11-20 — Development Codex credential delivery
 
 SA2-TASK · Owner Codex. Deployed the opt-in route from PR #147. A retained plugin operation prevented hot reload. A service restart loaded the validated config, and a fresh trusted Slack request completed binding. Existing Slack execution identities were preserved. The two dedicated Codex runs and parent review completed the 94-task Linear acceptance. The credential binding and project remain in place.
+
+SA2 #200 · November 22, 2026. Owner Codex. The optional review-store source loads at Router registration. Combined local checks for #199 and #200 passed 1,661 tests with five opt-in skips. Production Slack rollout and restoration are pending merge and deployment.

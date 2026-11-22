@@ -1,3 +1,4 @@
+import { readParticipationRelease } from './slack-participation-review-store.mjs';
 import { communityReplyGuidance } from './community-reply-guidance.mjs';
 import { definePluginEntry } from 'openclaw/plugin-sdk/plugin-entry';
 import { createRouter, assertRuntimeConfig, bindRouterLifecycle, PROVIDER_ID } from './runtime.mjs';
@@ -11,7 +12,7 @@ import { loadCronStore, resolveCronStorePath } from 'openclaw/plugin-sdk/cron-st
 import { createSlackDevelopmentAuthorizer, createSlackScheduleAuthorizer, DEVELOPMENT_AUTH_TIMEOUT_MS } from './slack-development.mjs';
 import { acknowledgeSlackParticipation } from './slack-participation-ack.ts';
 import { createSlackParticipation } from './slack-participation.mjs';
-import { openParticipationEvidence } from './slack-participation-evidence.mjs';
+import { openParticipationEvidence, participationPolicyDigest } from './slack-participation-evidence.mjs';
 import { hasControlCommand } from 'openclaw/plugin-sdk/command-detection';
 import { isAbortRequestText } from 'openclaw/plugin-sdk/command-primitives-runtime';
 
@@ -42,8 +43,17 @@ export default definePluginEntry({
     if (config.scopedPolicies?.['nori-community']?.origins.some(origin => origin.platform === 'discord')) {
       api.on('before_prompt_build', (_event, ctx) => communityReplyGuidance(ctx));
     }
-    const participationPolicy = config.participation;
-    if (participationPolicy?.enabled) {
+    const configuredParticipation = config.participation;
+    if (configuredParticipation?.enabled) {
+      let release: ReturnType<typeof readParticipationRelease> | undefined;
+      if (config.participationPolicySource === 'review-store') {
+        try {
+          release = readParticipationRelease({ stateDir: api.runtime.state.resolveStateDir(), baseline: configuredParticipation });
+        } catch {
+          api.logger.warn('rein_router_participation_review_store_unavailable Using configured baseline. Check status-policy, store ownership and permissions, and the configured baseline digest.');
+        }
+      }
+      const participationPolicy = release?.policy ?? configuredParticipation;
       let reportedEvidenceFailure = false;
       const evidenceUnavailable = () => {
         if (reportedEvidenceFailure) return;
@@ -64,6 +74,10 @@ export default definePluginEntry({
         writeEvidence: record => evidence?.record(record, participationPolicy), evidenceUnavailable });
       api.on('reply_dispatch', participation.replyDispatch,
         { priority: 200, timeoutMs: participationPolicy.timeoutMs + 1000, eligibleDispatchKinds: ['agent', 'acp'] });
+      if (config.participationPolicySource === 'review-store') {
+        api.logger.info(`rein_router_participation_policy ${JSON.stringify({ source: release ? 'review-store' : 'config',
+          generation: release?.generation ?? null, version: participationPolicy.version, digest: participationPolicyDigest(participationPolicy) })}`);
+      }
       const dispose = () => { participation.close(); evidence?.close(); };
       if (api.lifecycle.onDispose) api.lifecycle.onDispose(dispose);
       else api.lifecycle.registerRuntimeLifecycle({ id: 'rein-router-participation', dispose });

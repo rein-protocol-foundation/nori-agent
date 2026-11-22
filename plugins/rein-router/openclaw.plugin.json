@@ -13,6 +13,7 @@
     "gateway.subscriptionOnly": { "label": "Subscription and coding-plan routes only", "help": "Enabled by default. Pay-as-you-go requires disabling this restriction and explicitly enabling allowPaidUsage." },
     "decision.allowPaidJev": { "label": "Allow separately billed Jev decisions", "help": "Disabled by default. Hosted Jev usage is separate from LLM subscription allowances; configure its credential through OpenClaw's TypeSafe decision provider." },
     "participation": { "label": "Optional Slack participation policy", "help": "Staged: agent/ACP reply dispatch only; plugin-owned bindings claim earlier. Full-channel activation requires compatibility acceptance. Uses a separate bounded Jev decision before existing model routing." },
+    "participationPolicySource": { "label": "Slack participation review store", "help": "Opt in to reading the committed one-scope policy at Router registration. Keep the original enabled participation policy with evidence recording as the baseline and fallback." },
     "routes": { "label": "Verified gateway routes", "help": "Use fully qualified Magpie provider/model IDs. Verification covers billing and deployment eligibility; a successful login alone does not establish permission for a public service." }
   },
   "configSchema": {
@@ -22,6 +23,7 @@
       "enabled": { "type": "boolean", "default": false },
       "scheduleInPublicChannels": { "type": "boolean", "default": false, "description": "Allow verified workspace members to schedule in listed internal public Slack channels. Requires sandboxed scheduling agents." },
       "trustedSlackChannels": { "type": "array", "maxItems": 512, "items": { "$ref": "#/$defs/slackScheduleChannel" }, "description": "Approved Slack scheduling agents and channels. With scheduleInPublicChannels, a channelId of * matches member channels in the specified workspace." },
+      "participationPolicySource": { "type": "string", "enum": ["review-store"] },
       "participation": {
         "type": "object", "additionalProperties": false,
         "properties": {
@@ -392,6 +394,14 @@
       {
         "if": { "not": { "required": ["allowPaidUsage", "gateway"], "properties": { "allowPaidUsage": { "const": true }, "gateway": { "required": ["subscriptionOnly"], "properties": { "subscriptionOnly": { "const": false } } } } } },
         "then": { "properties": { "routes": { "items": { "properties": { "billingMode": { "enum": ["subscription", "coding-plan"] } } } } } }
+      },
+      {
+        "if": { "required": ["participationPolicySource", "participation"], "properties": {
+          "participation": { "required": ["enabled"], "properties": { "enabled": { "const": true } } }
+        } },
+        "then": { "properties": { "participation": { "required": ["recordEvidence"], "properties": {
+          "recordEvidence": { "const": true }, "channels": { "maxItems": 1 }
+        } } } }
       }
     ],
     "$defs": {
