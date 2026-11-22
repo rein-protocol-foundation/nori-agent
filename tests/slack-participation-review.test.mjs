@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createSlackParticipation } from '../plugins/rein-router/slack-participation.mjs';
 import { openParticipationEvidence, participationPolicyDigest } from '../plugins/rein-router/slack-participation-evidence.mjs';
-import { ingestParticipationFeedback } from '../scripts/slack-participation-feedback.mjs';
+import { ingestParticipationFeedback, inspectParticipationThread } from '../scripts/slack-participation-feedback.mjs';
 import { openParticipationReviewStore } from '../scripts/slack-participation-review-store.mjs';
 import { compareParticipationReview, runParticipationReview } from '../scripts/slack-participation-review.mjs';
 
@@ -168,7 +168,7 @@ const json = (body, status = 200) => new Response(JSON.stringify(body), { status
 function slackApi(decision, { feedback = note(decision), originMessage = source(decision),
   team = scope.workspaceId, readingUser = reader, channel = scope.channelId,
   members = [senderId, reader, botUser], userFields = {}, otherMessages = [], repliesUnavailable,
-  memberPagination = false, threadPagination = false } = {}) {
+  memberPagination = false, threadPagination = false, latest = feedback.ts, omitFeedback = false } = {}) {
   const calls = [];
   async function fetchImpl(url, options) {
     assert.equal(new URL(url).origin, 'https://slack.com');
@@ -186,11 +186,11 @@ function slackApi(decision, { feedback = note(decision), originMessage = source(
       if (repliesUnavailable) return json({ ok: false, error: 'ratelimited' }, 429);
       assert.equal(body.ts, decision.messageId);
       assert.equal(body.oldest, decision.messageId);
-      assert.equal(body.latest, feedback.ts);
+      assert.equal(body.latest, latest);
       assert.equal(body.inclusive, 'true');
       if (threadPagination && !body.cursor) return json({ ok: true, messages: [originMessage, ...otherMessages],
         has_more: true, response_metadata: { next_cursor: 'more-thread' } });
-      return json({ ok: true, messages: threadPagination ? [feedback] : [originMessage, ...otherMessages, feedback] });
+      return json({ ok: true, messages: threadPagination ? [feedback] : [originMessage, ...otherMessages, ...(omitFeedback ? [] : [feedback])] });
     }
     if (method === 'users.info') {
       assert.equal(body.user, senderId);
@@ -393,4 +393,84 @@ test('an independent feedback addition invalidates an already staged policy and 
   assert.throws(() => transact('apply-policy', 'stale.json', '--stage-id', staged.id), /router_participation_policy_stale/);
   assert.throws(() => transact('stage-policy', 'regressed.json', '--candidate-version', 'fixture-v3'), /router_participation_review_invalid/);
   assert.deepEqual(transact('status-policy', 'status.json').transitions, []);
+});
+
+test('only exact scoped run receipts enrich admitted decisions across restart and same-thread concurrency', async t => {
+  const { stateDir } = await fixture(t);
+  const sessionKey = payload('1.0', '').ctx.SessionKey;
+  const writer = openParticipationEvidence({ stateDir });
+  const gate = createSlackParticipation({ policy, allowPaidJev: true,
+    decisions: { evaluate: async () => ({ status: 'ok', result: { answers: {
+      dutyRelevant: { type: 'boolean', probabilityTrue: .99 }, helpful: { type: 'boolean', probabilityTrue: .99 },
+    } } }) }, writeEvidence: record => writer.record(record, policy) });
+  try {
+    await Promise.all(['a', 'b'].map((runId, i) =>
+      gate.replyDispatch({ ...payload(`1100.00${i}`, 'question'), runId }, host)));
+  } finally { gate.close(); writer.close(); }
+
+  const observer = openParticipationEvidence({ stateDir });
+  t.after(() => observer.close());
+  const ctx = { sessionKey, channel: 'slack', agentId: scope.agentId, accountId: scope.accountId };
+  const digest = participationPolicyDigest(policy);
+  observer.observeWorker({ runId: 'a', provider: 'mock', model: 'one', assistantTexts: ['NO_REPLY'] }, ctx, digest);
+  observer.observeWorker({ runId: 'b', resolvedRef: 'mock/failed', assistantTexts: [] }, ctx, digest);
+  observer.observeWorker({ runId: 'b', resolvedRef: 'mock/two', assistantTexts: ['PRIVATE'] }, ctx, digest);
+  observer.observeWorker({ runId: 'a', resolvedRef: 'mock/wrong' }, { ...ctx, agentId: 'other' }, digest);
+  const sent = { success: true, messageId: '1200.002', to: scope.channelId, runId: 'b' };
+  const destination = { channelId: 'slack', accountId: scope.accountId, sessionKey, conversationId: scope.channelId };
+  observer.observeSent({ ...sent, messageId: '1200.001', runId: 'a' }, destination, participationPolicyDigest({ ...policy, version: 'another' }));
+  observer.observeSent(sent, destination, digest);
+  observer.observeSent(sent, destination, digest);
+  observer.observeSent({ ...sent, runId: undefined }, destination, digest);
+  observer.observeSent({ ...sent, runId: 'a' }, { ...destination, accountId: 'other' }, digest);
+  observer.observeSent({ ...sent, runId: 'a' }, { ...destination, sessionKey: 'other' }, digest);
+  const rows = observer.read({ policy, scope });
+  const a = rows.find(row => row.workerRunId === 'a'), b = rows.find(row => row.workerRunId === 'b');
+  assert.equal(a.actualModel, null);
+  assert.deepEqual(a.workerOutputs, [{ model: 'mock/one', requestedSilence: true }]);
+  assert.equal(a.delivery, 'unobserved');
+  assert.equal(b.actualModel, null);
+  assert.deepEqual(b.workerOutputs, [{ model: 'mock/failed', requestedSilence: null },
+    { model: 'mock/two', requestedSilence: false }]);
+  assert.equal(b.delivery, 'slack-sent');
+  assert.deepEqual(b.replyMessageIds, [sent.messageId]);
+  assert.doesNotMatch(JSON.stringify(rows), /PRIVATE/);
+});
+
+test('native final payload binds the selected model to its source when ingress lacks a run ID', async t => {
+  const { stateDir, wrong } = await fixture(t);
+  const ledger = openParticipationEvidence({ stateDir });
+  t.after(() => ledger.close());
+  const sessionKey = payload(wrong.messageId, '').ctx.SessionKey, runId = 'worker-final';
+  const event = { channel: 'slack', kind: 'final', runId, sessionKey,
+    usageState: { agentId: scope.agentId, resolvedRef: 'mock/winner' } };
+  const ctx = { channelId: 'slack', accountId: scope.accountId, conversationId: 'channel:' + scope.channelId,
+    messageId: wrong.messageId, senderId, runId, sessionKey };
+  const digest = participationPolicyDigest(policy);
+  const read = () => ledger.read({ policy, scope }).find(row => row.id === wrong.id);
+  for (const override of [{ messageId: '999.888' }, { senderId: 'UWRONG01' }, { sessionKey: 'wrong' }])
+    ledger.observeFinalPayload(event, { ...ctx, ...override }, policy, digest);
+  assert.equal(read().actualModel, null);
+  ledger.observeFinalPayload(event, ctx, policy, digest);
+  assert.equal(read().actualModel, 'mock/winner');
+  assert.equal(read().workerRunId, runId);
+  assert.equal(read().delivery, 'unobserved');
+});
+
+
+test('root-thread inspection returns a bounded readback, including ambiguity and unavailable transport', async t => {
+  const { wrong, read } = await fixture(t);
+  const inspect = options => inspectParticipationThread({ policy, config, decisionId: wrong.id, evidence: read, token,
+    fetchImpl: slackApi(wrong, { latest: '2000.000000', omitFeedback: true, ...options }).fetchImpl,
+    clock: () => new Date(2000000) });
+  const empty = await inspect({});
+  assert.equal(empty.slackThread.outcome, 'no-bot-reply-visible');
+  assert.equal(empty.decision.delivery, 'unobserved');
+  const reply = { type: 'message', thread_ts: wrong.messageId, ts: '1010.003', user: botUser, bot_id: botId };
+  const visible = await inspect({ otherMessages: [reply, note(wrong)] });
+  assert.deepEqual(visible.slackThread.botReplyIds, [reply.ts]);
+  assert.equal(visible.slackThread.otherReplyCount, 1);
+  assert.doesNotMatch(JSON.stringify(visible), /PRIVATE SOURCE|nori-feedback/);
+  await assert.rejects(inspect({ repliesUnavailable: true }));
+  await assert.rejects(inspect({ originMessage: { ...source(wrong), thread_ts: '999.001' } }));
 });
