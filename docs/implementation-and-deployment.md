@@ -1670,7 +1670,3 @@ Implemented Nori rendering for recognized typed chat notices, Discord realtime v
 ## 2026-11-20 — Development Codex credential delivery
 
 SA2-TASK · Owner Codex. Deployed the opt-in route from PR #147. A retained plugin operation prevented hot reload. A service restart loaded the validated config, and a fresh trusted Slack request completed binding. Existing Slack execution identities were preserved. The two dedicated Codex runs and parent review completed the 94-task Linear acceptance. The credential binding and project remain in place.
-
-## 2026-11-22 · Foundation People workflow
-
-Owner Codex. Added a discoverable Nori skill that contains the full Foundation People profile workflow. Local skill metadata and scaffold checks passed. The website schema and components are provided by [Foundation PR #51](https://github.com/rein-protocol-foundation/ReinProtocolFoundation/pull/51). PR review and manual skill acceptance are pending. No rollout occurred.
