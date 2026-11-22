@@ -125,7 +125,7 @@ function freeze(value) {
 /** Validate operator configuration without resolving secrets or contacting services. */
 export function validateRouterConfig(raw = {}) {
   object(raw, 'config', ['enabled', 'gateway', 'routes', 'defaultRoute', 'fallbackRoutes',
-    'allowPaidUsage', 'channels', 'adminSenders', 'developmentChannels', 'decision', 'scopedPolicies', 'trustedSlackChannels', 'scheduleInPublicChannels', 'nativeAgentRoutes', 'participation']);
+    'allowPaidUsage', 'channels', 'adminSenders', 'developmentChannels', 'decision', 'scopedPolicies', 'trustedSlackChannels', 'scheduleInPublicChannels', 'nativeAgentRoutes', 'participation', 'participationPolicySource']);
   const enabled = boolean(raw.enabled, 'enabled', false);
   const allowPaidUsage = boolean(raw.allowPaidUsage, 'allowPaidUsage', false);
   const normalizedGateway = raw.gateway === undefined ? null : gateway(raw.gateway);
@@ -216,7 +216,12 @@ export function validateRouterConfig(raw = {}) {
     }
   }
   const participation = raw.participation === undefined ? undefined : validateParticipationPolicy(raw.participation);
-  return freeze({ ...(participation ? { participation } : {}), ...(scopedPolicies ? { scopedPolicies } : {}), enabled, gateway: normalizedGateway ?? undefined, routes, defaultRoute: defaultRoute ?? undefined, fallbackRoutes,
+  const participationPolicySource = raw.participationPolicySource;
+  if (participationPolicySource !== undefined && (participationPolicySource !== 'review-store' ||
+      (participation?.enabled && (!participation.recordEvidence || participation.channels.length !== 1))))
+    invalid('participationPolicySource');
+  return freeze({ ...(participation ? { participation } : {}), ...(participationPolicySource ? { participationPolicySource } : {}),
+    ...(scopedPolicies ? { scopedPolicies } : {}), enabled, gateway: normalizedGateway ?? undefined, routes, defaultRoute: defaultRoute ?? undefined, fallbackRoutes,
     allowPaidUsage, channels, adminSenders, developmentChannels, trustedSlackChannels, scheduleInPublicChannels: boolean(raw.scheduleInPublicChannels, 'scheduleInPublicChannels', false), ...(nativeAgentRoutes ? { nativeAgentRoutes } : {}), decision });
 }
 

@@ -199,6 +199,16 @@ test('policy validation is bounded and rejects unknown scope or authority fields
     assert.throws(() => validateParticipationPolicy({ ...policy, ...extra }), /router_participation_config_invalid/);
 });
 
+test('review-store source requires evidence and one scope for enabled participation', () => {
+  const participation = { ...policy, recordEvidence: true };
+  const source = { participationPolicySource: 'review-store' };
+  assert.equal(validateRouterConfig({ ...source, participation }).participationPolicySource, 'review-store');
+  assert.throws(() => validateRouterConfig({ participation, participationPolicySource: '/private/store.sqlite' }), /participationPolicySource/);
+  for (const invalid of [{ recordEvidence: false }, { channels: [channel, { ...channel, channelId: 'CFIXTURE2' }] }])
+    assert.throws(() => validateRouterConfig({ ...source, participation: { ...participation, ...invalid } }), /participationPolicySource/);
+  assert.equal(validateRouterConfig({ ...source, participation: { enabled: false } }).participation.enabled, false);
+});
+
 test('positive participation retains existing restricted-route, billing, manual and attachment boundaries', async () => {
   const route = (id, extra = {}) => ({ id, provider: 'fixture', gatewayModel: `fixture/${id}`,
     effort: 'high', billingSource: 'synthetic', billingMode: 'subscription', billingVerified: true,
@@ -261,6 +271,7 @@ test('Router package ships the participation module required by its entry and va
   const root = new URL('../plugins/rein-router/', import.meta.url);
   const pkg = JSON.parse(await readFile(new URL('package.json', root), 'utf8'));
   assert.ok(pkg.files.includes('slack-participation.mjs'));
+  assert.ok(pkg.files.includes('slack-participation-review-store.mjs'));
   for (const file of ['index.ts', 'policy.mjs'])
     assert.match(await readFile(new URL(file, root), 'utf8'), /from '\.\/slack-participation\.mjs'/);
   const manifest = JSON.parse(await readFile(new URL('openclaw.plugin.json', root), 'utf8'));

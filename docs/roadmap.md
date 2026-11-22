@@ -640,3 +640,5 @@ Local implementation now covers marked status/error replies and configured Disco
 ## 2026-11-20 — Development Codex credential delivery
 
 SA2-TASK · Owner Codex. The trusted development-channel handoff passed live acceptance for the Linear project import. All 94 tasks through v2.1 were read back in 11 milestones. Detailed results are recorded in [acceptance evidence](acceptance-evidence.md).
+
+SA2 #200 · November 22, 2026. Owner Codex. Local Router promotion and rollback passed. Production Slack acceptance follows merge and deployment.

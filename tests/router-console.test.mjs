@@ -392,7 +392,7 @@ const consolePolicySource = {agentId:'main',accountId:'default',channel:'slack',
 async function setHostAuthority(f, authority) {
   const host=JSON.parse(await readFile(f.hostPath,'utf8'));
   const config=host.plugins.entries['rein-router'].config;
-  delete config.trustedSlackChannels;delete config.nativeAgentRoutes;delete config.participation;
+  delete config.trustedSlackChannels;delete config.nativeAgentRoutes;delete config.participation;delete config.participationPolicySource;
   Object.assign(config,authority);await writeFile(f.hostPath,JSON.stringify(host),{mode:0o600});
 }
 async function hostPolicy(f){return JSON.parse(await readFile(f.hostPath,'utf8')).plugins.entries['rein-router'].config;}
@@ -404,7 +404,7 @@ function assertExplicitPolicyWorks(raw){
 }
 test('host automation authority survives actual Console refresh/save/reload/restart without settings duplication',async t=>{
   const f=await fixture(t);await f.sync.save(settings());
-  const authority={trustedSlackChannels:[approvedSlack],nativeAgentRoutes:{main:['general']},
+  const authority={trustedSlackChannels:[approvedSlack],nativeAgentRoutes:{main:['general']},participationPolicySource:'review-store',
     participation:{enabled:true,version:'host-policy-v1',duties:'Help with deployment reliability.',
       channels:[{accountId:'default',workspaceId:'TFIXTURE1',channelId:'CFIXTURE1',agentId:'main'}],
       timeoutMs:3000,minProbability:0.8,maxMessageChars:4000,recordEvidence:true}};
@@ -435,6 +435,7 @@ test('merge discards generated defaults for omitted host authority; implicit gra
   const f=await fixture(t);await f.sync.save({...settings(),developmentChannels:[development]});
   assert.ok(!Object.hasOwn(await hostPolicy(f),'trustedSlackChannels'));
   assert.ok(!Object.hasOwn(await hostPolicy(f),'participation'));
+  assert.ok(!Object.hasOwn(await hostPolicy(f),'participationPolicySource'));
   assert.deepEqual(validateRouterConfig(await hostPolicy(f)).trustedSlackChannels,[development]);
   await f.sync.save({...settings(),developmentChannels:[]});await f.sync.refresh();
   await f.sync.close();const restarted=f.restart();await restarted.init();

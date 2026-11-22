@@ -1165,3 +1165,5 @@ SA-OPS-01 / SA-M1。Codex 在 OCI 独立 Gateway 用模拟 Slack 创建和调整
 ## 2026-11-20 — Development Codex credential delivery
 
 SA2-TASK · 负责人 Codex。PR #147 已部署。插件有尚未释放的操作，热重载失败；服务重启加载已验证的配置后，由可信 Slack 请求完成首次绑定。其他 Slack 频道沿用原执行身份。两轮专用 Codex 执行及 Nori 父级复核完成了 94 条 Linear 任务验收，项目及绑定已保留。
+
+SA2 #200 · 2026-11-22。负责人 Codex。Router 注册时可读取已推广的单范围策略。#199 和 #200 合并验证时本地通过 1,661 项，按配置跳过 5 项。待 PR 合并部署后，在线上 Slack 核对生效版本、行为和回滚。
