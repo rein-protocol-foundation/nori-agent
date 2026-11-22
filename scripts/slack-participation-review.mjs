@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { participationBelief, validateParticipationPolicy } from '../plugins/rein-router/slack-participation.mjs';
 import { isSlackMessageId, isSlackReviewerId, openParticipationEvidence,
   participationPolicyDigest, participationScopeKey } from '../plugins/rein-router/slack-participation-evidence.mjs';
-import { ingestParticipationFeedback } from './slack-participation-feedback.mjs';
+import { ingestParticipationFeedback, inspectParticipationThread } from './slack-participation-feedback.mjs';
 import { oneScopePolicy, openParticipationReviewStore } from './slack-participation-review-store.mjs';
 
 const fail = () => { throw new Error('router_participation_review_invalid'); };
@@ -164,6 +164,7 @@ function comparisonFromFeedback({ policy, evidence, store, candidateVersion }) {
 }
 
 const commandOptions = {
+  'inspect-thread': ['--state-dir', '--policy-file', '--feedback-config', '--decision-id'],
   inspect: ['--state-dir', '--policy-file', '--scope-file'],
   compare: ['--state-dir', '--policy-file', '--review-file'],
   stage: ['--state-dir', '--policy-file', '--review-file'],
@@ -175,7 +176,7 @@ const commandOptions = {
   'rollback-policy': ['--state-dir', '--stage-id'],
   'status-policy': ['--state-dir'],
 };
-const isPath = name => !['--candidate-version', '--stage-id'].includes(name);
+const isPath = name => !['--candidate-version', '--stage-id', '--decision-id'].includes(name);
 
 function ensureUnused(path) {
   try { lstatSync(path); } catch (error) { if (error.code === 'ENOENT') return; throw error; }
@@ -220,6 +221,13 @@ export function runParticipationReview([command, ...args], { environment = proce
   const stageId = opts['--stage-id'];
   if (stageId !== undefined && !/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/.test(stageId)) fail();
 
+  if (command === 'inspect-thread') {
+    const config = readPrivateJson(opts['--feedback-config']);
+    const evidence = openParticipationEvidence({ stateDir, readOnly: true });
+    return inspectParticipationThread({ policy, config, decisionId: opts['--decision-id'], evidence,
+      fetchImpl, token: environment.REIN_PARTICIPATION_FEEDBACK_SLACK_TOKEN })
+      .then(report => writePrivateJson(output, report)).finally(() => evidence.close());
+  }
   if (command === 'ingest') return captureFromSlack(opts, policy, { environment, fetchImpl });
   if (['init-policy', 'apply-policy', 'rollback-policy', 'status-policy'].includes(command)) {
     const store = openParticipationReviewStore({ stateDir, readOnly: command === 'status-policy' });

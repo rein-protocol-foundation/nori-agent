@@ -1,5 +1,23 @@
 # Acceptance evidence
 
+## SA2 retained issues · November 21, 2026
+
+Owner Codex. Scope is the nine issues retained by the V2 audit. GitHub reopen → Linear Backlog, production participation without a mention, and the 👀 acknowledgement retain their existing passes.
+
+| Issue | Evidence or missing input | Next observation |
+| --- | --- | --- |
+| #201 | Temporary account attribution passed. The owner designated the administrator-email Linear account, accessed by API token. The long-term GitHub account is pending. | Match each designated account to its authenticated provider identity and the author of one scoped operation. |
+| #199 | Local exact-run ledger test covers two concurrent decisions in one session, worker output, a Slack receipt, duplicate callbacks, wrong audience, restart and missing evidence. Ordinary Slack dispatch and sent hooks lack a common run identifier on the pin. | [Native contract and proposed extension](slack-participation.md#private-evidence-and-operator-reviewed-replay). Five historical decision-to-thread readbacks passed. Verify decision, selected worker and Slack readback on the same new turn. |
+| #190 | Native cross-session lookup passed. Ordinary Slack recovery remains open. | From a fresh thread ask for the previously created task and its execution record without supplying the run ID. Independently compare both references with the original. |
+| #193 | Concurrent fixture and scope refusals passed. Independent editors and an authorized pair are pending. | Capture both initial values. Each holder edits a different provider in the same window. Inspect both provider histories and the conflict receipt before any reconciliation. |
+| #196 | Existing English samples and production Chinese help remain valid. | Add an indirect request in another language, then a human-to-human follow-up such as “Ya lo resolvió Ana, gracias” after the other participant reports completion. Read back the gate, worker if admitted, and actual visible thread outcome. |
+| #197 | Plugin takeover precedence has local native coverage. A real bound thread is pending. | Match a real source message to the binding owner, first handler and visible reply or bounded thread readback. |
+| #198 | Replay, duplicate, capacity, timeout and paid opt-out checks passed previously. | In the test channel capture overlapping native delivery windows, then reconcile classifier/worker calls and reply IDs separately for each message. Missing receipts remain unknown. |
+| #202 | Existing revocation and provider-specific grant checks passed. The owner designated the admin account for the production positive. Backend verification and the second independent holder remain pending. | Resolve current backend authority for each participant and capture provider readback of the scoped success. |
+| #200 | Existing isolated policy-store checks passed. | Verify effective version, selected behavior, rollback and restored behavior on the authorized gateway. The existing independent review waiver stands. |
+
+The private OCI test ledger and test bot's authenticated Slack Web API reader reproduced five historical root-message outcomes through a fixed observation cutoff. Help, clarification and the worker’s default error each had one visible Nori reply. Chatter and the optional-silence case had zero. No other replies were present. All five old rows lack a worker model. The connector search returned no matches and a test user lacked channel-info scope. The existing test bot had all required read permissions. No messages were sent. The scoped readback receipt is saved outside Git.
+
 SA2 · November 21, 2026. Codex reconciled the [November 20 status report](super-agent-status-2026-11-20.md) against existing Gateway, Slack, Lark and v2 records. Slack participation and acknowledgement have production readback. The owner confirmed Lark group assignments. Post-fix public-group reply readback remains outstanding. No live probes were run for this review.
 
 ## Discord onboarding UC09 · November 21, 2026 UTC

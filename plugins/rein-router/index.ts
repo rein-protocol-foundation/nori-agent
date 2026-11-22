@@ -11,7 +11,7 @@ import { loadCronStore, resolveCronStorePath } from 'openclaw/plugin-sdk/cron-st
 import { createSlackDevelopmentAuthorizer, createSlackScheduleAuthorizer, DEVELOPMENT_AUTH_TIMEOUT_MS } from './slack-development.mjs';
 import { acknowledgeSlackParticipation } from './slack-participation-ack.ts';
 import { createSlackParticipation } from './slack-participation.mjs';
-import { openParticipationEvidence } from './slack-participation-evidence.mjs';
+import { openParticipationEvidence, participationPolicyDigest } from './slack-participation-evidence.mjs';
 import { hasControlCommand } from 'openclaw/plugin-sdk/command-detection';
 import { isAbortRequestText } from 'openclaw/plugin-sdk/command-primitives-runtime';
 
@@ -55,6 +55,18 @@ export default definePluginEntry({
         try {
           evidence = openParticipationEvidence({ stateDir: api.runtime.state.resolveStateDir() });
         } catch { evidenceUnavailable(); }
+      }
+      if (evidence) {
+        const policyHash = participationPolicyDigest(participationPolicy);
+        api.on('reply_payload_sending', (event, ctx) => {
+          try { evidence?.observeFinalPayload(event, ctx, participationPolicy, policyHash); } catch { evidenceUnavailable(); }
+        });
+        api.on('llm_output', (event, ctx) => {
+          try { evidence?.observeWorker(event, ctx, policyHash); } catch { evidenceUnavailable(); }
+        });
+        api.on('message_sent', (event, ctx) => {
+          try { evidence?.observeSent(event, ctx, policyHash); } catch { evidenceUnavailable(); }
+        });
       }
       const participation = createSlackParticipation({ policy: participationPolicy,
         decisions: api.runtime.decisions, allowPaidJev: config.decision.allowPaidJev,
