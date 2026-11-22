@@ -1164,4 +1164,4 @@ SA2-TASK · 负责人 Codex。PR #147 已部署。插件有尚未释放的操作
 
 ## 2026-11-22 · Foundation 人员目录维护
 
-负责人 Codex。新增可发现的 Nori 技能，使用 Foundation 仓库中的人员目录维护流程。技能元数据和仓库基础检查在本地通过。规范流程见 [Foundation PR #51](https://github.com/rein-protocol-foundation/ReinProtocolFoundation/pull/51)。等待 PR 评审和人工技能验收，尚未部署。
+负责人 Codex。新增可发现的 Nori 技能，在 Nori 仓库维护完整的人员目录工作流程。技能元数据和仓库基础检查在本地通过。网站数据结构及组件见 [Foundation PR #51](https://github.com/rein-protocol-foundation/ReinProtocolFoundation/pull/51)。等待 PR 评审和人工技能验收，尚未部署。

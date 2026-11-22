@@ -1673,4 +1673,4 @@ SA2-TASK · Owner Codex. Deployed the opt-in route from PR #147. A retained plug
 
 ## 2026-11-22 · Foundation People workflow
 
-Owner Codex. Added a discoverable Nori skill that uses the canonical Foundation People profile workflow. Local skill metadata and scaffold checks passed. The workflow depends on the canonical skill in [Foundation PR #51](https://github.com/rein-protocol-foundation/ReinProtocolFoundation/pull/51). PR review and manual skill acceptance are pending. No rollout occurred.
+Owner Codex. Added a discoverable Nori skill that contains the full Foundation People profile workflow. Local skill metadata and scaffold checks passed. The website schema and components are provided by [Foundation PR #51](https://github.com/rein-protocol-foundation/ReinProtocolFoundation/pull/51). PR review and manual skill acceptance are pending. No rollout occurred.
