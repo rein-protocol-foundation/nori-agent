@@ -101,26 +101,15 @@ const plainHuman = (message, actor) => message?.type === 'message' && message.us
 const inThread = (message, root) => message?.ts === root ?
   message.thread_ts === undefined || message.thread_ts === root : message?.thread_ts === root;
 
-/** Verify explicit author feedback against current Slack authority before storing a private typed receipt. */
-export async function ingestParticipationFeedback({ policy: raw, config, request, evidence, store,
-  token, fetchImpl = globalThis.fetch, clock = () => new Date() }) {
-  const policy = oneScopePolicy(raw);
-  const [scope] = policy.channels;
+function validateReaderConfig(config, scope) {
   only(config, ['schemaVersion', 'enabled', 'scope', 'readerUserId', 'noriBotUserId', 'noriBotId']);
-  only(request, ['schemaVersion', 'decisionId', 'threadId', 'feedbackMessageId', 'split']);
   if (config.schemaVersion !== 1 || config.enabled !== true ||
       participationScopeKey(config.scope) !== participationScopeKey(scope) ||
       !isSlackReviewerId(config.readerUserId) || !isSlackReviewerId(config.noriBotUserId) ||
-      typeof config.noriBotId !== 'string' || !/^B[A-Z0-9]{5,31}$/.test(config.noriBotId) ||
-      request.schemaVersion !== 1 || typeof request.decisionId !== 'string' ||
-      !/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/.test(request.decisionId) ||
-      !isSlackMessageId(request.threadId) || !isSlackMessageId(request.feedbackMessageId) ||
-      !['calibration', 'holdout'].includes(request.split)) fail();
-  const decision = evidence.read({ policy, scope }).find(item => item.id === request.decisionId);
-  if (!decision || !isSlackMessageId(decision.messageId) || !isSlackReviewerId(decision.senderId) ||
-      decision.senderId === config.noriBotUserId || timestamp(request.threadId) > timestamp(decision.messageId) ||
-      timestamp(request.feedbackMessageId) <= timestamp(decision.messageId)) fail();
+      typeof config.noriBotId !== 'string' || !/^B[A-Z0-9]{5,31}$/.test(config.noriBotId)) fail();
+}
 
+async function scopedReader(config, scope, token, fetchImpl) {
   const read = slackReader({ token, fetchImpl, signal: AbortSignal.timeout(15000) });
   const auth = await read('auth.test');
   if (auth.team_id !== scope.workspaceId || auth.user_id !== config.readerUserId) fail();
@@ -129,6 +118,33 @@ export async function ingestParticipationFeedback({ policy: raw, config, request
   if (conversation?.id !== scope.channelId || conversation.is_archived === true ||
       conversation.is_ext_shared === true || conversation.is_im === true || conversation.is_mpim === true ||
       !(conversation.is_channel === true || conversation.is_group === true)) fail();
+  return read;
+}
+
+async function verifyAuthor(read, scope, decision, config) {
+  const user = await read('users.info', { user: decision.senderId });
+  if (user.user?.id !== decision.senderId || user.user.team_id !== scope.workspaceId ||
+      user.user.deleted !== false || user.user.is_bot !== false || user.user.is_app_user === true) fail();
+  await checkMembership(read, scope.channelId, new Set([decision.senderId, config.readerUserId, config.noriBotUserId]));
+}
+
+/** Verify explicit author feedback against current Slack authority before storing a private typed receipt. */
+export async function ingestParticipationFeedback({ policy: raw, config, request, evidence, store,
+  token, fetchImpl = globalThis.fetch, clock = () => new Date() }) {
+  const policy = oneScopePolicy(raw);
+  const [scope] = policy.channels;
+  validateReaderConfig(config, scope);
+  only(request, ['schemaVersion', 'decisionId', 'threadId', 'feedbackMessageId', 'split']);
+  if (request.schemaVersion !== 1 || typeof request.decisionId !== 'string' ||
+      !/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/.test(request.decisionId) ||
+      !isSlackMessageId(request.threadId) || !isSlackMessageId(request.feedbackMessageId) ||
+      !['calibration', 'holdout'].includes(request.split)) fail();
+  const decision = evidence.read({ policy, scope }).find(item => item.id === request.decisionId);
+  if (!decision || !isSlackMessageId(decision.messageId) || !isSlackReviewerId(decision.senderId) ||
+      decision.senderId === config.noriBotUserId || timestamp(request.threadId) > timestamp(decision.messageId) ||
+      timestamp(request.feedbackMessageId) <= timestamp(decision.messageId)) fail();
+
+  const read = await scopedReader(config, scope, token, fetchImpl);
   // Check the thread and its exact records before parsing the tiny feedback grammar.
   const thread = await readThread(read, scope.channelId, request, decision.messageId);
   const source = thread.get(decision.messageId), note = thread.get(request.feedbackMessageId);
@@ -147,14 +163,44 @@ export async function ingestParticipationFeedback({ policy: raw, config, request
         timestamp(answerId) <= timestamp(messageId) || timestamp(answerId) >= timestamp(request.feedbackMessageId)) fail();
     reply = { messageId: answerId, actualModel: null };
   }
-  const user = await read('users.info', { user: decision.senderId });
-  if (user.user?.id !== decision.senderId || user.user.team_id !== scope.workspaceId ||
-      user.user.deleted !== false || user.user.is_bot !== false || user.user.is_app_user === true) fail();
-  await checkMembership(read, scope.channelId, new Set([decision.senderId, config.readerUserId, config.noriBotUserId]));
+  await verifyAuthor(read, scope, decision, config);
 
   const receipt = { schemaVersion: 1, source: 'slack-web-api', policyDigest: participationPolicyDigest(policy),
     scope, decisionId: decision.id, messageId, actorId: decision.senderId, signal,
     sourceMessageId: request.feedbackMessageId, threadId: request.threadId, split: request.split,
     ...(reply ? { reply } : {}), verifiedAt: clock().toISOString() };
   return store.recordFeedback(policy, receipt);
+}
+
+
+/** Observe a complete Slack root thread through a fixed cutoff; never infer terminal worker silence. */
+export async function inspectParticipationThread({ policy: raw, config, decisionId, evidence, token,
+  fetchImpl = globalThis.fetch, clock = () => new Date() }) {
+  const policy = oneScopePolicy(raw), [scope] = policy.channels;
+  validateReaderConfig(config, scope);
+  const entry = evidence.readDecision({ policy, scope, decisionId });
+  const decision = entry?.decision;
+  if (!decision || !isSlackMessageId(decision.messageId) || !isSlackReviewerId(decision.senderId) ||
+      decision.senderId === config.noriBotUserId) fail();
+  const read = await scopedReader(config, scope, token, fetchImpl);
+  await verifyAuthor(read, scope, decision, config);
+  const cutoff = clock(), millis = cutoff.getTime();
+  const latest = Math.floor(millis / 1000) + '.' + String(millis % 1000).padStart(3, '0') + '000';
+  if (timestamp(latest) <= timestamp(decision.messageId)) fail();
+  const root = decision.messageId;
+  const thread = await readThread(read, scope.channelId, { threadId: root, feedbackMessageId: latest }, root);
+  const source = thread.get(root);
+  if (!plainHuman(source, decision.senderId) || !inThread(source, root)) fail();
+  const botReplies = [], others = [];
+  for (const message of thread.values()) {
+    if (message.ts === root) continue;
+    if (!inThread(message, root) || timestamp(message.ts) <= timestamp(root) || timestamp(message.ts) > timestamp(latest)) fail();
+    if (message.type === 'message' && message.bot_id === config.noriBotId &&
+        (message.user === undefined || message.user === config.noriBotUserId)) botReplies.push(message.ts);
+    else if (message.user === config.noriBotUserId || message.bot_id === config.noriBotId) fail();
+    else others.push(message.ts);
+  }
+  return { schemaVersion: 1, scope, policyDigest: entry.policyDigest, decision,
+    slackThread: { sourceMessageId: root, observedThrough: cutoff.toISOString(), botReplyIds: botReplies,
+      otherReplyCount: others.length, outcome: botReplies.length ? 'bot-replies-visible' : 'no-bot-reply-visible' } };
 }

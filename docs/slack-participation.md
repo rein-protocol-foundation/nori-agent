@@ -93,12 +93,33 @@ numeric scores, classifier attempts, elapsed time, decision failure, and gate ou
 first observation for a scope, policy and message combination across restarts. At 10,000 decisions it
 stops recording new entries and emits a warning. Preserve existing evidence when rotating the ledger.
 
-Normal logs contain only fixed decision fields without identity, message references or scores. The
-private ledger stores no conversation text. For admitted turns it records delivery and actual worker
-model as unobserved. The pinned Slack `reply_dispatch` event lacks a native run ID, and the Slack
-`message_sent` producer lacks a matching run identity. Session-level status cannot resolve concurrent
-turns. A reviewer can independently verify a specific reply, author and actual model from native
-evidence and record the verified reference in their private review file.
+When the host supplies a dispatch run ID, inspection can show the models observed on individual worker attempts by
+`llm_output` and the distinct Slack message IDs acknowledged by `message_sent`. Both joins
+require the same run and session. The observer checks the worker agent and account or the
+delivery account and destination. A worker's literal `NO_REPLY` is recorded separately from
+delivery. An absent send receipt leaves delivery `unobserved`. A failed or superseded attempt can emit the same model hook. For a live final payload,
+`reply_payload_sending` can supply the authenticated source message ID, run ID and winning
+model from `usageState.resolvedRef`, even if ingress had no run ID. The observer checks the
+original sender, destination, configured scope and session before recording `actualModel`.
+This identifies the worker on the source dispatcher. A steered message can share that run,
+and preparing the payload does not establish delivery. Pre-worker suppression is
+`gate-silence`. The ledger retains identifiers, a session digest and typed facts only.
+
+**Pinned gateway limitation (#199).** On OpenClaw `4a11f89e84`, ordinary Slack ingress
+calls `dispatchChannelInboundTurn` without `replyOptions.runId`. The dispatch hook forwards
+that optional value. Slack's native `emitSlackMessageSentHooks` forwards the destination and
+message timestamp without the worker run ID. A native finalization can classify a deliberately
+silent result, but the plugin has no post-settlement observation of that source turn. A session
+key, timing window, or shared diagnostic trace cannot establish which queued message produced
+a reply.
+
+The proposed upstream extension is a passive settled-turn hook with the authenticated source
+(account, workspace, channel, message), session, actual worker run ID(s), and settled worker model and delivery
+receipts or an explicit deliberate-silence outcome. Preserve the original source on queued or
+adopted messages and mark indeterminate outcomes explicitly. Existing `llm_output` supplies
+attempt-level model observations. Exercise two simultaneous messages in one thread, a deferred run, a partial delivery,
+and a silent run with no visible delivery before accepting native support. Until then, retain the
+private manual readback procedure for ordinary Slack turns.
 
 Run the review script as the OS owner of the private runtime files. Use owner-only JSON files for
 the active **participation policy alone**, scope and review. The inspect output supplies the scoped
@@ -108,6 +129,18 @@ decision IDs and exact policy fingerprint.
 node scripts/slack-participation-review.mjs inspect --state-dir /private/runtime/openclaw --policy-file /private/runtime/policy.json --scope-file /private/runtime/scope.json --output /private/runtime/inspection.json
 node scripts/slack-participation-review.mjs compare --state-dir /private/runtime/openclaw --policy-file /private/runtime/policy.json --review-file /private/runtime/review.json --output /private/runtime/comparison.json
 node scripts/slack-participation-review.mjs stage --state-dir /private/runtime/openclaw --policy-file /private/runtime/policy.json --review-file /private/runtime/review.json --output /private/runtime/staging.json
+```
+
+For a root message, `inspect-thread` takes the decision ID and queries the scoped Slack Web API
+for the root and all visible thread replies through a fixed cutoff. It uses the same private
+reader configuration and token as `ingest`. The private report joins the decision and available
+worker facts with timestamps returned by Slack for the configured bot, plus a count of other
+thread messages. A successful empty read means no bot reply was visible through that cutoff.
+A failed, incomplete or wrong-scope read produces no report. Nested source messages require a
+run-bound transport receipt to distinguish siblings.
+
+```sh
+node scripts/slack-participation-review.mjs inspect-thread --state-dir /private/runtime/openclaw --policy-file /private/runtime/policy.json --feedback-config /private/runtime/slack-reader.json --decision-id <decision-id> --output /private/runtime/thread-observation.json
 ```
 
 The scope file holds one configured scope object. The review file includes `schemaVersion: 1`,

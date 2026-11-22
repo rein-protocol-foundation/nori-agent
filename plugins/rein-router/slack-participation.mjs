@@ -239,7 +239,7 @@ export function createSlackParticipation({ policy: raw, decisions, allowPaidJev 
     }
     if (policy.recordEvidence && result.evidence && active && !context.abortSignal?.aborted) {
       try {
-        writeEvidence?.({ ...result.evidence, delivery: handled ? 'gate-silence' : 'unobserved', actualModel: null });
+        writeEvidence?.({ ...result.evidence, runId: event.runId, sessionKey: event.ctx.SessionKey, delivery: handled ? 'gate-silence' : 'unobserved', actualModel: null });
       } catch {
         evidenceUnavailable?.();
       }

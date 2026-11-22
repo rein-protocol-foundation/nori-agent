@@ -14,6 +14,9 @@ import { withFullRuntimeReplyConfig } from '../../vendor/openclaw/src/auto-reply
 import { createReplyDispatcher } from '../../vendor/openclaw/src/auto-reply/reply/reply-dispatcher.js';
 import { hasControlCommand } from '../../vendor/openclaw/src/plugin-sdk/command-detection.js';
 import { isAbortRequestText } from '../../vendor/openclaw/src/plugin-sdk/command-primitives-runtime.js';
+import { buildInboundReplyPayloadSendingBeforeDeliver } from '../../vendor/openclaw/src/infra/outbound/deliver-hooks.js';
+import { recordReplyUsageState } from '../../vendor/openclaw/src/auto-reply/reply/reply-usage-state.js';
+import { emitSlackMessageSentHooks } from '../../vendor/openclaw/extensions/slack/src/message-sent-hook.js';
 import { createSlackParticipation } from '../../plugins/rein-router/slack-participation.mjs';
 import { registerSessionBindingAdapter, unregisterSessionBindingAdapter } from '../../vendor/openclaw/src/infra/outbound/session-binding-service.js';
 import { resolveRuntimeConversationBindingRouteAsync } from '../../vendor/openclaw/src/channels/plugins/binding-routing.js';
@@ -57,9 +60,18 @@ try {
       return { status: 'ok', result: { answers: {
         dutyRelevant: { type: 'boolean', probabilityTrue: 0 }, helpful: { type: 'boolean', probabilityTrue: helpful } } } };
     } } });
+  const nativeReceipts: Array<{ messageId?: string; runId?: string }> = [];
+  const finals: unknown[] = [];
+  api.on('reply_payload_sending', (event, ctx) => {
+    if (event.usageState) finals.push([ctx.messageId, ctx.senderId, ctx.conversationId, ctx.runId, event.usageState.resolvedRef]);
+  });
+  api.on('message_sent', (event, ctx) => {
+    nativeReceipts.push({ messageId: event.messageId, runId: event.runId ?? ctx.runId });
+  });
   api.on('inbound_claim', () => { claims++; return { handled: true }; });
   api.on('reply_dispatch', (event, context) => {
     hooks++;
+    assert.equal(event.runId, undefined, 'ordinary Slack producer supplied no dispatch run identity');
     assert.equal(event.ctx.GroupSpace, 'TFIXTURE1');
     assert.equal(event.ctx.SenderId, 'UALICE01');
     assert.equal(event.ctx.WasMentioned, false);
@@ -96,6 +108,14 @@ try {
   assert.equal(participation.observations().at(-1)?.reason, 'passive');
   assert.equal(participation.observations().at(-1)?.contextMessages, 5);
   console.log('PASS: native agent reply_dispatch silently handles ordinary Slack ingress before worker/lifecycle; global inbound_claim is not invoked.');
+  recordReplyUsageState('worker-final', { agentId: 'main', resolvedRef: 'fixture/winner' });
+  const beforeDeliver = buildInboundReplyPayloadSendingBeforeDeliver(ctx, { runId: 'worker-final' });
+  await beforeDeliver({ text: 'fixture' }, { kind: 'final' });
+  assert.deepEqual(finals, [['1000.001', 'UALICE01', 'channel:CFIXTURE1', 'worker-final', 'fixture/winner']]);
+  emitSlackMessageSentHooks({ to: 'channel:CFIXTURE1', accountId: 'default', content: 'fixture',
+    messageId: '1001.001', success: true, sessionKeyForInternalHooks: ctx.SessionKey });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(nativeReceipts.at(-1), { messageId: '1001.001', runId: undefined });
   const restricted = buildChannelInboundEventContext({ channel: 'slack', accountId: 'default',
     messageId: '1000.002', from: 'slack:channel:CFIXTURE1', sender: { id: 'UALICE01' },
     conversation: { kind: 'channel', id: 'CFIXTURE1', nativeChannelId: 'CFIXTURE1', spaceId: 'TFIXTURE1' },

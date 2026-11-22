@@ -66,6 +66,18 @@ export default definePluginEntry({
           evidence = openParticipationEvidence({ stateDir: api.runtime.state.resolveStateDir() });
         } catch { evidenceUnavailable(); }
       }
+      if (evidence) {
+        const policyHash = participationPolicyDigest(participationPolicy);
+        api.on('reply_payload_sending', (event, ctx) => {
+          try { evidence?.observeFinalPayload(event, ctx, participationPolicy, policyHash); } catch { evidenceUnavailable(); }
+        });
+        api.on('llm_output', (event, ctx) => {
+          try { evidence?.observeWorker(event, ctx, policyHash); } catch { evidenceUnavailable(); }
+        });
+        api.on('message_sent', (event, ctx) => {
+          try { evidence?.observeSent(event, ctx, policyHash); } catch { evidenceUnavailable(); }
+        });
+      }
       const participation = createSlackParticipation({ policy: participationPolicy,
         decisions: api.runtime.decisions, allowPaidJev: config.decision.allowPaidJev,
         acknowledge: receipt => acknowledgeSlackParticipation(receipt, api.logger),

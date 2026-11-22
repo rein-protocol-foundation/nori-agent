@@ -1,5 +1,9 @@
 # Nori-Agent development, verification and deployment record
 
+## November 21, 2026 (Los Angeles) · SA2 retained issues
+
+Owner Codex. #199 adds optional scoped worker and Slack receipt observations. The ordinary pinned Slack producer still lacks a common turn identifier. Five historical root-thread readbacks matched the recorded outcomes (three with one bot reply, two with zero). No historical worker model was available in the ledger. The full local suite passed with five opt-in skips. No gateway deployment or provider writes were performed. [Acceptance and next actions for all nine issues](acceptance-evidence.md#sa2-retained-issues--november-21-2026).
+
 SA2 · November 21, 2026. Codex reconciled the delivery plan and v2 matrix with dated production records and the owner’s Lark rollout confirmation. The [status report](super-agent-status-2026-11-20.md) records verification gaps and the prior review waiver. This change updates documentation only.
 
 ## November 21, 2026 UTC · Discord onboarding UC09
