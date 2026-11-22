@@ -638,7 +638,3 @@ Local implementation now covers marked status/error replies and configured Disco
 ## 2026-11-20 — Development Codex credential delivery
 
 SA2-TASK · Owner Codex. The trusted development-channel handoff passed live acceptance for the Linear project import. All 94 tasks through v2.1 were read back in 11 milestones. Detailed results are recorded in [acceptance evidence](acceptance-evidence.md).
-
-## 2026-11-22 · Foundation People workflow
-
-Owner Codex. The Nori skill for authorized public People profile updates is ready for PR review and uses the website schema and components introduced in [Foundation PR #51](https://github.com/rein-protocol-foundation/ReinProtocolFoundation/pull/51). Manual skill acceptance remains pending.
