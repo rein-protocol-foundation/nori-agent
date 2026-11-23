@@ -1,5 +1,9 @@
 # Nori-Agent 开发、验证与部署记录
 
+## 2026-11-22 · Lark 群消息表情回复
+
+SA2，负责人 Codex。Lark 候选配置为内部群和社区群启用 `rein-lark-acknowledgements`。群成员 @ 相应机器人后，插件使用接收账号的身份，在通过准入的原消息上添加 Lark 原生 `OK` 表情。添加失败时仍继续原有回复。禁用该插件即可关闭此行为。两个 Lark 应用都需要租户权限 `im:message.reactions:write_only`。[验证及待验收项](acceptance-evidence.md#lark-group-acknowledgements--november-22-2026)
+
 ## 2026-11-21（洛杉矶）· SA2 保留工单
 
 负责人 Codex。#199 增加按同一执行标识关联模型和 Slack 投递回执的能力，当前固定版本的普通 Slack 发送链路仍缺少共同标识。OCI 测试账号以只读权限核对 5 条历史真实 Slack 根消息，3 条各有一条机器人回复，2 条截至回读时为零；旧账本缺少执行模型。本地全套 1,661 项通过，5 项按配置跳过。本次没有部署网关或写入外部服务。[九张工单的验收记录和下一步](acceptance-evidence.md#sa2-retained-issues--november-21-2026)。

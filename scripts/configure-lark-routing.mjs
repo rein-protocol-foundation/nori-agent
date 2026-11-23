@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { validateRouterConfig } from '../plugins/rein-router/policy.mjs';
 import { assertRuntimeConfig } from '../plugins/rein-router/runtime.mjs';
 import { isLarkChatId, isLarkSenderId } from '../plugins/rein-router/scoped-policy.mjs';
@@ -15,7 +16,7 @@ function validateAccount(source) {
 }
 
 /** Prepare an explicit shared Gateway candidate. No credentials, deploy or state mutation. */
-export function configureLarkRouting({ original, consoleSettings, workspaceId, community, internal }) {
+export function configureLarkRouting({ original, consoleSettings, workspaceId, community, internal, acknowledgementPluginPath }) {
   validateAccount(community);
   validateAccount(internal);
   if (community.appId === internal.appId || community.appSecretEnv === internal.appSecretEnv)
@@ -78,5 +79,27 @@ export function configureLarkRouting({ original, consoleSettings, workspaceId, c
     exclusions.channels = [...new Set([...(exclusions.channels ?? []), 'feishu'])];
   }
   assertRuntimeConfig(validateRouterConfig(router), config);
-  return { config, consoleSettings: settings };
+  return { config: configureLarkAcknowledgements(config, acknowledgementPluginPath), consoleSettings: settings };
+}
+
+// Also applies to an existing dual-account gateway without recreating its routes.
+export function configureLarkAcknowledgements(original, acknowledgementPluginPath =
+  fileURLToPath(new URL('../plugins/rein-lark-acknowledgements', import.meta.url))) {
+  const config = structuredClone(original);
+  const channel = config.channels?.feishu;
+  if (!channel?.enabled || !Object.entries(roles).every(([role, agentId]) =>
+    channel.accounts?.[accountId(role)]?.enabled && config.bindings?.some(binding =>
+      binding.agentId === agentId && binding.match?.channel === 'feishu' && binding.match.accountId === accountId(role))))
+    fail('dual_account_bindings_required');
+  const acknowledgements = 'rein-lark-acknowledgements';
+  config.plugins ??= {};
+  config.plugins.entries ??= {};
+  const entry = config.plugins.entries[acknowledgements] ??= {};
+  entry.enabled = true;
+  entry.hooks = { ...entry.hooks, allowConversationAccess: true };
+  if (config.plugins.allow?.length && !config.plugins.allow.includes(acknowledgements))
+    config.plugins.allow.push(acknowledgements);
+  config.plugins.load ??= {};
+  config.plugins.load.paths = [...new Set([...(config.plugins.load.paths ?? []), acknowledgementPluginPath])];
+  return config;
 }

@@ -1,5 +1,9 @@
 # Nori-Agent development, verification and deployment record
 
+## November 22, 2026 · Lark group acknowledgements
+
+SA2, owner Codex. The Lark routing candidate loads `rein-lark-acknowledgements` for internal and community group mentions. It uses the admitted message ID and the receiving account's credentials to add the Lark `OK` reaction. A failed reaction allows the normal reply to continue. Disable the plugin entry to turn this behaviour off. The installed Lark apps require the tenant scope `im:message.reactions:write_only`. [Verification and outstanding live checks](acceptance-evidence.md#lark-group-acknowledgements--november-22-2026)
+
 ## November 21, 2026 (Los Angeles) · SA2 retained issues
 
 Owner Codex. #199 adds optional scoped worker and Slack receipt observations. The ordinary pinned Slack producer still lacks a common turn identifier. Five historical root-thread readbacks matched the recorded outcomes (three with one bot reply, two with zero). No historical worker model was available in the ledger. The full local suite passed with five opt-in skips. No gateway deployment or provider writes were performed. [Acceptance and next actions for all nine issues](acceptance-evidence.md#sa2-retained-issues--november-21-2026).

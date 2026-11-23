@@ -1,0 +1,6 @@
+{
+  "id": "rein-lark-acknowledgements",
+  "name": "Lark group acknowledgements",
+  "activation": { "onStartup": true },
+  "configSchema": { "type": "object", "additionalProperties": false, "properties": {} }
+}

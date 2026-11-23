@@ -206,6 +206,8 @@ importers:
         specifier: 1.3.30
         version: 1.3.30
 
+  plugins/rein-lark-acknowledgements: {}
+
   plugins/rein-member-introductions: {}
 
   plugins/rein-operations:
