@@ -2,6 +2,8 @@
 
 ## 2026-11-22 · Lark 群消息表情回复
 
+2026-11-23，Lark 已批准并发布内部 Nori 1.0.2 和 Community Nori 1.0.3。两个应用的表情写入租户权限均回读为已授权。OCI 网关于 17:31 UTC 热加载插件，旧配置备份在 `runtime/openclaw/config-before-lark-ok-20261123.json`。待观察两个群的新提及及原消息表情。
+
 SA2，负责人 Codex。Lark 候选配置为内部群和社区群启用 `rein-lark-acknowledgements`。群成员 @ 相应机器人后，插件使用接收账号的身份，在通过准入的原消息上添加 Lark 原生 `OK` 表情。添加失败时仍继续原有回复。禁用该插件即可关闭此行为。两个 Lark 应用都需要租户权限 `im:message.reactions:write_only`。[验证及待验收项](acceptance-evidence.md#lark-group-acknowledgements--november-22-2026)
 
 ## 2026-11-21（洛杉矶）· SA2 保留工单
