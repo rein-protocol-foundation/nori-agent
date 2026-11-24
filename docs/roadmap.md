@@ -1,6 +1,6 @@
 # Nori-Agent implementation roadmap
 
-SA2 · November 22, 2026. The two Lark group bots have local coverage for a persistent OK reaction on an admitted mention. Live acceptance awaits a reaction from each app. [Evidence](acceptance-evidence.md#lark-group-acknowledgements--november-22-2026)
+SA2 · November 23, 2026. Lark group OK acknowledgements complete. Live verification confirmed each bot added an OK to its original mention. [Evidence](acceptance-evidence.md#lark-group-acknowledgements--november-22-2026)
 
 SA2 · November 21, 2026 (Los Angeles). Owner Codex. #199 links available worker facts and has five real decision-to-thread readbacks. A fresh combined turn and native per-run delivery evidence remain open. All nine retained issues await their product observations. [Checks and remaining inputs](acceptance-evidence.md#sa2-retained-issues--november-21-2026).
 
