@@ -4,7 +4,7 @@ import { validateRouterConfig, buildOpenClawFragment } from '../plugins/rein-rou
 import { resolveScopedPolicy, describeScopedPolicies } from '../plugins/rein-router/scoped-policy.mjs';
 import { createRouter, assertRuntimeConfig } from '../plugins/rein-router/runtime.mjs';
 import { createScopedFallbackStream } from '../plugins/rein-router/scoped-stream.mjs';
-import { configureLarkRouting } from '../scripts/configure-lark-routing.mjs';
+import { configureLarkAcknowledgements, configureLarkRouting } from '../scripts/configure-lark-routing.mjs';
 const key = name => `sk-magpie-key-fixture-singleton-${name}-00000000`;
 const route = id => ({ id, provider: 'Fixture', gatewayModel: `fixture/${id}`, gatewayKeyEnvVar: `M0_ROUTE_${id.toUpperCase()}`,
   billingSource: 'Synthetic subscription', billingMode: 'subscription', billingVerified: true, purpose: 'Synthetic test route',
@@ -332,8 +332,14 @@ test('Lark candidate binds two distinct accounts without altering Slack or Disco
     { agentId: 'main', match: { channel: 'feishu', accountId: 'lark-internal' } },
   ]);
   const feishu = candidate.config.channels.feishu;
+  assert.deepEqual(configureLarkAcknowledgements(candidate.config), candidate.config);
+  assert.throws(() => configureLarkAcknowledgements(original), /dual_account_bindings_required/);
   assert.equal(feishu.dmPolicy, 'disabled');
   assert.equal(feishu.historyLimit, 0);
+  assert.ok(candidate.config.plugins.load.paths.some(path => path.endsWith('/rein-lark-acknowledgements')));
+  assert.ok(candidate.config.plugins.allow.includes('rein-lark-acknowledgements'));
+  assert.deepEqual(candidate.config.plugins.entries['rein-lark-acknowledgements'],
+    { enabled: true, hooks: { allowConversationAccess: true } });
   assert.equal(feishu.requireMention, true);
   assert.deepEqual(feishu.accounts['lark-community'].groupAllowFrom, community.groupIds);
   assert.deepEqual(feishu.accounts['lark-internal'].groupAllowFrom, internal.groupIds);

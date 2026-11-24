@@ -1,5 +1,11 @@
 # Acceptance evidence
 
+## Lark group acknowledgements · November 22, 2026
+
+November 23, 2026. Lark approved and released internal Nori 1.0.2 and Community Nori 1.0.3. Both apps returned tenant grant status 1 for `im:message.reactions:write_only`. OCI hot-reloaded the plugin at 17:31 UTC. The previous gateway config is in `runtime/openclaw/config-before-lark-ok-20261123.json`. A visible OK on a fresh mention of each bot remains to be observed.
+
+SA2, owner Codex. The native OpenClaw loader imported the optional plugin and registered one `reply_dispatch` hook. All 21 focused tests passed. Synthetic dispatch covered the internal and community account identities, a new message inside a topic, concurrent mentions, rejection outside the configured scope, and continued dispatch after a provider failure. The full suite passed with 1,662 passes and five skips at concurrency three. An initial run failed a process-tree timing test that also passed in isolation. The production scope query returned two scopes per app and neither included `im:message.reactions:write_only`. Live acceptance requires a Lark OK on a new eligible mention from each corresponding bot.
+
 ## SA2 retained issues · November 21, 2026
 
 Owner Codex. Scope is the nine issues retained by the V2 audit. GitHub reopen → Linear Backlog, production participation without a mention, and the 👀 acknowledgement retain their existing passes.
