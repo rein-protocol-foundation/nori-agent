@@ -2,9 +2,9 @@
 
 ## November 22, 2026 · Lark group acknowledgements
 
-November 23, 2026. Lark approved and released internal Nori 1.0.2 and Community Nori 1.0.3. Both apps returned tenant grant status 1 for `im:message.reactions:write_only`. OCI hot-reloaded the plugin at 17:31 UTC. The previous gateway config is in `runtime/openclaw/config-before-lark-ok-20261123.json`. A visible OK on a fresh mention of each bot remains to be observed.
+November 23, 2026. Lark approved and released internal Nori 1.0.2 and Community Nori 1.0.3. Both apps returned tenant grant status 1 for `im:message.reactions:write_only`. OCI hot-reloaded the plugin at 17:31 UTC. The previous gateway config is in `runtime/openclaw/config-before-lark-ok-20261123.json`. Lark subsequently released internal Nori 1.0.3 and Community Nori 1.0.4 with `im:message.reactions:read`. Live acceptance passed for both bots.
 
-SA2, owner Codex. The Lark routing candidate loads `rein-lark-acknowledgements` for internal and community group mentions. It uses the admitted message ID and the receiving account's credentials to add the Lark `OK` reaction. A failed reaction allows the normal reply to continue. Disable the plugin entry to turn this behaviour off. The installed Lark apps require the tenant scope `im:message.reactions:write_only`. [Verification and outstanding live checks](acceptance-evidence.md#lark-group-acknowledgements--november-22-2026)
+SA2, owner Codex. The Lark routing candidate loads `rein-lark-acknowledgements` for internal and community group mentions. It uses the admitted message ID and the receiving account's credentials to add the Lark `OK` reaction. A failed reaction allows the normal reply to continue. Disable the plugin entry to turn this behaviour off. The installed Lark apps require the tenant scope `im:message.reactions:write_only`. [Acceptance evidence](acceptance-evidence.md#lark-group-acknowledgements--november-22-2026)
 
 ## November 21, 2026 (Los Angeles) · SA2 retained issues
 
