@@ -2,11 +2,11 @@
 
 ## 2026-11-25 · 开发频道定时任务排障
 
-US14/US15，负责人 Codex。经运维侧只读核查，开发频道接下了排障任务，但当前工具权限无法取得这两个运维任务的回执。两条任务的运行结果已分别核实；产品修复与真实频道验收仍待完成。[证据与验收条件](acceptance-evidence.md#development-channel-cron-diagnosis--november-25-2026)
+US14/US15，负责人 Codex。经运维侧只读核查，开发频道接下了排障任务，但当前工具权限无法取得这两个运维任务的回执。两条任务的运行结果已分别核实；PR #251 已部署到 OCI，运行版本为 `2495cae`。仅为既有私有开发频道设置了 `plugins.entries.rein-acp.config.cronDiagnosticsChannelId`。热加载遇到活动插件，受控重启后网关和 Slack 连接恢复。新线程的实际工具回执与回复均已核对。移除这项配置即可停用跨线程诊断。[证据与验收条件](acceptance-evidence.md#development-channel-cron-diagnosis--november-25-2026)
 
 ## 2026-11-25 · Slack 定时任务告警链接
 
-US14/US15，负责人 Codex。调度器通知和独立检查器卡片均已改用管理域名下的共享网关运行记录页。本地验证通过。待安装格式化插件与独立检查器，再核对 Slack 中的新告警。[验收记录](acceptance-evidence.md#cron-alert-run-history-links--november-25-2026)
+US14/US15，负责人 Codex。调度器通知和独立检查器卡片均已改用管理域名下的共享网关运行记录页。本地验证通过。已持发布锁备份并安装格式化插件和独立检查器。两个线上文件的哈希与发布版本一致，失败与恢复通知均渲染出新管理链接。[验收记录](acceptance-evidence.md#cron-alert-run-history-links--november-25-2026)
 
 ## 2026-11-22 · Lark 群消息表情回复
 

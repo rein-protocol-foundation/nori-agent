@@ -2,11 +2,11 @@
 
 ## November 25, 2026 · Development-channel cron diagnosis
 
-US14/US15, owner Codex. Read-only operator investigation confirmed a gap between the development channel's accepted task and its access to operator-owned job receipts. The two reported runs were diagnosed separately. Product remediation and production acceptance remain open. [Evidence and closure criteria](acceptance-evidence.md#development-channel-cron-diagnosis--november-25-2026)
+US14/US15, owner Codex. Read-only operator investigation confirmed a gap between the development channel's accepted task and its access to operator-owned job receipts. The two reported runs were diagnosed separately. PR #251 deployed to OCI as `2495cae`. Set only `plugins.entries.rein-acp.config.cronDiagnosticsChannelId` to the existing private development channel. Hot reload reported retained plugin work. A controlled shared gateway restart restored readiness and the Slack socket. The new thread and its native tool result confirmed both diagnoses. Remove the optional setting to disable access. [Evidence and closure criteria](acceptance-evidence.md#development-channel-cron-diagnosis--november-25-2026)
 
 ## November 25, 2026 · Slack cron alert links
 
-US14/US15, owner Codex. Both cron alert senders now link to the shared Gateway on the administrator hostname. Local verification passed. Installation of the native formatter and standalone watchdog, followed by readback of a new Slack alert, is pending. [Acceptance evidence](acceptance-evidence.md#cron-alert-run-history-links--november-25-2026)
+US14/US15, owner Codex. Both cron alert senders now link to the shared Gateway on the administrator hostname. Local verification passed. Installed the preserved native formatter and standalone watchdog under the updater lock with rollback copies. Both installed files matched the released sources. Failure and recovery rendering produced the admin URL. [Acceptance evidence](acceptance-evidence.md#cron-alert-run-history-links--november-25-2026)
 
 ## November 22, 2026 · Lark group acknowledgements
 
