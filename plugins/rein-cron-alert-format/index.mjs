@@ -26,7 +26,7 @@ export function formatCronAlert(event, context, channelId) {
   });
   return {content: [`**${title}**`, `**${escape(name)}**`,
     ...(!recovered ? [`连续失败 ${count} 次`] : []), '', ...lines, '',
-    '[查看运行记录 ↗](https://nori.rein-protocol.org/slack/automations)',
+    '[查看运行记录 ↗](https://nori-admin.rein-protocol.org/slack/automations)',
     '来源：Cron 调度器'].join('\n')};
 }
 

@@ -1,5 +1,13 @@
 # Nori-Agent development, verification and deployment record
 
+## November 25, 2026 · Development-channel cron diagnosis
+
+US14/US15, owner Codex. Read-only operator investigation confirmed a gap between the development channel's accepted task and its access to operator-owned job receipts. The two reported runs were diagnosed separately. Product remediation and production acceptance remain open. [Evidence and closure criteria](acceptance-evidence.md#development-channel-cron-diagnosis--november-25-2026)
+
+## November 25, 2026 · Slack cron alert links
+
+US14/US15, owner Codex. Both cron alert senders now link to the shared Gateway on the administrator hostname. Local verification passed. Installation of the native formatter and standalone watchdog, followed by readback of a new Slack alert, is pending. [Acceptance evidence](acceptance-evidence.md#cron-alert-run-history-links--november-25-2026)
+
 ## November 22, 2026 · Lark group acknowledgements
 
 November 23, 2026. Lark approved and released internal Nori 1.0.2 and Community Nori 1.0.3. Both apps returned tenant grant status 1 for `im:message.reactions:write_only`. OCI hot-reloaded the plugin at 17:31 UTC. The previous gateway config is in `runtime/openclaw/config-before-lark-ok-20261123.json`. Lark subsequently released internal Nori 1.0.3 and Community Nori 1.0.4 with `im:message.reactions:read`. Live acceptance passed for both bots.

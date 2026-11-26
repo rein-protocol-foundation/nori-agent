@@ -1,5 +1,13 @@
 # Nori-Agent 开发、验证与部署记录
 
+## 2026-11-25 · 开发频道定时任务排障
+
+US14/US15，负责人 Codex。经运维侧只读核查，开发频道接下了排障任务，但当前工具权限无法取得这两个运维任务的回执。两条任务的运行结果已分别核实；产品修复与真实频道验收仍待完成。[证据与验收条件](acceptance-evidence.md#development-channel-cron-diagnosis--november-25-2026)
+
+## 2026-11-25 · Slack 定时任务告警链接
+
+US14/US15，负责人 Codex。调度器通知和独立检查器卡片均已改用管理域名下的共享网关运行记录页。本地验证通过。待安装格式化插件与独立检查器，再核对 Slack 中的新告警。[验收记录](acceptance-evidence.md#cron-alert-run-history-links--november-25-2026)
+
 ## 2026-11-22 · Lark 群消息表情回复
 
 2026-11-23，Lark 已批准并发布内部 Nori 1.0.2 和 Community Nori 1.0.3。两个应用的表情写入租户权限均回读为已授权。OCI 网关于 17:31 UTC 热加载插件，旧配置备份在 `runtime/openclaw/config-before-lark-ok-20261123.json`。随后发布的内部 Nori 1.0.3 和 Community Nori 1.0.4 均已开通 `im:message.reactions:read`。两个群的原消息均已通过验收。

@@ -63,6 +63,15 @@ class MonitorTests(unittest.TestCase):
         self.assertIn('<!channel>', notice['blocks'][1]['text']['text'])
         self.assertIn('fixture-id', notice['blocks'][-1]['elements'][0]['text'])
 
+    def test_alert_buttons_open_shared_admin_run_history(self):
+        for profile in ('slack', 'discord'):
+            for kind in ('FAILED', 'RECOVERED'):
+                with self.subTest(profile=profile, kind=kind):
+                    notice = monitor.format_notice(profile, 'job', 'fixture', kind, 101)
+                    actions = next(block for block in notice['blocks'] if block['type'] == 'actions')
+                    self.assertEqual(actions['elements'][0]['url'],
+                                     'https://nori-admin.rein-protocol.org/slack/automations')
+
     def test_readonly_receipts_ordered_by_completion(self):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / 'runtime.sqlite'
