@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import plugin, { formatCronAlert } from '../plugins/rein-cron-alert-format/index.mjs';
 
 const channelId = 'C_FIXTURE_ALERTS';
+const historyLink = '[查看运行记录 ↗](https://nori-admin.rein-protocol.org/slack/automations)';
 const context = { channelId: 'slack' };
 const event = {
   to: channelId,
@@ -15,7 +16,7 @@ test('native failure formatting preserves reason and converts UTC across the loc
   assert.match(content, /连续失败 1 次/);
   assert.match(content, /command exited with code 23/);
   assert.match(content, /11\/06.*22:48/);
-  assert.match(content, /https:\/\/nori\.rein-protocol\.org\/slack\/automations/);
+  assert.ok(content.split('\n').includes(historyLink));
 });
 
 test('recovery and test notices retain distinct status and labels', () => {
@@ -24,6 +25,7 @@ test('recovery and test notices retain distinct status and labels', () => {
   }, context, channelId);
   assert.match(content, /测试通知 · 已恢复/);
   assert.match(content, /故障已解除/);
+  assert.ok(content.split('\n').includes(historyLink));
   assert.doesNotMatch(content, /连续失败/);
 });
 

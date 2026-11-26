@@ -23,7 +23,7 @@ def format_notice(profile, job, name, kind, finished):
     stamp = datetime.datetime.fromtimestamp(finished / 1000,
                 ZoneInfo('America/Los_Angeles')).strftime('%m/%d %H:%M:%S %Z')
     summary = '最新一次执行已成功，故障已解除。' if recovered else '独立监控确认执行失败，请查看运行记录定位原因。'
-    url = 'https://nori.rein-protocol.org/' + ('discord' if profile == 'discord' else 'slack') + '/automations'
+    url = 'https://nori-admin.rein-protocol.org/slack/automations'
     plain = lambda value: {'type': 'plain_text', 'text': value, 'emoji': True}
     return {
         'text': f'{title}｜{name}\n{summary}\n{stamp} · {profile}',

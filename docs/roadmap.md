@@ -1,5 +1,7 @@
 # Nori-Agent implementation roadmap
 
+US14/US15 · November 25, 2026. Owner Codex. **Open production gap:** a new `#nori-development` thread could not diagnose two operator-owned daily jobs. Acceptance requires a real same-thread diagnosis from authorized receipt data. [Incident and acceptance criteria](acceptance-evidence.md#development-channel-cron-diagnosis--november-25-2026)
+
 SA2 · November 23, 2026. Lark group OK acknowledgements complete. Live verification confirmed each bot added an OK to its original mention. [Evidence](acceptance-evidence.md#lark-group-acknowledgements--november-22-2026)
 
 SA2 · November 21, 2026 (Los Angeles). Owner Codex. #199 links available worker facts and has five real decision-to-thread readbacks. A fresh combined turn and native per-run delivery evidence remain open. All nine retained issues await their product observations. [Checks and remaining inputs](acceptance-evidence.md#sa2-retained-issues--november-21-2026).

@@ -1,3 +1,5 @@
+import { join } from 'node:path';
+import { inspectCronJobs } from './cron-diagnostics.mjs';
 import { readFileWithinRoot, writeFileWithinRoot } from 'openclaw/plugin-sdk/file-access-runtime';
 import { openSqliteWorkerStore } from 'openclaw/plugin-sdk/sqlite-runtime';
 import { createRetainedSummaries, retainedSummaryBackendUrlForRuntime } from './retained-summaries.mjs';
@@ -33,6 +35,8 @@ export default definePluginEntry({
       const scheduling = devChannels.length && scopes.length ? createCronIngress({ channels: scopes,
         developmentChannels: devChannels, requireWorkspaceSource: true, authorize, readJobs }) : undefined;
       const runtime = createTaskLoop({ config, authorize, tasks: api.runtime.tasks, subagent: api.runtime.subagent,
+        inspectCron: names => inspectCronJobs({ database: join(api.runtime.state.resolveStateDir(), 'state', 'openclaw.sqlite'),
+          store: resolveCronStorePath(api.config.cron?.store), agentId: config.channel.agentId }, names),
         scheduling, schedulingChannels: devChannels.map(entry => entry.channelId),
         allowScheduledSpawn: scheduling && ((ctx, args) => scheduledSpawnAllowed(ctx, args, devChannels,
           async id => (await readJobs()).find(job => job.id === id))),

@@ -62,7 +62,7 @@ export function assertTaskLoopRuntimeConfig(config, host) {
 }
 
 /** Native records remain authoritative. This module retains only current tool-invocation custody. */
-export function createTaskLoop({ config, authorize, tasks, subagent, bindCredential = bindDevelopmentCredential, permitsDevelopmentAssignment = async () => false, scheduling, schedulingChannels = [], allowScheduledSpawn, isNativeChild = () => false, isCurrentContinuation = async () => false, clock = Date.now, timeoutMs = DEVELOPMENT_AUTH_TIMEOUT_MS }) {
+export function createTaskLoop({ config, authorize, tasks, subagent, bindCredential = bindDevelopmentCredential, permitsDevelopmentAssignment = async () => false, inspectCron, scheduling, schedulingChannels = [], allowScheduledSpawn, isNativeChild = () => false, isCurrentContinuation = async () => false, clock = Date.now, timeoutMs = DEVELOPMENT_AUTH_TIMEOUT_MS }) {
   const turns = new Map(), calls = new Map(), reports = new Map();
   const selected = ctx => ctx.agentId === config.channel.agentId;
   const membership = async source => {
@@ -137,7 +137,10 @@ export function createTaskLoop({ config, authorize, tasks, subagent, bindCredent
         ? 'For ACP text deliverables use the assigned review file. On the tool-enabled parent turn call rein_continuation read_review_file with flow and scopeRevision, then review the actual content. A tool-less announcement leaves the review to the owning parent wake. ' : '';
       const bindingHelp = config.developmentCodex && developmentSession({ ...config, additionalChannelIds: [config.developmentCodex.channelId] }, ctx)
         ? 'For a request to give Codex a managed OCI credential, call rein_task action=bind_credential with credential set to the requested variable name, then delegate to a new Codex process. Never read or include its value in a prompt. ' : '';
-      return { prependContext: `${bindingHelp}${reviewWake}${fileReview}${developmentSession(config, ctx) ? 'Answer ordinary questions directly in this Slack thread. For a timed development task use native automations add with an isolated agentTurn message. Keep its job ID and adjust that same job with update in this thread. Use rein_continuation write_development_file for project files. For development without a named coding harness, delegate execution and verification to runtime=subagent agentId=nori-development in its sandbox. For a requested runtime config change show the exact proposed diff for separate administrator confirmation. ' : ''}${config.continuation ? 'Native continuation is enabled: use rein_continuation durable goals, review, stop/change and bounded supplements. Combined same-owner/audience replies may represent multiple flows; original thread delivery is not a per-flow guarantee. Legacy rein_task replacement instructions below apply to unmanaged tasks only. ' : ''}For background work follow the nori-task-loop skill. Research uses native sessions_spawn runtime="subagent", mode="run", cleanup="keep", with completionTarget omitted: retain default external original-thread delivery through parent review. When the user names Codex or Claude Code, keep that coding harness throughout the assignment. With continuation enabled, first call rein_continuation begin with goal, criteria and runtime="acp", then delegate with flow and instruction. Call sessions_spawn with task set to the short returned spawnTask, explicit runtime="acp" and the requested harness agentId. ${config.alternateHarness ? 'For Claude Code use agentId=claude.' : 'Claude Code is unavailable here; report this if requested.'} For Codex use agentId=${JSON.stringify(config.harnessAgentId)}, cwd=${JSON.stringify(config.cwd)}, mode="run", thread=false, streamTo="parent"; cwd is not an OS security boundary. Native tasks belong to the originating session/audience, not an individual speaker in a shared private channel. Resolve actual runId via rein_task status for canonical task ID. If native acceptance precedes task-record visibility, retain the actual accepted run/session receipt and explain that tracking is still being linked; resolve on the next authorized status request or completion, never respawn or invent an ID. Use rein_task stop/change for confirmed cancellation plus replacement; pending/failed cancellation forbids replacement. Report results against current criteria in the original authorized thread. Cancelled/old-scope outcomes must disclose available partial evidence and performed/uncertain actions, never complete the revised goal. Never describe synthetic or missing evidence as verified.` };
+      const channel = config.cronDiagnosticsChannelId;
+      const diagnosisHelp = channel && developmentSession({ ...config, additionalChannelIds: [channel] }, ctx)
+        ? 'For failures of existing scheduled jobs use rein_task action=cron_diagnosis with jobs (exact job names) directly in this parent thread. Report latest completed run, latest failure, recorded reasons and local time. Do not delegate this read to a sandbox. ' : '';
+      return { prependContext: `${diagnosisHelp}${bindingHelp}${reviewWake}${fileReview}${developmentSession(config, ctx) ? 'Answer ordinary questions directly in this Slack thread. For a timed development task use native automations add with an isolated agentTurn message. Keep its job ID and adjust that same job with update in this thread. Use rein_continuation write_development_file for project files. For development without a named coding harness, delegate execution and verification to runtime=subagent agentId=nori-development in its sandbox. For a requested runtime config change show the exact proposed diff for separate administrator confirmation. ' : ''}${config.continuation ? 'Native continuation is enabled: use rein_continuation durable goals, review, stop/change and bounded supplements. Combined same-owner/audience replies may represent multiple flows; original thread delivery is not a per-flow guarantee. Legacy rein_task replacement instructions below apply to unmanaged tasks only. ' : ''}For background work follow the nori-task-loop skill. Research uses native sessions_spawn runtime="subagent", mode="run", cleanup="keep", with completionTarget omitted: retain default external original-thread delivery through parent review. When the user names Codex or Claude Code, keep that coding harness throughout the assignment. With continuation enabled, first call rein_continuation begin with goal, criteria and runtime="acp", then delegate with flow and instruction. Call sessions_spawn with task set to the short returned spawnTask, explicit runtime="acp" and the requested harness agentId. ${config.alternateHarness ? 'For Claude Code use agentId=claude.' : 'Claude Code is unavailable here; report this if requested.'} For Codex use agentId=${JSON.stringify(config.harnessAgentId)}, cwd=${JSON.stringify(config.cwd)}, mode="run", thread=false, streamTo="parent"; cwd is not an OS security boundary. Native tasks belong to the originating session/audience, not an individual speaker in a shared private channel. Resolve actual runId via rein_task status for canonical task ID. If native acceptance precedes task-record visibility, retain the actual accepted run/session receipt and explain that tracking is still being linked; resolve on the next authorized status request or completion, never respawn or invent an ID. Use rein_task stop/change for confirmed cancellation plus replacement; pending/failed cancellation forbids replacement. Report results against current criteria in the original authorized thread. Cancelled/old-scope outcomes must disclose available partial evidence and performed/uncertain actions, never complete the revised goal. Never describe synthetic or missing evidence as verified.` };
     },
     async beforeToolCall(event, ctx) {
       const tool = unwrap(event), turn = turns.get(ctx.runId);
@@ -219,8 +222,9 @@ export function createTaskLoop({ config, authorize, tasks, subagent, bindCredent
     toolFactory: { contextVersion: 2, create(ctx) {
       if (ctx.agentId !== config.channel.agentId) return null;
       return { name: 'rein_task', label: 'Native task control', description: 'Inspect native task IDs/status; stop native work; explicitly change a goal by cancelling, confirming settlement, then returning instructions for a fresh native spawn. Shared private-session audience collaborates; no outreach.',
-        parameters: { type: 'object', additionalProperties: false, required: config.developmentCodex ? ['action'] : ['action', 'task'], properties: {
-          action: { type: 'string', enum: ['status', 'stop', 'change', ...(config.developmentCodex ? ['bind_credential'] : [])] }, task: { type: 'string', minLength: 1, maxLength: 512 },
+        parameters: { type: 'object', additionalProperties: false, required: config.developmentCodex || config.cronDiagnosticsChannelId ? ['action'] : ['action', 'task'], properties: {
+          action: { type: 'string', enum: ['status', 'stop', 'change', ...(config.cronDiagnosticsChannelId ? ['cron_diagnosis'] : []), ...(config.developmentCodex ? ['bind_credential'] : [])] }, task: { type: 'string', minLength: 1, maxLength: 512 },
+          ...(config.cronDiagnosticsChannelId ? { jobs: { type: 'array', minItems: 1, maxItems: 8, items: { type: 'string', minLength: 1, maxLength: 160 } } } : {}),
           ...(config.developmentCodex ? { credential: { type: 'string', enum: config.developmentCodex.names } } : {}),
           goal: { type: 'string', minLength: 1, maxLength: 8000 }, criteria: { type: 'string', minLength: 1, maxLength: 8000 },
         } },
@@ -233,6 +237,24 @@ export function createTaskLoop({ config, authorize, tasks, subagent, bindCredent
             ctx.assertInvocationCurrent();
           };
           await current();
+          if (args.action === 'cron_diagnosis') {
+            const channel = config.cronDiagnosticsChannelId, source = call.turn.source;
+            const base = channel && `agent:${config.channel.agentId}:slack:channel:${channel.toLowerCase()}`;
+            const permitted = () => {
+              const live = ctx.getRuntimeConfig ? ctx.getRuntimeConfig() : ctx.runtimeConfig ?? ctx.config;
+              return live?.commands?.ownerAllowFrom?.includes('slack:' + source.senderId) &&
+                live?.plugins?.entries?.['rein-acp']?.config?.cronDiagnosticsChannelId === channel;
+            };
+            if (!base || call.turn.kind !== 'interactive' || source.chatId !== channel ||
+                (ctx.sessionKey !== base && !ctx.sessionKey.startsWith(base + ':thread:')) ||
+                !permitted() ||
+                Object.keys(args).some(key => !['action', 'jobs'].includes(key)))
+              throw Error('cron_diagnosis_denied');
+            const jobs = inspectCron(args.jobs);
+            await current();
+            if (!permitted() || turns.get(call.ctx.runId) !== call.turn) throw Error('cron_diagnosis_denied');
+            return result({ status: 'inspected', jobs });
+          }
           if (args.action === 'bind_credential') {
             const target = config.developmentCodex;
             const owner = target && `agent:${config.channel.agentId}:slack:channel:${target.channelId.toLowerCase()}`;

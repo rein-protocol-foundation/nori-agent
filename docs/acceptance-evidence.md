@@ -1,5 +1,17 @@
 # Acceptance evidence
 
+## Development-channel cron diagnosis · November 25, 2026
+
+US14/US15, owner Codex. Production acceptance is open. The operator's Slack thread requested the reasons for two daily job failures. Nori acknowledged and returned hypotheses and commands for the operator. It did not retrieve either receipt. The live channel binds to `main`; its task-loop policy routes development execution to the SSH sandbox and scopes scheduler reads to the requesting thread. Both named jobs run as `main` outside that thread.
+
+An independent operator read of the OCI scheduler and the stopped Mac gateway logs established the following, in Los Angeles time. AI news failed November 24 at 09:08 during a model stream interruption and succeeded November 25 at 09:04. The SEO Slack report exited 1 on November 25 at 00:00 with no verified fresh snapshot. The stopped Mac container lacks the SEO config at the path required by the command. The wrapper did not retain the underlying exception for that run. A separate 07:00 OCI collection obtained healthy results from both sources. Both daily jobs remained enabled.
+
+To close this gap, repeat the original request from a new production development thread. An authorized caller should receive the two jobs' times, statuses, recorded failure reasons, recovery state and any limits of the evidence in that thread. Verify that an unauthorized caller cannot obtain those records and that the diagnostic operation cannot mutate jobs or disclose raw logs. Record the actual tool result and Slack readback.
+
+## Cron alert run-history links · November 25, 2026
+
+US14/US15, owner Codex. Local tests verified the administrator URL in native Slack failure and recovery messages and in watchdog buttons for both monitored profiles. All 11 formatter, watchdog wrapper and dashboard tests passed, including the Python watchdog suite (6 tests). An unauthenticated GET returned HTTP 303 to the admin login with `/slack/automations` as its return path, followed by HTTP 200. Production rollout and Slack readback are pending.
+
 ## Lark group acknowledgements · November 22, 2026
 
 November 23, 2026. Lark approved and released internal Nori 1.0.2 and Community Nori 1.0.3. Both apps returned tenant grant status 1 for `im:message.reactions:write_only`. OCI hot-reloaded the plugin at 17:31 UTC. The previous gateway config is in `runtime/openclaw/config-before-lark-ok-20261123.json`. Lark subsequently released internal Nori 1.0.3 and Community Nori 1.0.4 with `im:message.reactions:read`. Live acceptance passed. On each original mention, the API returned one OK from the corresponding app, and Lark desktop displayed it. Chrome did not display either reaction during verification. The cause of the display difference is unconfirmed.

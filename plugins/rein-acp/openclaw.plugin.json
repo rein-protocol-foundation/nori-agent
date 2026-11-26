@@ -36,6 +36,7 @@
         }
       },
       "alternateHarness": { "type": "string", "enum": ["claude"] },
+      "cronDiagnosticsChannelId": { "type": "string", "pattern": "^[CG][A-Z0-9]{5,31}$", "description": "Private development channel where explicitly named Slack gateway owners can inspect operator-job failure receipts." },
       "additionalChannelIds": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9]{5,31}$" } },
       "channel": {
         "type": "object", "additionalProperties": false,
