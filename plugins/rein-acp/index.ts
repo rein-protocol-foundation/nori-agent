@@ -1,3 +1,4 @@
+import { nativeAgentCreation } from './agent-creation.mjs';
 import { join } from 'node:path';
 import { inspectCronJobs } from './cron-diagnostics.mjs';
 import { readFileWithinRoot, writeFileWithinRoot } from 'openclaw/plugin-sdk/file-access-runtime';
@@ -35,6 +36,8 @@ export default definePluginEntry({
       const scheduling = devChannels.length && scopes.length ? createCronIngress({ channels: scopes,
         developmentChannels: devChannels, requireWorkspaceSource: true, authorize, readJobs }) : undefined;
       const runtime = createTaskLoop({ config, authorize, tasks: api.runtime.tasks, subagent: api.runtime.subagent,
+        agentCreation: config.agentCreationChannelId ? nativeAgentCreation({ stateDir: api.runtime.state.resolveStateDir(), runtimeSource: api.runtimeSource }) : undefined,
+        liveConfig: () => api.runtime.config.current(),
         inspectCron: names => inspectCronJobs({ database: join(api.runtime.state.resolveStateDir(), 'state', 'openclaw.sqlite'),
           store: resolveCronStorePath(api.config.cron?.store), agentId: config.channel.agentId }, names),
         scheduling, schedulingChannels: devChannels.map(entry => entry.channelId),

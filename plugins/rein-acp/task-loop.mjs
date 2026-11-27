@@ -1,3 +1,4 @@
+import { creationOwner } from './agent-creation.mjs';
 import { bindDevelopmentCredential } from './development-credentials.mjs';
 import { taskChannels } from './runtime.mjs';
 import { developmentChannelFor, DEVELOPMENT_AUTH_TIMEOUT_MS } from '../rein-router/slack-development.mjs';
@@ -62,7 +63,7 @@ export function assertTaskLoopRuntimeConfig(config, host) {
 }
 
 /** Native records remain authoritative. This module retains only current tool-invocation custody. */
-export function createTaskLoop({ config, authorize, tasks, subagent, bindCredential = bindDevelopmentCredential, permitsDevelopmentAssignment = async () => false, inspectCron, scheduling, schedulingChannels = [], allowScheduledSpawn, isNativeChild = () => false, isCurrentContinuation = async () => false, clock = Date.now, timeoutMs = DEVELOPMENT_AUTH_TIMEOUT_MS }) {
+export function createTaskLoop({ config, authorize, tasks, subagent, bindCredential = bindDevelopmentCredential, permitsDevelopmentAssignment = async () => false, inspectCron, agentCreation, liveConfig, scheduling, schedulingChannels = [], allowScheduledSpawn, isNativeChild = () => false, isCurrentContinuation = async () => false, clock = Date.now, timeoutMs = DEVELOPMENT_AUTH_TIMEOUT_MS }) {
   const turns = new Map(), calls = new Map(), reports = new Map();
   const selected = ctx => ctx.agentId === config.channel.agentId;
   const membership = async source => {
@@ -140,7 +141,10 @@ export function createTaskLoop({ config, authorize, tasks, subagent, bindCredent
       const channel = config.cronDiagnosticsChannelId;
       const diagnosisHelp = channel && developmentSession({ ...config, additionalChannelIds: [channel] }, ctx)
         ? 'For failures of existing scheduled jobs use rein_task action=cron_diagnosis with jobs (exact job names) directly in this parent thread. Report latest completed run, latest failure, recorded reasons and local time. Do not delegate this read to a sandbox. ' : '';
-      return { prependContext: `${diagnosisHelp}${bindingHelp}${reviewWake}${fileReview}${developmentSession(config, ctx) ? 'Answer ordinary questions directly in this Slack thread. For a timed development task use native automations add with an isolated agentTurn message. Keep its job ID and adjust that same job with update in this thread. Use rein_continuation write_development_file for project files. For development without a named coding harness, delegate execution and verification to runtime=subagent agentId=nori-development in its sandbox. For a requested runtime config change show the exact proposed diff for separate administrator confirmation. ' : ''}${config.continuation ? 'Native continuation is enabled: use rein_continuation durable goals, review, stop/change and bounded supplements. Combined same-owner/audience replies may represent multiple flows; original thread delivery is not a per-flow guarantee. Legacy rein_task replacement instructions below apply to unmanaged tasks only. ' : ''}For background work follow the nori-task-loop skill. Research uses native sessions_spawn runtime="subagent", mode="run", cleanup="keep", with completionTarget omitted: retain default external original-thread delivery through parent review. When the user names Codex or Claude Code, keep that coding harness throughout the assignment. With continuation enabled, first call rein_continuation begin with goal, criteria and runtime="acp", then delegate with flow and instruction. Call sessions_spawn with task set to the short returned spawnTask, explicit runtime="acp" and the requested harness agentId. ${config.alternateHarness ? 'For Claude Code use agentId=claude.' : 'Claude Code is unavailable here; report this if requested.'} For Codex use agentId=${JSON.stringify(config.harnessAgentId)}, cwd=${JSON.stringify(config.cwd)}, mode="run", thread=false, streamTo="parent"; cwd is not an OS security boundary. Native tasks belong to the originating session/audience, not an individual speaker in a shared private channel. Resolve actual runId via rein_task status for canonical task ID. If native acceptance precedes task-record visibility, retain the actual accepted run/session receipt and explain that tracking is still being linked; resolve on the next authorized status request or completion, never respawn or invent an ID. Use rein_task stop/change for confirmed cancellation plus replacement; pending/failed cancellation forbids replacement. Report results against current criteria in the original authorized thread. Cancelled/old-scope outcomes must disclose available partial evidence and performed/uncertain actions, never complete the revised goal. Never describe synthetic or missing evidence as verified.` };
+      const createChannel = config.agentCreationChannelId;
+      const creationHelp = createChannel && developmentSession({ ...config, additionalChannelIds: [createChannel] }, ctx)
+        ? 'To create a persistent OpenClaw agent, use rein_task action=create_agent with agentId in this parent turn. The host shows the proposed addition for one-time approval and verifies the roster. Report its returned status. Skill installation is a separate operation. ' : '';
+      return { prependContext: `${creationHelp}${diagnosisHelp}${bindingHelp}${reviewWake}${fileReview}${developmentSession(config, ctx) ? 'Answer ordinary questions directly in this Slack thread. For a timed development task use native automations add with an isolated agentTurn message. Keep its job ID and adjust that same job with update in this thread. Use rein_continuation write_development_file for project files. For development without a named coding harness, delegate execution and verification to runtime=subagent agentId=nori-development in its sandbox. For a requested runtime config change show the exact proposed diff for separate administrator confirmation. ' : ''}${config.continuation ? 'Native continuation is enabled: use rein_continuation durable goals, review, stop/change and bounded supplements. Combined same-owner/audience replies may represent multiple flows; original thread delivery is not a per-flow guarantee. Legacy rein_task replacement instructions below apply to unmanaged tasks only. ' : ''}For background work follow the nori-task-loop skill. Research uses native sessions_spawn runtime="subagent", mode="run", cleanup="keep", with completionTarget omitted: retain default external original-thread delivery through parent review. When the user names Codex or Claude Code, keep that coding harness throughout the assignment. With continuation enabled, first call rein_continuation begin with goal, criteria and runtime="acp", then delegate with flow and instruction. Call sessions_spawn with task set to the short returned spawnTask, explicit runtime="acp" and the requested harness agentId. ${config.alternateHarness ? 'For Claude Code use agentId=claude.' : 'Claude Code is unavailable here; report this if requested.'} For Codex use agentId=${JSON.stringify(config.harnessAgentId)}, cwd=${JSON.stringify(config.cwd)}, mode="run", thread=false, streamTo="parent"; cwd is not an OS security boundary. Native tasks belong to the originating session/audience, not an individual speaker in a shared private channel. Resolve actual runId via rein_task status for canonical task ID. If native acceptance precedes task-record visibility, retain the actual accepted run/session receipt and explain that tracking is still being linked; resolve on the next authorized status request or completion, never respawn or invent an ID. Use rein_task stop/change for confirmed cancellation plus replacement; pending/failed cancellation forbids replacement. Report results against current criteria in the original authorized thread. Cancelled/old-scope outcomes must disclose available partial evidence and performed/uncertain actions, never complete the revised goal. Never describe synthetic or missing evidence as verified.` };
     },
     async beforeToolCall(event, ctx) {
       const tool = unwrap(event), turn = turns.get(ctx.runId);
@@ -208,6 +212,23 @@ export function createTaskLoop({ config, authorize, tasks, subagent, bindCredent
         // Compact dispatch also invokes the canonical hook. Reserve only at that inner boundary.
         if (event.toolName !== 'tool_call') turn.change.spawned = true;
       }
+      if (tool.name === 'rein_task' && tool.params?.action === 'create_agent') {
+        if (!agentCreation || !ctx.toolCallId || !creationOwner(config, liveConfig(), turn, ctx))
+          return deny('Agent creation requires a named gateway owner in the configured private development channel.');
+        let plan;
+        try { plan = agentCreation.plan(tool.params); } catch { return deny('Use a new canonical agent ID only.'); }
+        // Compact dispatch invokes the canonical hook before the actual tool executes.
+        if (event.toolName === 'tool_call') return;
+        if (calls.has(ctx.toolCallId)) return deny('This tool call already has a pending decision.');
+        const call = { turn, ctx, plan, approved: false };
+        calls.set(ctx.toolCallId, call);
+        return { requireApproval: {
+          title: '创建 OpenClaw agent ' + plan.id, severity: 'warning', allowedDecisions: ['allow-once', 'deny'],
+          description: '新增 agents.entries.' + plan.id + '，名称 ' + plan.id + '，工作区 ' + plan.workspace +
+            '，状态目录 ' + plan.agentDir + '。使用网关默认模型和工具策略，不新增渠道绑定。',
+          onResolution(decision) { call.approved = decision === 'allow-once'; },
+        } };
+      }
       if (tool.name === 'rein_task' && ctx.toolCallId) calls.set(ctx.toolCallId, { turn, ctx });
       if (params) return { params: event.toolName === 'tool_call' ? { ...event.params, args: params } : params };
     },
@@ -222,13 +243,14 @@ export function createTaskLoop({ config, authorize, tasks, subagent, bindCredent
     toolFactory: { contextVersion: 2, create(ctx) {
       if (ctx.agentId !== config.channel.agentId) return null;
       return { name: 'rein_task', label: 'Native task control', description: 'Inspect native task IDs/status; stop native work; explicitly change a goal by cancelling, confirming settlement, then returning instructions for a fresh native spawn. Shared private-session audience collaborates; no outreach.',
-        parameters: { type: 'object', additionalProperties: false, required: config.developmentCodex || config.cronDiagnosticsChannelId ? ['action'] : ['action', 'task'], properties: {
-          action: { type: 'string', enum: ['status', 'stop', 'change', ...(config.cronDiagnosticsChannelId ? ['cron_diagnosis'] : []), ...(config.developmentCodex ? ['bind_credential'] : [])] }, task: { type: 'string', minLength: 1, maxLength: 512 },
+        parameters: { type: 'object', additionalProperties: false, required: config.developmentCodex || config.cronDiagnosticsChannelId || config.agentCreationChannelId ? ['action'] : ['action', 'task'], properties: {
+          action: { type: 'string', enum: ['status', 'stop', 'change', ...(config.agentCreationChannelId ? ['create_agent'] : []), ...(config.cronDiagnosticsChannelId ? ['cron_diagnosis'] : []), ...(config.developmentCodex ? ['bind_credential'] : [])] }, task: { type: 'string', minLength: 1, maxLength: 512 },
+          ...(config.agentCreationChannelId ? { agentId: { type: 'string', pattern: '^[a-z0-9][a-z0-9_-]{0,63}$' } } : {}),
           ...(config.cronDiagnosticsChannelId ? { jobs: { type: 'array', minItems: 1, maxItems: 8, items: { type: 'string', minLength: 1, maxLength: 160 } } } : {}),
           ...(config.developmentCodex ? { credential: { type: 'string', enum: config.developmentCodex.names } } : {}),
           goal: { type: 'string', minLength: 1, maxLength: 8000 }, criteria: { type: 'string', minLength: 1, maxLength: 8000 },
         } },
-        async execute(toolCallId, args) {
+        async execute(toolCallId, args, signal) {
           const call = calls.get(toolCallId); calls.delete(toolCallId);
           const current = async () => {
             ctx.assertInvocationCurrent();
@@ -236,7 +258,20 @@ export function createTaskLoop({ config, authorize, tasks, subagent, bindCredent
                 ctx.requesterSenderId !== call.turn.source.senderId || !await membership(call.turn.source)) throw Error('rein_task_authority_unavailable');
             ctx.assertInvocationCurrent();
           };
+          if (args.action === 'create_agent') {
+            const check = async () => {
+              await current();
+              if (!call.approved || !call.plan || agentCreation.plan(args).id !== call.plan.id ||
+                  turns.get(call.ctx.runId) !== call.turn || signal?.aborted ||
+                  !creationOwner(config, liveConfig(), call.turn, ctx)) throw Error('agent_creation_denied');
+            };
+            await check();
+            const receipt = await agentCreation.create(call.plan, check, signal);
+            await check();
+            return result(receipt);
+          }
           await current();
+          if (call.plan) throw Error('agent_creation_request_changed');
           if (args.action === 'cron_diagnosis') {
             const channel = config.cronDiagnosticsChannelId, source = call.turn.source;
             const base = channel && `agent:${config.channel.agentId}:slack:channel:${channel.toLowerCase()}`;

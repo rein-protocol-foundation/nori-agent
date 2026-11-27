@@ -1,5 +1,7 @@
 # Nori-Agent implementation roadmap
 
+SA2 · November 27, 2026. Owner Codex. Persistent OpenClaw agent creation from the private development channel passed local verification. Production acceptance remains open. [Evidence](acceptance-evidence.md#development-channel-agent-creation--november-27-2026)
+
 US14/US15 · November 25, 2026. Owner Codex. **Production diagnosis passed.** In a new private development thread, the native Slack owner received verified failure reasons and latest run status for both daily jobs. [Incident and acceptance criteria](acceptance-evidence.md#development-channel-cron-diagnosis--november-25-2026)
 
 SA2 · November 23, 2026. Lark group OK acknowledgements complete. Live verification confirmed each bot added an OK to its original mention. [Evidence](acceptance-evidence.md#lark-group-acknowledgements--november-22-2026)
