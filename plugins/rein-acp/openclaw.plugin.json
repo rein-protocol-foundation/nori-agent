@@ -36,6 +36,7 @@
         }
       },
       "alternateHarness": { "type": "string", "enum": ["claude"] },
+      "agentCreationChannelId": { "type": "string", "pattern": "^[CG][A-Z0-9]{5,31}$", "description": "Private development channel where a named Slack gateway owner can request native agent creation with one-time approval." },
       "cronDiagnosticsChannelId": { "type": "string", "pattern": "^[CG][A-Z0-9]{5,31}$", "description": "Private development channel where explicitly named Slack gateway owners can inspect operator-job failure receipts." },
       "additionalChannelIds": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9]{5,31}$" } },
       "channel": {

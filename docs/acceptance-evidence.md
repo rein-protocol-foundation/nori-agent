@@ -1,5 +1,13 @@
 # Acceptance evidence
 
+## Development-channel agent creation · November 27, 2026
+
+SA2, owner Codex. The reported Slack request to create `cmo` reached the development sandbox, which could neither register an agent nor verify its creation. The parent tool now requests native one-time approval for a specific agent ID and generated directories, then uses the native CLI to register and read back the entry.
+
+Local policy tests exercise the owner, channel, membership, run lifetime, changed arguments and approval decisions. The native integration test uses a temporary OpenClaw configuration and a simulated Slack request and approval decision. Run it with `NORI_NATIVE_AGENT_CREATION_TEST=1 node --test tests/agent-creation.test.mjs` and a built copy of the pinned CLI. OCI rollout, real Slack approval delivery and production agent creation are outside this local verification.
+
+The native CLI created the test agent, returned the same ID on a fresh request and preserved the original configuration on duplicate and directory-conflict requests. The separate task-loop regression passed against the pinned loader and a local gateway with synthetic transports.
+
 ## Development-channel cron diagnosis · November 25, 2026
 
 US14/US15, owner Codex. Before the repair, production diagnosis failed. The operator's Slack thread requested the reasons for two daily job failures. Nori acknowledged and returned hypotheses and commands for the operator. It did not retrieve either receipt. The live channel binds to `main`; its task-loop policy routes development execution to the SSH sandbox and scopes scheduler reads to the requesting thread. Both named jobs run as `main` outside that thread.

@@ -14,6 +14,14 @@ Scoped native candidates are checked before credential lookup/network; ordinary 
 `nativeAgentRoutes` is an optional eligibility list, not a Cron model selector. Coding Plan and administrator-only routes remain excluded. A full-subscription development-tag
 route requires explicit `nativeAgentRoutes` eligibility for the Agent; omission does not widen access.
 
+## Persistent agent creation
+
+On the shared gateway, set `plugins.entries.rein-acp.config.agentCreationChannelId` to the private development channel ID already in `additionalChannelIds` for the task loop. The requester must be a current member and an individual `slack:<user ID>` in `commands.ownerAllowFrom`. Removing the channel setting disables this action.
+
+Configure an OpenClaw plugin approval surface for the gateway owner. For example, to forward plugin prompts for the parent to the originating session, use `approvals.plugin: { enabled: true, mode: "session", agentFilter: ["main"] }`. The gateway applies its native approval rules. See [OpenClaw plugin approval forwarding](../vendor/openclaw/docs/tools/exec-approvals-advanced.md#plugin-approval-forwarding).
+
+In a development thread, ask Nori to create a persistent OpenClaw agent with a particular ID. The parent calls `rein_task` with `{"action":"create_agent","agentId":"cmo"}`. Review the generated workspace and state paths in the approval prompt. After a one-time approval, Nori creates an unbound agent with the gateway defaults and verifies its ID and paths in the native inventory. A repeated request reports an existing ID. A directory collision blocks creation. Installing skills or binding a channel requires a separate operation.
+
 ## Configuration
 
 In Magpie → Dynamic Router, the development access policy applies to complex-development model

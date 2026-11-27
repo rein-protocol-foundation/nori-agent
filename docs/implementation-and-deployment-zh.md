@@ -1,5 +1,9 @@
 # Nori-Agent 开发、验证与部署记录
 
+## 2026-11-27 · 开发频道创建持久 agent
+
+SA2，负责人 Codex。开发频道的父代理工具现在可以核验 Slack 用户的网关 owner 身份、发起原生单次审批，并在创建后回读 agent 列表。本地测试覆盖权限检查、创建和重复请求。本次仅在本地修复和验证。[配置说明](slack-development.md#persistent-agent-creation) · [验收记录](acceptance-evidence.md#development-channel-agent-creation--november-27-2026)
+
 ## 2026-11-25 · 开发频道定时任务排障
 
 US14/US15，负责人 Codex。经运维侧只读核查，开发频道接下了排障任务，但当前工具权限无法取得这两个运维任务的回执。两条任务的运行结果已分别核实；PR #251 已部署到 OCI，运行版本为 `2495cae`。仅为既有私有开发频道设置了 `plugins.entries.rein-acp.config.cronDiagnosticsChannelId`。热加载遇到活动插件，受控重启后网关和 Slack 连接恢复。新线程的实际工具回执与回复均已核对。移除这项配置即可停用跨线程诊断。[证据与验收条件](acceptance-evidence.md#development-channel-cron-diagnosis--november-25-2026)
