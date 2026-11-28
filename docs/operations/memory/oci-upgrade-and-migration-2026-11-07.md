@@ -120,7 +120,7 @@ Oracle 标准试用按 30 天或 Credit 耗尽两者先到结束，未用 Credit
 
 ## 存储与后续更新规则
 
-本文件是 Git 管理的独立运维记忆来源，配置及相对路径见[索引](INDEX.md)。OpenClaw 使用原生 `memory_search` / `memory_get` 检索和读取；具体步骤仍由独立的 `nori-oci-ops` skill 提供。
+本文件是 Git 管理的独立运维记忆来源，配置及相对路径见[索引](../../agent/reference/oci-memory-index.md)。OpenClaw 使用原生 `memory_search` / `memory_get` 检索和读取；具体步骤仍由独立的 `nori-oci-ops` skill 提供。
 
 记录更新通过现有 Git 提交与发布流程同步，保留来源、日期和已完成/待执行状态。不要在生产 checkout 中留下未提交改动来代替更新流程，也不要覆盖用户会话或其他运行记忆。旧的 `runtime/operations/memory/` 副本仅保留作历史恢复材料。
 

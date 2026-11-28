@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { classifyChanges, changedPaths, requiredChecksPass } from '../scripts/ci-scope.mjs';
+import { classifyChanges, changedPaths, pluginReviewSummary, requiredChecksPass } from '../scripts/ci-scope.mjs';
 
 const none = { plugins: false, routing: false, isolation: false };
 const plugins = { plugins: true, routing: false, isolation: false };
@@ -41,8 +41,8 @@ test('upstream, CI, dependencies, native fixtures and unknown code fail safe to 
 });
 
 test('documentation avoids runtime setup and combined changes retain all selected coverage', () => {
-  assert.deepEqual(classifyChanges(['README.md', 'docs/setup.md', 'assets/brand/logo.png']), none);
-  assert.deepEqual(classifyChanges(['docs/setup.md', 'plugins/rein-operations/community-tools.ts']), plugins);
+  assert.deepEqual(classifyChanges(['README.md', 'docs/agent/reference/setup.md', 'assets/brand/logo.png']), none);
+  assert.deepEqual(classifyChanges(['docs/agent/reference/setup.md', 'plugins/rein-operations/community-tools.ts']), plugins);
   assert.deepEqual(classifyChanges(['plugins/rein-operations/community-tools.ts', 'vendor/openclaw']), all);
   assert.deepEqual(classifyChanges(['scripts/agent-browser.mjs', '.github/workflows/browser.yml']), plugins);
 });
@@ -51,7 +51,7 @@ test('Codex-only PRs skip runtime suites without suppressing mixed changes or ma
   // PR #62: development agent configuration and its verification records.
   const paths = [
     '.codex/agents/implementation.toml', '.codex/agents/routine.toml', '.codex/config.toml',
-    'AGENTS.md', 'docs/implementation-and-deployment-zh.md', 'docs/implementation-and-deployment.md',
+    'AGENTS.md', 'docs/agent/verification/implementation-and-deployment-zh.md', 'docs/agent/verification/implementation-and-deployment.md',
   ];
   assert.deepEqual(classifyChanges(paths), none);
   assert.deepEqual(classifyChanges([...paths, 'plugins/rein-operations/index.ts']), plugins);
@@ -121,4 +121,22 @@ test('git diff includes deletions, both sides of renames, and uses the PR merge 
   const advancedBase = git('rev-parse', 'HEAD');
   assert.deepEqual(changedPaths(advancedBase, head, { cwd, pullRequest: true }).sort(), ['docs/moved.md', 'plugins/rein-router/runtime.mjs']);
   assert.throws(() => changedPaths('0'.repeat(40), head, { cwd }), /Missing base/);
+});
+
+test('review summary groups direct edits independently of CI selection', () => {
+  const summary = pluginReviewSummary(['plugins/rein-isolation/scope.mjs', 'plugins/new/README.md',
+    'plugins/new/index.ts', 'docs/agent/reference/setup.md', 'plugins/untrusted\n`name/index.ts']);
+  assert.match(summary, /plugins\/new` \(2\)/);
+  assert.match(summary, /plugins\/rein-isolation` \(1\)/);
+  assert.match(summary, /plugins\/untrusted%0A%60name/);
+  assert.match(summary, /其他变更路径数: 1/);
+  assert.match(pluginReviewSummary(['config/example.json']), /None/);
+  assert.match(pluginReviewSummary(undefined), /Diff unavailable/);
+});
+
+test('the bilingual plugin map links every package directory', () => {
+  const map = readFileSync(new URL('../docs/human/plugin-map.md', import.meta.url), 'utf8');
+  for (const entry of readdirSync(new URL('../plugins/', import.meta.url), { withFileTypes: true })) {
+    if (entry.isDirectory()) assert.ok(map.includes(`[${entry.name}](../../plugins/${entry.name}/`), entry.name);
+  }
 });

@@ -62,6 +62,6 @@ Manifest: `openclaw.plugin.json`. Runtime entry: `index.ts`. Artwork: `assets/ic
 
 The local `openclaw` development link uses this repository's pinned host; the peer dependency deliberately does not promise compatibility with untested future versions. Update it after compatibility verification. Plugin APIs are experimental.
 
-New business tools belong here or in additional Nori-Agent-owned packages, never in upstream `src/` or `extensions/`. Use deterministic authorization and durable records, optional tools for side effects, and names prefixed `rein_`. A prompt, manifest declaration or user-supplied actor ID is not an authorization check. See [deployment and ten test cases](../../docs/implementation-and-deployment-zh.md).
+New business tools belong here or in additional Nori-Agent-owned packages, never in upstream `src/` or `extensions/`. Use deterministic authorization and durable records, optional tools for side effects, and names prefixed `rein_`. A prompt, manifest declaration or user-supplied actor ID is not an authorization check. See [deployment and ten test cases](../../docs/agent/verification/implementation-and-deployment-zh.md).
 
-See [setup](../../docs/setup.md) and [updating OpenClaw](../../docs/upstream.md).
+See [setup](../../docs/agent/reference/setup.md) and [updating OpenClaw](../../docs/human/upstream.md).

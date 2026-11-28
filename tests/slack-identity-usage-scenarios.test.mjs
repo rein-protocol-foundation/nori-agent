@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 const fixture = JSON.parse(
   readFileSync(new URL('./fixtures/slack-identity-usage-scenarios.json', import.meta.url), 'utf8'),
 );
-const doc = readFileSync(new URL('../docs/slack-identity-usage-scenarios-zh.md', import.meta.url), 'utf8');
+const doc = readFileSync(new URL('../docs/agent/reference/slack-identity-usage-scenarios-zh.md', import.meta.url), 'utf8');
 const policy = readFileSync(new URL('../workspace/AGENTS.md', import.meta.url), 'utf8');
 const byId = new Map(fixture.scenarios.map(scenario => [scenario.id, scenario]));
 

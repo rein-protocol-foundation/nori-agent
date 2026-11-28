@@ -21,7 +21,7 @@ tools in the trusted operator execution environment; do not loosen exec/sandbox 
 
 `agent-browser auth list` lists this Nori instance's aliases. `auth show <alias>` gives
 metadata, never the password. Missing credentials require the operator's terminal
-enrollment described in the repository's `docs/agent-browser.md`; never ask for a
+enrollment described in the repository's `docs/human/agent-browser.md`; never ask for a
 password in chat, retrieve the key, read vault files, or pass a password in arguments.
 
 Pass `--session <account-task>` **before** every browser command. Use a distinct stable

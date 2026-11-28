@@ -36,7 +36,7 @@ export function prepareCommunityWorkspace({ destination, sourceRoot = projectRoo
     if (target === 'DISCORD_ONBOARDING.md') bytes = Buffer.from(original.toString('utf8')
       .replaceAll('skills/rein-community-discovery/SKILL.md', '原生技能目录中的 rein-community-discovery 技能')
       .replaceAll('../templates/discord-channel-copy.json', 'references/discord-channel-copy.json')
-      .replaceAll('维护方法见 ../docs/discord-onboarding-zh.md。', '目录由授权维护者更新。'));
+      .replaceAll('维护方法见 ../docs/agent/reference/discord-onboarding-zh.md。', '目录由授权维护者更新。'));
     return { source, target, original, bytes };
   });
   const sharedSkills = join(sourceRoot, 'workspace/skills'); noSymlinks(sharedSkills);

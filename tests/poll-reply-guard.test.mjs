@@ -49,7 +49,7 @@ const WINNER_COUNT_RECORDED = '本轮该候选人获得赞成票数已记录在�
 // wording and the no-winner wording all state the required content, and the no-winner note must carry
 // none of the winner wording.
 const casesSource = readFileSync(
-  fileURLToPath(new URL('../docs/agent-test-cases-zh.md', import.meta.url)),
+  fileURLToPath(new URL('../docs/agent/verification/agent-test-cases-zh.md', import.meta.url)),
   'utf8',
 );
 const CASE_7 = casesSource.slice(casesSource.indexOf('## 7.'), casesSource.indexOf('## 8.'));
@@ -428,7 +428,7 @@ test('the case-7 acceptance text still asks for the winner and its count', () =>
   // The delivered sentence is not the guard's own invention: case 7 asks for the winner and its count
   // in one reply, states the participation total as a user-visible fact, and pins the winner wording.
   // Read the document here so a change to the criterion fails instead of going unnoticed.
-  assert.ok(CASE_7.length > 0, 'case 7 must be readable from docs/agent-test-cases-zh.md');
+  assert.ok(CASE_7.length > 0, 'case 7 must be readable from docs/agent/verification/agent-test-cases-zh.md');
   assert.ok(
     case7Line('给出赢家与票数') !== null,
     'case 7 must still ask for the winner and its count together',

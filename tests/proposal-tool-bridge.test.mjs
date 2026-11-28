@@ -24,7 +24,7 @@ import {
   PROPOSAL_TOOL_NAMES,
 } from '../plugins/rein-operations/proposal-tool-bridge.ts';
 
-// The P0 chat platform is still undecided (docs/decisions.md), so the rehearsal uses a synthetic
+// The P0 chat platform is still undecided (docs/agent/requirements/decisions.md), so the rehearsal uses a synthetic
 // label that cannot be mistaken for an adopted platform choice.
 const PLATFORM = 'rehearsal-chat';
 const CHANNEL = 'proposal-room';

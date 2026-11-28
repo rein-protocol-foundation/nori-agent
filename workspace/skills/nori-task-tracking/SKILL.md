@@ -16,7 +16,7 @@ operator-approved exact title and body, public reference, and audience in the pr
 Run `create --config <private-config> --task <id> --apply` only for that approved task. On a delayed
 or uncertain result, use `discover` with the same config and Task ID. Preserve the operation receipt.
 Use `stage` to prepare a private tracking config once discovery proves the canonical Linear
-attachment and GitHub issue. See `docs/task-pairing.md` for setup and recovery.
+attachment and GitHub issue. See `docs/agent/reference/task-pairing.md` for setup and recovery.
 
 The status adapter adds source status updates, bounded readback, and durable receipts. Confirm the
 actual team, project, and issue audience before working. Reuse existing issue IDs and keep private
@@ -38,7 +38,7 @@ content outside synchronized issues.
 6. Link each verified native task and each recorded acceptance round with `scripts/task-links.mjs`.
    Use the same configured Task ID across authorized sessions. Check the configured pair, native
    owner and requester scope, and acceptance-store scope before attaching a link. Read linked
-   execution and reviewer statuses with `task-links.mjs show`. See `docs/task-links.md`.
+   execution and reviewer statuses with `task-links.mjs show`. See `docs/agent/reference/task-links.md`.
 7. Task cancellation is separate from issue closure: use native stop controls and verify actual
    settlement. Issue state, merged code, passing tests and product acceptance are different facts.
    Use the Acceptance skill to collect review evidence; never infer a user's approval from a pass.
@@ -51,4 +51,4 @@ mailbox, or transfer private results into a channel just because someone asked.
 
 Keep credentials in the configured environment/private secret store and receipts in private runtime
 storage. Do not copy raw conversations, private descriptions or report artifacts into GitHub issues.
-See `docs/task-tracking.md` for setup, limitations and recovery.
+See `docs/agent/reference/task-tracking.md` for setup, limitations and recovery.

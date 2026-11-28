@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
@@ -6,7 +6,25 @@ import assert from 'node:assert/strict';
 import { validateCommunityDirectory } from './validate-community-directory.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const read = p => readFileSync(resolve(root, p), 'utf8');
-for (const p of ['README.md', 'README-zh.md', 'AGENTS.md', 'workspace/AGENTS.md', 'workspace/SOUL.md', 'workspace/IDENTITY.md', 'workspace/DISCORD_ONBOARDING.md', 'workspace/community-directory.json', 'docs/discord-onboarding.md', 'docs/discord-onboarding-zh.md', 'docs/discord-onboarding-use-cases.md', 'docs/discord-onboarding-use-cases-zh.md', 'docs/architecture.md', 'docs/channel-user-isolation.md', 'docs/slack-user-isolation.md', 'docs/slack-user-isolation-verification-2026-10-14.md', 'config/slack-isolated.example.json', 'plugins/rein-slack/openclaw.plugin.json', 'plugins/rein-isolation/package.json', 'docs/roadmap.md', 'docs/setup.md', 'docs/decisions.md', 'assets/brand/README.md', 'templates/proposal.md', 'templates/board-brief.md', 'templates/outcome.md', 'templates/weekly-summary.md', 'templates/discord-community-directory.example.json']) {
+// Segment mixed Chinese and English, including headings, examples and link text.
+const segmenter = new Intl.Segmenter('zh', { granularity: 'word' });
+const pages = readdirSync(root, { withFileTypes: true })
+  .filter(entry => entry.isFile() && /\.md$/i.test(entry.name))
+  .map(entry => entry.name);
+pages.push('docs/README.md', 'docs/archive/README.md');
+for (const directory of ['docs/human', 'docs/archive/human']) {
+  for (const file of readdirSync(resolve(root, directory), { recursive: true })) {
+    if (/\.md$/i.test(file)) pages.push(directory + '/' + file);
+  }
+}
+for (const page of pages) {
+  let words = 0;
+  for (const segment of segmenter.segment(read(page))) {
+    if (segment.isWordLike) words++;
+  }
+  assert.ok(words <= 2500, `${page}: ${words} words (maximum 2500) / 超出单篇词数上限`);
+}
+for (const p of ['README.md', 'README-zh.md', 'AGENTS.md', 'workspace/AGENTS.md', 'workspace/SOUL.md', 'workspace/IDENTITY.md', 'workspace/DISCORD_ONBOARDING.md', 'workspace/community-directory.json', 'docs/agent/reference/discord-onboarding.md', 'docs/agent/reference/discord-onboarding-zh.md', 'docs/agent/verification/discord-onboarding-use-cases.md', 'docs/agent/verification/discord-onboarding-use-cases-zh.md', 'docs/archive/agent/architecture.md', 'docs/agent/reference/channel-user-isolation.md', 'docs/agent/reference/slack-user-isolation.md', 'docs/archive/agent/slack-user-isolation-verification-2026-10-14.md', 'config/slack-isolated.example.json', 'plugins/rein-slack/openclaw.plugin.json', 'plugins/rein-isolation/package.json', 'docs/agent/verification/roadmap.md', 'docs/agent/reference/setup.md', 'docs/agent/requirements/decisions.md', 'assets/brand/README.md', 'templates/proposal.md', 'templates/board-brief.md', 'templates/outcome.md', 'templates/weekly-summary.md', 'templates/discord-community-directory.example.json']) {
   assert.ok(existsSync(resolve(root, p)) && read(p).trim(), `Missing/empty: ${p}`);
 }
 // These are readable public references, not plugin configuration or a live integration check.
@@ -27,13 +45,13 @@ function unconfigured(value, path = '') {
   }
 }
 unconfigured(config);
-const hashes = JSON.parse(read('docs/source-hashes.json'));
+const hashes = JSON.parse(read('docs/archive/agent/source-hashes.json'));
 for (const [source, expected] of Object.entries(hashes)) {
-  const path = source === 'README.md' ? 'docs/foundation-implementation-snapshot.md' : source;
+  const path = source === 'README.md' ? 'docs/archive/agent/foundation-implementation-snapshot.md' : source;
   const actual = createHash('sha256').update(readFileSync(resolve(root, path))).digest('hex');
   assert.equal(actual, expected, `Source snapshot changed: ${path}`);
 }
-for (const p of ['docs/PRD-agent-community-operations-zh.md', 'docs/PRD-agent-community-operations.md']) {
+for (const p of ['docs/agent/requirements/PRD-agent-community-operations-zh.md', 'docs/agent/requirements/PRD-agent-community-operations.md']) {
   for (let i = 1; i <= 20; i++) assert.ok(read(p).includes(`AC${String(i).padStart(2, '0')}`), `${p}: missing acceptance criterion ${i}`);
 }
 const manifest = JSON.parse(read('plugins/rein-operations/openclaw.plugin.json'));

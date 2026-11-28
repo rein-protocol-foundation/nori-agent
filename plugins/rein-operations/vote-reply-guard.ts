@@ -4,7 +4,7 @@
 // carries implementation vocabulary on purpose: the stored poll identifier, the recorded approval
 // count, the abstention flag, the flags that the record was written (`recorded`, `replaced`) and that
 // it authorizes no spending, plus a reason code on a refused ballot. Those fields are right for the
-// caller that acts on them, but `docs/agent-test-cases-zh.md` case 6 only asks a director to hear that
+// caller that acts on them, but `docs/agent/verification/agent-test-cases-zh.md` case 6 only asks a director to hear that
 // the ballot was recorded, how many proposals they approved (or that the abstention is recorded), and
 // that the record moves no money - never a field name, a tool name, a proposal or poll identifier, or
 // a voter. Live acceptance replies kept leaking those identifiers and field names

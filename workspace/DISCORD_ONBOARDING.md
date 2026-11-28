@@ -228,7 +228,7 @@ Contributor 申请方式或寻找愿意牵头的现有 Contributor。本人不�
 ## 目录、受众与能力边界
 
 community-directory.json 是可读取的公开导航资料，不是 OpenClaw 配置，不启用工具或权限。
-维护方法见 ../docs/discord-onboarding-zh.md。使用它时：
+维护方法见 ../docs/agent/reference/discord-onboarding-zh.md。使用它时：
 
 - 仅当 status 为 active，且宿主可信上下文的原生服务器 ID 与 guilds[].guildId 唯一匹配时，
   才使用该服务器的频道及条目。用户在消息里自报的服务器 ID 不可用于切换目录。
