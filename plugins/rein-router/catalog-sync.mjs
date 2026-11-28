@@ -1,3 +1,4 @@
+import { assertLarkDevelopmentRuntime } from './lark-development.mjs';
 import { createHash } from 'node:crypto';
 import { buildOpenClawFragment, isRestrictedRoute, validateRouterConfig } from './policy.mjs';
 
@@ -105,6 +106,9 @@ export function compileCatalog({ catalog, settings, gateway, pluginPath }) {
   }
 }
 
+export const ROUTER_HOST_POLICIES = ['trustedSlackChannels', 'scheduleInPublicChannels', 'nativeAgentRoutes',
+  'participation', 'participationPolicySource', 'larkDevelopmentGroup'];
+
 /** Merge only router-owned entries; preserve agents, tools, channels and unrelated models. */
 export function mergeRouterFragment(host, fragment, { pluginPath, typesafePath, previousModels = [], targetAgent = 'defaults' } = {}) {
   const out = structuredClone(host);
@@ -136,8 +140,7 @@ export function mergeRouterFragment(host, fragment, { pluginPath, typesafePath, 
   // must not turn omission/inheritance into an explicit grant or resurrect a revocation.
   const authority = host.plugins?.entries?.['rein-router']?.config ?? {};
   const nextConfig = { ...fragment.plugins.entries['rein-router'].config };
-  const hostPolicies = ['trustedSlackChannels', 'scheduleInPublicChannels', 'nativeAgentRoutes', 'participation', 'participationPolicySource'];
-  for (const field of hostPolicies) {
+  for (const field of ROUTER_HOST_POLICIES) {
     if (Object.hasOwn(authority, field)) nextConfig[field] = structuredClone(authority[field]);
     else delete nextConfig[field];
   }
@@ -145,10 +148,14 @@ export function mergeRouterFragment(host, fragment, { pluginPath, typesafePath, 
   try { validated = { ...validateRouterConfig(nextConfig) }; }
   catch { throw new Error('router_host_policy_invalid'); }
   // Validation computes defaults for runtime use; retain omission in persisted config.
-  for (const field of hostPolicies) if (!Object.hasOwn(authority, field)) delete validated[field];
+  for (const field of ROUTER_HOST_POLICIES) if (!Object.hasOwn(authority, field)) delete validated[field];
   Object.assign(out.plugins.entries, fragment.plugins.entries, {
     'rein-router': { ...fragment.plugins.entries['rein-router'], config: validated },
   });
+  if (validated.larkDevelopmentGroup) {
+    try { assertLarkDevelopmentRuntime(out, validated.larkDevelopmentGroup); }
+    catch { throw new Error('router_host_policy_invalid'); }
+  }
   const typesafe = out.plugins.entries.typesafe;
   const usesTypeSafe = [defaults, ...(out.agents.list ?? []), ...Object.values(out.agents.entries ?? {})]
     .some(a => typeof a.decisionModel === 'string' && a.decisionModel.startsWith('typesafe/'));

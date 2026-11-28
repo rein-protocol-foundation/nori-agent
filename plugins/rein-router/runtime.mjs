@@ -4,6 +4,7 @@ import { createScopedFallbackStream } from './scoped-stream.mjs';
 import { usageIdentity, nativeUsageIdentity } from './usage-limits.mjs';
 import { validateRouterConfig, selectRoute, describeRoute, isRestrictedRoute } from './policy.mjs';
 import { developmentChannelFor, DEVELOPMENT_AUTH_TIMEOUT_MS } from './slack-development.mjs';
+import { assertLarkDevelopmentRuntime, isLarkDevelopmentSession, larkDevelopmentSource, larkDevelopmentTool } from './lark-development.mjs';
 import { wrapQuotaErrors, normalizeIncludedQuotaError } from './quota.mjs';
 import { createGatewayRequestHeaders, readGatewayHeaderEvidence, readGatewayRouteEvidence, readGatewayMemberIdentity, readGatewayAuthenticationScope } from './provenance.mjs';
 import { normalizeUpstreamAuthenticationError } from './upstream-errors.mjs';
@@ -38,6 +39,7 @@ export function bindRouterLifecycle(router, { events, lifecycle }) {
 // Deliberately reject inherited fallback ladders which could escape to another
 // credential/provider after a quota or authentication failure. No config mutation.
 export function assertRuntimeConfig(config, host) {
+  if (config.larkDevelopmentGroup) assertLarkDevelopmentRuntime(host, config.larkDevelopmentGroup);
   const provider = host.models?.providers?.[PROVIDER_ID];
   if (!provider || provider.baseUrl !== config.gateway.baseUrl || provider.api !== 'openai-completions')
     throw new Error('rein_router_runtime_invalid: models.providers.rein-magpie');
@@ -125,7 +127,7 @@ export function assertRuntimeConfig(config, host) {
 }
 
 export function createRouter({ config: raw, decisions, observeCommunityReference, clock = () => Date.now(), environment = process.env,
-  fetchImpl = globalThis.fetch, gatewayReady, authorizeAdmin, authorizeDevelopment, usage }) {
+  fetchImpl = globalThis.fetch, gatewayReady, authorizeAdmin, authorizeDevelopment, usage, hostConfig = () => ({}) }) {
   const config = validateRouterConfig(raw);
   if (config.enabled && Object.values(config.scopedPolicies ?? {}).some(policy => policy.usageLimits) && !usage)
     throw new Error('rein_router_usage_required');
@@ -133,6 +135,8 @@ export function createRouter({ config: raw, decisions, observeCommunityReference
   const recent = new Map();
   const gatewayObservations = new Map();
   const routeById = id => config.routes.find(route => route.id === id);
+  const larkGroup = config.larkDevelopmentGroup;
+  const larkDeveloper = ctx => larkGroup && larkDevelopmentSource(larkGroup, hostConfig(), ctx);
   const restricted = isRestrictedRoute;
   const developmentAgent = ctx => config.developmentChannels.some(entry => entry.agentId === ctx?.agentId);
   const accessAllowed = (route, { admin = false, developer = false } = {}) =>
@@ -169,6 +173,7 @@ export function createRouter({ config: raw, decisions, observeCommunityReference
     } finally { clearTimeout(timer); }
   }
   async function verifiedDeveloper(ctx) {
+    if (ctx.channel === 'feishu') return Boolean(larkDeveloper(ctx));
     if (!developmentChannelFor(config, ctx) || typeof authorizeDevelopment !== 'function') return false;
     let timer;
     try {
@@ -329,7 +334,7 @@ export function createRouter({ config: raw, decisions, observeCommunityReference
       let outcome;
       let reason;
       const prompt = typeof event.prompt === 'string' ? event.prompt : '';
-      if (!config.channels.includes(channel)) reason = 'channel-not-enabled';
+      if (!config.channels.includes(channel) && !(channel === 'feishu' && developer)) reason = 'channel-not-enabled';
       else if (!config.decision.allowPaidJev) reason = 'jev-not-authorized';
       else if (!prompt.trim() || prompt.length > config.decision.maxPromptChars) reason = 'prompt-not-classifiable';
       else if (event.attachments?.length) reason = 'attachments';
@@ -380,6 +385,12 @@ export function createRouter({ config: raw, decisions, observeCommunityReference
     },
     beforeAgentRun(_event, ctx) {
       let run = runs.get(ctx.runId);
+      const developmentSession = isLarkDevelopmentSession(larkGroup, ctx);
+      // Native Feishu ingress checked the explicit mention before this user
+      // run was made. System/completion turns may report, with no tool grant.
+      const larkSource = developmentSession && larkDeveloper(ctx);
+      if (developmentSession && !nativeTurn(ctx) && (!larkSource || ctx.modelProviderId !== PROVIDER_ID))
+        return block('rein_lark_development_authority_required');
       if (config.scopedPolicies?.[ctx.agentId]) {
         // Locked manual selections can skip model resolution; still require the same ingress proof.
         if (!run) {
@@ -433,10 +444,18 @@ export function createRouter({ config: raw, decisions, observeCommunityReference
         run.fallbackCursor = (run.fallbackCursor ?? 0) + 1;
       }
       markRun(ctx); // Locked/manual sessions can skip the model-resolution hook.
-      if (ctx.runId && runs.has(ctx.runId)) runs.get(ctx.runId).lastRoute = ctx.modelId;
+      if (ctx.runId && runs.has(ctx.runId)) Object.assign(runs.get(ctx.runId), {
+        lastRoute: ctx.modelId, larkSource: larkSource ? {
+          ...ctx, channelContext: structuredClone(ctx.channelContext),
+        } : undefined,
+      });
       return { outcome: 'pass' };
     },
     async beforeToolCall(event, ctx) {
+      if (larkGroup) {
+        const policy = larkDevelopmentTool(larkGroup, hostConfig(), event, ctx, runs.get(ctx.runId)?.larkSource);
+        if (policy) return policy;
+      }
       // Authenticated Gateway health probes do not start a model run. This one
       // static capability report reads no organization records and has no side effects.
       // Calls inside a model run, including stale runs, still require their ledger lease.

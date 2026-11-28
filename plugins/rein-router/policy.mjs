@@ -1,4 +1,4 @@
-import { validateScopedPolicies } from './scoped-policy.mjs';
+import { isLarkChatId, validateScopedPolicies } from './scoped-policy.mjs';
 import { isAbsolute } from 'node:path';
 import { validateParticipationPolicy } from './slack-participation.mjs';
 
@@ -125,7 +125,7 @@ function freeze(value) {
 /** Validate operator configuration without resolving secrets or contacting services. */
 export function validateRouterConfig(raw = {}) {
   object(raw, 'config', ['enabled', 'gateway', 'routes', 'defaultRoute', 'fallbackRoutes',
-    'allowPaidUsage', 'channels', 'adminSenders', 'developmentChannels', 'decision', 'scopedPolicies', 'trustedSlackChannels', 'scheduleInPublicChannels', 'nativeAgentRoutes', 'participation', 'participationPolicySource']);
+    'allowPaidUsage', 'channels', 'adminSenders', 'developmentChannels', 'larkDevelopmentGroup', 'decision', 'scopedPolicies', 'trustedSlackChannels', 'scheduleInPublicChannels', 'nativeAgentRoutes', 'participation', 'participationPolicySource']);
   const enabled = boolean(raw.enabled, 'enabled', false);
   const allowPaidUsage = boolean(raw.allowPaidUsage, 'allowPaidUsage', false);
   const normalizedGateway = raw.gateway === undefined ? null : gateway(raw.gateway);
@@ -185,6 +185,8 @@ export function validateRouterConfig(raw = {}) {
     invalid('trustedSlackChannels');
   if (new Set(developmentChannels.map(entry => `${entry.accountId}/${entry.channelId}`)).size !== developmentChannels.length)
     invalid('developmentChannels');
+  const larkDevelopmentGroup = raw.larkDevelopmentGroup;
+  if (larkDevelopmentGroup !== undefined && !isLarkChatId(larkDevelopmentGroup)) invalid('larkDevelopmentGroup');
   const decisionRaw = raw.decision === undefined ? {} : raw.decision;
   object(decisionRaw, 'decision', ['timeoutMs', 'minProbability', 'maxPromptChars', 'allowPaidJev']);
   const minProbability = decisionRaw.minProbability === undefined ? 0.8 : decisionRaw.minProbability;
@@ -221,6 +223,7 @@ export function validateRouterConfig(raw = {}) {
       (participation?.enabled && (!participation.recordEvidence || participation.channels.length !== 1))))
     invalid('participationPolicySource');
   return freeze({ ...(participation ? { participation } : {}), ...(participationPolicySource ? { participationPolicySource } : {}),
+    ...(larkDevelopmentGroup ? { larkDevelopmentGroup } : {}),
     ...(scopedPolicies ? { scopedPolicies } : {}), enabled, gateway: normalizedGateway ?? undefined, routes, defaultRoute: defaultRoute ?? undefined, fallbackRoutes,
     allowPaidUsage, channels, adminSenders, developmentChannels, trustedSlackChannels, scheduleInPublicChannels: boolean(raw.scheduleInPublicChannels, 'scheduleInPublicChannels', false), ...(nativeAgentRoutes ? { nativeAgentRoutes } : {}), decision });
 }

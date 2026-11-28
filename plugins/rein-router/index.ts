@@ -14,6 +14,7 @@ import { acknowledgeSlackParticipation } from './slack-participation-ack.ts';
 import { createSlackParticipation } from './slack-participation.mjs';
 import { openParticipationEvidence, participationPolicyDigest } from './slack-participation-evidence.mjs';
 import { hasControlCommand } from 'openclaw/plugin-sdk/command-detection';
+import { larkDevelopmentSource } from './lark-development.mjs';
 import { isAbortRequestText } from 'openclaw/plugin-sdk/command-primitives-runtime';
 
 export default definePluginEntry({
@@ -38,7 +39,7 @@ export default definePluginEntry({
     const usage = config.enabled && Object.values(config.scopedPolicies ?? {}).some(policy => policy.usageLimits)
       ? createUsageLedger({ stateDir: api.runtime.state.resolveStateDir() }) : undefined;
     const router = createRouter({ config, observeCommunityReference: () => api.logger.info('Discord community public reference attached'), decisions: api.runtime.decisions, gatewayReady: gateway?.isReady,
-      authorizeAdmin, authorizeDevelopment, usage });
+      authorizeAdmin, authorizeDevelopment, usage, hostConfig: () => api.runtime.config.current() });
     if (!router.config.enabled) return;
     if (config.scopedPolicies?.['nori-community']?.origins.some(origin => origin.platform === 'discord')) {
       api.on('before_prompt_build', (_event, ctx) => communityReplyGuidance(ctx));
@@ -109,6 +110,10 @@ export default definePluginEntry({
       wrapSimpleCompletionStreamFn: ctx => router.wrapStreamFn({ ...ctx, simpleCompletion: true }) });
     api.on('before_model_resolve', router.beforeModelResolve,
       { priority: 100, timeoutMs: router.config.decision.timeoutMs + FOUNDATION_ADMIN_TIMEOUT_MS + DEVELOPMENT_AUTH_TIMEOUT_MS + (config.gateway.managed?.mode === 'console' ? 2000 : 1000) });
+    if (config.larkDevelopmentGroup) api.on('before_prompt_build', (_event, ctx) => {
+      if (!larkDevelopmentSource(config.larkDevelopmentGroup, api.runtime.config.current(), ctx)) return;
+      return { prependContext: 'Delegate repository work to the nori-development sandbox with sessions_spawn, runtime="subagent", agentId="nori-development", mode="run" and sandbox="require". Give the worker the complete authorized scope, requested workspace skill, checks and any publication permission. Report the actual worker result in this conversation.' };
+    });
     const cronIngress = createCronIngress({ channels: config.trustedSlackChannels, developmentChannels: config.developmentChannels, authorize: authorizeCreator,
       hasExistingNativeControls: source => Object.hasOwn(api.config.channels?.slack?.channels ?? {}, source.chatId),
       readJobs: async source => (await loadCronStore(resolveCronStorePath(api.config.cron?.store))).jobs.filter(job =>

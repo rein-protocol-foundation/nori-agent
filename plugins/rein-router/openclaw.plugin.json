@@ -21,6 +21,7 @@
     "additionalProperties": false,
     "properties": {
       "enabled": { "type": "boolean", "default": false },
+      "larkDevelopmentGroup": { "type": "string", "pattern": "^oc_[0-9a-f]{32}$", "description": "One mention-only internal Lark group with access to the configured development sandbox. Configure native groups and sender restrictions together." },
       "scheduleInPublicChannels": { "type": "boolean", "default": false, "description": "Allow verified workspace members to schedule in listed internal public Slack channels. Requires sandboxed scheduling agents." },
       "trustedSlackChannels": { "type": "array", "maxItems": 512, "items": { "$ref": "#/$defs/slackScheduleChannel" }, "description": "Approved Slack scheduling agents and channels. With scheduleInPublicChannels, a channelId of * matches member channels in the specified workspace." },
       "participationPolicySource": { "type": "string", "enum": ["review-store"] },
