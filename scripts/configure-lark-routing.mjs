@@ -1,5 +1,7 @@
-import { fileURLToPath } from 'node:url';
+import { readFile, writeFile } from 'node:fs/promises';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { validateRouterConfig } from '../plugins/rein-router/policy.mjs';
+import { projectLarkDevelopmentGroups } from '../plugins/rein-router/lark-development.mjs';
 import { assertRuntimeConfig } from '../plugins/rein-router/runtime.mjs';
 import { isLarkChatId, isLarkSenderId } from '../plugins/rein-router/scoped-policy.mjs';
 
@@ -16,7 +18,7 @@ function validateAccount(source) {
 }
 
 /** Prepare an explicit shared Gateway candidate. No credentials, deploy or state mutation. */
-export function configureLarkRouting({ original, consoleSettings, workspaceId, community, internal, acknowledgementPluginPath }) {
+export function configureLarkRouting({ original, consoleSettings, workspaceId, community, internal, acknowledgementPluginPath, developmentGroupId }) {
   validateAccount(community);
   validateAccount(internal);
   if (community.appId === internal.appId || community.appSecretEnv === internal.appSecretEnv)
@@ -79,7 +81,9 @@ export function configureLarkRouting({ original, consoleSettings, workspaceId, c
     exclusions.channels = [...new Set([...(exclusions.channels ?? []), 'feishu'])];
   }
   assertRuntimeConfig(validateRouterConfig(router), config);
-  return { config: configureLarkAcknowledgements(config, acknowledgementPluginPath), consoleSettings: settings };
+  const candidate = configureLarkAcknowledgements(config, acknowledgementPluginPath);
+  return { config: developmentGroupId === undefined ? candidate : configureLarkDevelopment(candidate, developmentGroupId),
+    consoleSettings: settings };
 }
 
 // Also applies to an existing dual-account gateway without recreating its routes.
@@ -102,4 +106,31 @@ export function configureLarkAcknowledgements(original, acknowledgementPluginPat
   config.plugins.load ??= {};
   config.plugins.load.paths = [...new Set([...(config.plugins.load.paths ?? []), acknowledgementPluginPath])];
   return config;
+}
+
+/** Prepare an opt-in upgrade for an existing dual-account Gateway. */
+export function configureLarkDevelopment(original, groupId) {
+  const config = structuredClone(original);
+  const router = config.plugins?.entries?.['rein-router']?.config;
+  if (!router?.enabled || (router.larkDevelopmentGroup !== undefined && router.larkDevelopmentGroup !== groupId))
+    fail('development_router_conflict');
+  if (!router.larkDevelopmentGroup) {
+    projectLarkDevelopmentGroups(config, groupId);
+    router.larkDevelopmentGroup = groupId;
+  }
+  assertRuntimeConfig(validateRouterConfig(router), config);
+  return config;
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const [groupId, input, output, ...extra] = process.argv.slice(2);
+  try {
+    if (!groupId || !input || !output || extra.length) fail('expected_group_id_input_and_new_output');
+    const config = configureLarkDevelopment(JSON.parse(await readFile(input, 'utf8')), groupId);
+    await writeFile(output, JSON.stringify(config, null, 2) + '\n', { mode: 0o600, flag: 'wx' });
+  } catch (error) {
+    const message = /^(lark_(routing|development)_[a-z_]+)$/.test(error?.message) ? error.message : 'lark_routing_candidate_failed';
+    process.stderr.write(message + '\n');
+    process.exitCode = 1;
+  }
 }

@@ -3,7 +3,7 @@ import { isRestrictedRoute } from '../plugins/rein-router/policy.mjs';
 import { join, resolve } from 'node:path';
 import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
-import { readMagpieCatalog, recommendPolicy, compileCatalog, mergeRouterFragment } from '../plugins/rein-router/catalog-sync.mjs';
+import { readMagpieCatalog, recommendPolicy, compileCatalog, mergeRouterFragment, ROUTER_HOST_POLICIES } from '../plugins/rein-router/catalog-sync.mjs';
 import { assertManagedSpendPolicy } from '../plugins/rein-router/spend-policy.mjs';
 import { magpiePaths } from './magpie-dependency.mjs';
 import { readPrivate, writePrivate } from './router-console-store.mjs';
@@ -194,7 +194,7 @@ export function createConsoleSync({ root, native, gatewayBaseUrl = 'http://127.0
         throw new Error('router_jev_key_invalid');
       const host = parseHost(await readPrivate(root, configPath, '{}', { publicFile: true }));
       const authority = host.plugins?.entries?.['rein-router']?.config ?? {};
-      const hasHostPolicy = ['trustedSlackChannels','scheduleInPublicChannels','nativeAgentRoutes','participation','participationPolicySource'].some(field => Object.hasOwn(authority, field));
+      const hasHostPolicy = ROUTER_HOST_POLICIES.some(field => Object.hasOwn(authority, field));
       const previousState = state;
       state = next;
       let intentPersisted = false;
