@@ -5,7 +5,7 @@
 // per-proposal counts, the participation and abstention totals, the transport metadata (`delivery`,
 // `model_relayed`), the reason code of a replay (`existing_finalized`) and the flag that the round
 // was already recorded (`repeated`). Those are right for the caller that acts on them, but
-// `docs/agent-test-cases-zh.md` case 7 requires the director to hear the outcome, the winner's
+// `docs/agent/verification/agent-test-cases-zh.md` case 7 requires the director to hear the outcome, the winner's
 // recorded count, the recorded participation and abstention counts, and that the record moves no
 // money: never a field name, a tool name, a voter or an identifier. That count is the recorded
 // approval total the tool publishes for the winner (`narration.counts`), never money. The tool

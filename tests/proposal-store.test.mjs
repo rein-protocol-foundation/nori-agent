@@ -30,7 +30,7 @@ const T = {
   submit: '2026-09-24T10:00:00Z',
 };
 
-// The P0 chat platform is still undecided (docs/decisions.md), so the rehearsal uses a synthetic
+// The P0 chat platform is still undecided (docs/agent/requirements/decisions.md), so the rehearsal uses a synthetic
 // label that cannot be mistaken for an adopted platform choice.
 const CONTRIBUTOR = { platform: 'rehearsal-chat', accountId: 'u-contributor' };
 const CONTRIBUTOR_KEY = 'rehearsal-chat:u-contributor';

@@ -2,7 +2,7 @@
   "id": "rein-discord",
   "name": "Withdrawn Nori Discord adapter",
   "categories": ["channels"],
-  "description": "Withdrawn transport replacement. Registration refuses startup; historical config fields remain only for diagnosis. See docs/discord-isolation-redesign.md.",
+  "description": "Withdrawn transport replacement. Registration refuses startup; historical config fields remain only for diagnosis. See docs/agent/requirements/discord-isolation-redesign.md.",
   "channels": ["discord"],
   "channelConfigs": { "discord": { "label": "Nori-Agent Isolated Discord", "description": "Withdrawn. Restore a reviewed native Discord profile; native guild sessions remain channel-shared.", "schema": { "type": "object", "properties": { "enabled": { "type": "boolean" } }, "additionalProperties": false } } },
   "activation": { "onStartup": true },

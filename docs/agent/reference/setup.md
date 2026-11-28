@@ -1,0 +1,505 @@
+# Setup and local runtime
+
+[中文说明](setup-zh.md)
+
+This is the local bootstrap for the vendored OpenClaw runtime and the `rein-operations` plugin. It
+configures no chat platform or model provider and activates no governance policy. Its proposal and
+vote tools default to synthetic simulation; the backend-backed governance, identity and community
+tools described below register only when an operator explicitly enables them.
+
+## Discord multi-member privacy
+
+Before using a local profile for multiple community members, read the
+[session and memory audit](../../archive/agent/discord-session-privacy-audit-2026-10-13.md). The pinned runtime shares
+guild conversation context by channel; DM isolation does not change that. Per-member room routing
+and owner-scoped persistent memory are absent from that native profile. The former
+[Rein isolated adapter](discord-user-isolation.md) is withdrawn and refuses registration. Follow the
+[replacement design and acceptance gates](../requirements/discord-isolation-redesign.md); no replacement is ready.
+
+The [privacy config fragment](../../../config/discord-privacy.example.json) is a historical diagnostic
+mitigation, not a recommended migration or a complete isolation solution. It disables shared recall
+and memory flush and changes file/session access; do not apply these product changes as a substitute
+for owner-scoped memory. Do not copy operator-private USER/MEMORY files into shared community context.
+Any resource-root changes require an inventory of supported skill/file/backend access first.
+
+`npm run toolchain:pnpm -- run audit:discord-privacy -- <config-path>` prints selected policy facts
+without credentials. It intentionally exits nonzero for channel-shared guild routing, including after
+the fragment is applied. `npm run toolchain:pnpm -- run probe:discord-routing` reproduces the native
+routing behavior with synthetic identifiers after upstream is built; it is not real-user acceptance.
+
+## General workspace skills
+
+Install reusable Nori skills under `workspace/skills/<name>/SKILL.md`, keeping references and
+scripts in that directory. Use the configured ordinary workspace and native skill discovery;
+adding a skill does not require channel-adapter allowlist edits. Existing tool, dependency and
+caller authorization checks still apply. Do not put personal profiles or runtime memory in skill
+resources. Run `node scripts/verify-workspace-skills.mjs` with the supported Node toolchain to
+check native discovery of all repository skills and a new synthetic skill without plugins.
+The Slack adapter also accepts general skill directories, references and scripts without name
+allowlist edits; its existing tool permissions and private-memory boundaries still apply. See the [replacement requirements](../requirements/discord-isolation-redesign.md#general-workspace-skills).
+
+## Prerequisites
+
+For optional gateway telemetry, see [Axiom observability](../../human/observability.md). It
+covers the official Diagnostics OTEL plugin, separate trace/log/metric datasets,
+per-profile credentials, and verification.
+
+- Node.js `>=24.16.0 <25` or `>=26.1.0` (Node 26 recommended). This mirrors upstream `engines`; the
+  source runtime does not run on Node 22.
+- pnpm `12.4.2`, pinned by `packageManager`. The npm commands below use a project-local copy;
+  installing it globally or enabling Corepack is optional.
+- git with submodule support.
+- Network access for the first dependency install.
+
+Run the following commands from the repository root; if it is not cloned yet, complete step 1
+first. With npm available, prepare the ignored project-local toolchain once if `.toolchain/` is missing:
+
+```sh
+npm install --prefix .toolchain --no-save --package-lock=false node@24.16.0 pnpm@12.4.2
+```
+
+This installs only inside `.toolchain`, not globally. The directory is not included in a Git clone.
+Skip the install if the version checks below already pass. The default path needs no `PATH`
+change: the `toolchain:pnpm` script runs the pinned local toolchain
+through `npx`, so it works from a plain shell even when the ambient `node` is older. It requires
+`.toolchain/` to exist in the checkout; the command fails if that directory is missing.
+
+```sh
+npm run toolchain:pnpm -- --version      # expect 12.4.2
+npm run toolchain:pnpm -- exec node -v   # expect a supported release, for example v24.16.x
+```
+
+Everything after `--` is forwarded to the toolchain pnpm, so the install and build commands in the
+other sections also work as `npm run toolchain:pnpm -- <args>`. The tables below list the exact form
+for every script in this file; none of them needs a `PATH` export.
+
+| Command | Runs |
+| --- | --- |
+| `npm run toolchain:pnpm -- install` | root Rein workspace install |
+| `npm run toolchain:pnpm -- --dir vendor/openclaw install --frozen-lockfile` | upstream install |
+| `npm run toolchain:pnpm -- --dir vendor/openclaw build` | upstream build, including the Control UI |
+| `npm run toolchain:pnpm -- run setup:local` | `setup:local`, the isolated local config |
+| `npm run toolchain:pnpm -- run check` | `check`, the scaffold and policy checks |
+| `npm run toolchain:pnpm -- test` | `test`, the Node test runner suite |
+| `npm run toolchain:pnpm -- run verify:plugin` | `verify:plugin`, loader-level plugin check |
+| `npm run toolchain:pnpm -- run verify:proposal-tools` | `verify:proposal-tools`, loader-level v2 check |
+| `npm run toolchain:pnpm -- openclaw plugins list --verbose` | upstream CLI through the toolchain |
+| `npm run toolchain:pnpm -- openclaw plugins inspect rein-operations --runtime --json` | runtime tool report |
+| `npm run toolchain:pnpm -- openclaw plugins doctor` | plugin diagnostics |
+| `npm run toolchain:pnpm -- openclaw gateway run` | local gateway, foreground |
+| `npm run toolchain:pnpm -- openclaw gateway start` | project gateway, background |
+| `npm run toolchain:pnpm -- openclaw gateway stop` | gracefully stops this project's background or foreground gateway |
+| `npm run toolchain:pnpm -- openclaw gateway restart` | restarts this project's gateway with fresh configuration and credentials, in the background |
+| `npm run toolchain:pnpm -- openclaw gateway status` | reports this project's instance and readiness |
+| `npm run toolchain:pnpm -- openclaw gateway health --port 18791` | gateway health from a second terminal |
+| `npm run toolchain:pnpm -- openclaw doctor` | runtime doctor |
+| `npm run toolchain:pnpm -- run smoke:gateway` | authenticated `rein_status` call, gateway-level smoke test |
+| `npm run toolchain:pnpm -- openclaw gateway auth-token --show` | reveals the shared token |
+
+For the optional Model Router, Dynamic Router and Magpie gateway, use the same npm entry point.
+The [Chinese quickstart](../../human/model-router-quickstart-zh.md) covers configuration and merging fragments;
+the [Magpie upgrade guide](../../human/magpie-upgrade-zh.md) covers backups, compatibility checks and rollback.
+Magpie bootstrap also requires Git and Go. These commands do not require a global pnpm install:
+
+| Command | Runs |
+| --- | --- |
+| `npm run toolchain:pnpm -- run magpie:setup` | builds the locked project-local Magpie version |
+| `npm run toolchain:pnpm -- run magpie:setup --check` | verifies the prepared version and binary digest without building |
+| `npm run toolchain:pnpm -- run magpie -- version` | reports the prepared Magpie version |
+| `npm run toolchain:pnpm -- run router:ui` | integrated Magpie Providers + OpenClaw Router; automatic model sync |
+| `npm run toolchain:pnpm -- run magpie:ui` | alias for the integrated Router Console |
+| `npm run toolchain:pnpm -- run magpie:ui:native` | standalone native provider UI for manual/legacy setups |
+| `npm run toolchain:pnpm -- run magpie -- --allow-subscription-accounts models` | lists the configured model catalog |
+| `npm run toolchain:pnpm -- run magpie -- --allow-subscription-accounts accounts` | lists private provider accounts |
+| `npm run toolchain:pnpm -- run magpie:import-bailian` | imports the existing local Bailian configuration while the gateway is stopped |
+| `npm run toolchain:pnpm -- run magpie:prepare-key runtime/magpie/router.quickstart.local.json` | prepares a key limited to the declared model catalog |
+| `npm run toolchain:pnpm -- run magpie:prepare-key --replace runtime/magpie/router.quickstart.local.json` | replaces that key for an intentional catalog change while stopped |
+| `npm run toolchain:pnpm -- run config:subscriptions runtime/magpie/router.quickstart.local.json --output runtime/magpie/openclaw-router.fragment.json` | generates a private JSON fragment for manual review and merge |
+| `npm run toolchain:pnpm -- openclaw secrets store set TYPESAFE_API_KEY --kind secret --allow-host api.typesafe.ai` | interactively stores the Jev key for Dynamic Router |
+| `npm run toolchain:pnpm -- openclaw plugins inspect rein-router --runtime --json` | reports Router registration after configuration |
+| `npm run toolchain:pnpm -- run verify:subscriptions` | runs synthetic Discord routing and tool checks |
+| `npm run toolchain:pnpm -- run verify:subscriptions:slack` | runs synthetic Slack routing and tool checks |
+| `npm run toolchain:pnpm -- run verify:subscriptions:managed` | checks prepared Magpie's managed lifecycle without real model calls |
+| `npm run toolchain:pnpm -- run eval:subscriptions` | evaluates the offline routing corpus without hosted Jev calls |
+
+Use `--output` for configuration files: npm/pnpm may print lifecycle logs to stdout, so redirecting
+an ordinary wrapped command with `> fragment.json` would mix those logs into JSON. The generator
+validates first and writes only the fragment with mode 0600; it does not merge or activate a profile.
+Create the output parent directory first. For inline configuration examples, invoke Node with
+`npm run toolchain:pnpm -- exec node --input-type=module` so it also uses the local toolchain.
+
+`npm run toolchain:pnpm -- run <script>`, `-- test`, and `-- openclaw <args>` execute through the
+toolchain's own Node, so they work from a default shell even when the ambient `node` is older than
+this repository's `engines` range. Passing no argument after `--` prints pnpm's own help. The
+unwrapped form, `pnpm run <script>` or `pnpm openclaw <args>`, is equivalent only after the optional
+`PATH` export below or another pnpm `12.4.2` on a supported Node.
+
+If you prefer the unwrapped commands, enable the toolchain once for that shell:
+
+```sh
+export PATH="$PWD/.toolchain/node_modules/.bin:$PATH"   # optional; makes plain pnpm and node resolve to the toolchain
+```
+
+## 1. Clone with the runtime source
+
+```sh
+git clone --recurse-submodules https://github.com/rein-protocol-foundation/nori-agent.git
+cd nori-agent
+```
+
+If the repository is already cloned without submodules, run
+`git submodule update --init --recursive` first.
+
+## 2. Install dependencies
+
+The root install covers the Rein workspace packages only:
+
+```sh
+npm run toolchain:pnpm -- install                                     # Rein workspace packages only
+```
+
+Upstream is a separate workspace with its own lockfile. Install and build it in place:
+
+```sh
+npm run toolchain:pnpm -- --dir vendor/openclaw install --frozen-lockfile   # upstream install
+npm run toolchain:pnpm -- --dir vendor/openclaw build                       # upstream build, including the Control UI
+```
+
+`vendor/openclaw` is a full source checkout, so the `openclaw` launcher resolves TypeScript sources
+and needs this install and build before it can run. The current upstream `build` also produces the Control UI assets the gateway dashboard serves. Prefer `pnpm --dir vendor/openclaw ...` (or `pnpm -C`) so the pinned pnpm
+version from upstream's own `packageManager` applies; the wrapped form above does the same and takes
+its pnpm from the local toolchain instead of the ambient install.
+
+## 3. Create the isolated local config
+
+```sh
+npm run toolchain:pnpm -- run setup:local
+```
+
+`scripts/init-local.mjs` writes `runtime/openclaw/openclaw.json` (file mode 0600, parent directory
+0700) unless that file already exists, in which case it is preserved and reported. The generated
+config is deliberately narrow:
+
+| Key | Value |
+| --- | --- |
+| `gateway.mode` | `local`; the gateway refuses to start without it |
+| `gateway.bind` / `gateway.port` | `loopback` / `18791`, away from the upstream default |
+| `gateway.auth` | `token`, 32 random bytes as hex |
+| `agents.defaults.workspace` | this repository's `workspace/` directory |
+| `plugins.allow`, `plugins.load.paths`, `plugins.entries` | `rein-operations`, loaded from `plugins/rein-operations` |
+
+`plugins.allow` is the global plugin allowlist. This local demo allows only Rein. When configuring a model provider or chat channel, add its exact plugin ID to this list (for example `openai` or `slack`) as part of that setup, otherwise the integration remains disabled. This does not change upstream code or an existing global profile.
+
+The source directory must be writable for ignored dependency, cache and build outputs; only tracked upstream source files are treated as read-only.
+
+`runtime/` is gitignored. No channel, model provider or credential is configured, and no business
+tool is enabled.
+
+## 4. Run the structural checks and tests
+
+```sh
+npm run toolchain:pnpm -- run check    # scaffold files, unapproved example policy, source hashes, AC01-AC20
+npm run toolchain:pnpm -- test         # plugin boundary and upstream update script fixtures
+```
+
+`check` proves the repository scaffold is intact. Business module tests exercise local rules; they
+do not prove a live chat or website integration.
+
+Discord onboarding content is already part of `workspace/`: its `AGENTS.md` routes Discord turns to
+`DISCORD_ONBOARDING.md`, and `community-directory.json` starts unconfigured. For a separately copied
+workspace, sync these files and the routing instruction together. Follow the [onboarding guide](discord-onboarding-zh.md)
+to prepare verified public entries and run conversation rehearsals. The example directory is synthetic;
+do not activate or recommend it as real content. No Discord plugin or external operation is enabled
+by this content update.
+
+## 5. Inspect the plugin
+
+```sh
+npm run toolchain:pnpm -- openclaw plugins list --verbose
+npm run toolchain:pnpm -- openclaw plugins inspect rein-operations --runtime --json
+npm run toolchain:pnpm -- run verify:plugin
+npm run toolchain:pnpm -- run verify:proposal-tools
+npm run toolchain:pnpm -- openclaw plugins doctor
+```
+
+`--runtime` reports what the gateway actually registered. Without `foundationDb`, the default
+three tools are `rein_status`, `rein_simulate_proposal` and `rein_simulate_vote`. The optional
+`proposalTools` block adds four local proposal tools. Enabling `foundationDb` instead hides those
+simulators and local proposal tools, retains `rein_status`, and registers 19 backend tools:
+
+| Group | Tools |
+| --- | --- |
+| Governance reads (4) | `rein_member_status`, `rein_funds`, `rein_poll_candidates`, `rein_vote_type_resolve` |
+| Read-only collection (1) | `rein_proposal_collect` |
+| Governance writes (4) | `rein_governance_proposal_submit`, `rein_poll_open`, `rein_poll_vote`, `rein_poll_result` |
+| Result feedback (3) | `rein_proposal_comment_suggest`, `rein_revision_approve`, `rein_revision_apply` |
+| Identity binding (3) | `rein_identity_bind_start`, `rein_identity_bind_status`, `rein_identity_bind_complete` |
+| Community queries (4) | `rein_resources_search`, `rein_resource_get`, `rein_events_search`, `rein_event_get` |
+
+Registration does not grant backend permissions: each call still requires an admitted host context,
+a current private ingress proof, and the relevant caller scope and member eligibility.
+`verify:plugin` checks registration through the real loader; `verify:proposal-tools` checks the
+four local v2 proposal tools.
+
+`rein_status` reports which of these groups are registered through
+`foundationDbReadToolsEnabled`, `foundationDbWriteToolsEnabled`,
+`foundationDbCollectToolsEnabled`, `foundationDbFeedbackToolsEnabled`,
+`identityBindToolsEnabled` and `communityQueryToolsEnabled`. A malformed `foundationDb`
+block is refused with
+`foundation_db_config_invalid`, and a named server environment variable that is unset or empty is
+refused with `foundation_db_env_value_missing`; both name the offending key or variable and never
+echo the secret itself.
+
+## 6. Run the gateway locally
+
+```sh
+npm run toolchain:pnpm -- openclaw gateway run       # foreground; stop it with Ctrl-C when finished
+```
+
+This checkout uses `runtime/openclaw` as its isolated state directory and config path.
+The repository wrapper provides project-local `start`, `stop`, `restart` and `status` commands;
+they use the same configuration and verified upstream instance locks as `gateway run`.
+They do not install or mutate an account-wide LaunchAgent, systemd service or Windows task.
+
+| Command suffix after `npm run toolchain:pnpm -- openclaw` | Behavior |
+| --- | --- |
+| `gateway run` | Runs in the foreground; logs stay in this terminal and Ctrl-C stops it. |
+| `gateway start` | Starts a detached background process and returns after readiness. Repeating it reports the existing instance. |
+| `gateway stop` | Sends a graceful stop to the verified instance for this project, including one started with `run`; repeating it is safe. |
+| `gateway restart` | Checks configuration and credential loading, stops the current instance, then starts a background replacement with fresh values. |
+| `gateway status --json` | Shows project instance PID, port, readiness and configuration/log paths. |
+
+For background use:
+
+```sh
+npm run toolchain:pnpm -- openclaw gateway start
+npm run toolchain:pnpm -- openclaw gateway status
+npm run toolchain:pnpm -- openclaw gateway restart
+npm run toolchain:pnpm -- openclaw gateway stop
+```
+
+Background logs append to `runtime/openclaw/logs/project-gateway.log` with mode `0600`.
+The process survives closing the terminal, but **does not start automatically at login or reboot**.
+Keep the Router Console terminal running separately when using Magpie.
+Run these commands from this checkout to select this project's instance. A foreign process using
+the configured port is reported rather than stopped. `stop/status` do not need provider keys.
+Restart replaces a foreground instance with a background one; use `stop` followed by `run` to
+return to foreground operation.
+
+If `gateway run` reports an existing instance, check `gateway status` first. A ready
+background instance is already serving Nori; use `gateway start` for repeatable background
+startup, or `gateway stop` followed by `gateway run` to switch to the foreground.
+The wrapper checks for an existing project owner before foreground startup. Without this
+check, upstream can report `StateDatabaseCoordinatorContentionError` and a misleading
+maintenance/migration failure when a second process attempts to use the same state.
+This contention alone does not establish that migration is needed. If startup still
+requires migration after the verified instance has stopped, run
+`npm run toolchain:pnpm -- openclaw doctor --fix` before starting it again.
+If `stop` succeeded but a later `run` finds another owner, compare the reported PIDs
+and check whether another terminal or development task called `start` in between.
+`stop` terminates the current instance; it does not disable future launches.
+
+Lifecycle commands accept `--json` and `--timeout N` (milliseconds). `start/restart` accept
+`--port N`; otherwise the successor uses the current project configuration's port.
+Stops are graceful by default; `restart --safe` is accepted as the same project-local behavior.
+If shutdown exceeds its wait budget, the command fails without starting a second instance.
+Explicit `--force` permits killing the still-verified original process after that timeout.
+The upstream `gateway install/uninstall` commands remain system-service operations and are not
+used for this isolated project profile.
+
+From a second terminal:
+
+```sh
+npm run toolchain:pnpm -- openclaw gateway health --port 18791
+npm run toolchain:pnpm -- run smoke:gateway
+npm run toolchain:pnpm -- openclaw doctor
+```
+
+`npm run toolchain:pnpm -- run smoke:gateway` calls the read-only `rein_status` through the
+authenticated local HTTP endpoint without printing the token. It needs no model API key, and it
+needs the gateway to have printed `ready`; a refused connection during startup is not a tool
+failure. `gateway health` queries the gateway health RPC using the configured authentication;
+the unauthenticated HTTP readiness probe is `/readyz` on the gateway port.
+`openclaw doctor` reports the runtime configuration state.
+
+Reveal the generated shared token only when a client needs it, and treat the output as a secret:
+
+```sh
+npm run toolchain:pnpm -- openclaw gateway auth-token --show
+```
+
+`scripts/openclaw.mjs` sets `OPENCLAW_STATE_DIR=runtime/openclaw` and
+`OPENCLAW_CONFIG_PATH=runtime/openclaw/openclaw.json` before delegating to the upstream CLI, so
+local work does not touch a global `~/.openclaw` profile.
+
+## What is still unconfigured
+
+- A newly generated local profile has no chat transport, model provider or enabled backend tools.
+  Existing local configurations are preserved by `setup:local`.
+- `config/operations.example.json` is an unapproved design input, not native OpenClaw configuration;
+  nothing loads it.
+- Chat credentials, approved workspaces/channels, backend caller enrollment and scopes, verified
+  member bindings and governance policy must be configured separately.
+- Payments, reservations and website publishing are not enabled by this bootstrap. Applied database
+  migrations and local tests do not establish production acceptance. Review [decisions](../requirements/decisions.md)
+  and the dated evidence in the [deployment record](../verification/implementation-and-deployment.md).
+
+## Optional: enable backend-backed tools
+
+Use an approved chat transport and a Foundation backend. Slack can use Socket Mode with bot and
+app-level tokens. Keep native Discord: its former replacement is [withdrawn](discord-user-isolation.md),
+and native guild sessions remain shared. The retained [Slack adapter](slack-user-isolation.md) has
+separate compatibility limits and is not an automatic multi-member migration. Configure approved
+transport plugin IDs and paths explicitly; do not run two transports for the same account.
+
+Merge the following object under `plugins.entries.rein-operations.config` in
+`runtime/openclaw/openclaw.json`, preserving other plugin configuration. Replace every
+`APPROVED_*` placeholder with an approved native ID before enabling it:
+
+```json
+{
+  "foundationDb": {
+    "enabled": true,
+    "workspaces": [
+      {
+        "platform": "slack",
+        "workspaceId": "APPROVED_SLACK_WORKSPACE_ID",
+        "nativeChannelIds": [
+          "APPROVED_PROPOSAL_CHANNEL_ID",
+          "APPROVED_BOARD_CHANNEL_ID"
+        ]
+      }
+    ],
+    "proposalChannelIds": [
+      "APPROVED_PROPOSAL_CHANNEL_ID"
+    ],
+    "boardChannelIds": [
+      "APPROVED_BOARD_CHANNEL_ID"
+    ],
+    "backendApiBaseUrlEnvVar": "REIN_BACKEND_URL",
+    "agentCallerIdEnvVar": "REIN_AGENT_CALLER_ID",
+    "agentCredentialEnvVar": "REIN_AGENT_CREDENTIAL",
+    "proposalConfirmationKeyEnvVar": "REIN_PROPOSAL_CONFIRMATION_KEY"
+  }
+}
+```
+
+Each `workspaces` entry requires `platform`, `workspaceId` and non-empty `nativeChannelIds`.
+All proposal and Board channel IDs must occur in those lists. The trusted `messageChannel` and
+native channel ID must select exactly one workspace; avoid overlapping channel assignments for the
+same platform. Multiple Slack/Discord workspaces are supported. The top-level `platform` is optional
+and, when present, must name a platform enrolled in `workspaces`. Optional `voteTypeAliases` map
+operator-approved language to backend type codes; see the [deployment guide](../verification/implementation-and-deployment.md).
+
+The four `*EnvVar` fields name server environment variables; never put credential values in the JSON:
+
+| Variable | Meaning |
+| --- | --- |
+| `REIN_BACKEND_URL` | Backend base origin; HTTPS, or loopback HTTP for local development. No embedded credentials, path, query or fragment. |
+| `REIN_AGENT_CALLER_ID` | Caller ID enrolled in the target backend environment. |
+| `REIN_AGENT_CREDENTIAL` | Credential for that enrolled Agent caller, with only approved scopes. |
+| `REIN_PROPOSAL_CONFIRMATION_KEY` | Stable private secret for proposal confirmation tokens; use a strong random value, for example generated once with `openssl rand -base64 48`. Rotating it invalidates outstanding confirmations. |
+
+The repository launcher loads these four names from the Git-ignored `.env.local`, while explicit
+process environment values take precedence. Keep that file private (mode `0600`). If neither source
+sets `REIN_BACKEND_URL`, the launcher uses `https://www.rein-protocol.org`; an explicitly empty value
+fails validation rather than falling back. Custom variable names are supported by the plugin but
+must be supplied in the process environment; `.env.local` loading only covers the four names above.
+After changing credentials or configuration, restart the project gateway.
+
+For synthetic rehearsals, explicitly select an isolated backend and a caller enrolled there. The
+backend's deployment configuration selects its data environment; changing the URL does not migrate
+a DEV caller or grant production access. The Agent never receives a database URL or service key.
+The online default does not authorize test writes to production.
+
+Identity is resolved by the backend from verified links, using a private proof bound to the trusted
+platform/workspace/user/channel/event and caller. Use `rein_identity_bind_start`,
+`rein_identity_bind_status` and `rein_identity_bind_complete` for the backend's member binding flow;
+a claimed email or role is not identity evidence. No Slack profile-email lookup or associated bot
+scope is required for identity resolution. Database migration, seeding and member administration
+belong to backend operators.
+
+Backend enrollment must include the required ingress, identity and operation scopes. Community
+queries additionally require `community.read` and a current Community Member link; governance
+scopes do not substitute for that permission. See [community discovery](community-discovery.md).
+Validate the merged configuration with `plugins doctor` and `plugins inspect ... --runtime --json`
+as shown above, then rehearse only in the approved environment.
+
+### Proposal author confirmation
+
+A stored proposal must be the version its author confirmed (PRD §2.3 step 2). Because the
+proposal table has no draft status or confirmation column, the registered
+`rein_governance_proposal_submit` tool enforces this in two steps instead of storing a draft row:
+
+1. The first call, without `confirmationToken`, writes nothing and returns `status: "prepared"` with
+   the canonical proposal text (`prepared`), a short-lived `confirmationToken`, and its `expiresAt`.
+2. The Agent reads that text back to the proposer. Only after the proposer explicitly agrees does it
+   call the tool again with `confirmationToken` returned unchanged and
+   `confirmPronouncedByAuthor: true`.
+
+The current token seals the exact proposal payload with AES-256-GCM using an HKDF-derived key,
+authenticating the proposer and expiry as well. Changing
+the title, the type, the amount or the currency after the preview is refused with
+`proposal_confirmation_mismatch`, an expired token with `proposal_confirmation_expired`, a missing
+statement or token with `proposal_confirmation_required`, and a token the server did not mint with
+`proposal_confirmation_invalid`. The proposal identifier is derived from the confirmed text, so
+re-confirming the same version returns the same record instead of inserting a second proposal.
+
+Preparation and confirmation must occur in separate inbound turns; a same-turn token echo is
+refused with `proposal_confirmation_next_turn_required`.
+
+The conversation is the requirement: the proposer has to confirm the prepared text. The token and
+the boolean are only the technical gate that stops a tool call from standing in for that
+confirmation.
+
+## Before any real operation
+
+1. Run `npm run toolchain:pnpm -- run check` and `npm run toolchain:pnpm -- test`. They validate the
+   scaffold and the plugin boundary only.
+2. Read the PRD and resolve the launch prerequisites in [decisions](../requirements/decisions.md) with authorized
+   owners.
+3. Implement identity, policy, durable records, governance and outbox services as Nori-Agent-owned
+   plugins with audited tool contracts. `config/operations.example.json` is a design input, not
+   runtime enforcement.
+4. Configure exactly one chat platform, its channel scopes and its credentials outside git. Wire
+   the website adapter with least-privilege service credentials. Keep private runtime memory
+   outside the repository and enforce shared-session isolation.
+5. Use synthetic data in a separate sandbox to verify AC01-AC20, including outage recovery, budget
+   competition and consent withdrawal. Record the tested runtime commit and the results.
+6. Have the designated operators explicitly activate approved policies and scoped tools for a
+   limited pilot. Verify pause, recovery and exception ownership before widening access.
+
+Workspace prompts alone do not establish access control. Until services and policies are ready, use
+the agent only for drafts and demonstrations with synthetic data.
+
+## Updating the runtime
+
+For the optional pinned browser CLI, official Skill, local credential enrollment and
+session recovery workflow, see [Nori browser automation](../../human/agent-browser.md).
+
+See [upstream](../../human/upstream.md) for the reviewed pin update, the post-update checklist and rollback.
+
+## Verified baseline
+
+On 2026-09-23, upstream commit `4a11f89e840b2bb3eedcad2820ab25b8520905b6`
+passed a frozen dependency install and full source build using Node 24.16.0 and pnpm 12.4.2.
+Repository checks, both tests, the real OpenClaw plugin loader, and an authenticated
+`rein_status` call through the isolated local gateway passed. The temporary gateway
+was stopped after verification. No live platform integration or model inference was tested.
+
+The upstream UI build reports an advisory Mermaid bundle budget violation
+(1555.8 KiB gzip versus 960 KiB); the build exits successfully. This is upstream
+output, and no upstream source was modified to suppress it.
+
+## Isolated Slack profile
+
+Use the [Slack isolation guide](slack-user-isolation.md) and
+[example configuration](../../../config/slack-isolated.example.json) for the opt-in Socket Mode transport.
+Disable bundled Slack, prepare a public reference workspace and configure private member state.
+`verify:slack-isolation` uses localhost model/backend servers and synthetic native events; it does
+not authorize connecting a real Slack workspace. The shared-core refactor also retains the native
+`verify:discord-isolation` regression probe.
+
+## Slack 主机开发权限 / Trusted Slack host access
+
+[权限与部署记录](../../human/trusted-slack-host-access-zh.md)说明 Slack 开发权限、自建防误删插件与 Discord 边界。插件运行副本保存在 runtime 中，合并源码不会自动刷新，必须显式更新。

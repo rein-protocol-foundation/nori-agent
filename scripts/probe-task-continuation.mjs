@@ -9,7 +9,7 @@ import { root, upstream } from './runtime-env.mjs';
 import { buildOpenClawFragment } from '../plugins/rein-router/policy.mjs';
 import { selectContinuationChildInput } from '../tests/fixtures/task-continuation-model-input.mjs';
 
-assert.ok(existsSync(join(upstream, 'dist')), 'Build the pinned vendor/openclaw runtime first; see docs/setup.md. This probe never installs or builds.');
+assert.ok(existsSync(join(upstream, 'dist')), 'Build the pinned vendor/openclaw runtime first; see docs/agent/reference/setup.md. This probe never installs or builds.');
 const temp = mkdtempSync(join(tmpdir(), 'nori-continuation-'));
 for (const dir of ['home', 'state', 'tmp', 'workspace', 'fixture']) mkdirSync(join(temp, dir), { mode: 0o700 });
 const evidencePath = join(temp, 'evidence.jsonl'), requests = [];

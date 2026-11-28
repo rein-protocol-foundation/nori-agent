@@ -5,8 +5,8 @@ import { definePluginEntry } from 'openclaw/plugin-sdk/plugin-entry';
 export default definePluginEntry({
   id: 'rein-discord',
   name: 'Withdrawn Nori Discord adapter',
-  description: 'Withdrawn channel replacement; see docs/discord-isolation-redesign.md.',
+  description: 'Withdrawn channel replacement; see docs/agent/requirements/discord-isolation-redesign.md.',
   register() {
-    throw new Error('rein-discord has been withdrawn. Restore the reviewed native Discord profile; see docs/discord-isolation-redesign.md. Native guild sessions remain channel-shared.');
+    throw new Error('rein-discord has been withdrawn. Restore the reviewed native Discord profile; see docs/agent/requirements/discord-isolation-redesign.md. Native guild sessions remain channel-shared.');
   },
 });

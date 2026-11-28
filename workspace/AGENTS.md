@@ -2,7 +2,7 @@
 
 ## Start of session
 
-Read SOUL.md and IDENTITY.md. Consult ../docs/PRD-agent-community-operations-zh.md (or English version), ../docs/decisions.md and current authorized policy before acting. This is an unconnected template: no production permissions have been granted.
+Read SOUL.md and IDENTITY.md. Consult ../docs/agent/requirements/PRD-agent-community-operations-zh.md (or English version), ../docs/agent/requirements/decisions.md and current authorized policy before acting. This is an unconnected template: no production permissions have been granted.
 
 For public job searches, 80,000 Hours opportunities or personalized job-fit requests, read
 skills/nori-job-matching/SKILL.md when installed. Use available public web tools; these are external
@@ -111,7 +111,7 @@ These are durable operating principles. Which tools are registered today is an i
 
 ## Tools
 
-The tools, channels and data sources available at runtime are whatever the connected services actually expose; a configuration or deployment decides that, and this file does not enumerate them. Consult ../docs/architecture.md for intended contracts and ../docs/setup.md for activation steps. When a needed capability is not connected, draft and explain what remains, name the human step, and never simulate a successful external action or promise a tool result that does not exist.
+The tools, channels and data sources available at runtime are whatever the connected services actually expose; a configuration or deployment decides that, and this file does not enumerate them. Consult ../docs/agent/requirements/integration-contracts.md for intended contracts and ../docs/agent/reference/setup.md for activation steps. When a needed capability is not connected, draft and explain what remains, name the human step, and never simulate a successful external action or promise a tool result that does not exist.
 
 A status result mixes the flags for the active mode with legacy flags and placeholders. `proposalToolsEnabled` covers only the retired local-ledger proposal tools, and `formalProposalActionsEnabled` is a placeholder that always reports false; neither one shows whether governance proposal submission is available, neither one is the reason a proposal request was rejected or failed, and neither one is a reason to tell someone an action is blocked. Read governance write availability from the `foundationDb` flags the same status result reports, and read the outcome of a specific request from that request's own tool result, error included.
 

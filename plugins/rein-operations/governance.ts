@@ -932,7 +932,7 @@ export function tallyRound(state: RoundState): RoundResult {
 /**
  * The counting rules discussed in PRD R14 and R15. These are a *discussion default*, not adopted
  * organizational policy: nothing in this module applies them unless a caller explicitly passes the
- * result as `rules`. Resolve the open decisions in docs/decisions.md before a real round.
+ * result as `rules`. Resolve the open decisions in docs/agent/requirements/decisions.md before a real round.
  */
 export function prdR14DiscussionDefaultRules(options: { rulesVersion: string }): RoundRules {
   return {

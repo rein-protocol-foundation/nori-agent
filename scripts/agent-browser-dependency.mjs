@@ -25,7 +25,7 @@ export function verifyBrowser(directory = browserPackage) {
 
 export async function setupBrowser() {
   if (existsSync(browserPackage)) { verifyBrowser(); return; }
-  if (!browserPin.binaries[binaryName]) throw new Error('Unsupported platform; see docs/agent-browser.md.');
+  if (!browserPin.binaries[binaryName]) throw new Error('Unsupported platform; see docs/human/agent-browser.md.');
   const parent = resolve(browserPackage, '..');
   mkdirSync(parent, { recursive: true });
   const staging = mkdtempSync(join(parent, '.install-'));

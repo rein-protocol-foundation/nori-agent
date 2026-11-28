@@ -4,7 +4,7 @@
 // carries implementation words on purpose: the configured vote type code (for example
 // `event_single`), the collected-field preview, the missing-field names, the sealed draft token and
 // its expiry, the tool name. Those are correct for the caller that has to act on them, but
-// `workspace/AGENTS.md` and `docs/agent-test-cases-zh.md` case 3 require the member to see only
+// `workspace/AGENTS.md` and `docs/agent/verification/agent-test-cases-zh.md` case 3 require the member to see only
 // their own words and a plain next question. Prompt text alone did not hold: a synthetic rehearsal
 // showed the member-facing reply echoing internal type codes, so the boundary is enforced here in
 // code instead of being asked for in a prompt. It is not a blanket guarantee: only a recognized

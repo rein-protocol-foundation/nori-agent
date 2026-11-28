@@ -30,8 +30,8 @@
     "evidence": {
       "noSlackEmailLookupAgentConfig": "plugins/rein-operations/backend-config.ts:47-48",
       "noSlackEmailLookupAgentCheck": "scripts/check.mjs:75-76",
-      "noSlackEmailLookupDecision": "docs/decisions.md:52",
-      "noSlackEmailLookupContract": "docs/integration-contracts.md:117-121",
+      "noSlackEmailLookupDecision": "docs/agent/requirements/decisions.md:52",
+      "noSlackEmailLookupContract": "docs/agent/requirements/integration-contracts.md:117-121",
       "websiteEmailedVerification": "sibling backend repo ReinProtocol, lib/identity/linking.ts:13-26,133-212",
       "unknownEmailRegistrationGate": "sibling backend repo ReinProtocol, migration 20261004013230_rein_identity_registration_gate_single_slack.sql"
     }
@@ -88,7 +88,7 @@
     "state": "PASSED",
     "executedAt": "2026-10-03",
     "reason": "All three scenarios ran through the real Slack sandbox against a rebuilt backend and restarted Gateway with fresh per-case OpenClaw state.",
-    "evidenceDocument": "docs/slack-identity-p0-live-evidence-20261003.md",
+    "evidenceDocument": "docs/archive/agent/slack-identity-p0-live-evidence-20261003.md",
     "unmetPrerequisites": [],
     "backendProductionBuildUsed": true,
     "gatewayRestartedAfterBuild": true,

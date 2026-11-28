@@ -1,4 +1,4 @@
-// End-to-end governance rehearsals: the Slack P0 vertical slice (docs/decisions.md steps 1 to 4, D04, D06,
+// End-to-end governance rehearsals: the Slack P0 vertical slice (docs/agent/requirements/decisions.md steps 1 to 4, D04, D06,
 // D08, D09) driven through the real v2 tool factories over one stateful in-memory store.
 //
 // What these rehearsals add over `governance-read-tools.test.mjs`, `governance-write-tools.test.mjs` and

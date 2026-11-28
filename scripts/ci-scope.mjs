@@ -35,6 +35,32 @@ export function changedPaths(base, head = 'HEAD', { pullRequest = false, cwd } =
   return git(['diff', '--name-only', '--no-renames', '-z', from, head, '--']).split('\0').filter(Boolean);
 }
 
+// Count changed paths, including the old and new paths of a move.
+export function pluginReviewSummary(paths) {
+  const lines = ['## Plugin impact / 插件影响', ''];
+  if (!paths) {
+    lines.push('Diff unavailable or manual run. Inspect the PR files. / 无差异数据或为手动运行，请检查 PR 文件。');
+    return lines.join('\n') + '\n';
+  }
+  const counts = new Map();
+  let outside = 0;
+  for (const path of paths) {
+    const match = /^plugins\/([^/]+)\//.exec(path);
+    if (match) counts.set(match[1], (counts.get(match[1]) ?? 0) + 1);
+    else outside++;
+  }
+  lines.push('Directly changed directories (path count) / 直接改动目录（路径数）', '');
+  for (const name of [...counts.keys()].sort()) {
+    // Render arbitrary Git directory names as inert text in the Actions summary.
+    const safeName = encodeURIComponent(name);
+    lines.push(`- \`plugins/${safeName}\` (${counts.get(name)})`);
+  }
+  if (!counts.size) lines.push('- None / 无');
+  lines.push('', `Other changed paths / 其他变更路径数: ${outside}`,
+    'Review shared callers, configuration and tests for indirect impact. / 请检查共用调用方、配置与测试的间接影响。');
+  return lines.join('\n') + '\n';
+}
+
 export function requiredChecksPass(scope, results) {
   if (results.changes !== 'success') return false;
   const sharedPreparation = scope.routing || scope.isolation;
@@ -46,12 +72,14 @@ export function requiredChecksPass(scope, results) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
   let scope;
+  let paths;
   try {
     if (process.env.GITHUB_EVENT_NAME === 'workflow_dispatch') {
       scope = classifyChanges([], { full: true });
     } else {
       const pr = process.env.GITHUB_EVENT_NAME === 'pull_request';
-      scope = classifyChanges(changedPaths(pr ? event.pull_request.base.sha : event.before, 'HEAD', { pullRequest: pr }));
+      paths = changedPaths(pr ? event.pull_request.base.sha : event.before, pr ? event.pull_request.head.sha : 'HEAD', { pullRequest: pr });
+      scope = classifyChanges(paths);
     }
   } catch (error) {
     console.warn(`Change detection unavailable; running all checks: ${error.message}`);
@@ -63,6 +91,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   console.log(scope);
   if (process.env.GITHUB_STEP_SUMMARY) {
     appendFileSync(process.env.GITHUB_STEP_SUMMARY,
-      `## Selected CI coverage\n\n${Object.entries(scope).map(([name, selected]) => `- ${name}: ${selected ? 'run' : 'not affected'}`).join('\n')}\n`);
+      `${pluginReviewSummary(paths)}\n## Selected CI coverage / CI 测试范围\n\n${Object.entries(scope).map(([name, selected]) => `- ${name}: ${selected ? 'run / 运行' : 'skip / 跳过'}`).join('\n')}\n`);
   }
 }

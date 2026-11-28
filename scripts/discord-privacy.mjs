@@ -15,7 +15,7 @@ export function inspectDiscordPrivacy(config) {
     enabled, routingImplementation: 'withdrawn-adapter', isolatedAdapterConfigured: false,
     groupSessionIncludesSender: false, perUserPersistentMemoryImplemented: false,
     findings: [{ code: 'isolation_adapter_withdrawn', severity: 'critical',
-      detail: 'rein-discord is withdrawn and refuses registration. Restore a reviewed native Discord profile; native guild sessions remain channel-shared. See docs/discord-isolation-redesign.md.' }],
+      detail: 'rein-discord is withdrawn and refuses registration. Restore a reviewed native Discord profile; native guild sessions remain channel-shared. See docs/agent/requirements/discord-isolation-redesign.md.' }],
   };
   const effectiveDmScopes = !enabled ? [] : effectiveDiscordDmScopes(config);
   const dmEnabled = enabled && effectiveDmScopes.length > 0;

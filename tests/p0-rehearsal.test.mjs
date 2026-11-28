@@ -23,7 +23,7 @@ import { createProposalCore, createState } from '../plugins/rein-operations/prop
 import { createRound, castBallot, tallyProposal, tallyRound } from '../plugins/rein-operations/governance.ts';
 import { resolveTrustedRequester } from '../plugins/rein-operations/request-context.ts';
 
-// The P0 chat platform is still undecided (docs/decisions.md). The rehearsal uses a synthetic label
+// The P0 chat platform is still undecided (docs/agent/requirements/decisions.md). The rehearsal uses a synthetic label
 // so it cannot be mistaken for an adopted platform choice.
 const PLATFORM = 'rehearsal-chat';
 const CHANNEL = 'rehearsal-ops-channel';
@@ -337,7 +337,7 @@ test('AC20 rehearsal B: funded workshop from proposal through frozen round and a
     );
 
     // ---- governance engine: the roster comes from authoritative records plus explicit weights
-    // Board weights remain an open decision (docs/decisions.md); the rehearsal states its input.
+    // Board weights remain an open decision (docs/agent/requirements/decisions.md); the rehearsal states its input.
     const REHEARSAL_WEIGHTS = { 'B-1': 2, 'B-2': 1, 'B-3': 1 };
     const boardMembers = Object.values(proposals.state.members).filter(
       member =>
